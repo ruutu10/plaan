@@ -170,3 +170,73 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* ============================================================
+   Ruutu10 — brand tokens for the public "Tehnikaplaan" wizard.
+   Palette from the Ruutu10 design system (navy + coral orange).
+   Exposed to Tailwind so utilities like `bg-r10-navy`,
+   `text-r10-orange` and `font-r10-display` are available.
+   ============================================================ */
+@theme {
+    --color-r10-navy: #11234f;
+    --color-r10-navy-900: #0a162f;
+    --color-r10-navy-700: #1b3168;
+    --color-r10-navy-500: #3c5da6;
+    --color-r10-navy-300: #8b9fc8;
+    --color-r10-navy-200: #b0bcdb;
+    --color-r10-navy-100: #d5ddee;
+
+    --color-r10-orange: #ff7f50;
+    --color-r10-orange-600: #f86f40;
+    --color-r10-orange-700: #e85f30;
+    --color-r10-orange-100: #ffe4d8;
+
+    --color-r10-grey-700: #3d4557;
+    --color-r10-grey-500: #6b7386;
+    --color-r10-grey-200: #dce0e7;
+    --color-r10-grey-100: #eef0f4;
+    --color-r10-ink: #0c0f16;
+    --color-r10-paper: #f7f8fa;
+    --color-r10-error: #e04236;
+
+    --font-r10-display: 'Mostra Nuova', 'Futura', 'Century Gothic', ui-sans-serif, sans-serif;
+    --font-r10-body: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Tehnikaplaan wizard motion + print styling */
+@keyframes r10fade {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes r10spin {
+    from {
+        transform: rotate(45deg) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: rotate(225deg) scale(0.6);
+        opacity: 0.5;
+    }
+    to {
+        transform: rotate(405deg) scale(1);
+        opacity: 1;
+    }
+}
+
+@media print {
+    .r10-no-print {
+        display: none !important;
+    }
+    .r10-print-doc {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+}
