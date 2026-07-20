@@ -253,7 +253,13 @@ async function savePlan(submit: boolean): Promise<boolean> {
 }
 
 async function submitPlan(): Promise<void> {
-    if (missingRequired.value || submitting.value) {
+    if (missingRequired.value) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        return;
+    }
+
+    if (submitting.value) {
         return;
     }
 
@@ -271,7 +277,13 @@ async function submitPlan(): Promise<void> {
 }
 
 async function createPublicLink(): Promise<void> {
-    if (missingRequired.value || submitting.value) {
+    if (missingRequired.value) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        return;
+    }
+
+    if (submitting.value) {
         return;
     }
 
