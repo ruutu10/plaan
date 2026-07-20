@@ -434,6 +434,7 @@ watch(
             <Stepper
                 v-if="phase === 'wizard'"
                 :step="step"
+                :optional-steps="[2, 5, 6]"
                 @go="goTo"
                 @reset="reset"
             />

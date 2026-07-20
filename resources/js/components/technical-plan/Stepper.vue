@@ -2,7 +2,10 @@
 import { computed } from 'vue';
 import { STEP_LABELS } from './plan';
 
-const props = defineProps<{ step: number }>();
+const props = withDefaults(
+    defineProps<{ step: number; optionalSteps?: number[] }>(),
+    { optionalSteps: () => [] },
+);
 
 const emit = defineEmits<{ go: [index: number]; reset: [] }>();
 
@@ -16,6 +19,10 @@ function stateOf(index: number): 'active' | 'done' | 'todo' {
     }
 
     return index < props.step ? 'done' : 'todo';
+}
+
+function isOptional(index: number): boolean {
+    return props.optionalSteps.includes(index + 1);
 }
 </script>
 
@@ -64,6 +71,7 @@ function stateOf(index: number): 'active' | 'done' | 'todo' {
                             stateOf(index) === 'done',
                         'border-r10-grey-200 bg-white text-r10-grey-500':
                             stateOf(index) === 'todo',
+                        'border-dashed': isOptional(index),
                     }"
                 >
                     {{ index + 1 }}
