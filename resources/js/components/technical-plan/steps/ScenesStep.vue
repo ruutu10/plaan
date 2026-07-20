@@ -12,6 +12,31 @@ const plan = usePlan();
 
 const dragId = ref<string | null>(null);
 
+const LIGHT_PRESETS = [
+    'kiire blackout',
+    'üldvalgus',
+    'spot valgus lava keskel',
+    'väga hämar sinine valgus',
+    'fadeout 1s',
+];
+
+const SOUND_PRESETS = [
+    'ruutu10 tunnus 3s',
+    'ruutu10 tunnus 15s',
+    'film noare (vabal valikul)',
+    'shakespeare (vabal valikul)'
+];
+
+
+function appendLight(scene: Scene, text: string): void {
+    scene.light = scene.light.trim() ? `${scene.light.trimEnd()}\n${text}` : text;
+}
+
+function appendSound(scene: Scene, text: string): void {
+    scene.sound = scene.sound.trim() ? `${scene.sound.trimEnd()}\n${text}` : text;
+}
+
+
 function addScene(): void {
     plan.scenes.forEach((s) => (s.collapsed = true));
     plan.scenes.push(blankScene());
@@ -165,14 +190,29 @@ function onDrop(targetId: string): void {
                     <R10Input
                         v-model="scene.name"
                         label="Nimi"
-                        placeholder="Nt lavale tulek"
+                        placeholder="Nt 'lavale tulek' või 'järgmise mängu tutvustus'"
                     />
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <R10Textarea
-                            v-model="scene.light"
-                            label="Valgus"
-                            placeholder="Valguse soovid, nt 'Spot lava keskele' või 'punane hämar valgus üle kogu lava'"
-                        />
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="flex flex-col gap-2">
+                            <R10Textarea
+                                v-model="scene.light"
+                                label="Valgus"
+                                placeholder="Valguse soovid, nt 'Spot lava keskele' või 'punane hämar valgus üle kogu lava'"
+                            />
+                            <div class="flex flex-wrap gap-1.5">
+                                <button
+                                    v-for="preset in LIGHT_PRESETS"
+                                    :key="preset"
+                                    type="button"
+                                    :class="[
+                                        'rounded-full border border-r10-grey-200 bg-r10-grey-100 px-3 py-1 font-r10-body text-[11px] font-bold tracking-[0.03em] text-r10-navy transition cursor-pointer hover:border-r10-orange hover:text-r10-orange',
+                                    ]"
+                                    @click="appendLight(scene, preset)"
+                                >
+                                    + {{ preset }}
+                                </button>
+                            </div>
+                        </div>
                         <label class="flex flex-col gap-1.5">
                             <span
                                 class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-ink uppercase"
@@ -190,6 +230,19 @@ function onDrop(targetId: string): void {
                                 placeholder="Heli kasutuse kirjeldus, nt „alusta 10. sekundist, pane mängima siis kui esinejad tarduvad“"
                                 class="min-h-[56px] w-full resize-y rounded-lg border-2 border-r10-grey-200 bg-white px-3.5 py-2.5 font-r10-body text-sm leading-normal text-r10-ink outline-none focus:border-r10-orange"
                             ></textarea>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button
+                                    v-for="preset in SOUND_PRESETS"
+                                    :key="preset"
+                                    type="button"
+                                    :class="[
+                                        'rounded-full border border-r10-grey-200 bg-r10-grey-100 px-3 py-1 font-r10-body text-[11px] font-bold tracking-[0.03em] text-r10-navy transition cursor-pointer hover:border-r10-orange hover:text-r10-orange',
+                                    ]"
+                                    @click="appendSound(scene, preset)"
+                                >
+                                    + {{ preset }}
+                                </button>
+                            </div>
                         </label>
                         <R10Textarea
                             v-model="scene.notes"

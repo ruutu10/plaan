@@ -27,7 +27,7 @@ function removeFile(index: number): void {
         <StepHeader
             eyebrow="Samm 6 / 7 · Lisainfo"
             title="Lisainfo & failid"
-            lead="Vabas vormis, pole kohustuslik. Kõik muu vajaminev info ning failid (helifailid, plaanid, viited)."
+            lead="Vabas vormis, pole kohustuslik. Kõik muu vajaminev info ning failid."
         />
 
         <R10Textarea

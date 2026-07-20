@@ -40,7 +40,7 @@ function isOptional(index: number): boolean {
             <div
                 class="mt-2 text-xs font-bold tracking-[0.1em] text-r10-grey-500 uppercase"
             >
-                {{ progress }}% valmis
+                {{ progress }}% täidetud
             </div>
         </div>
 

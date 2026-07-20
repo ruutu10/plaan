@@ -112,7 +112,7 @@ const suggestOptions = [
                 </div>
                 <p class="mt-0 mb-3 text-[13px] text-r10-grey-500">
                     Nt panna taustale mängima muusika või suunata spotlight
-                    ühele näitlejale. Kirjuta „ei“, kui tahad, et kõik läheks
+                    ühele näitlejale. Vali „ei“, kui tahad, et kõik läheks
                     täpselt sinu koostatud plaani järgi.
                 </p>
                 <RadioPills
