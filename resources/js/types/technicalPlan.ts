@@ -4,7 +4,6 @@ export interface Scene {
     light: string;
     soundUrl: string;
     sound: string;
-    transition: string;
     notes: string;
     collapsed?: boolean;
 }
@@ -50,7 +49,7 @@ export interface PlanSound {
 
 export interface PlanEquipment {
     items: EquipItem[];
-    smoke: 'no' | 'yes' | 'minimal';
+    smoke: 'no' | 'yes';
     suggestions: 'yes' | 'no';
     suggestNote: string;
 }

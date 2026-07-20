@@ -21,7 +21,6 @@ export function blankScene(): Scene {
         light: '',
         soundUrl: '',
         sound: '',
-        transition: '',
         notes: '',
         collapsed: false,
     };
@@ -52,7 +51,7 @@ export function blankPlan(): Plan {
         scenes: [blankScene()],
         equipment: {
             items: [],
-            smoke: 'minimal',
+            smoke: 'yes',
             suggestions: 'yes',
             suggestNote: '',
         },

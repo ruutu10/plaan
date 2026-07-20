@@ -62,7 +62,6 @@ class StoreTechnicalPlanRequest extends FormRequest
             'scenes.*.light' => ['nullable', 'string', 'max:2000'],
             'scenes.*.soundUrl' => ['nullable', 'string', 'max:2000'],
             'scenes.*.sound' => ['nullable', 'string', 'max:2000'],
-            'scenes.*.transition' => ['nullable', 'string', 'max:2000'],
             'scenes.*.notes' => ['nullable', 'string', 'max:2000'],
 
             'equipment' => ['required', 'array'],

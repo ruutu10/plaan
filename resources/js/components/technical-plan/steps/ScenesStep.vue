@@ -171,7 +171,7 @@ function onDrop(targetId: string): void {
                         <R10Textarea
                             v-model="scene.light"
                             label="Valgus"
-                            placeholder="Valguslahendus…"
+                            placeholder="Valguse soovid, nt 'Spot lava keskele' või 'punane hämar valgus üle kogu lava'"
                         />
                         <label class="flex flex-col gap-1.5">
                             <span
@@ -187,7 +187,7 @@ function onDrop(targetId: string): void {
                             />
                             <textarea
                                 v-model="scene.sound"
-                                placeholder="Kirjeldus, nt „alusta 10. sekundist“…"
+                                placeholder="Heli kasutuse kirjeldus, nt „alusta 10. sekundist, pane mängima siis kui esinejad tarduvad“"
                                 class="min-h-[56px] w-full resize-y rounded-lg border-2 border-r10-grey-200 bg-white px-3.5 py-2.5 font-r10-body text-sm leading-normal text-r10-ink outline-none focus:border-r10-orange"
                             ></textarea>
                         </label>

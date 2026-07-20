@@ -33,11 +33,11 @@ class TechnicalPlanFactory extends Factory
                 'musicList' => '',
             ],
             'scenes' => [
-                ['id' => 's1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'sound' => '', 'transition' => 'Blackout', 'notes' => ''],
+                ['id' => 's1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'sound' => '', 'notes' => ''],
             ],
             'equipment' => [
                 'items' => [],
-                'smoke' => 'minimal',
+                'smoke' => 'yes',
                 'suggestions' => 'yes',
                 'suggestNote' => '',
             ],

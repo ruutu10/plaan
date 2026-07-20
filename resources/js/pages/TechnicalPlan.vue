@@ -216,7 +216,6 @@ function buildPayload(submit: boolean): Record<string, unknown> {
             light: s.light,
             soundUrl: s.soundUrl,
             sound: s.sound,
-            transition: s.transition,
             notes: s.notes,
         })),
         equipment: {

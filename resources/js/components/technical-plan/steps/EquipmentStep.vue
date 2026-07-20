@@ -18,12 +18,11 @@ function removeEquip(index: number): void {
 const smokeOptions = [
     { value: 'no' as const, label: 'Ei' },
     { value: 'yes' as const, label: 'Jah' },
-    { value: 'minimal' as const, label: 'Jah, kuid minimaalselt' },
 ];
 
 const suggestOptions = [
-    { value: 'yes' as const, label: 'Jah' },
     { value: 'no' as const, label: 'Ei' },
+    { value: 'yes' as const, label: 'Jah' },
 ];
 </script>
 
@@ -95,9 +94,8 @@ const suggestOptions = [
                 >
                     Kas tehnik tohib kasutada suitsuefekte?
                 </div>
-                <p class="mt-0 mb-3 max-w-[60ch] text-[13px] text-r10-grey-500">
-                    Tüüpkasutus lavaletuleku ajal või nõrga haze (udu)
-                    tekitamiseks — peegeldab valgust paremini.
+                <p class="mt-0 mb-3 text-[13px] text-r10-grey-500">
+                    N.B! Improkeskuse ruumides suitsuefekte kasutada ei saa, see valik kehtib ainult etendustel, mis toimuvad väljaspool improkeskust.
                 </p>
                 <RadioPills
                     v-model="plan.equipment.smoke"
@@ -112,10 +110,10 @@ const suggestOptions = [
                     Kas tehnik tohib teha omapoolseid stseeni mõjutavaid
                     pakkumisi?
                 </div>
-                <p class="mt-0 mb-3 max-w-[64ch] text-[13px] text-r10-grey-500">
+                <p class="mt-0 mb-3 text-[13px] text-r10-grey-500">
                     Nt panna taustale mängima muusika või suunata spotlight
                     ühele näitlejale. Kirjuta „ei“, kui tahad, et kõik läheks
-                    täpselt plaani järgi.
+                    täpselt sinu koostatud plaani järgi.
                 </p>
                 <RadioPills
                     v-model="plan.equipment.suggestions"

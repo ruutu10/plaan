@@ -249,10 +249,10 @@ class TechnicalPlanController extends Controller
         $md .= '- Mikrofonid: '.(($sound['micsMode'] ?? 'no') === 'yes' ? 'Jah'.(filled($sound['micsDetail'] ?? null) ? ' — '.$sound['micsDetail'] : '') : 'Ei')."\n";
         $md .= '- Oma muusik: '.(($sound['musicianMode'] ?? 'no') === 'yes' ? 'Jah'.(filled($sound['musicianDetail'] ?? null) ? ' — '.$sound['musicianDetail'] : '') : 'Ei')."\n\n";
 
-        $md .= "## Stseenid\n\n| Nr | Nimi | Valgus | Heli | Üleminek | Märkmed |\n|---|---|---|---|---|---|\n";
+        $md .= "## Stseenid\n\n| Nr | Nimi | Valgus | Heli | Märkmed |\n|---|---|---|---|---|\n";
         foreach (array_values($data['scenes']) as $i => $scene) {
             $heli = collect([$scene['soundUrl'] ?? null, $scene['sound'] ?? null])->filter()->implode(' ');
-            $md .= '| '.($i + 1).' | '.$cell($scene['name'] ?? null).' | '.$cell($scene['light'] ?? null).' | '.($heli !== '' ? str_replace("\n", ' ', $heli) : '—').' | '.$cell($scene['transition'] ?? null).' | '.$cell($scene['notes'] ?? null)." |\n";
+            $md .= '| '.($i + 1).' | '.$cell($scene['name'] ?? null).' | '.$cell($scene['light'] ?? null).' | '.($heli !== '' ? str_replace("\n", ' ', $heli) : '—').' | '.$cell($scene['notes'] ?? null)." |\n";
         }
 
         $md .= "\n## Erivahendid\n";
@@ -261,7 +261,7 @@ class TechnicalPlanController extends Controller
                 $md .= '- '.$dash($item['name'] ?? null).': '.$cell($item['use'] ?? null)."\n";
             }
         }
-        $smoke = $equipment['smoke'] ?? 'minimal';
+        $smoke = $equipment['smoke'] ?? 'yes';
         $md .= '- Suitsuefektid: '.($smoke === 'no' ? 'Ei' : ($smoke === 'yes' ? 'Jah' : 'Jah, minimaalselt'))."\n";
         $md .= '- Tehniku pakkumised: '.(($equipment['suggestions'] ?? 'yes') === 'yes' ? 'Jah' : 'Ei').(filled($equipment['suggestNote'] ?? null) ? ' — '.$equipment['suggestNote'] : '')."\n";
 

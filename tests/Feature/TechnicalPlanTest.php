@@ -42,13 +42,13 @@ class TechnicalPlanTest extends TestCase
                 'musicList' => '',
             ],
             'scenes' => [
-                ['id' => 's1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'sound' => '', 'transition' => 'Blackout', 'notes' => ''],
+                ['id' => 's1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'sound' => '', 'notes' => ''],
             ],
             'equipment' => [
                 'items' => [
                     ['id' => 'e1', 'name' => 'Suitsumasin', 'use' => 'Lavaletuleku ajal'],
                 ],
-                'smoke' => 'minimal',
+                'smoke' => 'yes',
                 'suggestions' => 'yes',
                 'suggestNote' => '',
             ],

@@ -88,7 +88,6 @@ const reviewScenes = computed(() =>
         sound: dash(
             [s.soundUrl, s.sound].filter((v) => v && v.trim()).join('\n'),
         ),
-        transition: dash(s.transition),
         notes: dash(s.notes),
     })),
 );
@@ -247,7 +246,6 @@ const headCellClass =
                             <th :class="headCellClass">Nimi</th>
                             <th :class="headCellClass">Valgus</th>
                             <th :class="headCellClass">Heli</th>
-                            <th :class="headCellClass">Üleminek</th>
                             <th :class="headCellClass">Märkmed</th>
                         </tr>
                     </thead>
@@ -279,14 +277,6 @@ const headCellClass =
                                 ]"
                             >
                                 {{ row.sound }}
-                            </td>
-                            <td
-                                :class="[
-                                    cellClass,
-                                    'break-words whitespace-pre-line',
-                                ]"
-                            >
-                                {{ row.transition }}
                             </td>
                             <td
                                 :class="[

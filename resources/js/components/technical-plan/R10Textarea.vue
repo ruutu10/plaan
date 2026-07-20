@@ -8,7 +8,7 @@ withDefaults(
         modelValue: string;
     }>(),
     {
-        minHeight: '96px',
+        minHeight: '128px',
     },
 );
 
