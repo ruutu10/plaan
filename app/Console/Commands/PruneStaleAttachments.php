@@ -24,8 +24,11 @@ class PruneStaleAttachments extends Command
 
         $pruned = 0;
 
+        // Iterate by primary key (keyset pagination) so deleting rows as we go
+        // does not shift an offset and skip records — `each()`/`chunk()` would.
         PendingUpload::query()
             ->where('created_at', '<', $cutoff)
+            ->lazyById()
             ->each(function (PendingUpload $upload) use (&$pruned): void {
                 $upload->delete();
                 $pruned++;

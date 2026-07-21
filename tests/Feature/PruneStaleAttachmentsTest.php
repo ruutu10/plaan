@@ -59,6 +59,27 @@ class PruneStaleAttachmentsTest extends TestCase
         $this->assertSame(1, Media::query()->count());
     }
 
+    public function test_it_prunes_every_stale_upload_while_keeping_recent_ones(): void
+    {
+        Storage::fake('local');
+
+        $stale = collect(range(1, 5))->map(fn (): PendingUpload => $this->stageUpload(ageInHours: 96));
+        $recent = collect(range(1, 2))->map(fn (): PendingUpload => $this->stageUpload(ageInHours: 1));
+
+        $this->artisan('attachments:prune-stale')
+            ->assertSuccessful();
+
+        foreach ($stale as $upload) {
+            $this->assertDatabaseMissing('pending_uploads', ['id' => $upload->id]);
+        }
+
+        foreach ($recent as $upload) {
+            $this->assertDatabaseHas('pending_uploads', ['id' => $upload->id]);
+        }
+
+        $this->assertSame($recent->count(), Media::query()->count());
+    }
+
     public function test_the_age_threshold_is_configurable(): void
     {
         Storage::fake('local');

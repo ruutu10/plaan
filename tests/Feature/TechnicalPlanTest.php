@@ -219,6 +219,24 @@ class TechnicalPlanTest extends TestCase
         ]);
     }
 
+    public function test_a_plan_without_a_performance_can_be_fetched_by_token(): void
+    {
+        $plan = TechnicalPlan::factory()->create(['performance_id' => null]);
+
+        $response = $this->getJson(route('technical-plan.show', $plan));
+
+        $response->assertOk();
+        $response->assertJson([
+            'token' => $plan->token,
+            'meta' => [
+                'performanceId' => null,
+                'performer' => '',
+                'showName' => '',
+                'showDate' => '',
+            ],
+        ]);
+    }
+
     public function test_the_public_link_renders_the_wizard_prefilled(): void
     {
         $plan = TechnicalPlan::factory()->submitted()->create();

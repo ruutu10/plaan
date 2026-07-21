@@ -107,11 +107,11 @@ class TechnicalPlan extends Model implements HasMedia
             'submittedAt' => $this->submitted_at?->toIso8601String(),
             'meta' => [
                 'performanceId' => $this->performance_id,
-                'performer' => $this->performance->team->name ?? '',
-                'showName' => $this->performance->show_name ?? '',
-                'showDate' => $this->performance->show_date->format('Y-m-d'),
-                'duration' => $this->performance->duration,
-                'description' => $this->performance->description ?? '',
+                'performer' => $this->performance?->team->name ?? '',
+                'showName' => $this->performance?->show_name ?? '',  // @phpstan-ignore-line
+                'showDate' => $this->performance?->show_date->format('Y-m-d'),
+                'duration' => $this->performance?->duration,
+                'description' => $this->performance?->description ?? '', // @phpstan-ignore-line
                 'contactEmail' => $this->user->email ?? '',
             ],
             'sound' => $this->sound,
