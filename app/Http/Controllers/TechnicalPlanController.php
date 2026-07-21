@@ -139,9 +139,9 @@ class TechnicalPlanController extends Controller
             ->get()
             ->map(fn (Performance $performance) => [
                 'id' => $performance->id,
-                'performer' => $performance->team?->name ?? '',
+                'performer' => $performance->team->name ?? '',
                 'showName' => $performance->show_name,
-                'showDate' => $performance->show_date?->format('Y-m-d'),
+                'showDate' => $performance->show_date->format('Y-m-d'),
                 'duration' => $performance->duration,
                 'description' => $performance->description ?? '',
             ]);
@@ -186,10 +186,7 @@ class TechnicalPlanController extends Controller
             ], 422);
         }
 
-        $text = collect($response->json('content', []))
-            ->where('type', 'text')
-            ->pluck('text')
-            ->implode("\n");
+        $text = $response->json('content', []);
 
         return response()->json([
             'review' => trim($text) ?: 'Tagasisidet ei saadud. Proovi uuesti.',
