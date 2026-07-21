@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\SignupSource;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -17,6 +18,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('signup_source', SignupSource::values())
+                ->default(SignupSource::SignupForm->value);
             $table->rememberToken();
             $table->timestamps();
         });

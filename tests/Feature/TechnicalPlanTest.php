@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\SignupSource;
 use App\Enums\TechnicalPlanStatus;
 use App\Models\PendingUpload;
 use App\Models\Performance;
@@ -143,7 +144,10 @@ class TechnicalPlanTest extends TestCase
 
         $this->postJson(route('technical-plan.store'), $this->validPayload())->assertOk();
 
-        $this->assertDatabaseHas('users', ['email' => 'mart@naide.ee']);
+        $this->assertDatabaseHas('users', [
+            'email' => 'mart@naide.ee',
+            'signup_source' => SignupSource::AnonymousPlan->value,
+        ]);
         $this->assertSame(1, User::where('email', 'mart@naide.ee')->count());
     }
 

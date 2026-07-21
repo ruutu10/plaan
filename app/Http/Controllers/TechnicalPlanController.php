@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\SignupSource;
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Requests\StoreTechnicalPlanRequest;
 use App\Models\Performance;
@@ -206,6 +207,7 @@ class TechnicalPlanController extends Controller
             [
                 'name' => Str::of($email)->before('@')->trim()->value() ?: 'Esineja',
                 'password' => Hash::make(Str::random(40)),
+                'signup_source' => SignupSource::AnonymousPlan->value,
             ],
         );
     }
