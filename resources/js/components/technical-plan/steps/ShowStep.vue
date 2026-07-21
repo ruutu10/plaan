@@ -22,7 +22,7 @@ async function loadPerformances(): Promise<void> {
     loadError.value = '';
 
     try {
-        const response = await fetch('/tehnikaplaan/performances', {
+        const response = await fetch('/api/tehnikaplaan/performances', {
             headers: {
                 Accept: 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',

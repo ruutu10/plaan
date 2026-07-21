@@ -178,7 +178,7 @@ async function runLookup(email: string): Promise<void> {
 
     lookupBusy.value = true;
     lookupError.value = '';
-    const { ok, data } = await requestJson('/tehnikaplaan/lookup', 'POST', {
+    const { ok, data } = await requestJson('/api/tehnikaplaan/lookup', 'POST', {
         email: trimmed,
     });
     lookupBusy.value = false;
@@ -199,7 +199,7 @@ async function runLookup(email: string): Promise<void> {
 
 async function openSubmission(token: string): Promise<void> {
     const { ok, data } = await requestJson(
-        `/tehnikaplaan/plans/${encodeURIComponent(token)}`,
+        `/api/tehnikaplaan/plans/${encodeURIComponent(token)}`,
         'GET',
     );
 
@@ -241,7 +241,7 @@ function buildPayload(submit: boolean): Record<string, unknown> {
 
 async function savePlan(submit: boolean): Promise<boolean> {
     const { ok, data } = await requestJson(
-        '/tehnikaplaan',
+        '/api/tehnikaplaan',
         'POST',
         buildPayload(submit),
     );
@@ -352,7 +352,7 @@ async function aiReview(): Promise<void> {
     aiError.value = '';
     aiResult.value = '';
     const { ok, data } = await requestJson(
-        '/tehnikaplaan/ai-review',
+        '/api/tehnikaplaan/ai-review',
         'POST',
         buildPayload(false),
     );

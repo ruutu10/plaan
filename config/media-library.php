@@ -86,8 +86,6 @@ return [
         'mp3',
         'wav',
         'ogg',
-        'zip',
-        'rar',
         'qlc',
         'txt',
         'webp',

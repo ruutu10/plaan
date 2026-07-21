@@ -68,7 +68,7 @@ async function uploadFile(file: File): Promise<void> {
     body.append('file', file);
 
     try {
-        const response = await fetch('/attachments', {
+        const response = await fetch('/api/attachments', {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -115,7 +115,7 @@ async function removeFile(index: number): Promise<void> {
     // up when the plan is next saved.
     if (removed?.id) {
         try {
-            await fetch('/attachments/' + encodeURIComponent(removed.id), {
+            await fetch('/api/attachments/' + encodeURIComponent(removed.id), {
                 method: 'DELETE',
                 headers: {
                     Accept: 'application/json',

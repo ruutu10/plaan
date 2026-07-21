@@ -11,19 +11,29 @@ Route::inertia('/', 'Welcome')->name('home');
 
 // Generic, model-agnostic file staging shared by any feature that needs
 // attachments (see App\Concerns\HasAttachments).
-Route::post('attachments', [AttachmentController::class, 'store'])->name('attachments.store');
-Route::get('attachments/{uuid}', [AttachmentController::class, 'show'])->name('attachments.show');
-Route::delete('attachments/{uuid}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
+Route::prefix('api/attachments')->name('attachments.')->group(function () {
+    Route::post('/', [AttachmentController::class, 'store'])->name('store')->middleware('throttle:20,1');
+    Route::get('{uuid}', [AttachmentController::class, 'show'])->name('show');
+    Route::delete('{uuid}', [AttachmentController::class, 'destroy'])->name('destroy')->middleware('throttle:20,1');
+});
 
+// Inertia-rendered wizard pages.
 Route::prefix('tehnikaplaan')->name('technical-plan.')->group(function () {
     Route::get('/', [TechnicalPlanController::class, 'index'])->name('index');
-    Route::post('/', [TechnicalPlanController::class, 'store'])->name('store');
-    Route::post('lookup', [TechnicalPlanController::class, 'lookup'])->name('lookup');
-    Route::get('performances', [TechnicalPlanController::class, 'performances'])->name('performances');
-    Route::post('ai-review', [TechnicalPlanController::class, 'aiReview'])->name('ai');
-    Route::get('plans/{plan:token}', [TechnicalPlanController::class, 'show'])->name('show');
     Route::get('p/{plan:token}', [TechnicalPlanController::class, 'public'])->name('public');
 });
+
+// JSON API consumed by the technical-plan wizard frontend.
+Route::prefix('api/tehnikaplaan')
+    ->name('technical-plan.')
+    ->middleware('throttle:200,1')
+    ->group(function () {
+        Route::post('/', [TechnicalPlanController::class, 'store'])->name('store');
+        Route::post('lookup', [TechnicalPlanController::class, 'lookup'])->name('lookup');
+        Route::get('performances', [TechnicalPlanController::class, 'performances'])->name('performances');
+        Route::post('ai-review', [TechnicalPlanController::class, 'aiReview'])->name('ai');
+        Route::get('plans/{plan:token}', [TechnicalPlanController::class, 'show'])->name('show');
+    });
 
 Route::prefix('{current_team}')
     ->middleware(['auth', 'verified', EnsureTeamMembership::class])
