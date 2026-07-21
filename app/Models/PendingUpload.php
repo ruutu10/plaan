@@ -20,13 +20,15 @@ class PendingUpload extends Model implements HasMedia
 {
     use HasAttachments;
 
+    protected string $attachmentsCollection = 'pending-upload';
+
     /**
      * Delete the holder together with its staged media.
      */
     protected static function booted(): void
     {
         static::deleting(function (PendingUpload $upload): void {
-            $upload->clearMediaCollection(self::ATTACHMENTS_COLLECTION);
+            $upload->clearMediaCollection($upload->attachmentsCollection());
         });
     }
 }

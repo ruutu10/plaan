@@ -46,6 +46,8 @@ class TechnicalPlan extends Model implements HasMedia
     /** @use HasFactory<TechnicalPlanFactory> */
     use HasFactory;
 
+    protected string $attachmentsCollection = 'technical-plan';
+
     /**
      * The contact who owns this plan.
      *

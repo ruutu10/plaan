@@ -20,7 +20,7 @@ class PruneStaleAttachmentsTest extends TestCase
     {
         $upload = PendingUpload::create();
         $upload->addMedia(UploadedFile::fake()->create('plaan.pdf', 20, 'application/pdf'))
-            ->toMediaCollection(PendingUpload::ATTACHMENTS_COLLECTION);
+            ->toMediaCollection($upload->attachmentsCollection());
 
         if ($ageInHours !== null) {
             $upload->forceFill(['created_at' => now()->subHours($ageInHours)])->save();
@@ -34,7 +34,7 @@ class PruneStaleAttachmentsTest extends TestCase
         Storage::fake('local');
 
         $stale = $this->stageUpload(ageInHours: 96);
-        $stalePath = $stale->getFirstMedia(PendingUpload::ATTACHMENTS_COLLECTION)->getPathRelativeToRoot();
+        $stalePath = $stale->getFirstMedia($stale->attachmentsCollection())->getPathRelativeToRoot();
 
         Storage::disk('local')->assertExists($stalePath);
 

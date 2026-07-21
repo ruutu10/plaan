@@ -23,22 +23,34 @@ trait HasAttachments
     use InteractsWithMedia;
 
     /**
-     * The media collection that holds user-supplied attachments.
-     */
-    public const ATTACHMENTS_COLLECTION = 'attachments';
-
-    /**
      * The (private) disk attachments are stored on. Files are never served
      * directly from here — they are streamed through the AttachmentController.
      */
     public const ATTACHMENTS_DISK = 'local';
 
     /**
+     * The name of this model's attachments collection. Consuming models
+     * customise it by declaring a `$attachmentsCollection` property
+     * (e.g. `protected string $attachmentsCollection = 'technical-plan';`);
+     * models that don't fall back to the generic `attachments` collection.
+     *
+     * The property is intentionally not declared on the trait: PHP forbids a
+     * class from redeclaring a trait property with a different initial value,
+     * which is precisely what per-model collection names require.
+     */
+    public function attachmentsCollection(): string
+    {
+        return property_exists($this, 'attachmentsCollection')
+            ? $this->attachmentsCollection
+            : 'attachments';
+    }
+
+    /**
      * Register the attachments collection on the private disk.
      */
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection(self::ATTACHMENTS_COLLECTION)
+        $this->addMediaCollection($this->attachmentsCollection)
             ->useDisk(self::ATTACHMENTS_DISK);
     }
 
@@ -51,7 +63,7 @@ trait HasAttachments
      */
     public function attachmentsPayload(): array
     {
-        return $this->getMedia(self::ATTACHMENTS_COLLECTION)
+        return $this->getMedia($this->attachmentsCollection)
             ->map(fn (Media $media): array => [
                 'id' => (string) $media->uuid,
                 'name' => $media->file_name,
@@ -72,7 +84,7 @@ trait HasAttachments
      */
     public function syncAttachments(array $files): void
     {
-        $existing = $this->getMedia(self::ATTACHMENTS_COLLECTION)->keyBy('uuid');
+        $existing = $this->getMedia($this->attachmentsCollection)->keyBy('uuid');
         $keep = [];
 
         foreach ($files as $file) {
@@ -91,7 +103,7 @@ trait HasAttachments
             $staged = Media::query()->where('uuid', $handle)->first();
 
             if ($staged && $staged->model instanceof PendingUpload) {
-                $moved = $staged->move($this, self::ATTACHMENTS_COLLECTION);
+                $moved = $staged->move($this, $this->attachmentsCollection);
                 $staged->model->delete();
                 $keep[$moved->uuid] = true;
             }

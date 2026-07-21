@@ -407,7 +407,7 @@ class TechnicalPlanTest extends TestCase
         $response->assertJsonCount(1, 'files');
 
         $plan = TechnicalPlan::first();
-        $this->assertCount(1, $plan->getMedia(TechnicalPlan::ATTACHMENTS_COLLECTION));
+        $this->assertCount(1, $plan->getMedia($plan->attachmentsCollection()));
         $this->assertSame(0, PendingUpload::count());
         $this->assertSame(1, Media::query()->count());
     }
@@ -427,7 +427,7 @@ class TechnicalPlanTest extends TestCase
             'extra' => ['files' => []],
         ]))->assertOk();
 
-        $this->assertCount(0, TechnicalPlan::first()->getMedia(TechnicalPlan::ATTACHMENTS_COLLECTION));
+        $this->assertCount(0, TechnicalPlan::first()->getMedia((new TechnicalPlan)->attachmentsCollection()));
         $this->assertSame(0, Media::query()->count());
     }
 
@@ -439,7 +439,7 @@ class TechnicalPlanTest extends TestCase
             'extra' => ['files' => [['id' => 'does-not-exist', 'name' => 'ghost.pdf', 'size' => 10]]],
         ]))->assertOk();
 
-        $this->assertCount(0, TechnicalPlan::first()->getMedia(TechnicalPlan::ATTACHMENTS_COLLECTION));
+        $this->assertCount(0, TechnicalPlan::first()->getMedia((new TechnicalPlan)->attachmentsCollection()));
     }
 
     /**

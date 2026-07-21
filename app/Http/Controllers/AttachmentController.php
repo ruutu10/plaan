@@ -61,9 +61,11 @@ class AttachmentController extends Controller
             ], 422);
         }
 
-        $media = PendingUpload::create()
+        $pending = PendingUpload::create();
+
+        $media = $pending
             ->addMedia($file)
-            ->toMediaCollection(PendingUpload::ATTACHMENTS_COLLECTION);
+            ->toMediaCollection($pending->attachmentsCollection());
 
         return response()->json([
             'id' => (string) $media->uuid,
@@ -142,8 +144,14 @@ class AttachmentController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
+        // FilesystemAdapter::response() streams the file via readStream(), so
+        // this works uniformly across local and non-local (e.g. S3) disks
+        // without buffering the whole file into memory. We pass the stored
+        // Content-Type and Content-Length explicitly so a non-local disk is
+        // not hit with extra metadata round-trips to derive them.
         return $disk->response($path, $media->file_name, [
             'Content-Type' => $media->mime_type,
+            'Content-Length' => $media->size,
             'X-Content-Type-Options' => 'nosniff',
         ], $forceDownload
             ? ResponseHeaderBag::DISPOSITION_ATTACHMENT
