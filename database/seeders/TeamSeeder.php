@@ -14,11 +14,11 @@ class TeamSeeder extends Seeder
      * @var list<string>
      */
     private const TEAMS = [
-        'Märold',
+        'Improteater Ruutu10',
         'Jaanuar',
         'Improgrupp Kolm',
-        'Must Kass',
-        'Vaba Ansambel',
+        'Must Kast',
+        'Vaba Lava Ansambel',
         'Öökullid',
     ];
 

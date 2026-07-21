@@ -401,15 +401,15 @@ onMounted(() => {
 });
 
 watch(
-    [() => JSON.parse(JSON.stringify(plan)), phase, step],
-    ([planSnapshot, currentPhase, currentStep]) => {
+    [plan, phase, step],
+    () => {
         try {
             localStorage.setItem(
                 STORAGE_KEY,
                 JSON.stringify({
-                    phase: currentPhase,
-                    step: currentStep,
-                    plan: planSnapshot,
+                    phase: phase.value,
+                    step: step.value,
+                    plan,
                 }),
             );
         } catch {

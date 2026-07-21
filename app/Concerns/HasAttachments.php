@@ -31,18 +31,11 @@ trait HasAttachments
     /**
      * The name of this model's attachments collection. Consuming models
      * customise it by declaring a `$attachmentsCollection` property
-     * (e.g. `protected string $attachmentsCollection = 'technical-plan';`);
-     * models that don't fall back to the generic `attachments` collection.
-     *
-     * The property is intentionally not declared on the trait: PHP forbids a
-     * class from redeclaring a trait property with a different initial value,
-     * which is precisely what per-model collection names require.
+     * (e.g. `protected string $attachmentsCollection = 'technical-plan';`)
      */
     public function attachmentsCollection(): string
     {
-        return property_exists($this, 'attachmentsCollection')
-            ? $this->attachmentsCollection
-            : 'attachments';
+        return $this->attachmentsCollection;
     }
 
     /**
