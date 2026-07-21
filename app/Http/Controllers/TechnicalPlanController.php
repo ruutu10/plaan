@@ -64,7 +64,7 @@ class TechnicalPlanController extends Controller
             'sound' => $data['sound'],
             'scenes' => array_values($data['scenes']),
             'equipment' => array_merge($data['equipment'], ['items' => array_values($data['equipment']['items'] ?? [])]),
-            'extra' => array_merge($data['extra'], ['files' => array_values($data['extra']['files'] ?? [])]),
+            'extra' => ['notes' => $data['extra']['notes'] ?? ''],
         ];
 
         $plan = TechnicalPlan::query()
@@ -79,10 +79,13 @@ class TechnicalPlanController extends Controller
 
         $plan->fill($attributes)->save();
 
+        $plan->syncAttachments($data['extra']['files'] ?? []);
+
         return response()->json([
             'token' => $plan->token,
             'status' => $plan->status->value,
             'publicUrl' => route('technical-plan.public', $plan),
+            'files' => $plan->attachmentsPayload(),
         ]);
     }
 
@@ -220,6 +223,11 @@ class TechnicalPlanController extends Controller
         return [
             'deadlineHours' => (int) config('technical_plan.deadline_hours', 24),
             'techEmail' => (string) config('technical_plan.tech_email', 'ando@ruutu10.ee'),
+            'allowedExtensions' => array_values(array_map(
+                fn (string $extension): string => strtolower($extension),
+                (array) config('media-library.allowed_extensions', []),
+            )),
+            'maxFileSize' => (int) config('media-library.max_file_size'),
         ];
     }
 

@@ -35,7 +35,7 @@ const points = [
                 oleva tehnika ja paigutuse kohta.
                 Tutvu sellega, kui sul on spetsiifilised soovid, ja esined Ruutu10 Improkeskuses.
             </p>
-            <p class="mt-0 mb-[18px] text-r10-grey-500">
+            <p class="mt-0 mb-[18px] text-r10-grey-500 text-center">
                 <a href="https://ruutu10.ee/wp-content/uploads/2025/07/Improkeskuse-tehniline-raider-1.pdf"
                     target="_blank" class="text-r10-orange underline hover:no-underline">
                     Vaata tehnilist raiderit

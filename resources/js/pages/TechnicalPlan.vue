@@ -4,7 +4,7 @@ import { computed, onMounted, provide, reactive, ref, watch } from 'vue';
 import Diamond from '@/components/technical-plan/Diamond.vue';
 import GateScreen from '@/components/technical-plan/GateScreen.vue';
 import { hydratePlan } from '@/components/technical-plan/plan';
-import { planKey } from '@/components/technical-plan/planKey';
+import { configKey, planKey } from '@/components/technical-plan/planKey';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import Stepper from '@/components/technical-plan/Stepper.vue';
 import EquipmentStep from '@/components/technical-plan/steps/EquipmentStep.vue';
@@ -14,7 +14,12 @@ import ScenesStep from '@/components/technical-plan/steps/ScenesStep.vue';
 import ShowStep from '@/components/technical-plan/steps/ShowStep.vue';
 import SoundStep from '@/components/technical-plan/steps/SoundStep.vue';
 import StandardInfoStep from '@/components/technical-plan/steps/StandardInfoStep.vue';
-import type { LookupResult, Plan, WizardConfig } from '@/types/technicalPlan';
+import type {
+    LookupResult,
+    Plan,
+    PlanFile,
+    WizardConfig,
+} from '@/types/technicalPlan';
 
 const props = defineProps<{
     config: WizardConfig;
@@ -25,6 +30,7 @@ const STORAGE_KEY = 'r10-techplan-v1';
 
 const plan = reactive<Plan>(hydratePlan(props.initialPlan));
 provide(planKey, plan);
+provide(configKey, props.config);
 
 const phase = ref<'gate' | 'wizard'>(props.initialPlan ? 'wizard' : 'gate');
 const step = ref(0);
@@ -226,7 +232,9 @@ function buildPayload(submit: boolean): Record<string, unknown> {
         },
         extra: {
             notes: plan.extra.notes,
-            files: plan.extra.files.map((f) => ({ ...f })),
+            files: plan.extra.files
+                .filter((f) => f.status !== 'uploading' && f.status !== 'error')
+                .map((f) => ({ id: f.id, name: f.name, size: f.size })),
         },
     };
 }
@@ -247,6 +255,15 @@ async function savePlan(submit: boolean): Promise<boolean> {
 
     if (data.publicUrl) {
         publicLink.value = data.publicUrl as string;
+    }
+
+    // Adopt the canonical attachment list — the server may have re-keyed files
+    // as it moved them onto the plan, so keep the wizard in sync.
+    if (Array.isArray(data.files)) {
+        plan.extra.files = (data.files as PlanFile[]).map((f) => ({
+            ...f,
+            status: 'ready' as const,
+        }));
     }
 
     return true;

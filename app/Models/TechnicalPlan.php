@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasAttachments;
 use App\Enums\TechnicalPlanStatus;
 use Database\Factories\TechnicalPlanFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Spatie\MediaLibrary\HasMedia;
 
 /**
  * @property int $id
@@ -37,8 +39,10 @@ use Illuminate\Support\Str;
     'extra',
     'submitted_at',
 ])]
-class TechnicalPlan extends Model
+class TechnicalPlan extends Model implements HasMedia
 {
+    use HasAttachments;
+
     /** @use HasFactory<TechnicalPlanFactory> */
     use HasFactory;
 
@@ -111,7 +115,10 @@ class TechnicalPlan extends Model
             'sound' => $this->sound,
             'scenes' => $this->scenes,
             'equipment' => $this->equipment,
-            'extra' => $this->extra,
+            'extra' => [
+                'notes' => $this->extra['notes'] ?? '',
+                'files' => $this->attachmentsPayload(),
+            ],
         ];
     }
 

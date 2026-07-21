@@ -95,7 +95,12 @@ export function hydratePlan(payload: Partial<Plan> | null | undefined): Plan {
         extra: {
             ...base.extra,
             ...(payload.extra ?? {}),
-            files: payload.extra?.files ?? [],
+            files: (payload.extra?.files ?? [])
+                .filter((file) => Boolean(file.id))
+                .map((file) => ({
+                    ...file,
+                    status: 'ready' as const,
+                })),
         },
     };
 }

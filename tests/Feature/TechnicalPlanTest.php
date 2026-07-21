@@ -3,11 +3,16 @@
 namespace Tests\Feature;
 
 use App\Enums\TechnicalPlanStatus;
+use App\Models\PendingUpload;
 use App\Models\Performance;
 use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Tests\TestCase;
 
 class TechnicalPlanTest extends TestCase
@@ -54,9 +59,7 @@ class TechnicalPlanTest extends TestCase
             ],
             'extra' => [
                 'notes' => 'Palun jälgida ajakava.',
-                'files' => [
-                    ['name' => 'plaan.pdf', 'size' => 12345],
-                ],
+                'files' => [],
             ],
         ], $overrides);
     }
@@ -70,7 +73,9 @@ class TechnicalPlanTest extends TestCase
             ->component('TechnicalPlan')
             ->where('initialPlan', null)
             ->has('config.deadlineHours')
-            ->has('config.techEmail'));
+            ->has('config.techEmail')
+            ->has('config.allowedExtensions')
+            ->has('config.maxFileSize'));
     }
 
     public function test_a_plan_can_be_stored_and_returns_a_token(): void
@@ -266,5 +271,184 @@ class TechnicalPlanTest extends TestCase
 
         $response->assertUnprocessable();
         $response->assertJsonStructure(['message']);
+    }
+
+    public function test_an_attachment_can_be_uploaded_and_returns_a_handle(): void
+    {
+        Storage::fake('local');
+
+        $response = $this->postJson(route('attachments.store'), [
+            'file' => UploadedFile::fake()->create('plaan.pdf', 120, 'application/pdf'),
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonStructure(['id', 'name', 'size', 'url', 'downloadUrl']);
+
+        $media = Media::first();
+        $this->assertSame(1, PendingUpload::count());
+        $this->assertSame('local', $media->disk);
+        $this->assertSame(route('attachments.show', $media->uuid), $response->json('url'));
+        $this->assertSame(
+            route('attachments.show', ['uuid' => $media->uuid, 'download' => 1]),
+            $response->json('downloadUrl'),
+        );
+        Storage::disk('local')->assertExists($media->getPathRelativeToRoot());
+    }
+
+    public function test_an_attachment_can_be_streamed_by_uuid_and_is_logged(): void
+    {
+        Storage::fake('local');
+        Log::spy();
+
+        $handle = $this->uploadHandle();
+
+        $response = $this->get(route('attachments.show', $handle));
+
+        $response->assertOk();
+        $response->assertHeader('content-type', Media::first()->mime_type);
+        $response->assertHeader('x-content-type-options', 'nosniff');
+        $this->assertStringStartsWith('inline', (string) $response->headers->get('content-disposition'));
+
+        Log::shouldHaveReceived('info')
+            ->once()
+            ->withArgs(fn (string $message, array $context): bool => $message === 'Attachment downloaded'
+                && $context['uuid'] === $handle
+                && $context['disposition'] === 'inline');
+    }
+
+    public function test_an_attachment_can_be_forced_to_download_under_its_original_name(): void
+    {
+        Storage::fake('local');
+
+        $handle = $this->uploadHandle();
+        $media = Media::first();
+
+        $response = $this->get(route('attachments.show', ['uuid' => $handle, 'download' => 1]));
+
+        $response->assertOk();
+        $response->assertHeader('content-type', $media->mime_type);
+        $response->assertHeader('x-content-type-options', 'nosniff');
+
+        $disposition = (string) $response->headers->get('content-disposition');
+        $this->assertStringStartsWith('attachment', $disposition);
+        $this->assertStringContainsString($media->file_name, $disposition);
+    }
+
+    public function test_streaming_an_unknown_uuid_returns_404(): void
+    {
+        $this->get(route('attachments.show', 'does-not-exist'))->assertNotFound();
+    }
+
+    public function test_uploading_a_disallowed_extension_is_rejected(): void
+    {
+        Storage::fake('local');
+
+        $response = $this->postJson(route('attachments.store'), [
+            'file' => UploadedFile::fake()->create('script.exe', 10),
+        ]);
+
+        $response->assertUnprocessable();
+        $this->assertSame(0, PendingUpload::count());
+        $this->assertSame(0, Media::query()->count());
+    }
+
+    public function test_uploading_rejects_a_file_whose_content_mime_is_not_allowed(): void
+    {
+        Storage::fake('local');
+
+        // Allowed extension (.pdf) but the real content is a PHP script.
+        $response = $this->postJson(route('attachments.store'), [
+            'file' => UploadedFile::fake()->create('invoice.pdf', 10, 'text/x-php'),
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('file');
+        $this->assertSame(0, Media::query()->count());
+    }
+
+    public function test_uploading_allows_extensions_without_a_known_mime_type(): void
+    {
+        Storage::fake('local');
+
+        // .qlc (QLC+ lighting file) has no Symfony MIME mapping; the extension
+        // allowlist is its guard, so the content check must not reject it.
+        $response = $this->postJson(route('attachments.store'), [
+            'file' => UploadedFile::fake()->create('scene.qlc', 10),
+        ]);
+
+        $response->assertOk();
+        $this->assertSame(1, Media::query()->count());
+    }
+
+    public function test_a_staged_upload_can_be_discarded(): void
+    {
+        Storage::fake('local');
+
+        $handle = $this->uploadHandle();
+
+        $this->deleteJson(route('attachments.destroy', $handle))->assertOk();
+
+        $this->assertSame(0, PendingUpload::count());
+        $this->assertSame(0, Media::query()->count());
+    }
+
+    public function test_submitting_moves_staged_uploads_onto_the_plan(): void
+    {
+        Storage::fake('local');
+
+        $handle = $this->uploadHandle();
+
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'extra' => ['files' => [['id' => $handle, 'name' => 'plaan.pdf', 'size' => 120]]],
+        ]));
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'files');
+
+        $plan = TechnicalPlan::first();
+        $this->assertCount(1, $plan->getMedia(TechnicalPlan::ATTACHMENTS_COLLECTION));
+        $this->assertSame(0, PendingUpload::count());
+        $this->assertSame(1, Media::query()->count());
+    }
+
+    public function test_resubmitting_without_a_file_detaches_it(): void
+    {
+        Storage::fake('local');
+
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'extra' => ['files' => [['id' => $this->uploadHandle(), 'name' => 'plaan.pdf', 'size' => 120]]],
+        ]))->json('token');
+
+        $this->assertSame(1, Media::query()->count());
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $token,
+            'extra' => ['files' => []],
+        ]))->assertOk();
+
+        $this->assertCount(0, TechnicalPlan::first()->getMedia(TechnicalPlan::ATTACHMENTS_COLLECTION));
+        $this->assertSame(0, Media::query()->count());
+    }
+
+    public function test_unknown_file_handles_are_ignored_on_submit(): void
+    {
+        Storage::fake('local');
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'extra' => ['files' => [['id' => 'does-not-exist', 'name' => 'ghost.pdf', 'size' => 10]]],
+        ]))->assertOk();
+
+        $this->assertCount(0, TechnicalPlan::first()->getMedia(TechnicalPlan::ATTACHMENTS_COLLECTION));
+    }
+
+    /**
+     * Upload a fake file and return the handle the wizard would send on submit.
+     */
+    private function uploadHandle(string $name = 'plaan.pdf'): string
+    {
+        return $this->postJson(route('attachments.store'), [
+            'file' => UploadedFile::fake()->create($name, 120, 'application/pdf'),
+        ])->json('id');
     }
 }

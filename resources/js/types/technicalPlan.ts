@@ -15,8 +15,18 @@ export interface EquipItem {
 }
 
 export interface PlanFile {
+    /** Server-side handle (media UUID) once the upload has finished. */
+    id: string;
     name: string;
     size: number;
+    /** Streams the file inline (opens in a new browser tab). */
+    url?: string;
+    /** Forces a download under the original file name. */
+    downloadUrl?: string;
+    status?: 'uploading' | 'ready' | 'error';
+    /** Client-only key used to track a file while it is still uploading. */
+    tempKey?: string;
+    error?: string;
 }
 
 export interface PlanMeta {
@@ -73,6 +83,10 @@ export interface Plan {
 export interface WizardConfig {
     deadlineHours: number;
     techEmail: string;
+    /** Lower-case file extensions the server accepts, from config/media-library.php. */
+    allowedExtensions: string[];
+    /** Maximum accepted upload size in bytes. */
+    maxFileSize: number;
 }
 
 export interface LookupResult {

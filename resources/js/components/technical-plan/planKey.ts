@@ -1,6 +1,6 @@
 import { inject } from 'vue';
 import type { InjectionKey } from 'vue';
-import type { Plan } from '@/types/technicalPlan';
+import type { Plan, WizardConfig } from '@/types/technicalPlan';
 
 /**
  * Injection key for the shared, reactive wizard plan. The `TechnicalPlan` page
@@ -23,4 +23,28 @@ export function usePlan(): Plan {
     }
 
     return plan;
+}
+
+/**
+ * Injection key for the static wizard configuration (upload limits, tech
+ * contact, …) provided by the `TechnicalPlan` page.
+ */
+export const configKey: InjectionKey<WizardConfig> = Symbol(
+    'technical-plan-config',
+);
+
+/**
+ * Resolve the shared wizard configuration. Must be called inside the
+ * `TechnicalPlan` provider tree.
+ */
+export function useWizardConfig(): WizardConfig {
+    const config = inject(configKey);
+
+    if (!config) {
+        throw new Error(
+            'useWizardConfig() must be used within the TechnicalPlan provider.',
+        );
+    }
+
+    return config;
 }

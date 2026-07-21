@@ -4,6 +4,7 @@ import Diamond from '../Diamond.vue';
 import { usePlan } from '../planKey';
 import R10Button from '../R10Button.vue';
 import StepHeader from '../StepHeader.vue';
+import { formatFileSize } from '../plan';
 
 const plan = usePlan();
 
@@ -340,7 +341,29 @@ const headCellClass =
                 v-if="plan.extra.files.length"
                 class="text-[13px] text-r10-grey-500"
             >
-                Manused: {{ plan.extra.files.map((f) => f.name).join(', ') }}
+                Manused:
+                <span
+                    v-for="(file, index) in plan.extra.files"
+                    :key="file.id || index"
+                    class="mt-1 flex items-center gap-3"
+                >
+                    <span class="text-r10-ink">{{ file.name }} ({{ formatFileSize(file.size) }})</span>
+                    <template v-if="file.url">
+                        <a
+                            :href="file.url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-r10-navy underline decoration-r10-navy/30 transition hover:text-r10-orange hover:decoration-r10-orange"
+                            >Ava</a
+                        >
+                        <a
+                            v-if="file.downloadUrl"
+                            :href="file.downloadUrl"
+                            class="text-r10-navy underline decoration-r10-navy/30 transition hover:text-r10-orange hover:decoration-r10-orange"
+                            >Laadi alla</a
+                        >
+                    </template>
+                </span>
             </div>
         </div>
 

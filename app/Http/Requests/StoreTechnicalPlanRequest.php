@@ -76,6 +76,7 @@ class StoreTechnicalPlanRequest extends FormRequest
             'extra' => ['required', 'array'],
             'extra.notes' => ['nullable', 'string', 'max:10000'],
             'extra.files' => ['array'],
+            'extra.files.*.id' => ['required', 'string', 'max:64'],
             'extra.files.*.name' => ['nullable', 'string', 'max:255'],
             'extra.files.*.size' => ['nullable', 'integer', 'min:0'],
         ];
