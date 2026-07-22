@@ -1,4 +1,5 @@
 <?php
+use Anthropic\Messages\Model;
 
 return [
 
@@ -37,7 +38,8 @@ return [
 
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
-        'model' => env('ANTHROPIC_MODEL', 'claude-opus-4-8'),
+        'model' => Model::CLAUDE_SONNET_5,
+        'max_tokens' => 10000,
     ],
 
 ];
