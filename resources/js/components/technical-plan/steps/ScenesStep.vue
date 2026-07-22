@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import type { Scene } from '@/types/technicalPlan';
 import Diamond from '../Diamond.vue';
-import { blankScene, uid } from '../plan';
+import { blankScene, nextSceneId } from '../plan';
 import { usePlan } from '../planKey';
 import R10Input from '../R10Input.vue';
 import R10Textarea from '../R10Textarea.vue';
@@ -39,7 +39,7 @@ function appendSound(scene: Scene, text: string): void {
 
 function addScene(): void {
     plan.scenes.forEach((s) => (s.collapsed = true));
-    plan.scenes.push(blankScene());
+    plan.scenes.push(blankScene(nextSceneId(plan.scenes)));
 }
 
 function toggle(scene: Scene): void {
@@ -49,7 +49,7 @@ function toggle(scene: Scene): void {
 function duplicate(index: number): void {
     const copy: Scene = {
         ...plan.scenes[index],
-        id: uid(),
+        id: nextSceneId(plan.scenes),
         collapsed: false,
     };
     plan.scenes.forEach((s) => (s.collapsed = true));

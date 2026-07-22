@@ -394,7 +394,7 @@ const headCellClass =
                 :disabled="aiLoading"
                 @click="$emit('ai-review')"
             >
-                {{ aiLoading ? 'Ülevaatus…' : 'Küsi AI ülevaatust' }}
+                Küsi AI ülevaatust
             </R10Button>
         </div>
 
@@ -442,7 +442,7 @@ const headCellClass =
                 </button>
             </div>
             <div
-                class="bg-white px-[22px] py-5 font-r10-body text-sm leading-relaxed whitespace-pre-wrap text-r10-ink"
+                class="markdown bg-white px-[22px] py-5 font-r10-body text-sm leading-relaxed text-r10-ink"
                 v-html="aiResult"></div>
             <div class="bg-white px-[22px] pb-4 text-xs text-r10-grey-500">
                See on AI-genereeritud soovitus ja ei pruugi olla täpne. AI soovitused ei ole kohustus plaani muuta.

@@ -37,7 +37,7 @@ class TechnicalPlanReviewer
             temperature: 1,
             thinking: ['type' => 'disabled'],
         );
-
+        // @phpstan-ignore-next-line property.notFound
         $aiResponse = trim((string) $message->content[0]->text);
 
         Log::debug('AI review for plan', [

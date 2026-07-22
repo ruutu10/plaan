@@ -14,9 +14,25 @@ export function uid(): string {
     return 's' + Math.random().toString(36).slice(2, 9);
 }
 
-export function blankScene(): Scene {
+const SCENE_ID_PREFIX = 'stseen-';
+
+/**
+ * Build the next sequential scene id (`stseen-1`, `stseen-2`, …) based on the
+ * highest number already used, so ids stay unique after reorders and deletes.
+ */
+export function nextSceneId(scenes: Scene[]): string {
+    const highest = scenes.reduce((max, scene) => {
+        const match = /^stseen-(\d+)$/.exec(scene.id);
+
+        return match ? Math.max(max, Number(match[1])) : max;
+    }, 0);
+
+    return `${SCENE_ID_PREFIX}${highest + 1}`;
+}
+
+export function blankScene(id: string = `${SCENE_ID_PREFIX}1`): Scene {
     return {
-        id: uid(),
+        id,
         name: '',
         light: '',
         soundUrl: '',
@@ -79,9 +95,10 @@ export function hydratePlan(payload: Partial<Plan> | null | undefined): Plan {
         sound: { ...base.sound, ...(payload.sound ?? {}) },
         scenes:
             payload.scenes && payload.scenes.length
-                ? payload.scenes.map((s) => ({
+                ? payload.scenes.map((s, index) => ({
                       ...blankScene(),
                       ...s,
+                      id: `${SCENE_ID_PREFIX}${index + 1}`,
                       collapsed: false,
                   }))
                 : [blankScene()],

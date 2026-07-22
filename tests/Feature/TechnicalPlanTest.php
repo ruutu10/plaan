@@ -48,7 +48,7 @@ class TechnicalPlanTest extends TestCase
                 'musicianDetail' => '',
             ],
             'scenes' => [
-                ['id' => 's1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'sound' => '', 'notes' => ''],
+                ['id' => 'stseen-1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'sound' => '', 'notes' => ''],
             ],
             'equipment' => [
                 'items' => [

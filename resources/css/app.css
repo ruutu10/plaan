@@ -240,3 +240,152 @@
         padding: 0 !important;
     }
 }
+
+
+/* ============================================================
+   Markdown output styling.
+   The markdown renderer emits plain HTML tags without any Tailwind
+   utility classes, so anything inside a `.markdown` container (e.g. the
+   AI review panel) would render unstyled. We style the standard
+   elements here with `@apply`, using Ruutu10 (r10) theming so rendered
+   markdown matches the wizard's look.
+   ============================================================ */
+.markdown {
+    @apply font-r10-body text-r10-ink;
+}
+
+/* Trim the outer margins so the container padding controls the edges. */
+.markdown > :first-child {
+    @apply mt-0;
+}
+
+.markdown > :last-child {
+    @apply mb-0;
+}
+
+/* Headings */
+.markdown h1 {
+    @apply mt-6 mb-3 font-r10-display text-2xl font-bold tracking-[0.01em] text-r10-navy;
+}
+
+.markdown h2 {
+    @apply mt-5 mb-2.5 font-r10-display text-xl font-bold tracking-[0.01em] text-r10-navy;
+}
+
+.markdown h3 {
+    @apply mt-4 mb-2 font-r10-display text-lg font-semibold text-r10-navy;
+}
+
+.markdown h4 {
+    @apply mt-4 mb-1.5 text-base font-bold text-r10-navy-700;
+}
+
+.markdown h5 {
+    @apply mt-3 mb-1 text-sm font-bold tracking-[0.08em] text-r10-navy-700 uppercase;
+}
+
+.markdown h6 {
+    @apply mt-3 mb-1 text-xs font-bold tracking-[0.1em] text-r10-grey-500 uppercase;
+}
+
+/* Paragraphs & inline text */
+.markdown p {
+    @apply my-2 leading-relaxed;
+}
+
+.markdown strong {
+    @apply font-bold text-r10-navy;
+}
+
+.markdown em {
+    @apply italic;
+}
+
+.markdown del {
+    @apply text-r10-grey-500 line-through;
+}
+
+.markdown a {
+    @apply font-medium text-r10-orange underline underline-offset-2 hover:text-r10-orange-700;
+}
+
+/* Lists */
+.markdown ul {
+    @apply my-2 list-disc pl-5;
+}
+
+.markdown ol {
+    @apply my-2 list-decimal pl-5;
+}
+
+.markdown li {
+    @apply mb-1 leading-relaxed;
+}
+
+.markdown li:last-child {
+    @apply mb-0;
+}
+
+.markdown li::marker {
+    @apply text-r10-orange;
+}
+
+.markdown ul ul,
+.markdown ul ol,
+.markdown ol ul,
+.markdown ol ol {
+    @apply my-1;
+}
+
+/* Blockquote */
+.markdown blockquote {
+    @apply my-3 border-l-4 border-r10-orange bg-r10-grey-100 py-2 pr-3 pl-4 text-r10-grey-700 italic;
+}
+
+.markdown blockquote p {
+    @apply my-1;
+}
+
+/* Code */
+.markdown code {
+    @apply rounded bg-r10-grey-100 px-1.5 py-0.5 font-mono text-[0.85em] text-r10-navy-700;
+}
+
+.markdown pre {
+    @apply my-3 overflow-x-auto rounded-lg bg-r10-navy-900 p-4 text-sm text-r10-grey-100;
+}
+
+.markdown pre code {
+    @apply bg-transparent p-0 text-inherit;
+}
+
+/* Horizontal rule */
+.markdown hr {
+    @apply my-5 border-0 border-t border-r10-grey-200;
+}
+
+/* Tables */
+.markdown table {
+    @apply my-3 w-full border-collapse text-left text-sm;
+}
+
+.markdown thead {
+    @apply border-b-2 border-r10-navy;
+}
+
+.markdown th {
+    @apply px-3 py-2 font-bold text-r10-navy;
+}
+
+.markdown td {
+    @apply border-b border-r10-grey-200 px-3 py-2 align-top;
+}
+
+.markdown tbody tr:hover {
+    @apply bg-r10-grey-100;
+}
+
+/* Images */
+.markdown img {
+    @apply my-3 max-w-full rounded-lg;
+}

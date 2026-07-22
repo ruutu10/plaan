@@ -14,7 +14,9 @@ Neid tagasisides eraldi kommenteerima ei pea.
 - **status** — plaani olek (`draft`/`submitted`);
 - **submittedAt** — esitamise aeg (ISO 8601, `null` kui veel esitamata).
 
-## Plaan
+### Plaan
+
+Need väljad on kasutaja saadetud JSON objektis. Kui viitad mõnele väljale, siis kasuta selle inimloetavat nime, mitte JSON võtit.
 
 - **meta** — etenduse üldinfo: `performanceId` (registreeritud etenduse sisemine id või `null`), `performer` (esineja/trupp), `showName` (etenduse nimi), `showDate` (kuupäev), `duration` (kestus minutites), `description` (vabakirjeldus), `contactEmail` (kontakt).
 - **sound** — heli üldvajadused:
@@ -68,6 +70,15 @@ Mõned valgus- ja helilahendused on väljakujunenud standardiks, mis ei vaja pla
 - Spot keskel - üheselt arusaadav
 - blackout - kiire 0s fade, kogu lava pimedaks
 
+### Piirangud
+
+Järmised tehnilised lahendused ei ole improkeskuse tehnikapargiga teostatavad:
+
+- lavasuits või haze - töötav ATS (tuletõrjesüsteem) ei võimalda improkeskuses suitsu kasutamist. Väljaspool meie ruume on see võimalik.
+- peamikrofonid - ei ole saadaval
+- rohkem kui üks juhtmeta käsimikrofon - ainult üks on võimalik, kui küsitakse rohkem mikrofone, siis need peavad olema juhtmega
+- basskõlar - puudub
+- rohkem kui üks liikuvpeaga spot - keskuses on ainult üks liikuvpea
 
 ## Tagasiside vorm ja toon
 
