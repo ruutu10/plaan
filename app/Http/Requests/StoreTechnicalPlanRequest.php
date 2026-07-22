@@ -53,8 +53,6 @@ class StoreTechnicalPlanRequest extends FormRequest
             'sound.micsDetail' => ['nullable', 'string', 'max:2000'],
             'sound.musicianMode' => ['nullable', 'string', 'max:20'],
             'sound.musicianDetail' => ['nullable', 'string', 'max:2000'],
-            'sound.musicMode' => ['nullable', 'string', 'max:20'],
-            'sound.musicList' => ['nullable', 'string', 'max:2000'],
 
             'scenes' => ['required', 'array', 'min:1'],
             'scenes.*.id' => ['nullable', 'string', 'max:40'],

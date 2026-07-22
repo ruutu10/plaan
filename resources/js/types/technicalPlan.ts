@@ -53,8 +53,6 @@ export interface PlanSound {
     micsDetail: string;
     musicianMode: 'no' | 'yes';
     musicianDetail: string;
-    musicMode: 'none' | 'use';
-    musicList: string;
 }
 
 export interface PlanEquipment {

@@ -394,7 +394,7 @@ const headCellClass =
                 :disabled="aiLoading"
                 @click="$emit('ai-review')"
             >
-                {{ aiLoading ? 'Vaatab üle…' : 'Küsi AI ülevaatust' }}
+                {{ aiLoading ? 'Ülevaatus…' : 'Küsi AI ülevaatust' }}
             </R10Button>
         </div>
 
@@ -406,7 +406,7 @@ const headCellClass =
                 class="h-2.5 w-2.5 shrink-0 rotate-45 animate-[r10spin_1s_linear_infinite] rounded-[1px] bg-r10-orange"
             />
             <span class="text-sm text-r10-grey-700"
-                >Tehnik-AI vaatab plaani üle…</span
+                >AI vaatab praegu plaani sisu üle, oota…</span
             >
         </div>
 
@@ -431,23 +431,21 @@ const headCellClass =
                 <span
                     class="font-r10-display text-sm font-semibold tracking-[0.04em] text-white uppercase"
                 >
-                    Tehnik-AI soovitused
+                    AI soovitused
                 </span>
                 <button
                     type="button"
                     class="ml-auto cursor-pointer rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 font-r10-body text-[11px] font-bold tracking-[0.06em] text-white uppercase"
                     @click="$emit('ai-review')"
                 >
-                    Vaata uuesti
+                    Kontrolli uuesti
                 </button>
             </div>
             <div
                 class="bg-white px-[22px] py-5 font-r10-body text-sm leading-relaxed whitespace-pre-wrap text-r10-ink"
-            >
-                {{ aiResult }}
-            </div>
+                v-html="aiResult"></div>
             <div class="bg-white px-[22px] pb-4 text-xs text-r10-grey-500">
-                AI-genereeritud soovitus — kontrolli üle enne kui plaani muudad.
+               See on AI-genereeritud soovitus ja ei pruugi olla täpne. AI soovitused ei ole kohustus plaani muuta.
             </div>
         </div>
 

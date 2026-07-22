@@ -95,36 +95,6 @@ class TechnicalPlan extends Model implements HasMedia
     }
 
     /**
-     * Build the nested payload consumed by the frontend wizard.
-     *
-     * @return array<string, mixed>
-     */
-    public function toPayload(): array
-    {
-        return [
-            'token' => $this->token,
-            'status' => $this->status->value,
-            'submittedAt' => $this->submitted_at?->toIso8601String(),
-            'meta' => [
-                'performanceId' => $this->performance_id,
-                'performer' => $this->performance?->team->name ?? '',
-                'showName' => $this->performance?->show_name ?? '',  // @phpstan-ignore-line
-                'showDate' => $this->performance?->show_date->format('Y-m-d'),
-                'duration' => $this->performance?->duration,
-                'description' => $this->performance?->description ?? '', // @phpstan-ignore-line
-                'contactEmail' => $this->user->email ?? '',
-            ],
-            'sound' => $this->sound,
-            'scenes' => $this->scenes,
-            'equipment' => $this->equipment,
-            'extra' => [
-                'notes' => $this->extra['notes'] ?? '',
-                'files' => $this->attachmentsPayload(),
-            ],
-        ];
-    }
-
-    /**
      * Get the route key for the model.
      */
     public function getRouteKeyName(): string

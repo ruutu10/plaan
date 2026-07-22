@@ -1,4 +1,5 @@
 <?php
+
 use Anthropic\Messages\Model;
 
 return [

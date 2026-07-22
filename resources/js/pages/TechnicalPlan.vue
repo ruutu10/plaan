@@ -363,7 +363,7 @@ async function aiReview(): Promise<void> {
     } else {
         aiError.value =
             (data.message as string) ??
-            'AI ülevaatus ebaõnnestus. Proovi hetke pärast uuesti.';
+            'AI ülevaatus ebaõnnestus. Viga logiti.';
     }
 }
 

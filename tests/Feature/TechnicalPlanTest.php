@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Enums\SignupSource;
 use App\Enums\TechnicalPlanStatus;
+use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Models\PendingUpload;
 use App\Models\Performance;
 use App\Models\TechnicalPlan;
 use App\Models\User;
+use App\Services\TechnicalPlanReviewer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
@@ -44,8 +46,6 @@ class TechnicalPlanTest extends TestCase
                 'micsDetail' => '2 käsimikrofoni',
                 'musicianMode' => 'no',
                 'musicianDetail' => '',
-                'musicMode' => 'none',
-                'musicList' => '',
             ],
             'scenes' => [
                 ['id' => 's1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'sound' => '', 'notes' => ''],
@@ -289,10 +289,37 @@ class TechnicalPlanTest extends TestCase
     {
         config()->set('services.anthropic.key', null);
 
+        // The reviewer must never be reached when the AI is not configured.
+        $this->mock(TechnicalPlanReviewer::class)->shouldNotReceive('review');
+
         $response = $this->postJson(route('technical-plan.ai'), $this->validPayload());
 
         $response->assertUnprocessable();
         $response->assertJsonStructure(['message']);
+    }
+
+    public function test_the_frontend_resource_paints_a_full_picture_of_a_saved_plan(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        $data = (new TechnicalPlanResource($plan))->toArray(request());
+
+        // Identity and status come straight off the model.
+        $this->assertSame($plan->token, $data['token']);
+        $this->assertSame($plan->status->value, $data['status']);
+
+        // Meta is drawn from the performance, its team, and the contact user.
+        $this->assertSame($plan->performance->team->name, $data['meta']['performer']);
+        $this->assertSame($plan->performance->show_name, $data['meta']['showName']);
+        $this->assertSame($plan->user->email, $data['meta']['contactEmail']);
+
+        // The full plan content is present…
+        $this->assertArrayHasKey('sound', $data);
+        $this->assertArrayHasKey('scenes', $data);
+        $this->assertArrayHasKey('equipment', $data);
+        $this->assertArrayHasKey('extra', $data);
+        // …including the uploaded file handles the wizard rehydrates from.
+        $this->assertArrayHasKey('files', $data['extra']);
     }
 
     public function test_an_attachment_can_be_uploaded_and_returns_a_handle(): void

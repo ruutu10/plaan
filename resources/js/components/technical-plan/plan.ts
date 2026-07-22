@@ -45,8 +45,6 @@ export function blankPlan(): Plan {
             micsDetail: '',
             musicianMode: 'no',
             musicianDetail: '',
-            musicMode: 'none',
-            musicList: '',
         },
         scenes: [blankScene()],
         equipment: {

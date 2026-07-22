@@ -5,13 +5,15 @@ namespace App\Http\Controllers;
 use App\Enums\SignupSource;
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Requests\StoreTechnicalPlanRequest;
+use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Models\Performance;
+use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
+use App\Services\TechnicalPlanReviewer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -37,7 +39,7 @@ class TechnicalPlanController extends Controller
     {
         return Inertia::render('TechnicalPlan', [
             'config' => $this->wizardConfig(),
-            'initialPlan' => $plan->toPayload(),
+            'initialPlan' => TechnicalPlanResource::make($plan)->resolve(),
         ]);
     }
 
@@ -46,7 +48,7 @@ class TechnicalPlanController extends Controller
      */
     public function show(TechnicalPlan $plan): JsonResponse
     {
-        return response()->json($plan->toPayload());
+        return response()->json(TechnicalPlanResource::make($plan)->resolve());
     }
 
     /**
@@ -155,42 +157,25 @@ class TechnicalPlanController extends Controller
      */
     public function aiReview(StoreTechnicalPlanRequest $request): JsonResponse
     {
-        $apiKey = config('services.anthropic.key');
-
-        if (empty($apiKey)) {
+        if (blank(config('services.anthropic.key'))) {
             return response()->json([
-                'message' => 'AI ülevaatus pole seadistatud. Lisa ANTHROPIC_API_KEY.',
+                'message' => 'AI ülevaatus pole seadistatud.',
             ], 422);
         }
 
-        $markdown = $this->buildPlanMarkdown($request->validated());
+        try {
+            $review = app(TechnicalPlanReviewer::class)
+                ->review($this->planFromRequest($request->validated()));
+        } catch (\Throwable $exception) {
+            report($exception);
 
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->timeout(60)->post('https://api.anthropic.com/v1/messages', [
-            'model' => config('services.anthropic.model', 'claude-opus-4-8'),
-            'max_tokens' => 1400,
-            'system' => 'Oled Ruutu10 improteatri kogenud valgus- ja helitehnik. Vaatad üle esineja etenduse tehnikaplaani ja annad lühikese, praktilise tagasiside eesti keeles. Too välja puuduv või ebaselge info (nt puuduvad helifailide lingid, ebamäärased üleminekud, täitmata kohustuslikud väljad, vastuolud) ning anna konkreetsed soovitused parandusteks. Vasta lühidalt: alusta ühe lausega üldmuljest, seejärel täpploend soovitustega. Ära leiuta infot, mida plaanis pole.',
-            'messages' => [
-                [
-                    'role' => 'user',
-                    'content' => "Palun vaata see tehnikaplaan üle ja anna soovitused, mida esineja võiks parandada või täpsustada:\n\n".$markdown,
-                ],
-            ],
-        ]);
-
-        if ($response->failed()) {
             return response()->json([
                 'message' => 'AI ülevaatus ebaõnnestus. Proovi hetke pärast uuesti.',
             ], 422);
         }
 
-        $text = $response->json('content', []);
-
         return response()->json([
-            'review' => trim($text) ?: 'Tagasisidet ei saadud. Proovi uuesti.',
+            'review' => $review ?: 'Tagasisidet ei saadud. Proovi uuesti.',
         ]);
     }
 
@@ -231,49 +216,35 @@ class TechnicalPlanController extends Controller
     }
 
     /**
-     * Build a compact Markdown representation of the plan for the AI reviewer.
+     * Hydrate an unsaved plan (with its performance, team and contact user) from
+     * validated wizard input, so it can be handed to the AI reviewer as a full
+     * TechnicalPlan model without touching the database.
      *
      * @param  array<string, mixed>  $data
      */
-    private function buildPlanMarkdown(array $data): string
+    private function planFromRequest(array $data): TechnicalPlan
     {
         $meta = $data['meta'];
-        $sound = $data['sound'];
-        $equipment = $data['equipment'];
-        $extra = $data['extra'];
 
-        $dash = fn ($value) => filled($value) ? trim((string) $value) : '—';
-        $cell = fn ($value) => str_replace("\n", ' ', $dash($value));
+        $plan = new TechnicalPlan([
+            'status' => TechnicalPlanStatus::Draft,
+            'sound' => $data['sound'],
+            'scenes' => array_values($data['scenes']),
+            'equipment' => array_merge($data['equipment'], ['items' => array_values($data['equipment']['items'] ?? [])]),
+            'extra' => ['notes' => $data['extra']['notes'] ?? ''],
+        ]);
 
-        $md = '# Tehnikaplaan: '.$dash($meta['showName'] ?? null)."\n\n";
-        $md .= '- Esineja: '.$dash($meta['performer'] ?? null)."\n";
-        $md .= '- Kuupäev: '.$dash($meta['showDate'] ?? null)."\n";
-        $md .= '- Kestus: '.(filled($meta['duration'] ?? null) ? $meta['duration'].' min' : '—')."\n";
-        $md .= '- Kontakt: '.$dash($meta['contactEmail'] ?? null)."\n";
-        $md .= '- Lühikirjeldus: '.$cell($meta['description'] ?? null)."\n\n";
+        $performance = new Performance([
+            'show_name' => $meta['showName'] ?? null,
+            'show_date' => $meta['showDate'] ?? null,
+            'duration' => $meta['duration'] ?? null,
+            'description' => $meta['description'] ?? null,
+        ]);
+        $performance->setRelation('team', new Team(['name' => $meta['performer'] ?? null]));
 
-        $md .= "## Heliplaan\n";
-        $md .= '- Mikrofonid: '.(($sound['micsMode'] ?? 'no') === 'yes' ? 'Jah'.(filled($sound['micsDetail'] ?? null) ? ' — '.$sound['micsDetail'] : '') : 'Ei')."\n";
-        $md .= '- Oma muusik: '.(($sound['musicianMode'] ?? 'no') === 'yes' ? 'Jah'.(filled($sound['musicianDetail'] ?? null) ? ' — '.$sound['musicianDetail'] : '') : 'Ei')."\n\n";
+        $plan->setRelation('performance', $performance);
+        $plan->setRelation('user', new User(['email' => $meta['contactEmail'] ?? null]));
 
-        $md .= "## Stseenid\n\n| Nr | Nimi | Valgus | Heli | Märkmed |\n|---|---|---|---|---|\n";
-        foreach (array_values($data['scenes']) as $i => $scene) {
-            $heli = collect([$scene['soundUrl'] ?? null, $scene['sound'] ?? null])->filter()->implode(' ');
-            $md .= '| '.($i + 1).' | '.$cell($scene['name'] ?? null).' | '.$cell($scene['light'] ?? null).' | '.($heli !== '' ? str_replace("\n", ' ', $heli) : '—').' | '.$cell($scene['notes'] ?? null)." |\n";
-        }
-
-        $md .= "\n## Erivahendid\n";
-        foreach (($equipment['items'] ?? []) as $item) {
-            if (filled($item['name'] ?? null) || filled($item['use'] ?? null)) {
-                $md .= '- '.$dash($item['name'] ?? null).': '.$cell($item['use'] ?? null)."\n";
-            }
-        }
-        $smoke = $equipment['smoke'] ?? 'yes';
-        $md .= '- Suitsuefektid: '.($smoke === 'no' ? 'Ei' : ($smoke === 'yes' ? 'Jah' : 'Jah, minimaalselt'))."\n";
-        $md .= '- Tehniku pakkumised: '.(($equipment['suggestions'] ?? 'yes') === 'yes' ? 'Jah' : 'Ei').(filled($equipment['suggestNote'] ?? null) ? ' — '.$equipment['suggestNote'] : '')."\n";
-
-        $md .= "\n## Lisainfo\n".$cell($extra['notes'] ?? null)."\n";
-
-        return $md;
+        return $plan;
     }
 }

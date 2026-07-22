@@ -29,8 +29,6 @@ class TechnicalPlanFactory extends Factory
                 'micsDetail' => '',
                 'musicianMode' => 'no',
                 'musicianDetail' => '',
-                'musicMode' => 'none',
-                'musicList' => '',
             ],
             'scenes' => [
                 ['id' => 's1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'sound' => '', 'notes' => ''],
