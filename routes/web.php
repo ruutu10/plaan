@@ -31,7 +31,7 @@ Route::prefix('api/tehnikaplaan')
         Route::post('/', [TechnicalPlanController::class, 'store'])->name('store');
         Route::post('lookup', [TechnicalPlanController::class, 'lookup'])->name('lookup');
         Route::get('performances', [TechnicalPlanController::class, 'performances'])->name('performances');
-        Route::post('ai-review', [TechnicalPlanController::class, 'aiReview'])->name('ai');
+        Route::post('ai-review', [TechnicalPlanController::class, 'aiReview'])->name('ai')->middleware('throttle:15,10');
         Route::get('plans/{plan:token}', [TechnicalPlanController::class, 'show'])->name('show');
     });
 

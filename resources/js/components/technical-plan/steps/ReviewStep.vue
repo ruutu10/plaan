@@ -386,7 +386,7 @@ const headCellClass =
                 :disabled="submitting"
                 @click="$emit('create-link')"
             >
-                Loo avalik link
+                avalik link
             </R10Button>
             <R10Button
                 variant="outline"
@@ -394,7 +394,7 @@ const headCellClass =
                 :disabled="aiLoading"
                 @click="$emit('ai-review')"
             >
-                Küsi AI ülevaatust
+                AI ülevaatus
             </R10Button>
         </div>
 

@@ -219,6 +219,28 @@ function onDrop(targetId: string): void {
                             >
                                 Heli
                             </span>
+                            <ul
+                                class="-mt-0.5 flex list-disc flex-col gap-1 pl-4 text-xs text-r10-grey-500"
+                            >
+                                <li>
+                                    Iga muusikapala peab olema
+                                    <strong class="font-semibold"
+                                        >konkreetne</strong
+                                    >
+                                    (pealkiri + esitaja) või teadlikult "juhuslik" valik (nt "vabalt valitud kurb instrumentaalne klaveripala").
+                                </li>
+                                <li>
+                                    Kui alguskoht vajab täpsust, peab juures olema
+                                    <strong class="font-semibold"
+                                        >algusaeg/sisenemispunkt</strong
+                                    >
+                                    (nt „0:10 alates“), vajadusel valjus ja
+                                    <strong class="font-semibold"
+                                        >kuidas mängida/lõpetada</strong
+                                    >
+                                    (fade, järsk katkestus).
+                                </li>
+                            </ul>
                             <input
                                 v-model="scene.soundUrl"
                                 type="url"

@@ -25,18 +25,18 @@ const lookupEmail = ref('');
         <h1
             class="m-0 font-r10-display text-[34px] leading-[1.05] font-bold tracking-[0.02em] text-r10-ink uppercase"
         >
-            Alustame
+            Tehnikaplaani esitamine
         </h1>
         <p
             class="mt-2.5 mb-[30px] font-r10-body text-[17px] leading-relaxed text-r10-ink"
         >
             Selle ankeedi kaudu saad tehnilisele tiimile saata eelinfo oma etenduse
-            valgus- ja helisoovide kohta. Ankeet vajab täitmist ainult juhul, kui kasutad etendusel Ruutu10 tehnikut. Kui kasutad oma tehnikut, palun kommunikeeri seda eelnevalt etenduse korraldajale.
+            valgus- ja helisoovide kohta.
 </p>
  <p
             class="mt-2.5 mb-[30px] font-r10-body text-[17px] leading-relaxed font-light text-r10-grey-700"
         >
-        N.B! Tehnikaplaan on vaja esitada iga etenduse kohta uuesti, isegi kui tegemist on sama formaadi kordusega.
+        N.B! Tehnikaplaan on vaja esitada iga etenduse kohta uuesti, isegi kui tegemist on sama formaadi kordusega. Kordusetenduse puhul vali <span class="font-bold">kasuta varem esitatud plaani</span> - nii saad aluseks eeltäidetud plaani, ja saad muuta ainult erisused (nt mängude järjekord).
         </p>
 
         <div class="grid grid-cols-1 items-start gap-[22px] sm:grid-cols-2">
@@ -149,7 +149,7 @@ const lookupEmail = ref('');
                 </div>
             </div>
 
-            
+
         </div>
     </section>
 </template>

@@ -27,6 +27,10 @@ const yesNo = [
                 >
                     Kas kasutad mikrofone?
                 </div>
+                <p class="mb-2.5 -mt-1 text-xs text-r10-grey-500">
+                    Kui jah — kogus, paigutus ja kas töötav mikrofon või
+                    rekvisiit.
+                </p>
                 <RadioPills v-model="plan.sound.micsMode" :options="yesNo" />
                 <div v-if="plan.sound.micsMode === 'yes'" class="mt-4">
                     <R10Textarea
@@ -44,6 +48,10 @@ const yesNo = [
                 >
                     Kasutad oma muusikut?
                 </div>
+                <p class="mb-2.5 -mt-1 text-xs text-r10-grey-500">
+                    Instrument, PA vs akustiline, voolu- ja kaablivajadus, kes
+                    toob.
+                </p>
                 <RadioPills
                     v-model="plan.sound.musicianMode"
                     :options="yesNo"
