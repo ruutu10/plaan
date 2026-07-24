@@ -15,6 +15,7 @@ import ScenesStep from '@/components/technical-plan/steps/ScenesStep.vue';
 import ShowStep from '@/components/technical-plan/steps/ShowStep.vue';
 import SoundStep from '@/components/technical-plan/steps/SoundStep.vue';
 import StandardInfoStep from '@/components/technical-plan/steps/StandardInfoStep.vue';
+import R10Layout from '@/layouts/R10Layout.vue';
 import { logout } from '@/routes';
 import type { User } from '@/types';
 import type {
@@ -443,61 +444,37 @@ watch(
 <template>
     <Head title="Etenduse tehnikaplaan" />
 
-    <div class="min-h-screen bg-r10-paper font-r10-body text-r10-grey-700">
-        <header
-            class="r10-no-print sticky top-0 z-20 border-b border-white/15 bg-r10-navy"
-        >
+    <R10Layout title="Etenduse tehnikaplaan" :no-print-header="true">
+        <template #actions>
             <div
-                class="mx-auto flex max-w-[1160px] items-center gap-5 px-6 py-3.5"
+                class="hidden items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-[7px] sm:flex"
+            >
+                <Diamond :size="8" />
+                <span class="text-xs font-bold tracking-[0.04em] text-white">
+                    Saada hiljemalt {{ config.deadlineHours }}h enne etendust
+                </span>
+            </div>
+
+            <div
+                v-if="user"
+                class="flex items-center gap-3 border-l border-white/15 pl-4"
             >
                 <span
-                    class="font-r10-display text-xl font-black tracking-[0.06em] text-white"
+                    class="hidden max-w-[180px] truncate font-r10-body text-sm font-semibold text-white sm:inline"
+                    :title="user.name"
                 >
-                    RUUTU<span class="text-r10-orange">10</span>
+                    {{ user.name }}
                 </span>
-                <div class="h-6 w-px bg-white/15" />
-                <div class="flex min-w-0 flex-col gap-0.5">
-                    <span
-                        class="font-r10-display text-[15px] leading-none font-semibold tracking-[0.03em] text-white uppercase"
-                    >
-                        Etenduse tehnikaplaan
-                    </span>
-                </div>
-                <div class="ml-auto flex items-center gap-4">
-                    <div
-                        class="hidden items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-[7px] sm:flex"
-                    >
-                        <Diamond :size="8" />
-                        <span
-                            class="text-xs font-bold tracking-[0.04em] text-white"
-                        >
-                            Saada hiljemalt {{ config.deadlineHours }}h enne
-                            etendust
-                        </span>
-                    </div>
-
-                    <div
-                        v-if="user"
-                        class="flex items-center gap-3 border-l border-white/15 pl-4"
-                    >
-                        <span
-                            class="hidden max-w-[180px] truncate font-r10-body text-sm font-semibold text-white sm:inline"
-                            :title="user.name"
-                        >
-                            {{ user.name }}
-                        </span>
-                        <Link
-                            :href="logout()"
-                            as="button"
-                            class="cursor-pointer font-r10-body text-xs font-bold tracking-[0.06em] text-white/70 uppercase transition hover:text-r10-orange"
-                            @click="() => router.flushAll()"
-                        >
-                            Logi välja
-                        </Link>
-                    </div>
-                </div>
+                <Link
+                    :href="logout()"
+                    as="button"
+                    class="cursor-pointer font-r10-body text-xs font-bold tracking-[0.06em] text-white/70 uppercase transition hover:text-r10-orange"
+                    @click="() => router.flushAll()"
+                >
+                    Logi välja
+                </Link>
             </div>
-        </header>
+        </template>
 
         <div
             class="mx-auto flex max-w-[1160px] flex-wrap items-start gap-[30px] px-6 pt-9 pb-16"
@@ -580,5 +557,5 @@ watch(
                 </template>
             </main>
         </div>
-    </div>
+    </R10Layout>
 </template>
