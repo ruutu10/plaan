@@ -39,8 +39,10 @@ php artisan key:generate
 ./vendor/bin/sail up -d
 ./vendor/bin/sail artisan migrate --seed
 
+./vendor/bin/sail artisan queue:work &
+
 npm install
-npm run dev
+npm run dev &
 ```
 
 The app is then available from http://localhost

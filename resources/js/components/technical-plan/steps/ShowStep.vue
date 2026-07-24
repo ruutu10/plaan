@@ -2,7 +2,6 @@
 import { onMounted, ref } from 'vue';
 import type { UpcomingPerformance } from '@/types/technicalPlan';
 import { usePlan } from '../planKey';
-import R10Input from '../R10Input.vue';
 import StepHeader from '../StepHeader.vue';
 
 const plan = usePlan();
@@ -148,30 +147,6 @@ onMounted(loadPerformances);
                     Etendust pole nimekirjas
                 </span>
             </button>
-        </div>
-
-        <div class="mt-[30px] border-t border-r10-grey-200 pt-6">
-            <div
-                class="mb-1 font-r10-display text-base font-semibold tracking-[0.03em] text-r10-ink uppercase"
-            >
-                Kontakt
-            </div>
-            <p
-                class="mt-0 mb-[18px] text-[13px] text-r10-grey-500"
-            >
-                Saadame sulle tehnikaplaani koopia e-mailile.
-                Samuti saad hiljem e-posti järgi avada varem saadetud tehnikaplaane.
-
-            </p>
-            <div class="max-w-md">
-                <R10Input
-                    v-model="plan.meta.contactEmail"
-                    label="E-post"
-                    type="email"
-                    placeholder="ando@ruutu10.ee"
-                    required
-                />
-            </div>
         </div>
     </section>
 </template>

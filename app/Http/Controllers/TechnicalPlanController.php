@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\SignupSource;
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Requests\StoreTechnicalPlanRequest;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
@@ -13,9 +12,6 @@ use App\Models\User;
 use App\Services\TechnicalPlanReviewer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -59,7 +55,7 @@ class TechnicalPlanController extends Controller
         $data = $request->validated();
         $submitting = (bool) ($data['submit'] ?? false);
 
-        $user = $this->resolveContactUser($data['meta']['contactEmail']);
+        $user = $request->user();
 
         $attributes = [
             'user_id' => $user->id,
@@ -93,26 +89,14 @@ class TechnicalPlanController extends Controller
     }
 
     /**
-     * Find plans submitted with a given contact e-mail.
+     * List the plans the authenticated user has already submitted, so they can
+     * reuse one as the basis for a new plan.
      */
     public function lookup(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'email' => ['required', 'email', 'max:255'],
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'message' => 'Sisesta kehtiv e-posti aadress.',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $email = strtolower($validator->validated()['email']);
-
         $results = TechnicalPlan::query()
             ->with('performance.team')
-            ->whereHas('user', fn ($query) => $query->whereRaw('LOWER(email) = ?', [$email]))
+            ->where('user_id', $request->user()->id)
             ->where('status', TechnicalPlanStatus::Submitted)
             ->latest('submitted_at')
             ->limit(50)
@@ -165,7 +149,7 @@ class TechnicalPlanController extends Controller
 
         try {
             $review = app(TechnicalPlanReviewer::class)
-                ->review($this->planFromRequest($request->validated()));
+                ->review($this->planFromRequest($request->validated(), $request->user()));
         } catch (\Throwable $exception) {
             report($exception);
 
@@ -177,24 +161,6 @@ class TechnicalPlanController extends Controller
         return response()->json([
             'review' => $review ?: 'Tagasisidet ei saadud. Proovi uuesti.',
         ]);
-    }
-
-    /**
-     * Find the contact user by e-mail, creating a lightweight account if none
-     * exists yet, so the plan can be linked to a real user record.
-     */
-    private function resolveContactUser(string $email): User
-    {
-        $email = strtolower(trim($email));
-
-        return User::firstOrCreate(
-            ['email' => $email],
-            [
-                'name' => Str::of($email)->before('@')->trim()->value() ?: 'Esineja',
-                'password' => Hash::make(Str::random(40)),
-                'signup_source' => SignupSource::AnonymousPlan->value,
-            ],
-        );
     }
 
     /**
@@ -222,7 +188,7 @@ class TechnicalPlanController extends Controller
      *
      * @param  array<string, mixed>  $data
      */
-    private function planFromRequest(array $data): TechnicalPlan
+    private function planFromRequest(array $data, User $user): TechnicalPlan
     {
         $meta = $data['meta'];
 
@@ -243,7 +209,7 @@ class TechnicalPlanController extends Controller
         $performance->setRelation('team', new Team(['name' => $meta['performer'] ?? null]));
 
         $plan->setRelation('performance', $performance);
-        $plan->setRelation('user', new User(['email' => $meta['contactEmail'] ?? null]));
+        $plan->setRelation('user', $user);
 
         return $plan;
     }

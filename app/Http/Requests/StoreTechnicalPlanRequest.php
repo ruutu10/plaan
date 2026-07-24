@@ -25,7 +25,7 @@ class StoreTechnicalPlanRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user() !== null;
     }
 
     /**
@@ -46,7 +46,6 @@ class StoreTechnicalPlanRequest extends FormRequest
             'meta.showDate' => ['nullable', 'date'],
             'meta.duration' => ['nullable', 'integer', 'min:1', 'max:240'],
             'meta.description' => ['nullable', 'string', 'max:5000'],
-            'meta.contactEmail' => ['required', 'email', 'max:255'],
 
             'sound' => ['required', 'array'],
             'sound.micsMode' => ['nullable', 'string', 'max:20'],
@@ -77,19 +76,6 @@ class StoreTechnicalPlanRequest extends FormRequest
             'extra.files.*.id' => ['required', 'string', 'max:64'],
             'extra.files.*.name' => ['nullable', 'string', 'max:255'],
             'extra.files.*.size' => ['nullable', 'integer', 'min:0'],
-        ];
-    }
-
-    /**
-     * Get custom validation messages.
-     *
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'meta.contactEmail.required' => 'Kontakt-e-post on kohustuslik.',
-            'meta.contactEmail.email' => 'Kontakt-e-post peab olema kehtiv e-posti aadress.',
         ];
     }
 }

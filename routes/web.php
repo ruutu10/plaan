@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Controllers\TechnicalPlanController;
 use App\Http\Middleware\EnsureTeamMembership;
@@ -26,13 +27,20 @@ Route::prefix('tehnikaplaan')->name('technical-plan.')->group(function () {
 // JSON API consumed by the technical-plan wizard frontend.
 Route::prefix('api/tehnikaplaan')
     ->name('technical-plan.')
-    ->middleware('throttle:200,1')
     ->group(function () {
-        Route::post('/', [TechnicalPlanController::class, 'store'])->name('store');
-        Route::post('lookup', [TechnicalPlanController::class, 'lookup'])->name('lookup');
-        Route::get('performances', [TechnicalPlanController::class, 'performances'])->name('performances');
-        Route::post('ai-review', [TechnicalPlanController::class, 'aiReview'])->name('ai')->middleware('throttle:15,10');
-        Route::get('plans/{plan:token}', [TechnicalPlanController::class, 'show'])->name('show');
+        // The first step of the flow is always to log the user in: e-mailing a
+        // magic link is the only action available before authentication.
+        Route::post('login', [MagicLoginController::class, 'send'])->name('login')->middleware('throttle:6,1');
+
+        // Every plan action requires an authenticated user.
+        Route::middleware(['auth', 'throttle:200,1'])
+            ->group(function () {
+                Route::post('/', [TechnicalPlanController::class, 'store'])->name('store');
+                Route::post('lookup', [TechnicalPlanController::class, 'lookup'])->name('lookup');
+                Route::get('performances', [TechnicalPlanController::class, 'performances'])->name('performances');
+                Route::post('ai-review', [TechnicalPlanController::class, 'aiReview'])->name('ai')->middleware('throttle:15,10');
+                Route::get('plans/{plan:token}', [TechnicalPlanController::class, 'show'])->name('show');
+            });
     });
 
 Route::prefix('{current_team}')

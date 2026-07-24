@@ -1,12 +1,15 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import type { User } from '@/types';
 import Diamond from '../Diamond.vue';
+import { formatFileSize } from '../plan';
 import { usePlan } from '../planKey';
 import R10Button from '../R10Button.vue';
 import StepHeader from '../StepHeader.vue';
-import { formatFileSize } from '../plan';
 
 const plan = usePlan();
+const page = usePage<{ auth: { user: User | null } }>();
 
 defineProps<{
     submitting: boolean;
@@ -34,17 +37,7 @@ const STATUS_LABELS: Record<string, string> = {
 const dash = (value: unknown): string =>
     value != null && String(value).trim() !== '' ? String(value) : '—';
 
-const missing = computed(() => {
-    const out: string[] = [];
-
-    if (!plan.meta.contactEmail.trim()) {
-        out.push('E-post');
-    }
-
-    return out;
-});
-
-const contactLine = computed(() => plan.meta.contactEmail.trim() || '—');
+const contactLine = computed(() => page.props.auth.user?.email ?? '—');
 
 const micsSummary = computed(() =>
     plan.sound.micsMode === 'yes'
@@ -114,19 +107,6 @@ const headCellClass =
                 title="Vaata üle & saada"
                 lead="Kontrolli plaan üle. Seejärel esita see tehnikutiimile, laadi PDF-ina alla või loo jagatav link."
             />
-        </div>
-
-        <div
-            v-if="missing.length"
-            class="r10-no-print mb-[22px] flex items-start gap-3 rounded-xl border border-r10-orange bg-r10-orange-100 px-[18px] py-3.5"
-        >
-            <span
-                class="mt-[5px] h-2.5 w-2.5 shrink-0 rotate-45 rounded-[1px] bg-r10-orange"
-            />
-            <span class="text-sm leading-normal text-r10-navy">
-                Mõned kohustuslikud väljad on veel täitmata:
-                <strong>{{ missing.join(', ') }}</strong>
-            </span>
         </div>
 
         <!-- Printable document -->
@@ -347,7 +327,9 @@ const headCellClass =
                     :key="file.id || index"
                     class="mt-1 flex items-center gap-3"
                 >
-                    <span class="text-r10-ink">{{ file.name }} ({{ formatFileSize(file.size) }})</span>
+                    <span class="text-r10-ink"
+                        >{{ file.name }} ({{ formatFileSize(file.size) }})</span
+                    >
                     <template v-if="file.url">
                         <a
                             :href="file.url"
@@ -443,9 +425,11 @@ const headCellClass =
             </div>
             <div
                 class="markdown bg-white px-[22px] py-5 font-r10-body text-sm leading-relaxed text-r10-ink"
-                v-html="aiResult"></div>
+                v-html="aiResult"
+            ></div>
             <div class="bg-white px-[22px] pb-4 text-xs text-r10-grey-500">
-               See on AI-genereeritud soovitus ja ei pruugi olla täpne. AI soovitused ei ole kohustus plaani muuta.
+                See on AI-genereeritud soovitus ja ei pruugi olla täpne. AI
+                soovitused ei ole kohustus plaani muuta.
             </div>
         </div>
 

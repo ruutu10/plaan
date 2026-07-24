@@ -54,7 +54,6 @@ export function blankPlan(): Plan {
             showDate: '',
             duration: null,
             description: '',
-            contactEmail: '',
         },
         sound: {
             micsMode: 'no',

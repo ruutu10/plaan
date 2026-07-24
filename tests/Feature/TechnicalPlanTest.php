@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\SignupSource;
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Models\PendingUpload;
@@ -22,6 +21,18 @@ class TechnicalPlanTest extends TestCase
 {
     use RefreshDatabase;
 
+    private User $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The whole plan flow sits behind authentication; sign a user in so
+        // the guarded endpoints are reachable.
+        $this->user = User::factory()->create(['email' => 'mart@naide.ee']);
+        $this->actingAs($this->user);
+    }
+
     /**
      * A minimal, valid plan payload as sent by the wizard.
      *
@@ -39,7 +50,6 @@ class TechnicalPlanTest extends TestCase
                 'showDate' => '2026-08-01',
                 'duration' => 25,
                 'description' => 'Improetendus kolmes osas.',
-                'contactEmail' => 'mart@naide.ee',
             ],
             'sound' => [
                 'micsMode' => 'yes',
@@ -138,27 +148,23 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame(0, TechnicalPlan::count());
     }
 
-    public function test_storing_creates_a_contact_user_when_none_exists(): void
+    public function test_storing_links_the_plan_to_the_authenticated_user(): void
     {
-        $this->assertDatabaseMissing('users', ['email' => 'mart@naide.ee']);
-
         $this->postJson(route('technical-plan.store'), $this->validPayload())->assertOk();
 
-        $this->assertDatabaseHas('users', [
-            'email' => 'mart@naide.ee',
-            'signup_source' => SignupSource::AnonymousPlan->value,
-        ]);
-        $this->assertSame(1, User::where('email', 'mart@naide.ee')->count());
+        // The plan is tied to the signed-in user, not to any e-mail in the body.
+        $this->assertSame($this->user->id, TechnicalPlan::first()->user_id);
+        $this->assertSame(1, User::count());
     }
 
-    public function test_storing_links_an_existing_contact_user(): void
+    public function test_storing_requires_authentication(): void
     {
-        $user = User::factory()->create(['email' => 'mart@naide.ee']);
+        $this->app['auth']->forgetGuards();
 
-        $this->postJson(route('technical-plan.store'), $this->validPayload())->assertOk();
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload());
 
-        $this->assertSame(1, User::where('email', 'mart@naide.ee')->count());
-        $this->assertSame($user->id, TechnicalPlan::first()->user_id);
+        $response->assertUnauthorized();
+        $this->assertSame(0, TechnicalPlan::count());
     }
 
     public function test_submitting_marks_the_plan_as_submitted(): void
@@ -189,17 +195,6 @@ class TechnicalPlanTest extends TestCase
 
         $this->assertSame(1, TechnicalPlan::count());
         $this->assertSame($second->id, TechnicalPlan::first()->performance_id);
-    }
-
-    public function test_the_contact_email_is_validated(): void
-    {
-        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
-            'meta' => ['contactEmail' => 'not-an-email'],
-        ]));
-
-        $response->assertUnprocessable();
-        $this->assertArrayHasKey('meta.contactEmail', $response->json('errors'));
-        $this->assertSame(0, TechnicalPlan::count());
     }
 
     public function test_a_saved_plan_can_be_fetched_by_token(): void
@@ -267,16 +262,14 @@ class TechnicalPlanTest extends TestCase
         $response->assertJsonMissing(['showName' => 'Möödunud etendus']);
     }
 
-    public function test_lookup_returns_submitted_plans_for_an_email(): void
+    public function test_lookup_returns_the_authenticated_users_submitted_plans(): void
     {
-        $sina = User::factory()->create(['email' => 'ando@ruutu10.ee']);
-
         $performance = Performance::factory()->create(['show_name' => 'Esitatud plaan']);
-        TechnicalPlan::factory()->for($sina)->for($performance)->submitted()->create();
-        TechnicalPlan::factory()->for($sina)->create();
-        TechnicalPlan::factory()->submitted()->create();
+        TechnicalPlan::factory()->for($this->user)->for($performance)->submitted()->create();
+        TechnicalPlan::factory()->for($this->user)->create(); // draft — excluded
+        TechnicalPlan::factory()->submitted()->create();       // another user — excluded
 
-        $response = $this->postJson(route('technical-plan.lookup'), ['email' => 'ando@ruutu10.ee']);
+        $response = $this->postJson(route('technical-plan.lookup'));
 
         $response->assertOk();
         $response->assertJsonCount(1, 'results');
@@ -308,10 +301,9 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame($plan->token, $data['token']);
         $this->assertSame($plan->status->value, $data['status']);
 
-        // Meta is drawn from the performance, its team, and the contact user.
+        // Meta is drawn from the performance and its team.
         $this->assertSame($plan->performance->team->name, $data['meta']['performer']);
         $this->assertSame($plan->performance->show_name, $data['meta']['showName']);
-        $this->assertSame($plan->user->email, $data['meta']['contactEmail']);
 
         // The full plan content is present…
         $this->assertArrayHasKey('sound', $data);

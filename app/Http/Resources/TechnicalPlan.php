@@ -34,7 +34,6 @@ class TechnicalPlan extends JsonResource
                 'showDate' => $plan->performance?->show_date?->format('Y-m-d') ?? '',
                 'duration' => $plan->performance?->duration,
                 'description' => $plan->performance?->description ?? '', // @phpstan-ignore-line
-                'contactEmail' => $plan->user->email ?? '',
             ],
             'sound' => $plan->sound,
             'scenes' => $plan->scenes,

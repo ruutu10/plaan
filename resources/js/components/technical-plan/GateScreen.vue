@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import type { LookupResult } from '@/types/technicalPlan';
 import Diamond from './Diamond.vue';
 import R10Button from './R10Button.vue';
@@ -12,16 +11,12 @@ defineProps<{
 
 const emit = defineEmits<{
     'start-blank': [];
-    'run-lookup': [email: string];
     'open-submission': [token: string];
 }>();
-
-const lookupEmail = ref('');
 </script>
 
 <template>
     <section class="animate-[r10fade_0.38s_ease]">
-
         <h1
             class="m-0 font-r10-display text-[34px] leading-[1.05] font-bold tracking-[0.02em] text-r10-ink uppercase"
         >
@@ -30,13 +25,17 @@ const lookupEmail = ref('');
         <p
             class="mt-2.5 mb-[30px] font-r10-body text-[17px] leading-relaxed text-r10-ink"
         >
-            Selle ankeedi kaudu saad tehnilisele tiimile saata eelinfo oma etenduse
-            valgus- ja helisoovide kohta.
-</p>
- <p
+            Selle ankeedi kaudu saad tehnilisele tiimile saata eelinfo oma
+            etenduse valgus- ja helisoovide kohta.
+        </p>
+        <p
             class="mt-2.5 mb-[30px] font-r10-body text-[17px] leading-relaxed font-light text-r10-grey-700"
         >
-        N.B! Tehnikaplaan on vaja esitada iga etenduse kohta uuesti, isegi kui tegemist on sama formaadi kordusega. Kordusetenduse puhul vali <span class="font-bold">kasuta varem esitatud plaani</span> - nii saad aluseks eeltäidetud plaani, ja saad muuta ainult erisused (nt mängude järjekord).
+            N.B! Tehnikaplaan on vaja esitada iga etenduse kohta uuesti, isegi
+            kui tegemist on sama formaadi kordusega. Kordusetenduse puhul vali
+            <span class="font-bold">kasuta varem esitatud plaani</span> - nii
+            saad aluseks eeltäidetud plaani, ja saad muuta ainult erisused (nt
+            mängude järjekord).
         </p>
 
         <div class="grid grid-cols-1 items-start gap-[22px] sm:grid-cols-2">
@@ -50,7 +49,8 @@ const lookupEmail = ref('');
                     Uus plaan
                 </div>
                 <p class="m-0 mb-5 text-sm leading-relaxed text-r10-grey-700">
-                    Kui sa pole varem selle etenduse kohta tehnikaplaani saatnud, alusta siit, tühja ankeediga.
+                    Kui sa pole varem selle etenduse kohta tehnikaplaani
+                    saatnud, alusta siit, tühja ankeediga.
                 </p>
                 <R10Button
                     variant="primary"
@@ -70,46 +70,29 @@ const lookupEmail = ref('');
                 <div
                     class="mb-2 font-r10-display text-[19px] font-bold tracking-[0.03em] text-r10-ink uppercase"
                 >
-                   Kasuta varem esitatud plaani
+                    Kasuta varem esitatud plaani
                 </div>
                 <p
                     class="m-0 mb-4 max-w-[66ch] text-sm leading-relaxed text-r10-grey-700"
                 >
-                    Saatsid eelnevalt juba tehnikaplaani, ja soovid seda väikeste muudatustega kasutada järgmisel etendusel?
-                    Siin saad eeltäita uue plaani varem esitatud plaani põhjal.
-
-
-                    Sisesta e-post, millega oled varem plaane esitanud. Näitame
-                    kõik selle aadressiga saadetud plaanid — ava mõni neist uue
-                    plaani põhjaks.
+                    Saatsid eelnevalt juba tehnikaplaani, ja soovid seda
+                    väikeste muudatustega kasutada järgmisel etendusel? Allpool
+                    on kõik sinu esitatud plaanid — ava mõni neist uue plaani
+                    põhjaks.
                 </p>
-                <div class="flex flex-wrap items-end gap-2.5">
-                    <label
-                        class="flex min-w-0 flex-1 basis-[260px] flex-col gap-1.5"
-                    >
-                        <span
-                            class="font-r10-body text-[11px] font-bold tracking-[0.12em] text-r10-ink uppercase"
-                        >
-                            E-post
-                        </span>
-                        <input
-                            v-model="lookupEmail"
-                            type="email"
-                            placeholder="ando@ruutu10.ee"
-                            class="w-full rounded-lg border-2 border-r10-grey-200 bg-white px-4 py-3 font-r10-body text-[15px] text-r10-ink outline-none focus:border-r10-orange"
-                        />
-                    </label>
-                    <R10Button
-                        variant="outline"
-                        size="lg"
-                        :disabled="lookupBusy"
-                        @click="emit('run-lookup', lookupEmail)"
-                    >
-                        Otsi plaane
-                    </R10Button>
+
+                <div v-if="lookupBusy" class="mt-2 flex flex-col gap-2">
+                    <div
+                        v-for="n in 2"
+                        :key="n"
+                        class="h-[58px] animate-pulse rounded-[10px] border border-r10-grey-200 bg-r10-grey-100"
+                    />
                 </div>
 
-                <div v-if="lookupError" class="mt-3 flex items-start gap-2">
+                <div
+                    v-else-if="lookupError"
+                    class="mt-3 flex items-start gap-2"
+                >
                     <span
                         class="mt-[5px] h-2 w-2 shrink-0 rotate-45 rounded-[1px] bg-r10-error"
                     />
@@ -118,10 +101,14 @@ const lookupEmail = ref('');
                     }}</span>
                 </div>
 
-                <div
-                    v-if="lookupResults.length"
-                    class="mt-4 flex flex-col gap-2"
+                <p
+                    v-else-if="!lookupResults.length"
+                    class="mt-2 text-[13px] text-r10-grey-500"
                 >
+                    Sa pole veel ühtki plaani esitanud.
+                </p>
+
+                <div v-else class="mt-2 flex flex-col gap-2">
                     <button
                         v-for="result in lookupResults"
                         :key="result.token"
@@ -148,8 +135,6 @@ const lookupEmail = ref('');
                     </button>
                 </div>
             </div>
-
-
         </div>
     </section>
 </template>

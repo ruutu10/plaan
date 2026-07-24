@@ -36,7 +36,6 @@ export interface PlanMeta {
     showDate: string;
     duration: number | null;
     description: string;
-    contactEmail: string;
 }
 
 export interface UpcomingPerformance {

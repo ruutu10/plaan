@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, provide, reactive, ref, watch } from 'vue';
 import Diamond from '@/components/technical-plan/Diamond.vue';
 import GateScreen from '@/components/technical-plan/GateScreen.vue';
+import LoginScreen from '@/components/technical-plan/LoginScreen.vue';
 import { hydratePlan } from '@/components/technical-plan/plan';
 import { configKey, planKey } from '@/components/technical-plan/planKey';
 import R10Button from '@/components/technical-plan/R10Button.vue';
@@ -14,6 +15,8 @@ import ScenesStep from '@/components/technical-plan/steps/ScenesStep.vue';
 import ShowStep from '@/components/technical-plan/steps/ShowStep.vue';
 import SoundStep from '@/components/technical-plan/steps/SoundStep.vue';
 import StandardInfoStep from '@/components/technical-plan/steps/StandardInfoStep.vue';
+import { logout } from '@/routes';
+import type { User } from '@/types';
 import type {
     LookupResult,
     Plan,
@@ -28,12 +31,21 @@ const props = defineProps<{
 
 const STORAGE_KEY = 'r10-techplan-v1';
 
+const page = usePage<{ auth: { user: User | null } }>();
+const user = computed(() => page.props.auth.user);
+
 const plan = reactive<Plan>(hydratePlan(props.initialPlan));
 provide(planKey, plan);
 provide(configKey, props.config);
 
 const phase = ref<'gate' | 'wizard'>(props.initialPlan ? 'wizard' : 'gate');
 const step = ref(0);
+
+// Login state
+const loginBusy = ref(false);
+const loginSent = ref(false);
+const loginError = ref('');
+const loginSentTo = ref('');
 
 // Gate state
 const lookupError = ref('');
@@ -61,8 +73,6 @@ const stepComponents = [
 ];
 
 const nextLabel = computed(() => (step.value === 5 ? 'Vaata üle' : 'Edasi'));
-
-const missingRequired = computed(() => !plan.meta.contactEmail.trim());
 
 /* ---- CSRF-aware JSON helpers ---------------------------------------- */
 
@@ -138,12 +148,11 @@ function reset(): void {
         /* ignore */
     }
 
-    lookupError.value = '';
-    lookupResults.value = [];
     Object.assign(plan, hydratePlan(null));
     resetTransient();
     phase.value = 'gate';
     step.value = 0;
+    loadMyPlans();
     scrollTop();
 }
 
@@ -164,37 +173,64 @@ function goBack(): void {
     }
 }
 
-/* ---- Gate actions ---------------------------------------------------- */
+/* ---- Login ----------------------------------------------------------- */
 
-async function runLookup(email: string): Promise<void> {
+async function sendLoginLink(email: string): Promise<void> {
     const trimmed = email.trim();
 
     if (!trimmed) {
-        lookupError.value = 'Sisesta e-post.';
-        lookupResults.value = [];
+        loginError.value = 'Sisesta e-post.';
 
+        return;
+    }
+
+    if (loginBusy.value) {
+        return;
+    }
+
+    loginBusy.value = true;
+    loginError.value = '';
+    const { ok, data } = await requestJson('/api/tehnikaplaan/login', 'POST', {
+        email: trimmed,
+    });
+    loginBusy.value = false;
+
+    if (ok) {
+        loginSent.value = true;
+        loginSentTo.value = trimmed;
+
+        return;
+    }
+
+    loginError.value =
+        (data.message as string) ??
+        'Lingi saatmine ebaõnnestus. Proovi uuesti.';
+}
+
+/* ---- Gate actions ---------------------------------------------------- */
+
+async function loadMyPlans(): Promise<void> {
+    if (!user.value) {
         return;
     }
 
     lookupBusy.value = true;
     lookupError.value = '';
-    const { ok, data } = await requestJson('/api/tehnikaplaan/lookup', 'POST', {
-        email: trimmed,
-    });
+    const { ok, data } = await requestJson(
+        '/api/tehnikaplaan/lookup',
+        'POST',
+        {},
+    );
     lookupBusy.value = false;
 
     if (!ok) {
         lookupResults.value = [];
-        lookupError.value = 'Otsing ebaõnnestus. Kontrolli e-posti aadressi.';
+        lookupError.value = 'Plaanide laadimine ebaõnnestus.';
 
         return;
     }
 
-    const results = (data.results as LookupResult[]) ?? [];
-    lookupResults.value = results;
-    lookupError.value = results.length
-        ? ''
-        : 'Selle e-postiga pole veel ühtki plaani esitatud.';
+    lookupResults.value = (data.results as LookupResult[]) ?? [];
 }
 
 async function openSubmission(token: string): Promise<void> {
@@ -270,12 +306,6 @@ async function savePlan(submit: boolean): Promise<boolean> {
 }
 
 async function submitPlan(): Promise<void> {
-    if (missingRequired.value) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        return;
-    }
-
     if (submitting.value) {
         return;
     }
@@ -294,12 +324,6 @@ async function submitPlan(): Promise<void> {
 }
 
 async function createPublicLink(): Promise<void> {
-    if (missingRequired.value) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        return;
-    }
-
     if (submitting.value) {
         return;
     }
@@ -342,12 +366,6 @@ async function aiReview(): Promise<void> {
         return;
     }
 
-    if (missingRequired.value) {
-        aiError.value = 'Täida enne kontakt-e-post.';
-
-        return;
-    }
-
     aiLoading.value = true;
     aiError.value = '';
     aiResult.value = '';
@@ -377,26 +395,28 @@ onMounted(() => {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
 
-        if (!raw) {
-            return;
-        }
+        if (raw) {
+            const saved = JSON.parse(raw) as {
+                phase?: string;
+                step?: number;
+                plan?: Partial<Plan>;
+            };
 
-        const saved = JSON.parse(raw) as {
-            phase?: string;
-            step?: number;
-            plan?: Partial<Plan>;
-        };
+            if (saved.plan) {
+                Object.assign(plan, hydratePlan(saved.plan));
+            }
 
-        if (saved.plan) {
-            Object.assign(plan, hydratePlan(saved.plan));
-        }
-
-        if (saved.phase === 'wizard') {
-            phase.value = 'wizard';
-            step.value = Math.min(Math.max(saved.step ?? 0, 0), 6);
+            if (saved.phase === 'wizard') {
+                phase.value = 'wizard';
+                step.value = Math.min(Math.max(saved.step ?? 0, 0), 6);
+            }
         }
     } catch {
         /* ignore malformed drafts */
+    }
+
+    if (user.value && phase.value === 'gate') {
+        loadMyPlans();
     }
 });
 
@@ -443,16 +463,38 @@ watch(
                         Etenduse tehnikaplaan
                     </span>
                 </div>
-                <div
-                    class="ml-auto hidden items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-[7px] sm:flex"
-                >
-                    <Diamond :size="8" />
-                    <span
-                        class="text-xs font-bold tracking-[0.04em] text-white"
+                <div class="ml-auto flex items-center gap-4">
+                    <div
+                        class="hidden items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-[7px] sm:flex"
                     >
-                        Saada hiljemalt {{ config.deadlineHours }}h enne
-                        etendust
-                    </span>
+                        <Diamond :size="8" />
+                        <span
+                            class="text-xs font-bold tracking-[0.04em] text-white"
+                        >
+                            Saada hiljemalt {{ config.deadlineHours }}h enne
+                            etendust
+                        </span>
+                    </div>
+
+                    <div
+                        v-if="user"
+                        class="flex items-center gap-3 border-l border-white/15 pl-4"
+                    >
+                        <span
+                            class="hidden max-w-[180px] truncate font-r10-body text-sm font-semibold text-white sm:inline"
+                            :title="user.name"
+                        >
+                            {{ user.name }}
+                        </span>
+                        <Link
+                            :href="logout()"
+                            as="button"
+                            class="cursor-pointer font-r10-body text-xs font-bold tracking-[0.06em] text-white/70 uppercase transition hover:text-r10-orange"
+                            @click="() => router.flushAll()"
+                        >
+                            Logi välja
+                        </Link>
+                    </div>
                 </div>
             </div>
         </header>
@@ -461,9 +503,11 @@ watch(
             class="mx-auto flex max-w-[1160px] flex-wrap items-start gap-[30px] px-6 pt-9 pb-16"
         >
             <Stepper
-                v-if="phase === 'wizard'"
                 :step="step"
                 :optional-steps="[2, 5, 6]"
+                :login-active="!user"
+                :wizard-clickable="!!user && phase === 'wizard'"
+                :show-reset="!!user && phase === 'wizard'"
                 @go="goTo"
                 @reset="reset"
             />
@@ -471,13 +515,21 @@ watch(
             <main
                 class="min-w-0 flex-1 basis-[520px] rounded-[22px] border border-r10-grey-200 bg-white p-6 shadow-[0_6px_18px_rgba(10,14,23,0.1)] sm:p-10"
             >
+                <LoginScreen
+                    v-if="!user"
+                    :busy="loginBusy"
+                    :sent="loginSent"
+                    :error="loginError"
+                    :sent-to="loginSentTo"
+                    @send-link="sendLoginLink"
+                />
+
                 <GateScreen
-                    v-if="phase === 'gate'"
+                    v-else-if="phase === 'gate'"
                     :lookup-error="lookupError"
                     :lookup-results="lookupResults"
                     :lookup-busy="lookupBusy"
                     @start-blank="startBlank"
-                    @run-lookup="runLookup"
                     @open-submission="openSubmission"
                 />
 
