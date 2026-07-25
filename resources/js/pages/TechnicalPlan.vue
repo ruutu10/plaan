@@ -16,7 +16,7 @@ import ShowStep from '@/components/technical-plan/steps/ShowStep.vue';
 import SoundStep from '@/components/technical-plan/steps/SoundStep.vue';
 import StandardInfoStep from '@/components/technical-plan/steps/StandardInfoStep.vue';
 import R10Layout from '@/layouts/R10Layout.vue';
-import { logout } from '@/routes';
+import { logout,login } from '@/routes';
 import type { User } from '@/types';
 import type {
     LookupResult,
@@ -446,14 +446,11 @@ watch(
 
     <R10Layout title="Etenduse tehnikaplaan" :no-print-header="true">
         <template #actions>
-            <div
-                class="hidden items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-[7px] sm:flex"
-            >
-                <Diamond :size="8" />
-                <span class="text-xs font-bold tracking-[0.04em] text-white">
-                    Saada hiljemalt {{ config.deadlineHours }}h enne etendust
-                </span>
-            </div>
+
+                  <Link :href="login()"
+                        class="rounded-full bg-r10-orange px-5 py-2 font-r10-body text-xs font-bold tracking-[0.06em] text-r10-navy uppercase transition hover:bg-r10-orange-600">
+                        Logi sisse
+                    </Link>
 
             <div
                 v-if="user"

@@ -25,7 +25,7 @@
                     {{-- Header: navy band with the logo --}}
                     <tr>
                         <td align="center" style="background-color:#11234f; padding:34px 30px 30px 30px;">
-                            <img src="{{ $message->embed(public_path('logo.png')) }}"
+                            <img src="{{ $message->embed(public_path('logo-white.png')) }}"
                                  alt="Ruutu10"
                                  width="180"
                                  style="display:block; width:180px; max-width:60%; height:auto; border:0;">
