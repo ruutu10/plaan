@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, provide, reactive, ref, watch } from 'vue';
-import Diamond from '@/components/technical-plan/Diamond.vue';
-import GateScreen from '@/components/technical-plan/GateScreen.vue';
 import LoginScreen from '@/components/technical-plan/LoginScreen.vue';
 import { hydratePlan } from '@/components/technical-plan/plan';
 import { configKey, planKey } from '@/components/technical-plan/planKey';
@@ -16,14 +14,9 @@ import ShowStep from '@/components/technical-plan/steps/ShowStep.vue';
 import SoundStep from '@/components/technical-plan/steps/SoundStep.vue';
 import StandardInfoStep from '@/components/technical-plan/steps/StandardInfoStep.vue';
 import R10Layout from '@/layouts/R10Layout.vue';
-import { logout,login } from '@/routes';
+import { logout, login } from '@/routes';
 import type { User } from '@/types';
-import type {
-    LookupResult,
-    Plan,
-    PlanFile,
-    WizardConfig,
-} from '@/types/technicalPlan';
+import type { Plan, PlanFile, WizardConfig } from '@/types/technicalPlan';
 
 const props = defineProps<{
     config: WizardConfig;
@@ -39,7 +32,6 @@ const plan = reactive<Plan>(hydratePlan(props.initialPlan));
 provide(planKey, plan);
 provide(configKey, props.config);
 
-const phase = ref<'gate' | 'wizard'>(props.initialPlan ? 'wizard' : 'gate');
 const step = ref(0);
 
 // Login state
@@ -47,11 +39,6 @@ const loginBusy = ref(false);
 const loginSent = ref(false);
 const loginError = ref('');
 const loginSentTo = ref('');
-
-// Gate state
-const lookupError = ref('');
-const lookupResults = ref<LookupResult[]>([]);
-const lookupBusy = ref(false);
 
 // Save state
 const submitting = ref(false);
@@ -133,13 +120,8 @@ function loadIntoWizard(payload: Partial<Plan> | null, asNew = false): void {
     }
 
     resetTransient();
-    phase.value = 'wizard';
     step.value = 0;
     scrollTop();
-}
-
-function startBlank(): void {
-    loadIntoWizard(null);
 }
 
 function reset(): void {
@@ -149,12 +131,7 @@ function reset(): void {
         /* ignore */
     }
 
-    Object.assign(plan, hydratePlan(null));
-    resetTransient();
-    phase.value = 'gate';
-    step.value = 0;
-    loadMyPlans();
-    scrollTop();
+    loadIntoWizard(null);
 }
 
 function goTo(index: number): void {
@@ -206,43 +183,6 @@ async function sendLoginLink(email: string): Promise<void> {
     loginError.value =
         (data.message as string) ??
         'Lingi saatmine ebaõnnestus. Proovi uuesti.';
-}
-
-/* ---- Gate actions ---------------------------------------------------- */
-
-async function loadMyPlans(): Promise<void> {
-    if (!user.value) {
-        return;
-    }
-
-    lookupBusy.value = true;
-    lookupError.value = '';
-    const { ok, data } = await requestJson(
-        '/api/tehnikaplaan/lookup',
-        'POST',
-        {},
-    );
-    lookupBusy.value = false;
-
-    if (!ok) {
-        lookupResults.value = [];
-        lookupError.value = 'Plaanide laadimine ebaõnnestus.';
-
-        return;
-    }
-
-    lookupResults.value = (data.results as LookupResult[]) ?? [];
-}
-
-async function openSubmission(token: string): Promise<void> {
-    const { ok, data } = await requestJson(
-        `/api/tehnikaplaan/plans/${encodeURIComponent(token)}`,
-        'GET',
-    );
-
-    if (ok) {
-        loadIntoWizard(data as Partial<Plan>, true);
-    }
 }
 
 /* ---- Save / submit --------------------------------------------------- */
@@ -398,7 +338,6 @@ onMounted(() => {
 
         if (raw) {
             const saved = JSON.parse(raw) as {
-                phase?: string;
                 step?: number;
                 plan?: Partial<Plan>;
             };
@@ -407,28 +346,22 @@ onMounted(() => {
                 Object.assign(plan, hydratePlan(saved.plan));
             }
 
-            if (saved.phase === 'wizard') {
-                phase.value = 'wizard';
-                step.value = Math.min(Math.max(saved.step ?? 0, 0), 6);
+            if (typeof saved.step === 'number') {
+                step.value = Math.min(Math.max(saved.step, 0), 6);
             }
         }
     } catch {
         /* ignore malformed drafts */
     }
-
-    if (user.value && phase.value === 'gate') {
-        loadMyPlans();
-    }
 });
 
 watch(
-    [plan, phase, step],
+    [plan, step],
     () => {
         try {
             localStorage.setItem(
                 STORAGE_KEY,
                 JSON.stringify({
-                    phase: phase.value,
                     step: step.value,
                     plan,
                 }),
@@ -446,11 +379,12 @@ watch(
 
     <R10Layout title="Etenduse tehnikaplaan" :no-print-header="true">
         <template #actions>
-
-                  <Link :href="login()"
-                        class="rounded-full bg-r10-orange px-5 py-2 font-r10-body text-xs font-bold tracking-[0.06em] text-r10-navy uppercase transition hover:bg-r10-orange-600">
-                        Logi sisse
-                    </Link>
+            <Link
+                :href="login()"
+                class="rounded-full bg-r10-orange px-5 py-2 font-r10-body text-xs font-bold tracking-[0.06em] text-r10-navy uppercase transition hover:bg-r10-orange-600"
+            >
+                Logi sisse
+            </Link>
 
             <div
                 v-if="user"
@@ -480,8 +414,8 @@ watch(
                 :step="step"
                 :optional-steps="[2, 5, 6]"
                 :login-active="!user"
-                :wizard-clickable="!!user && phase === 'wizard'"
-                :show-reset="!!user && phase === 'wizard'"
+                :wizard-clickable="!!user"
+                :show-reset="!!user"
                 @go="goTo"
                 @reset="reset"
             />
@@ -496,15 +430,6 @@ watch(
                     :error="loginError"
                     :sent-to="loginSentTo"
                     @send-link="sendLoginLink"
-                />
-
-                <GateScreen
-                    v-else-if="phase === 'gate'"
-                    :lookup-error="lookupError"
-                    :lookup-results="lookupResults"
-                    :lookup-busy="lookupBusy"
-                    @start-blank="startBlank"
-                    @open-submission="openSubmission"
                 />
 
                 <template v-else>

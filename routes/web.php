@@ -40,6 +40,7 @@ Route::prefix('api/tehnikaplaan')
                 Route::get('performances', [TechnicalPlanController::class, 'performances'])->name('performances');
                 Route::post('ai-review', [TechnicalPlanController::class, 'aiReview'])->name('ai')->middleware('throttle:15,10');
                 Route::get('plans/{plan:token}', [TechnicalPlanController::class, 'show'])->name('show');
+                Route::post('plans/{plan:token}/copy', [TechnicalPlanController::class, 'copy'])->name('copy');
             });
     });
 

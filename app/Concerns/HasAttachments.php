@@ -69,6 +69,37 @@ trait HasAttachments
     }
 
     /**
+     * Duplicate this model's attachments into fresh staged uploads, physically
+     * copying each file on disk. Returns handles in the same shape the upload
+     * endpoint produces, so the client can submit them to move the copies onto
+     * a new model — used to carry files across when a plan is copied, without
+     * ever touching the source's own media.
+     *
+     * @return array<int, array{id: string, name: string, size: int, url: string, downloadUrl: string}>
+     */
+    public function duplicateAttachmentsToStaging(): array
+    {
+        return $this->getMedia($this->attachmentsCollection)
+            ->map(function (Media $media): array {
+                // One holder per file: syncAttachments() deletes each staged
+                // upload after moving it, so copies must not share a holder.
+                $pending = PendingUpload::create();
+
+                $copy = $media->copy($pending, $pending->attachmentsCollection(), self::ATTACHMENTS_DISK);
+
+                return [
+                    'id' => (string) $copy->uuid,
+                    'name' => $copy->file_name,
+                    'size' => (int) $copy->size,
+                    'url' => route('attachments.show', $copy->uuid),
+                    'downloadUrl' => route('attachments.show', ['uuid' => $copy->uuid, 'download' => 1]),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
      * Reconcile this model's attachments with the handles supplied by the
      * client: move newly staged uploads onto the model, keep the ones still
      * referenced, and drop any that were removed.

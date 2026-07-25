@@ -38,6 +38,13 @@ export interface PlanMeta {
     description: string;
 }
 
+export interface PriorPlan {
+    /** Token of a past submitted plan that can seed a new one. */
+    token: string;
+    /** Human label distinguishing the plan (the past staging's date). */
+    label: string;
+}
+
 export interface UpcomingPerformance {
     id: number;
     performer: string;
@@ -45,6 +52,8 @@ export interface UpcomingPerformance {
     showDate: string;
     duration: number | null;
     description: string;
+    /** The user's submitted plans for other stagings of the same show. */
+    priorPlans: PriorPlan[];
 }
 
 export interface PlanSound {

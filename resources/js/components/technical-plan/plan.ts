@@ -119,6 +119,34 @@ export function hydratePlan(payload: Partial<Plan> | null | undefined): Plan {
     };
 }
 
+/**
+ * Reset a plan's content (sound, scenes, equipment, extra) to a blank slate
+ * while leaving its performance meta untouched — used when starting a fresh
+ * plan for the selected performance.
+ */
+export function resetPlanContent(plan: Plan): void {
+    const blank = blankPlan();
+
+    plan.sound = blank.sound;
+    plan.scenes = blank.scenes;
+    plan.equipment = blank.equipment;
+    plan.extra = blank.extra;
+}
+
+/**
+ * Copy the content from a source plan onto the current one, keeping the
+ * selected performance meta. Files come from the copy endpoint as freshly
+ * staged duplicates (their own handles), so they carry across as-is.
+ */
+export function applyPlanContent(plan: Plan, source: Partial<Plan>): void {
+    const hydrated = hydratePlan(source);
+
+    plan.sound = hydrated.sound;
+    plan.scenes = hydrated.scenes;
+    plan.equipment = hydrated.equipment;
+    plan.extra = hydrated.extra;
+}
+
 export function formatFileSize(bytes: number | null | undefined): string {
     if (bytes == null) {
         return '';

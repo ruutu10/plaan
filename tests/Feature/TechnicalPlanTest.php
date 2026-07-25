@@ -262,6 +262,38 @@ class TechnicalPlanTest extends TestCase
         $response->assertJsonMissing(['showName' => 'Möödunud etendus']);
     }
 
+    public function test_performances_surface_the_users_prior_plans_for_the_same_show(): void
+    {
+        // Upcoming staging of "Kevadetendus".
+        $upcoming = Performance::factory()->create([
+            'show_name' => 'Kevadetendus',
+            'show_date' => now()->addWeek()->toDateString(),
+        ]);
+
+        // A past staging of the same show, with the user's submitted plan.
+        $past = Performance::factory()->past()->create(['show_name' => 'Kevadetendus']);
+        $ownPlan = TechnicalPlan::factory()->for($this->user)->for($past)->submitted()->create();
+
+        // Noise that must NOT be offered as a copy source:
+        TechnicalPlan::factory()->for($past)->submitted()->create(); // another user's plan
+        TechnicalPlan::factory()->for($this->user)->submitted()->create([ // different show
+            'performance_id' => Performance::factory()->past()->create(['show_name' => 'Suveetendus']),
+        ]);
+        TechnicalPlan::factory()->for($this->user)->create([ // unsubmitted draft, same show
+            'performance_id' => Performance::factory()->past()->create(['show_name' => 'Kevadetendus']),
+        ]);
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'results');
+
+        $priorPlans = $response->json('results.0.priorPlans');
+        $this->assertCount(1, $priorPlans);
+        $this->assertSame($ownPlan->token, $priorPlans[0]['token']);
+        $this->assertSame($past->show_date->format('d.m.Y'), $priorPlans[0]['label']);
+    }
+
     public function test_lookup_returns_the_authenticated_users_submitted_plans(): void
     {
         $performance = Performance::factory()->create(['show_name' => 'Esitatud plaan']);
@@ -481,6 +513,77 @@ class TechnicalPlanTest extends TestCase
         ]))->assertOk();
 
         $this->assertCount(0, TechnicalPlan::first()->getMedia((new TechnicalPlan)->attachmentsCollection()));
+    }
+
+    public function test_copying_a_plan_duplicates_its_attachments_on_disk(): void
+    {
+        Storage::fake('local');
+
+        // A submitted plan that owns one attachment.
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'extra' => ['files' => [['id' => $this->uploadHandle(), 'name' => 'plaan.pdf', 'size' => 120]]],
+        ]))->json('token');
+
+        $source = TechnicalPlan::where('token', $token)->first();
+        $sourceMedia = $source->getMedia($source->attachmentsCollection())->first();
+
+        $response = $this->postJson(route('technical-plan.copy', $source));
+
+        $response->assertOk();
+        $files = $response->json('extra.files');
+        $this->assertCount(1, $files);
+
+        // A fresh handle, staged on a PendingUpload, pointing at a distinct file.
+        $this->assertNotSame((string) $sourceMedia->uuid, $files[0]['id']);
+        $this->assertSame('plaan.pdf', $files[0]['name']);
+
+        $copyMedia = Media::where('uuid', $files[0]['id'])->first();
+        $this->assertInstanceOf(PendingUpload::class, $copyMedia->model);
+
+        // Two independent files now exist on disk; the source keeps its own.
+        $this->assertSame(2, Media::count());
+        $this->assertNotSame($sourceMedia->getPathRelativeToRoot(), $copyMedia->getPathRelativeToRoot());
+        Storage::disk('local')->assertExists($sourceMedia->getPathRelativeToRoot());
+        Storage::disk('local')->assertExists($copyMedia->getPathRelativeToRoot());
+    }
+
+    public function test_a_copied_plans_attachments_move_onto_the_new_plan_on_submit(): void
+    {
+        Storage::fake('local');
+
+        $sourceToken = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'extra' => ['files' => [['id' => $this->uploadHandle(), 'name' => 'plaan.pdf', 'size' => 120]]],
+        ]))->json('token');
+
+        $source = TechnicalPlan::where('token', $sourceToken)->first();
+
+        // Duplicate the attachments to staging, as the wizard does when copying.
+        $files = $this->postJson(route('technical-plan.copy', $source))->json('extra.files');
+
+        // Submit a brand-new plan carrying the copied handles.
+        $newToken = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'extra' => ['files' => $files],
+        ]))->json('token');
+
+        $this->assertNotSame($sourceToken, $newToken);
+
+        $new = TechnicalPlan::where('token', $newToken)->first();
+        $this->assertCount(1, $new->getMedia($new->attachmentsCollection()));
+        // The source is untouched and still owns its own file.
+        $this->assertCount(1, $source->refresh()->getMedia($source->attachmentsCollection()));
+        // Two plans, two files, and no staging holders left behind.
+        $this->assertSame(2, Media::count());
+        $this->assertSame(0, PendingUpload::count());
+    }
+
+    public function test_copying_another_users_plan_is_forbidden(): void
+    {
+        $other = TechnicalPlan::factory()->submitted()->create();
+
+        $this->postJson(route('technical-plan.copy', $other))->assertForbidden();
     }
 
     /**
