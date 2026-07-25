@@ -213,7 +213,7 @@ onMounted(loadPerformances);
                     >
                         Millest alustada?
                     </span>
-                    <div class="flex flex-col gap-1">
+                    <div class="flex max-h-72 flex-col gap-1 overflow-y-auto">
                         <button
                             type="button"
                             :disabled="applyingSource"
@@ -243,12 +243,12 @@ onMounted(loadPerformances);
                             :key="prior.token"
                             type="button"
                             :disabled="applyingSource"
-                            class="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-white/70"
+                            class="flex cursor-pointer items-start gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-white/70"
                             @click="chooseSource(prior.token)"
                         >
                             <span
                                 :class="[
-                                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
+                                    'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
                                     sourceToken === prior.token
                                         ? 'border-r10-orange'
                                         : 'border-r10-grey-200',
@@ -259,11 +259,19 @@ onMounted(loadPerformances);
                                     class="h-2 w-2 rounded-full bg-r10-orange"
                                 />
                             </span>
-                            <span class="text-sm text-r10-ink">
-                                Kopeeri varem esitatud plaan
-                                <span class="font-semibold"
-                                    >· {{ prior.label }}</span
+                            <span class="min-w-0 flex-1">
+                                <span class="block text-sm text-r10-ink">
+                                    Kopeeri varem esitatud plaan
+                                    <span class="font-semibold"
+                                        >· {{ prior.label }}</span
+                                    >
+                                </span>
+                                <span
+                                    v-if="prior.author"
+                                    class="block text-[12px] text-r10-grey-500"
                                 >
+                                    Koostas {{ prior.author }}
+                                </span>
                             </span>
                         </button>
                     </div>

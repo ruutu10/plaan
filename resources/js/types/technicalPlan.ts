@@ -48,6 +48,8 @@ export interface PriorPlan {
     token: string;
     /** Human label distinguishing the plan (the past staging's date). */
     label: string;
+    /** Who handed the plan in, when that was not the user themselves. */
+    author: string | null;
 }
 
 export interface UpcomingPerformance {
@@ -57,7 +59,7 @@ export interface UpcomingPerformance {
     showDate: string;
     duration: number | null;
     description: string;
-    /** The user's submitted plans for other stagings of the same show. */
+    /** Plans handed in for other stagings of the same show, by the user or their teams. */
     priorPlans: PriorPlan[];
 }
 

@@ -54,14 +54,14 @@ class TechnicalPlanController extends Controller
     }
 
     /**
-     * Duplicate one of the user's own plans as the basis for a new one: return
+     * Duplicate a plan the user may reuse as the basis for a new one: return
      * its content together with fresh staged copies of its attachments (files
      * duplicated on disk), so submitting the new plan carries the files over
      * without affecting the source.
      */
     public function copy(TechnicalPlan $plan, Request $request): TechnicalPlanResource
     {
-        abort_unless($plan->user_id === $request->user()->id, 403);
+        abort_unless($plan->isVisibleTo($request->user()), 403);
 
         return TechnicalPlanResource::make($plan)->withDuplicatedAttachments();
     }
@@ -130,8 +130,11 @@ class TechnicalPlanController extends Controller
 
     /**
      * List upcoming performances the user can attach a plan to. Each row also
-     * carries the user's own submitted plans for other stagings of the same
-     * show (matched by name), so a new plan can be pre-filled from a past one.
+     * carries the plans handed in for other stagings of the same show (matched
+     * by name), so a new plan can be pre-filled from a past one. Those are not
+     * only the user's own: a plan for a performance of one of their teams counts
+     * too, which is how the next plan for a show can be written by someone else
+     * in the group than the one who sent the last.
      */
     public function performances(Request $request): JsonResponse
     {
@@ -143,12 +146,12 @@ class TechnicalPlanController extends Controller
             ->get();
 
         $priorPlans = TechnicalPlan::query()
-            ->with('performance')
-            ->where('user_id', $request->user()->id)
+            ->with(['performance', 'user'])
+            ->visibleTo($request->user())
             ->whereIn('status', [TechnicalPlanStatus::Submitted, TechnicalPlanStatus::Received])
             ->whereHas('performance', fn ($query) => $query->whereIn('show_name', $upcoming->pluck('show_name')->filter()->all()))
             ->latest('submitted_at')
-            ->limit(10)
+            ->limit(25)
             ->get();
 
         $results = $upcoming->map(

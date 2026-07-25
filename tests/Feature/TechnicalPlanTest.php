@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Enums\TeamRole;
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Models\PendingUpload;
 use App\Models\Performance;
+use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
 use App\Notifications\TechnicalPlanSubmitted;
@@ -320,13 +322,14 @@ class TechnicalPlanTest extends TestCase
         $ownPlan = TechnicalPlan::factory()->for($this->user)->for($past)->submitted()->create();
 
         // Noise that must NOT be offered as a copy source:
-        TechnicalPlan::factory()->for($past)->submitted()->create(); // another user's plan
+        TechnicalPlan::factory()->for($past)->submitted()->create(); // another team's plan
         TechnicalPlan::factory()->for($this->user)->submitted()->create([ // different show
             'performance_id' => Performance::factory()->past()->create(['show_name' => 'Suveetendus']),
         ]);
         TechnicalPlan::factory()->for($this->user)->create([ // unsubmitted draft, same show
             'performance_id' => Performance::factory()->past()->create(['show_name' => 'Kevadetendus']),
         ]);
+        TechnicalPlan::factory()->for($this->user)->for($upcoming)->submitted()->create(); // their own, for this very staging
 
         $response = $this->getJson(route('technical-plan.performances'));
 
@@ -337,6 +340,69 @@ class TechnicalPlanTest extends TestCase
         $this->assertCount(1, $priorPlans);
         $this->assertSame($ownPlan->token, $priorPlans[0]['token']);
         $this->assertSame($past->show_date->format('d.m.Y'), $priorPlans[0]['label']);
+        // A plan of the user's own does not need to say who wrote it.
+        $this->assertNull($priorPlans[0]['author']);
+    }
+
+    public function test_performances_surface_the_plans_of_the_users_teams_for_the_same_show(): void
+    {
+        $team = Team::factory()->create();
+        $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
+        $teamMate = User::factory()->create(['name' => 'Kadri Kolleeg']);
+
+        // The team's upcoming staging, and its plan for an earlier one — handed
+        // in by somebody else in the group, so the user can take it over.
+        $upcoming = Performance::factory()->create([
+            'team_id' => $team->id,
+            'show_name' => 'Talveetendus',
+            'show_date' => now()->addWeek()->toDateString(),
+        ]);
+        $past = Performance::factory()->past()->create([
+            'team_id' => $team->id,
+            'show_name' => 'Talveetendus',
+        ]);
+        $teamPlan = TechnicalPlan::factory()->for($teamMate)->for($past)->submitted()->create();
+
+        // A team-mate's unfinished draft stays theirs alone.
+        TechnicalPlan::factory()->for($teamMate)->for($past)->create();
+
+        // Another group's plan for a show of the same name is not the team's.
+        TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => Performance::factory()->past()->create(['show_name' => 'Talveetendus']),
+        ]);
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'results');
+
+        $priorPlans = $response->json('results.0.priorPlans');
+        $this->assertCount(1, $priorPlans);
+        $this->assertSame($teamPlan->token, $priorPlans[0]['token']);
+        // Taking over somebody else's work names them.
+        $this->assertSame('Kadri Kolleeg', $priorPlans[0]['author']);
+        $this->assertSame($upcoming->id, $response->json('results.0.id'));
+    }
+
+    public function test_a_team_mates_plan_for_the_upcoming_staging_can_be_taken_over(): void
+    {
+        $team = Team::factory()->create();
+        $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
+        $teamMate = User::factory()->create();
+
+        $upcoming = Performance::factory()->create([
+            'team_id' => $team->id,
+            'show_date' => now()->addWeek()->toDateString(),
+        ]);
+        $teamPlan = TechnicalPlan::factory()->for($teamMate)->for($upcoming)->submitted()->create();
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+        $this->assertSame(
+            [$teamPlan->token],
+            array_column($response->json('results.0.priorPlans'), 'token'),
+        );
     }
 
     public function test_lookup_returns_the_authenticated_users_submitted_plans(): void
@@ -752,6 +818,28 @@ class TechnicalPlanTest extends TestCase
         $other = TechnicalPlan::factory()->submitted()->create();
 
         $this->postJson(route('technical-plan.copy', $other))->assertForbidden();
+    }
+
+    public function test_copying_a_handed_in_plan_of_the_users_team_is_allowed(): void
+    {
+        $team = Team::factory()->create();
+        $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
+
+        $performance = Performance::factory()->create(['team_id' => $team->id]);
+        $plan = TechnicalPlan::factory()->for($performance)->submitted()->create();
+
+        $this->postJson(route('technical-plan.copy', $plan))->assertOk();
+    }
+
+    public function test_copying_a_team_mates_draft_is_forbidden(): void
+    {
+        $team = Team::factory()->create();
+        $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
+
+        $performance = Performance::factory()->create(['team_id' => $team->id]);
+        $draft = TechnicalPlan::factory()->for($performance)->create();
+
+        $this->postJson(route('technical-plan.copy', $draft))->assertForbidden();
     }
 
     public function test_a_scene_sound_file_can_be_uploaded_and_moves_onto_the_plan(): void

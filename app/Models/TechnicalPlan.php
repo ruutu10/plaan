@@ -7,6 +7,8 @@ use App\Enums\TechnicalPlanStatus;
 use App\Rules\AllowedAttachment;
 use Database\Factories\TechnicalPlanFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -142,6 +144,37 @@ class TechnicalPlan extends Model implements HasMedia
         }, $this->scenes);
 
         $this->save();
+    }
+
+    /**
+     * Limit the query to the plans the given user may open as the basis for a
+     * new plan: their own plans, whatever state those are in, plus the plans
+     * their teams' performances have already been handed in with. A team-mate's
+     * unfinished draft stays theirs alone.
+     *
+     * @param  Builder<TechnicalPlan>  $query
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user): void
+    {
+        $teamIds = $user->teams()->pluck('teams.id');
+
+        $query->where(fn (Builder $query) => $query
+            ->where('user_id', $user->id)
+            ->orWhere(fn (Builder $query) => $query
+                ->whereIn('status', [TechnicalPlanStatus::Submitted, TechnicalPlanStatus::Received])
+                ->whereHas('performance', fn (Builder $performance) => $performance->whereIn('team_id', $teamIds))));
+    }
+
+    /**
+     * Determine whether the user may open this plan — see {@see visibleTo()}.
+     */
+    public function isVisibleTo(User $user): bool
+    {
+        return static::query()
+            ->whereKey($this->getKey())
+            ->visibleTo($user)
+            ->exists();
     }
 
     /**
