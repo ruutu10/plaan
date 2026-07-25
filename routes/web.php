@@ -6,6 +6,7 @@ use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Controllers\TechnicalPlanController;
 use App\Http\Middleware\EnsureTeamMembership;
+use App\Models\TechnicalPlan;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -30,6 +31,13 @@ Route::prefix('tehnikaplaan')->name('technical-plan.')->group(function () {
     Route::get('/', [TechnicalPlanController::class, 'index'])->name('index');
     Route::get('p/{plan:token}', [TechnicalPlanController::class, 'public'])->name('public');
 });
+
+// The technical crew's overview of every plan that has been written, whatever
+// state it is in. Closed to everyone but the holders of the view-all permission
+// (the "technician" role).
+Route::get('technical-plans', [TechnicalPlanController::class, 'overview'])
+    ->middleware(['auth', 'can:'.TechnicalPlan::VIEW_ALL_PERMISSION])
+    ->name('technical-plans.index');
 
 // JSON API consumed by the technical-plan wizard frontend.
 Route::prefix('api/tehnikaplaan')

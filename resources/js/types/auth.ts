@@ -10,8 +10,14 @@ export type User = {
     [key: string]: unknown;
 };
 
+/** Abilities the signed-in user holds outside their teams (Spatie permissions). */
+export type AuthAbilities = {
+    viewAllTechnicalPlans: boolean;
+};
+
 export type Auth = {
     user: User;
+    can: AuthAbilities;
 };
 
 /* @chisel-passkeys */

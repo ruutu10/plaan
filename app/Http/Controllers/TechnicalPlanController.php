@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Requests\StoreTechnicalPlanRequest;
+use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
 use App\Http\Resources\SavedTechnicalPlan as SavedTechnicalPlanResource;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Http\Resources\TechnicalPlanSummary as TechnicalPlanSummaryResource;
@@ -32,6 +33,29 @@ class TechnicalPlanController extends Controller
         return Inertia::render('TechnicalPlan', [
             'config' => $this->wizardConfig(),
             'initialPlan' => null,
+        ]);
+    }
+
+    /**
+     * List every plan in the house — drafts included — for the crew running the
+     * shows. The route is closed to anyone without
+     * {@see TechnicalPlan::VIEW_ALL_PERMISSION}.
+     */
+    public function overview(Request $request): Response
+    {
+        // Newest staging first: what is coming up (or has just been played) is
+        // what the crew looks for. Plans not tied to a performance have no date
+        // to sort by and land at the end, newest of those first.
+        $plans = TechnicalPlan::query()
+            ->with(['user', 'performance.show.team'])
+            ->leftJoin('performances', 'performances.id', '=', 'technical_plans.performance_id')
+            ->orderByDesc('performances.date')
+            ->orderByDesc('technical_plans.created_at')
+            ->select('technical_plans.*')
+            ->get();
+
+        return Inertia::render('technical-plans/Index', [
+            'plans' => AdminTechnicalPlanResource::collection($plans)->resolve($request),
         ]);
     }
 

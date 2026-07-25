@@ -57,6 +57,12 @@ class TechnicalPlan extends Model implements HasMedia
      */
     public const SOUND_COLLECTION = 'sound';
 
+    /**
+     * The permission — held by the "technician" role — that opens every plan in
+     * the house to its holder, not just the ones they wrote or their teams sent.
+     */
+    public const VIEW_ALL_PERMISSION = 'technical_plans.view_all';
+
     protected string $attachmentsCollection = 'technical-plan';
 
     /**

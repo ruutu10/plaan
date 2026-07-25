@@ -109,3 +109,19 @@ export interface LookupResult {
     title: string;
     sub: string;
 }
+
+/** One row of the technical crew's overview of every plan in the house. */
+export interface AdminPlanRow {
+    token: string;
+    showName: string | null;
+    teamName: string | null;
+    /** ISO date (YYYY-MM-DD) of the staging, if the plan names one. */
+    performanceDate: string | null;
+    submittedBy: string | null;
+    submittedByEmail: string | null;
+    status: string;
+    statusLabel: string;
+    submittedAt: string | null;
+    /** Public link opening the plan itself. */
+    url: string;
+}
