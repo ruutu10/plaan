@@ -1,4 +1,4 @@
-import type { Plan, Scene } from '@/types/technicalPlan';
+import type { Plan, PlanFile, Scene } from '@/types/technicalPlan';
 
 export const STEP_LABELS = [
     'Etendus',
@@ -36,10 +36,19 @@ export function blankScene(id: string = `${SCENE_ID_PREFIX}1`): Scene {
         name: '',
         light: '',
         soundUrl: '',
+        soundFile: null,
         sound: '',
         notes: '',
         collapsed: false,
     };
+}
+
+/**
+ * A file handle as it comes back from the server, ready to be shown. Handles
+ * without an id never made it server-side and are dropped.
+ */
+function storedFile(file: PlanFile | null | undefined): PlanFile | null {
+    return file?.id ? { ...file, status: 'ready' as const } : null;
 }
 
 export function blankPlan(): Plan {
@@ -98,6 +107,7 @@ export function hydratePlan(payload: Partial<Plan> | null | undefined): Plan {
                       ...blankScene(),
                       ...s,
                       id: `${SCENE_ID_PREFIX}${index + 1}`,
+                      soundFile: storedFile(s.soundFile),
                       collapsed: false,
                   }))
                 : [blankScene()],
@@ -110,11 +120,8 @@ export function hydratePlan(payload: Partial<Plan> | null | undefined): Plan {
             ...base.extra,
             ...(payload.extra ?? {}),
             files: (payload.extra?.files ?? [])
-                .filter((file) => Boolean(file.id))
-                .map((file) => ({
-                    ...file,
-                    status: 'ready' as const,
-                })),
+                .map(storedFile)
+                .filter((file): file is PlanFile => file !== null),
         },
     };
 }

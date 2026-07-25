@@ -31,7 +31,7 @@ class TechnicalPlanFactory extends Factory
                 'musicianDetail' => '',
             ],
             'scenes' => [
-                ['id' => 'stseen-1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'sound' => '', 'notes' => ''],
+                ['id' => 'stseen-1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'soundFile' => null, 'sound' => '', 'notes' => ''],
             ],
             'equipment' => [
                 'items' => [],

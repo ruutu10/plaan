@@ -18,8 +18,9 @@ class TechnicalPlan extends JsonResource
     public static $wrap = null;
 
     /**
-     * Whether the file handles should point at fresh staged copies of the
-     * attachments rather than at the plan's own media.
+     * Whether the file handles — the plan's own attachments as well as the
+     * scenes' sound files — should point at fresh staged copies rather than at
+     * the plan's own media.
      */
     private bool $duplicateAttachments = false;
 
@@ -57,7 +58,7 @@ class TechnicalPlan extends JsonResource
                 'description' => $plan->performance?->description ?? '', // @phpstan-ignore-line
             ],
             'sound' => $plan->sound,
-            'scenes' => $plan->scenes,
+            'scenes' => PlanScene::forPlan($plan, $request, $this->duplicateAttachments),
             'equipment' => $plan->equipment,
             'extra' => [
                 'notes' => $plan->extra['notes'] ?? '',

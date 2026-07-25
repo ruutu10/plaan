@@ -10,7 +10,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * The receipt the wizard gets back after saving a plan: where the plan now
  * stands, the link to share it, and the canonical list of files it ended up
- * with (the client replaces its own staged handles with these).
+ * with (the client replaces its own staged handles with these). The scenes
+ * come back for the same reason — each carries the handle of the sound file it
+ * ended up with.
  *
  * @property-read TechnicalPlanModel $resource
  */
@@ -43,6 +45,7 @@ class SavedTechnicalPlan extends JsonResource
             'status' => $plan->status->value,
             'publicUrl' => route('technical-plan.public', $plan),
             'files' => Attachment::collection($plan->attachments())->resolve($request),
+            'scenes' => PlanScene::forPlan($plan, $request),
         ];
     }
 }

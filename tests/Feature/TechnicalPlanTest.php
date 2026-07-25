@@ -58,7 +58,7 @@ class TechnicalPlanTest extends TestCase
                 'musicianDetail' => '',
             ],
             'scenes' => [
-                ['id' => 'stseen-1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'sound' => '', 'notes' => ''],
+                ['id' => 'stseen-1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'soundFile' => null, 'sound' => '', 'notes' => ''],
             ],
             'equipment' => [
                 'items' => [
@@ -339,6 +339,32 @@ class TechnicalPlanTest extends TestCase
 
         $response->assertUnprocessable();
         $response->assertJsonStructure(['message']);
+    }
+
+    public function test_ai_review_sees_a_scenes_sound_file_before_the_plan_is_saved(): void
+    {
+        Storage::fake('local');
+        config()->set('services.anthropic.key', 'test-key');
+
+        $handle = $this->soundHandle();
+
+        // The reviewer is handed an unsaved plan, so the scene's handle is
+        // still the staged one — it must survive into the reviewed payload.
+        $this->mock(TechnicalPlanReviewer::class)
+            ->shouldReceive('review')
+            ->once()
+            ->andReturnUsing(function (TechnicalPlan $plan) use ($handle): string {
+                $scene = (new TechnicalPlanResource($plan))->toArray(request())['scenes'][0];
+
+                $this->assertSame($handle, $scene['soundFile']['id']);
+                $this->assertSame('muusika.mp3', $scene['soundFile']['name']);
+
+                return 'Tagasiside';
+            });
+
+        $this->postJson(route('technical-plan.ai'), $this->validPayload([
+            'scenes' => [['soundFile' => ['id' => $handle, 'name' => 'muusika.mp3', 'size' => 120]]],
+        ]))->assertOk();
     }
 
     public function test_the_frontend_resource_paints_a_full_picture_of_a_saved_plan(): void
@@ -626,6 +652,195 @@ class TechnicalPlanTest extends TestCase
         $this->postJson(route('technical-plan.copy', $other))->assertForbidden();
     }
 
+    public function test_a_scene_sound_file_can_be_uploaded_and_moves_onto_the_plan(): void
+    {
+        Storage::fake('local');
+
+        $handle = $this->soundHandle();
+
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'scenes' => [
+                ['soundFile' => ['id' => $handle, 'name' => 'muusika.mp3', 'size' => 120]],
+            ],
+        ]));
+
+        $response->assertOk();
+
+        $plan = TechnicalPlan::first();
+        $sound = $plan->getMedia(TechnicalPlan::SOUND_COLLECTION);
+
+        // The file lives in the plan's own `sound` collection, apart from the
+        // plan's general attachments.
+        $this->assertCount(1, $sound);
+        $this->assertCount(0, $plan->attachments());
+        $this->assertSame('muusika.mp3', $sound->first()->file_name);
+        $this->assertSame(0, PendingUpload::count());
+
+        // Moving the file re-keys it, so the scene now carries the new handle…
+        $stored = $plan->scenes[0]['soundFile'];
+        $this->assertSame((string) $sound->first()->uuid, $stored['id']);
+        $this->assertSame('muusika.mp3', $stored['name']);
+
+        // …and the client is handed that same handle back, with its links.
+        $returned = $response->json('scenes.0.soundFile');
+        $this->assertSame($stored['id'], $returned['id']);
+        $this->assertSame(route('attachments.show', $stored['id']), $returned['url']);
+        $this->assertSame(
+            route('attachments.show', ['uuid' => $stored['id'], 'download' => 1]),
+            $returned['downloadUrl'],
+        );
+    }
+
+    public function test_a_scene_keeps_its_sound_file_when_the_plan_is_saved_again(): void
+    {
+        Storage::fake('local');
+
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'scenes' => [['soundFile' => ['id' => $this->soundHandle()]]],
+        ]))->json('token');
+
+        $handle = TechnicalPlan::first()->scenes[0]['soundFile']['id'];
+
+        // The wizard re-submits the handle it got back; the file must survive.
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $token,
+            'submit' => true,
+            'scenes' => [['soundFile' => ['id' => $handle]]],
+        ]))->assertOk();
+
+        $plan = TechnicalPlan::first();
+        $this->assertCount(1, $plan->getMedia(TechnicalPlan::SOUND_COLLECTION));
+        $this->assertSame($handle, $plan->scenes[0]['soundFile']['id']);
+        $this->assertSame(1, Media::count());
+    }
+
+    public function test_dropping_a_scenes_sound_file_deletes_it(): void
+    {
+        Storage::fake('local');
+
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'scenes' => [['soundFile' => ['id' => $this->soundHandle()]]],
+        ]))->json('token');
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $token,
+            'scenes' => [['soundFile' => null]],
+        ]))->assertOk();
+
+        $plan = TechnicalPlan::first();
+        $this->assertCount(0, $plan->getMedia(TechnicalPlan::SOUND_COLLECTION));
+        $this->assertNull($plan->scenes[0]['soundFile']);
+        $this->assertSame(0, Media::count());
+    }
+
+    public function test_an_unknown_scene_sound_handle_leaves_the_scene_without_a_file(): void
+    {
+        Storage::fake('local');
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'scenes' => [['soundFile' => ['id' => 'does-not-exist', 'name' => 'ghost.mp3']]],
+        ]))->assertOk();
+
+        $plan = TechnicalPlan::first();
+        $this->assertCount(0, $plan->getMedia(TechnicalPlan::SOUND_COLLECTION));
+        $this->assertNull($plan->scenes[0]['soundFile']);
+    }
+
+    public function test_a_scene_cannot_have_both_a_sound_link_and_a_sound_file(): void
+    {
+        Storage::fake('local');
+
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'scenes' => [[
+                'soundUrl' => 'https://example.com/muusika.mp3',
+                'soundFile' => ['id' => $this->soundHandle()],
+            ]],
+        ]));
+
+        $response->assertUnprocessable();
+        $this->assertArrayHasKey('scenes.0.soundFile', $response->json('errors'));
+        $this->assertSame(0, TechnicalPlan::count());
+    }
+
+    public function test_a_sound_upload_only_accepts_sound_file_types(): void
+    {
+        Storage::fake('local');
+
+        // A PDF is fine as a general attachment…
+        $this->postJson(route('attachments.store'), [
+            'file' => UploadedFile::fake()->create('plaan.pdf', 120, 'application/pdf'),
+        ])->assertOk();
+
+        // …but not as a scene's sound file.
+        $response = $this->postJson(route('attachments.store'), [
+            'file' => UploadedFile::fake()->create('plaan.pdf', 120, 'application/pdf'),
+            'collection' => TechnicalPlan::SOUND_COLLECTION,
+        ]);
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('file');
+        $this->assertSame(1, Media::count());
+    }
+
+    public function test_a_sound_upload_rejects_an_unknown_collection(): void
+    {
+        Storage::fake('local');
+
+        $response = $this->postJson(route('attachments.store'), [
+            'file' => UploadedFile::fake()->create('muusika.mp3', 120, 'audio/mpeg'),
+            'collection' => 'technical-plan',
+        ]);
+
+        $response->assertUnprocessable();
+        $this->assertSame(0, Media::count());
+    }
+
+    public function test_copying_a_plan_duplicates_its_scene_sound_files(): void
+    {
+        Storage::fake('local');
+
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'scenes' => [['soundFile' => ['id' => $this->soundHandle()]]],
+        ]))->json('token');
+
+        $source = TechnicalPlan::where('token', $token)->first();
+        $sourceMedia = $source->getMedia(TechnicalPlan::SOUND_COLLECTION)->first();
+
+        $copied = $this->postJson(route('technical-plan.copy', $source))->json('scenes.0.soundFile');
+
+        // A fresh handle on a staged copy — the source keeps its own file.
+        $this->assertNotSame((string) $sourceMedia->uuid, $copied['id']);
+        $this->assertSame('muusika.mp3', $copied['name']);
+        $this->assertInstanceOf(PendingUpload::class, Media::where('uuid', $copied['id'])->first()->model);
+
+        // Submitting the copy moves the duplicate onto the new plan.
+        $newToken = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'scenes' => [['soundFile' => $copied]],
+        ]))->json('token');
+
+        $new = TechnicalPlan::where('token', $newToken)->first();
+        $this->assertCount(1, $new->getMedia(TechnicalPlan::SOUND_COLLECTION));
+        $this->assertCount(1, $source->refresh()->getMedia(TechnicalPlan::SOUND_COLLECTION));
+        $this->assertSame(2, Media::count());
+        $this->assertSame(0, PendingUpload::count());
+    }
+
+    public function test_the_wizard_config_lists_the_sound_extensions(): void
+    {
+        $response = $this->get(route('technical-plan.index'));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('TechnicalPlan')
+            ->where('config.soundExtensions', ['mp3', 'wav', 'ogg'])
+            ->etc());
+
+        // Sound files are a subset of what may be uploaded in general.
+        $config = $response->viewData('page')['props']['config'];
+        $this->assertEmpty(array_diff($config['soundExtensions'], $config['allowedExtensions']));
+    }
+
     /**
      * Upload a fake file and return the handle the wizard would send on submit.
      */
@@ -633,6 +848,17 @@ class TechnicalPlanTest extends TestCase
     {
         return $this->postJson(route('attachments.store'), [
             'file' => UploadedFile::fake()->create($name, 120, 'application/pdf'),
+        ])->json('id');
+    }
+
+    /**
+     * Upload a fake sound file and return the handle for a scene's sound file.
+     */
+    private function soundHandle(string $name = 'muusika.mp3'): string
+    {
+        return $this->postJson(route('attachments.store'), [
+            'file' => UploadedFile::fake()->create($name, 120, 'audio/mpeg'),
+            'collection' => TechnicalPlan::SOUND_COLLECTION,
         ])->json('id');
     }
 }

@@ -27,6 +27,7 @@ Need väljad on kasutaja saadetud JSON objektis. Kui viitad mõnele väljale, si
   - `name` — stseeni/ülemineku nimi või vihje (cue).
   - `light` — soovitud valgus.
   - `soundUrl` — link stseeni helifailile (kui heli kasutatakse).
+  - `soundFile` — stseeni juurde üles laaditud helifail (`null`, kui pole laaditud). Kirje: `id`, `name` (failinimi), `size` (baitides), `url` (voogedastuslink) ja `downloadUrl` (allalaadimislink). Stseenil saab olla kas `soundUrl` või `soundFile`, mitte mõlemad — kumbki neist tähendab, et heli on tehnikule kättesaadav.
   - `sound` — heli kasutuse kirjeldus (millal alustada, mis hetkel jne).
   - `notes` — muud olulised märkused.
 - **equipment** — eritehnika:
@@ -49,10 +50,11 @@ Kasuta seda konteksti hindamisel — see selgitab, mis peab plaanis kirjas olema
 
 1. **Terviklikkus.** Kas üldinfo on olemas ja mõistlik: etenduse nimi, kuupäev, kestus, kontakt. Etenduse info võib olla tühi (esineja esitab plaani ettevaatevalt etendusele, mida pole veel registreeritud). Märgi puuduolev või selgelt ebareaalne info (nt tühi kestus, puuduv kontakt). Kirjeldus peaks olema **lavastuslik, mitte turunduslik** — sellest peab aru saama, mis formaadiga on tegu ja kuidas etendus struktuurselt kulgeb (osad, paus).
 2. **Heli sidusus.** Kui `micsMode` on `yes`, aga `micsDetail` on tühi või ebamäärane — palu täpsustada arv, tüüp, paigutus ja kas mikrofon peab olema töötav või on rekvisiit. Sama loogika `musicianMode`/`musicianDetail` kohta (pill, kas vaja pulti ühendada või mängib akustiliselt, asukoht laval, kas vajab voolu, kes pilli/kaablid toob).
-3. **Muusika ja helifailid.** Kui mõni stseen viitab helile (`sound` väli stseenis täidetud), peab tehnik saama heli failid kätte — kas stseeni `soundUrl` lingi kaudu või `extra.files` alla üles laaditud manusena. Kui heli on mainitud, aga ei ole ühtegi `soundUrl` linki ega asjakohast manust, on see puudujääk — too see selgelt esile. Lisaks kontrolli:
+3. **Muusika ja helifailid.** Kui mõni stseen viitab helile (`sound` väli stseenis täidetud), peab tehnik saama heli failid kätte — kas stseeni `soundUrl` lingi kaudu, stseeni juurde laaditud `soundFile` failina või `extra.files` alla üles laaditud manusena. Kui heli on mainitud, aga ei ole ühtegi `soundUrl` linki, `soundFile` faili ega asjakohast manust, on see puudujääk — too see selgelt esile. Lisaks kontrolli:
    - Pala peab olema **konkreetne** (pealkiri + esitaja või fail), mitte ainult meeleolu ("kurb lugu") — v.a kui esineja on teadlikult andnud tehnikule vaba valiku.
    - Kui täpsus loeb, peaks juures olema **algusaeg/sisenemispunkt** (nt "alates 0:11") ja **kuidas mängida/lõpetada** (fade, järsk katkestus, loop, "muusika jätkub sealt, kust pooleli jäi").
    - **Ristviited klapivad:** iga stseenis mainitud pala on ka failina/lingina olemas ja vastupidi — üleslaaditud fail, mida ükski stseen ei kasuta, väärib küsimust.
+   - Stseeni juurde laaditud `soundFile` on kõige kindlam viis heli edastada — link võib vahepeal kaduda või olla ligipääsupiiranguga. Kui stseenil on ainult `soundUrl` ja see viitab kohale, kuhu tehnik ei pruugi ligi pääseda (nt privaatne pilvekaust või sisselogimist nõudev teenus), soovita fail otse stseeni juurde laadida. Ära nõua seda, kui link on avalik ja ilmselgelt töötav (nt YouTube).
 4. Plaan ei tohi sõltuda konkreetse tehniku mälust või välisest ressursist ilma selgituseta (nt "tehnik teab", "kasutage arvutis olevat playlisti") — võõras tehnik jääb hätta.
 5. **Stseenid ja üleminekud.** See on plaani kõige olulisem osa.
    - **Üleminek on plaani #1 kvaliteedimõõt.** Iga stseeni juures peab olema selge, mis praeguse stseeni lõpetab ja mis järgmise käivitab: öeldud repliik, õhtujuhi märguanne, kelluke, allalugemine, näitleja liikumine (lavalt lahkumine, keskpoosi võtmine), muusika lõpp või ajalimiit ("3 min, siis tehnik tõmbab kinni"). Puuduv käivitushetk = tehnik peab arvama = segadus.
@@ -121,7 +123,7 @@ Järmised tehnilised lahendused ei ole improkeskuse tehnikapargiga teostatavad:
 Järjesta leiud tähtsuse järgi — ülalt alla kaotab tehnik kõige rohkem, kui puudu:
 
 1. **Üleminekud** — mis käivitab iga stseeni? (Puuduv trigger = etendus takerdub)
-2. **Muusika kättesaadavus + ristviited** — kas iga vajalik pala on lingi/failina olemas ja stseeniga seotud?
+2. **Muusika kättesaadavus + ristviited** — kas iga vajalik pala on lingi (`soundUrl`), stseeni helifailina (`soundFile`) või manusena olemas ja stseeniga seotud?
 3. **Algus ja lõpp ankurdatud** — kuidas etendus algab ja lõpeb?
 4. **Teostatavus improkeskuses** — kas soovitud lahendused mahuvad Piirangute alla (suits, mikrofonid, liikuvpead)?
 5. **Mikrofonid / eritehnika / vool / logistika** — kas midagi tuleb füüsiliselt ette valmistada?

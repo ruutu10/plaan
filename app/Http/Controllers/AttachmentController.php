@@ -5,17 +5,16 @@ namespace App\Http\Controllers;
 use App\Concerns\HasAttachments;
 use App\Http\Resources\Attachment as AttachmentResource;
 use App\Models\PendingUpload;
-use Closure;
+use App\Rules\AllowedAttachment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Component\Mime\MimeTypes;
 
 /**
  * Handles ad-hoc file uploads that are staged before their owning model exists.
@@ -28,22 +27,23 @@ class AttachmentController extends Controller
     /**
      * Store a single uploaded file server-side and return a handle the client
      * sends back with its form data once the owning record is saved.
+     *
+     * An upload may name the collection it is destined for (`collection`), in
+     * which case it is held to that collection's own, narrower allowlist — a
+     * scene's sound file accepts audio only.
      */
     public function store(Request $request): AttachmentResource|JsonResponse
     {
         $maxKilobytes = (int) (config('media-library.max_file_size') / 1024);
-
-        $allowed = array_map(
-            fn (string $extension): string => strtolower($extension),
-            (array) config('media-library.allowed_extensions', []),
-        );
+        $collection = $request->string('collection')->toString() ?: null;
 
         $validator = Validator::make($request->all(), [
+            'collection' => ['nullable', 'string', Rule::in(AllowedAttachment::collections())],
             'file' => [
                 'required',
                 'file',
                 'max:'.$maxKilobytes,
-                $this->allowedMimeTypeRule($allowed),
+                new AllowedAttachment($collection),
             ],
         ]);
 
@@ -56,12 +56,6 @@ class AttachmentController extends Controller
             ], 422);
         }
 
-        if ($allowed !== [] && ! in_array(strtolower($file->getClientOriginalExtension()), $allowed, true)) {
-            return response()->json([
-                'message' => 'Seda failitüüpi ei saa üles laadida.',
-            ], 422);
-        }
-
         $pending = PendingUpload::create();
 
         $media = $pending
@@ -69,42 +63,6 @@ class AttachmentController extends Controller
             ->toMediaCollection($pending->attachmentsCollection());
 
         return AttachmentResource::make($media);
-    }
-
-    /**
-     * A validation rule asserting the file's real, content-sniffed MIME type is
-     * one that an allowed extension can legitimately produce — so a script that
-     * has merely been renamed (e.g. `shell.jpg`) is rejected on its content, not
-     * just its name. Allowed extensions Symfony has no MIME mapping for (such as
-     * `.qlc`) cannot be content-checked and are left to the extension allowlist.
-     *
-     * @param  array<int, string>  $allowedExtensions
-     */
-    private function allowedMimeTypeRule(array $allowedExtensions): Closure
-    {
-        $mimeTypes = MimeTypes::getDefault();
-
-        $allowedMimeTypes = [];
-
-        foreach ($allowedExtensions as $extension) {
-            $allowedMimeTypes = array_merge($allowedMimeTypes, $mimeTypes->getMimeTypes($extension));
-        }
-
-        return function (string $attribute, mixed $value, Closure $fail) use ($mimeTypes, $allowedMimeTypes): void {
-            if (! $value instanceof UploadedFile) {
-                return;
-            }
-
-            $extension = strtolower($value->getClientOriginalExtension());
-
-            if ($mimeTypes->getMimeTypes($extension) === []) {
-                return;
-            }
-
-            if (! in_array($value->getMimeType(), $allowedMimeTypes, true)) {
-                $fail('Faili sisu ei vasta lubatud failitüübile.');
-            }
-        };
     }
 
     /**

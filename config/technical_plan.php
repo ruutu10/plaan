@@ -17,4 +17,21 @@ return [
 
     'tech_email' => env('TECHNICAL_PLAN_TECH_EMAIL', 'ando@ruutu10.ee'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Scene sound files
+    |--------------------------------------------------------------------------
+    |
+    | The extensions a scene's sound file may have. This is intersected with
+    | `media-library.allowed_extensions`, so it can only ever narrow the
+    | general upload allowlist, never widen it.
+    |
+    */
+
+    'sound_extensions' => [
+        'mp3',
+        'wav',
+        'ogg',
+    ],
+
 ];

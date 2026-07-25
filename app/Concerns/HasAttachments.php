@@ -31,8 +31,20 @@ trait HasAttachments
     public const ATTACHMENTS_DISK = 'local';
 
     /**
-     * The name of this model's attachments collection. Consuming models
-     * customise it by declaring a `$attachmentsCollection` property
+     * Purpose-specific collections this model keeps alongside its default one.
+     * Consuming models override this to declare their own (e.g. a plan's scene
+     * sound files).
+     *
+     * @return array<int, string>
+     */
+    protected function extraAttachmentCollections(): array
+    {
+        return [];
+    }
+
+    /**
+     * The name of this model's default attachments collection. Consuming
+     * models customise it by declaring a `$attachmentsCollection` property
      * (e.g. `protected string $attachmentsCollection = 'technical-plan';`)
      */
     public function attachmentsCollection(): string
@@ -41,58 +53,88 @@ trait HasAttachments
     }
 
     /**
-     * Register the attachments collection on the private disk.
+     * Every collection this model stores attachments in: its default one plus
+     * any purpose-specific collections it declares through
+     * `$extraAttachmentCollections` (e.g. a plan's scene sound files).
+     *
+     * @return array<int, string>
+     */
+    public function attachmentCollections(): array
+    {
+        return array_values(array_unique(array_merge(
+            [$this->attachmentsCollection],
+            $this->extraAttachmentCollections(),
+        )));
+    }
+
+    /**
+     * Register every attachments collection on the private disk.
      */
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection($this->attachmentsCollection)
-            ->useDisk(self::ATTACHMENTS_DISK);
+        foreach ($this->attachmentCollections() as $collection) {
+            $this->addMediaCollection($collection)->useDisk(self::ATTACHMENTS_DISK);
+        }
     }
 
     /**
-     * This model's attachments. Serialising them for the frontend is the
-     * {@see Attachment} resource's job.
+     * This model's attachments in the given collection (its default one when
+     * omitted). Serialising them for the frontend is the {@see Attachment}
+     * resource's job.
      *
      * @return Collection<int, Media>
      */
-    public function attachments(): Collection
+    public function attachments(?string $collection = null): Collection
     {
-        return $this->getMedia($this->attachmentsCollection)->values();
+        return $this->getMedia($collection ?? $this->attachmentsCollection)->values();
     }
 
     /**
-     * Duplicate this model's attachments into fresh staged uploads, physically
-     * copying each file on disk. The copies are staged exactly like a new
-     * upload, so the client can submit them to move them onto a new model —
-     * used to carry files across when a plan is copied, without ever touching
-     * the source's own media.
+     * Duplicate a collection's attachments into fresh staged uploads,
+     * physically copying each file on disk. The copies are staged exactly like
+     * a new upload, so the client can submit them to move them onto a new
+     * model — used to carry files across when a plan is copied, without ever
+     * touching the source's own media.
      *
      * @return Collection<int, Media>
      */
-    public function duplicateAttachmentsToStaging(): Collection
+    public function duplicateAttachmentsToStaging(?string $collection = null): Collection
     {
-        return $this->getMedia($this->attachmentsCollection)
-            ->map(function (Media $media): Media {
-                // One holder per file: syncAttachments() deletes each staged
-                // upload after moving it, so copies must not share a holder.
-                $pending = PendingUpload::create();
-
-                return $media->copy($pending, $pending->attachmentsCollection(), self::ATTACHMENTS_DISK);
-            })
+        return $this->getMedia($collection ?? $this->attachmentsCollection)
+            ->map(fn (Media $media): Media => $this->duplicateMediaToStaging($media))
             ->values();
     }
 
     /**
-     * Reconcile this model's attachments with the handles supplied by the
+     * Copy a single attachment into a fresh staged upload.
+     */
+    public function duplicateMediaToStaging(Media $media): Media
+    {
+        // One holder per file: syncAttachments() deletes each staged upload
+        // after moving it, so copies must not share a holder.
+        $pending = PendingUpload::create();
+
+        return $media->copy($pending, $pending->attachmentsCollection(), self::ATTACHMENTS_DISK);
+    }
+
+    /**
+     * Reconcile a collection's attachments with the handles supplied by the
      * client: move newly staged uploads onto the model, keep the ones still
      * referenced, and drop any that were removed.
      *
+     * Moving a staged upload re-keys it, so the submitted handles are answered
+     * with a map of submitted handle => the handle the file now lives under.
+     * Handles that could not be resolved are absent from the map.
+     *
      * @param  array<int, array{id?: string, name?: string, size?: int}>  $files
+     * @return array<string, string>
      */
-    public function syncAttachments(array $files): void
+    public function syncAttachments(array $files, ?string $collection = null): array
     {
-        $existing = $this->getMedia($this->attachmentsCollection)->keyBy('uuid');
-        $keep = [];
+        $collection ??= $this->attachmentsCollection;
+
+        $existing = $this->getMedia($collection)->keyBy('uuid');
+        $resolved = [];
 
         foreach ($files as $file) {
             $handle = $file['id'] ?? null;
@@ -102,7 +144,7 @@ trait HasAttachments
             }
 
             if ($existing->has($handle)) {
-                $keep[$handle] = true;
+                $resolved[$handle] = $handle;
 
                 continue;
             }
@@ -110,18 +152,22 @@ trait HasAttachments
             $staged = Media::query()->where('uuid', $handle)->first();
 
             if ($staged && $staged->model instanceof PendingUpload) {
-                $moved = $staged->move($this, $this->attachmentsCollection);
+                $moved = $staged->move($this, $collection);
                 $staged->model->delete();
-                $keep[$moved->uuid] = true;
+                $resolved[$handle] = (string) $moved->uuid;
             }
         }
 
+        $kept = array_flip($resolved);
+
         $existing
-            ->reject(fn (Media $media): bool => isset($keep[$media->uuid]))
+            ->reject(fn (Media $media): bool => isset($kept[$media->uuid]))
             ->each->delete();
 
         // The sync mutated media directly, so refresh the cached relation for
         // any follow-up read (e.g. serialising the canonical attachment list).
         $this->load('media');
+
+        return $resolved;
     }
 }

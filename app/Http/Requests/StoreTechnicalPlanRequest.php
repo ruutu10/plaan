@@ -58,6 +58,10 @@ class StoreTechnicalPlanRequest extends FormRequest
             'scenes.*.name' => ['nullable', 'string', 'max:255'],
             'scenes.*.light' => ['nullable', 'string', 'max:2000'],
             'scenes.*.soundUrl' => ['nullable', 'string', 'max:2000'],
+            'scenes.*.soundFile' => ['nullable', 'array'],
+            'scenes.*.soundFile.id' => ['required_with:scenes.*.soundFile', 'string', 'max:64'],
+            'scenes.*.soundFile.name' => ['nullable', 'string', 'max:255'],
+            'scenes.*.soundFile.size' => ['nullable', 'integer', 'min:0'],
             'scenes.*.sound' => ['nullable', 'string', 'max:2000'],
             'scenes.*.notes' => ['nullable', 'string', 'max:2000'],
 
@@ -76,6 +80,28 @@ class StoreTechnicalPlanRequest extends FormRequest
             'extra.files.*.id' => ['required', 'string', 'max:64'],
             'extra.files.*.name' => ['nullable', 'string', 'max:255'],
             'extra.files.*.size' => ['nullable', 'integer', 'min:0'],
+        ];
+    }
+
+    /**
+     * A scene's sound is either linked or uploaded, never both — the wizard
+     * offers the two as a choice, and the stored plan must reflect that.
+     *
+     * @return array<int, callable>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                foreach ((array) $this->input('scenes', []) as $index => $scene) {
+                    if (filled($scene['soundUrl'] ?? null) && filled($scene['soundFile']['id'] ?? null)) {
+                        $validator->errors()->add(
+                            "scenes.{$index}.soundFile",
+                            'Stseenil saab olla kas helifaili link või üleslaaditud fail, mitte mõlemad.',
+                        );
+                    }
+                }
+            },
         ];
     }
 }

@@ -2,10 +2,15 @@ export interface Scene {
     id: string;
     name: string;
     light: string;
+    /** Link to the scene's sound file — mutually exclusive with `soundFile`. */
     soundUrl: string;
+    /** The scene's uploaded sound file (at most one), if not linked instead. */
+    soundFile: PlanFile | null;
     sound: string;
     notes: string;
     collapsed?: boolean;
+    /** View state: the upload option is open instead of the link field. */
+    soundUpload?: boolean;
 }
 
 export interface EquipItem {
@@ -91,6 +96,8 @@ export interface WizardConfig {
     techEmail: string;
     /** Lower-case file extensions the server accepts, from config/media-library.php. */
     allowedExtensions: string[];
+    /** The subset of the above a scene's sound file may use. */
+    soundExtensions: string[];
     /** Maximum accepted upload size in bytes. */
     maxFileSize: number;
 }

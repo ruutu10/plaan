@@ -12,6 +12,7 @@ use App\Models\Performance;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
+use App\Rules\AllowedAttachment;
 use App\Services\TechnicalPlanReviewer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -95,6 +96,7 @@ class TechnicalPlanController extends Controller
         $plan->fill($attributes)->save();
 
         $plan->syncAttachments($data['extra']['files'] ?? []);
+        $plan->syncSceneSoundFiles();
 
         return SavedTechnicalPlanResource::make($plan);
     }
@@ -185,10 +187,8 @@ class TechnicalPlanController extends Controller
         return [
             'deadlineHours' => (int) config('technical_plan.deadline_hours', 24),
             'techEmail' => (string) config('technical_plan.tech_email', 'ando@ruutu10.ee'),
-            'allowedExtensions' => array_values(array_map(
-                fn (string $extension): string => strtolower($extension),
-                (array) config('media-library.allowed_extensions', []),
-            )),
+            'allowedExtensions' => AllowedAttachment::extensionsFor(),
+            'soundExtensions' => AllowedAttachment::extensionsFor(TechnicalPlan::SOUND_COLLECTION),
             'maxFileSize' => (int) config('media-library.max_file_size'),
         ];
     }

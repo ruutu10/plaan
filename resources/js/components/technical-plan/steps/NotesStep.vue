@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PlanFile } from '@/types/technicalPlan';
+import {
+    acceptAttribute,
+    discardAttachment,
+    extensionHint as spellOutExtensions,
+    uploadAttachment,
+    validationError,
+} from '../attachments';
 import Diamond from '../Diamond.vue';
 import { formatFileSize, uid } from '../plan';
 import { usePlan, useWizardConfig } from '../planKey';
@@ -10,37 +17,11 @@ import StepHeader from '../StepHeader.vue';
 const plan = usePlan();
 const config = useWizardConfig();
 
-const accept = computed(() =>
-    config.allowedExtensions.map((extension) => '.' + extension).join(','),
-);
+const accept = computed(() => acceptAttribute(config.allowedExtensions));
 
 const extensionHint = computed(() =>
-    config.allowedExtensions.join(', ').toUpperCase(),
+    spellOutExtensions(config.allowedExtensions),
 );
-
-function csrfToken(): string {
-    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-
-    return match ? decodeURIComponent(match[1]) : '';
-}
-
-function extensionOf(name: string): string {
-    const parts = name.split('.');
-
-    return parts.length > 1 ? parts.pop()!.toLowerCase() : '';
-}
-
-function validationError(file: File): string | null {
-    if (file.size > config.maxFileSize) {
-        return `Fail on liiga suur (max ${formatFileSize(config.maxFileSize)}).`;
-    }
-
-    if (!config.allowedExtensions.includes(extensionOf(file.name))) {
-        return 'Seda failitüüpi ei lubata.';
-    }
-
-    return null;
-}
 
 async function uploadFile(file: File): Promise<void> {
     const entry: PlanFile = {
@@ -55,7 +36,7 @@ async function uploadFile(file: File): Promise<void> {
     plan.extra.files.push(entry);
     const tracked = plan.extra.files[plan.extra.files.length - 1];
 
-    const error = validationError(file);
+    const error = validationError(file, config, config.allowedExtensions);
 
     if (error) {
         tracked.status = 'error';
@@ -64,40 +45,7 @@ async function uploadFile(file: File): Promise<void> {
         return;
     }
 
-    const body = new FormData();
-    body.append('file', file);
-
-    try {
-        const response = await fetch('/api/attachments', {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'X-XSRF-TOKEN': csrfToken(),
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body,
-        });
-
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-            tracked.status = 'error';
-            tracked.error =
-                (data.message as string) ?? 'Üleslaadimine ebaõnnestus.';
-
-            return;
-        }
-
-        tracked.id = data.id as string;
-        tracked.name = (data.name as string) ?? tracked.name;
-        tracked.size = (data.size as number) ?? tracked.size;
-        tracked.url = data.url as string;
-        tracked.downloadUrl = data.downloadUrl as string;
-        tracked.status = 'ready';
-    } catch {
-        tracked.status = 'error';
-        tracked.error = 'Üleslaadimine ebaõnnestus.';
-    }
+    Object.assign(tracked, await uploadAttachment(file));
 }
 
 async function onFiles(event: Event): Promise<void> {
@@ -111,22 +59,7 @@ async function onFiles(event: Event): Promise<void> {
 async function removeFile(index: number): Promise<void> {
     const [removed] = plan.extra.files.splice(index, 1);
 
-    // Drop the staged upload server-side; already-attached files are cleaned
-    // up when the plan is next saved.
-    if (removed?.id) {
-        try {
-            await fetch('/api/attachments/' + encodeURIComponent(removed.id), {
-                method: 'DELETE',
-                headers: {
-                    Accept: 'application/json',
-                    'X-XSRF-TOKEN': csrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
-        } catch {
-            /* best-effort cleanup */
-        }
-    }
+    await discardAttachment(removed?.id ?? '');
 }
 </script>
 

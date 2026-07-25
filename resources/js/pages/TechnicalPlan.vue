@@ -16,7 +16,12 @@ import StandardInfoStep from '@/components/technical-plan/steps/StandardInfoStep
 import R10Layout from '@/layouts/R10Layout.vue';
 import { logout, login } from '@/routes';
 import type { User } from '@/types';
-import type { Plan, PlanFile, WizardConfig } from '@/types/technicalPlan';
+import type {
+    Plan,
+    PlanFile,
+    Scene,
+    WizardConfig,
+} from '@/types/technicalPlan';
 
 const props = defineProps<{
     config: WizardConfig;
@@ -198,6 +203,15 @@ function buildPayload(submit: boolean): Record<string, unknown> {
             name: s.name,
             light: s.light,
             soundUrl: s.soundUrl,
+            // Only a finished upload has a handle worth sending.
+            soundFile:
+                s.soundFile?.status === 'ready'
+                    ? {
+                          id: s.soundFile.id,
+                          name: s.soundFile.name,
+                          size: s.soundFile.size,
+                      }
+                    : null,
             sound: s.sound,
             notes: s.notes,
         })),
@@ -235,12 +249,23 @@ async function savePlan(submit: boolean): Promise<boolean> {
     }
 
     // Adopt the canonical attachment list — the server may have re-keyed files
-    // as it moved them onto the plan, so keep the wizard in sync.
+    // as it moved them onto the plan, so keep the wizard in sync. The scenes
+    // come back for the same reason: each carries its sound file's handle.
     if (Array.isArray(data.files)) {
         plan.extra.files = (data.files as PlanFile[]).map((f) => ({
             ...f,
             status: 'ready' as const,
         }));
+    }
+
+    if (Array.isArray(data.scenes)) {
+        (data.scenes as Scene[]).forEach((saved, index) => {
+            if (plan.scenes[index]) {
+                plan.scenes[index].soundFile = saved.soundFile
+                    ? { ...saved.soundFile, status: 'ready' as const }
+                    : null;
+            }
+        });
     }
 
     return true;

@@ -10,8 +10,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * @property int $id
@@ -46,7 +48,71 @@ class TechnicalPlan extends Model implements HasMedia
     /** @use HasFactory<TechnicalPlanFactory> */
     use HasFactory;
 
+    /**
+     * The media collection holding the scenes' sound files. A scene keeps only
+     * the file's handle in its JSON; the file itself lives here.
+     */
+    public const SOUND_COLLECTION = 'sound';
+
     protected string $attachmentsCollection = 'technical-plan';
+
+    /**
+     * A plan keeps its scenes' sound files apart from its own attachments.
+     *
+     * @return array<int, string>
+     */
+    protected function extraAttachmentCollections(): array
+    {
+        return [self::SOUND_COLLECTION];
+    }
+
+    /**
+     * The sound files the scenes refer to, keyed by their handle.
+     *
+     * @return Collection<string, Media>
+     */
+    public function sceneSoundFiles(): Collection
+    {
+        return $this->attachments(self::SOUND_COLLECTION)->keyBy('uuid');
+    }
+
+    /**
+     * Reconcile the scenes' sound files with the handles the client submitted:
+     * move each newly staged upload into the plan's sound collection, drop the
+     * files no scene refers to any more, and rewrite every scene's handle to
+     * the file as it is now stored (moving a staged upload re-keys it).
+     *
+     * A scene holds at most one sound file, and never a file and a link at the
+     * same time — the request rules enforce both.
+     */
+    public function syncSceneSoundFiles(): void
+    {
+        $handles = array_values(array_filter(array_map(
+            fn (array $scene): ?array => $scene['soundFile'] ?? null,
+            $this->scenes,
+        )));
+
+        $moved = $this->syncAttachments($handles, self::SOUND_COLLECTION);
+
+        $stored = $this->sceneSoundFiles();
+
+        $this->scenes = array_map(function (array $scene) use ($moved, $stored): array {
+            $handle = $scene['soundFile']['id'] ?? null;
+            $media = $handle ? $stored->get($moved[$handle] ?? '') : null;
+
+            // A handle that resolved to nothing (unknown or already gone)
+            // leaves the scene without a sound file.
+            $scene['soundFile'] = $media ? [
+                'id' => (string) $media->uuid,
+                'name' => $media->file_name,
+                'size' => (int) $media->size,
+            ] : null;
+
+            return $scene;
+        }, $this->scenes);
+
+        $this->save();
+    }
 
     /**
      * The contact who owns this plan.

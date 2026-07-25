@@ -79,9 +79,9 @@ const reviewScenes = computed(() =>
         num: i + 1,
         name: dash(s.name),
         light: dash(s.light),
-        sound: dash(
-            [s.soundUrl, s.sound].filter((v) => v && v.trim()).join('\n'),
-        ),
+        // The uploaded file is listed on its own line so it stays clickable.
+        soundFile: s.soundFile?.status === 'ready' ? s.soundFile : null,
+        sound: [s.soundUrl, s.sound].filter((v) => v && v.trim()).join('\n'),
         notes: dash(s.notes),
     })),
 );
@@ -122,7 +122,7 @@ const headCellClass =
                         <span
                             class="font-r10-body text-[11px] font-bold tracking-[0.18em] text-r10-orange uppercase"
                         >
-                            Ruutu10 · TechnicalPlan
+                            Ruutu10 · Tehnikaplaan
                         </span>
                     </div>
                     <div
@@ -257,7 +257,20 @@ const headCellClass =
                                     'break-words whitespace-pre-line',
                                 ]"
                             >
-                                {{ row.sound }}
+                                <span v-if="row.soundFile" class="block">
+                                    <a
+                                        :href="row.soundFile.url"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="text-r10-navy underline decoration-r10-navy/30 transition hover:text-r10-orange hover:decoration-r10-orange"
+                                    >
+                                        {{ row.soundFile.name }}
+                                    </a>
+                                    ({{ formatFileSize(row.soundFile.size) }})
+                                </span>
+                                <span v-if="row.sound || !row.soundFile">
+                                    {{ dash(row.sound) }}
+                                </span>
                             </td>
                             <td
                                 :class="[
