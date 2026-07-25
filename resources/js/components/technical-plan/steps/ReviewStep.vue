@@ -371,14 +371,7 @@ const headCellClass =
 
         <!-- Actions -->
         <div class="r10-no-print mt-[26px] flex flex-wrap gap-3.5">
-            <R10Button
-                variant="primary"
-                size="lg"
-                :disabled="submitting"
-                @click="$emit('submit')"
-            >
-                {{ submitting ? 'Esitan…' : 'Esita tehnikutiimile' }}
-            </R10Button>
+
             <R10Button variant="outline" size="lg" @click="$emit('download')"
                 >Laadi alla PDF</R10Button
             >
@@ -397,6 +390,14 @@ const headCellClass =
                 @click="$emit('ai-review')"
             >
                 AI ülevaatus
+            </R10Button>
+             <R10Button
+                variant="primary"
+                size="lg"
+                :disabled="submitting"
+                @click="$emit('submit')"
+            >
+                {{ submitting ? 'Esitan…' : 'Esita tehnikutiimile' }}
             </R10Button>
         </div>
 
@@ -485,8 +486,7 @@ const headCellClass =
                 </span>
             </div>
             <p class="mt-0 mb-3 max-w-[66ch] text-[13px] text-r10-grey-500">
-                Jaga seda linki teistega — see avab plaani täidetud kujul uue
-                plaani põhjaks.
+                See link avab tehnikaplaani täidetud kujul. Muudatused salvestatakse üle.
             </p>
             <div class="flex flex-wrap items-center gap-2.5">
                 <input

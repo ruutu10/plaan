@@ -12,10 +12,12 @@ use App\Models\Performance;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
+use App\Notifications\TechnicalPlanSubmitted;
 use App\Rules\AllowedAttachment;
 use App\Services\TechnicalPlanReviewer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -98,6 +100,12 @@ class TechnicalPlanController extends Controller
         $plan->syncAttachments($data['extra']['files'] ?? []);
         $plan->syncSceneSoundFiles();
 
+        // Only once the files are in place does the plan mail out complete —
+        // the notification links to the plan's stored attachments.
+        if ($submitting) {
+            $this->notifySubmission($plan);
+        }
+
         return SavedTechnicalPlanResource::make($plan);
     }
 
@@ -175,6 +183,25 @@ class TechnicalPlanController extends Controller
         return response()->json([
             'review' => $review ?: 'Tagasisidet ei saadud. Proovi uuesti.',
         ]);
+    }
+
+    /**
+     * Mail the submitted plan out: the performer keeps a copy of what they
+     * sent, and the technical team gets the plan they will run the show from.
+     * Resubmitting notifies again — the plan the team holds has to be the
+     * current one.
+     */
+    private function notifySubmission(TechnicalPlan $plan): void
+    {
+        $notification = new TechnicalPlanSubmitted($plan);
+
+        $plan->user?->notify($notification);
+
+        $techEmail = (string) config('technical_plan.tech_email');
+
+        if ($techEmail !== '' && $techEmail !== $plan->user?->email) {
+            Notification::route('mail', $techEmail)->notify($notification);
+        }
     }
 
     /**

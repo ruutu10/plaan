@@ -8,10 +8,12 @@ use App\Models\PendingUpload;
 use App\Models\Performance;
 use App\Models\TechnicalPlan;
 use App\Models\User;
+use App\Notifications\TechnicalPlanSubmitted;
 use App\Services\TechnicalPlanReviewer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -959,6 +961,86 @@ class TechnicalPlanTest extends TestCase
         // Sound files are a subset of what may be uploaded in general.
         $config = $response->viewData('page')['props']['config'];
         $this->assertEmpty(array_diff($config['soundExtensions'], $config['allowedExtensions']));
+    }
+
+    public function test_submitting_mails_the_plan_to_its_author_and_the_technical_team(): void
+    {
+        Notification::fake();
+        config(['technical_plan.tech_email' => 'tehnikud@ruutu10.ee']);
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload(['submit' => true]))->assertOk();
+
+        $plan = TechnicalPlan::first();
+
+        Notification::assertSentTo(
+            $this->user,
+            fn (TechnicalPlanSubmitted $notification): bool => $notification->plan->is($plan),
+        );
+
+        Notification::assertSentOnDemand(
+            TechnicalPlanSubmitted::class,
+            fn (TechnicalPlanSubmitted $notification, array $channels, object $notifiable): bool => $notifiable->routes['mail'] === 'tehnikud@ruutu10.ee'
+                && $notification->plan->is($plan),
+        );
+
+        Notification::assertCount(2);
+    }
+
+    public function test_saving_a_draft_mails_no_one(): void
+    {
+        Notification::fake();
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload())->assertOk();
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_an_author_who_is_the_technical_team_is_mailed_once(): void
+    {
+        Notification::fake();
+        config(['technical_plan.tech_email' => $this->user->email]);
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload(['submit' => true]))->assertOk();
+
+        Notification::assertSentTimes(TechnicalPlanSubmitted::class, 1);
+        Notification::assertSentTo($this->user, TechnicalPlanSubmitted::class);
+    }
+
+    public function test_the_submission_mail_carries_the_plan_and_its_sharing_link(): void
+    {
+        Storage::fake('local');
+
+        $handle = $this->uploadHandle('tehnikaplaan.pdf');
+        $sound = $this->soundHandle('avamuusika.mp3');
+        $performance = Performance::factory()->create(['show_name' => 'Festival 2026']);
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'meta' => ['performanceId' => $performance->id],
+            'scenes' => [
+                ['id' => 'stseen-1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'soundFile' => ['id' => $sound], 'sound' => 'Fade sisse', 'notes' => 'Kõik laval'],
+            ],
+            'extra' => ['files' => [['id' => $handle]]],
+        ]))->assertOk();
+
+        $plan = TechnicalPlan::first();
+        $mail = (new TechnicalPlanSubmitted($plan))->toMail($this->user);
+        $html = $mail->render();
+
+        $this->assertStringContainsString('Festival 2026', $mail->subject);
+        $this->assertStringContainsString($plan->token, $html);
+        $this->assertStringContainsString(route('technical-plan.public', $plan), $html);
+
+        // The plan itself: the performance block, both sound answers, the
+        // scenes with their uploaded sound file, equipment and the attachment.
+        $this->assertStringContainsString('mart@naide.ee', $html);
+        $this->assertStringContainsString('2 käsimikrofoni', $html);
+        $this->assertStringContainsString('Lavale tulek', $html);
+        $this->assertStringContainsString('Soe üldvalgus', $html);
+        $this->assertStringContainsString('avamuusika.mp3', $html);
+        $this->assertStringContainsString('Suitsumasin', $html);
+        $this->assertStringContainsString('Palun jälgida ajakava.', $html);
+        $this->assertStringContainsString('tehnikaplaan.pdf', $html);
     }
 
     /**
