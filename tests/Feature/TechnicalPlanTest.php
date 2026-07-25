@@ -99,7 +99,8 @@ class TechnicalPlanTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonStructure(['token', 'status', 'publicUrl', 'files']);
-        $this->assertStringStartsWith('R10-', $response->json('token'));
+        $year = date('Y');
+        $this->assertStringStartsWith('R10-'.$year.'-', $response->json('token'));
         $this->assertSame('draft', $response->json('status'));
 
         $this->assertDatabaseHas('technical_plans', [

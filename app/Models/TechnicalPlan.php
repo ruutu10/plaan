@@ -183,8 +183,9 @@ class TechnicalPlan extends Model implements HasMedia
      */
     public static function generateUniqueToken(): string
     {
+        $year = date('Y');
         do {
-            $token = 'R10-'.Str::upper(Str::random(14));
+            $token = 'R10-'.$year.'-'.Str::upper(Str::random(12));
         } while (static::query()->where('token', $token)->exists());
 
         return $token;

@@ -15,6 +15,7 @@ import SoundStep from '@/components/technical-plan/steps/SoundStep.vue';
 import StandardInfoStep from '@/components/technical-plan/steps/StandardInfoStep.vue';
 import R10Layout from '@/layouts/R10Layout.vue';
 import { logout, login } from '@/routes';
+import technicalPlan from '@/routes/technical-plan';
 import type { User } from '@/types';
 import type {
     Plan,
@@ -137,6 +138,19 @@ function reset(): void {
     }
 
     loadIntoWizard(null);
+
+    // A plan opened from a shared link lives at that link's own URL. Starting
+    // over must leave it behind, or a reload would pull the shared plan back
+    // in. The wizard state was just cleared, so keep it across the visit.
+    const wizardUrl = technicalPlan.index.url();
+
+    if (window.location.pathname !== wizardUrl) {
+        router.visit(wizardUrl, {
+            replace: true,
+            preserveState: true,
+            preserveScroll: true,
+        });
+    }
 }
 
 function goTo(index: number): void {

@@ -146,7 +146,14 @@ const headCellClass =
                         <span class="font-bold text-r10-navy">Etendus:</span>
                         {{ dash(plan.meta.showDate) }}
                     </div>
-                    <div>{{ durationLabel }}</div>
+                    <div><span class="font-bold text-r10-navy">Kestus: </span>
+                       <span class="font-mono text-xs"> {{ durationLabel }}</span></div>
+                    <!-- Only a saved plan has a key; it is what the wizard
+                         reopens the plan by, so it belongs on the printout. -->
+                    <div v-if="plan.token" class="mt-1">
+                        <span class="font-bold text-r10-navy">Plaani võti: </span>
+                        <span class="font-mono text-xs">{{ plan.token }}</span>
+                    </div>
                 </div>
             </div>
 
