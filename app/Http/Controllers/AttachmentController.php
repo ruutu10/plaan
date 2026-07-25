@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Concerns\HasAttachments;
+use App\Http\Resources\Attachment as AttachmentResource;
 use App\Models\PendingUpload;
 use Closure;
 use Illuminate\Http\JsonResponse;
@@ -28,7 +29,7 @@ class AttachmentController extends Controller
      * Store a single uploaded file server-side and return a handle the client
      * sends back with its form data once the owning record is saved.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request): AttachmentResource|JsonResponse
     {
         $maxKilobytes = (int) (config('media-library.max_file_size') / 1024);
 
@@ -67,13 +68,7 @@ class AttachmentController extends Controller
             ->addMedia($file)
             ->toMediaCollection($pending->attachmentsCollection());
 
-        return response()->json([
-            'id' => (string) $media->uuid,
-            'name' => $media->file_name,
-            'size' => (int) $media->size,
-            'url' => route('attachments.show', $media->uuid),
-            'downloadUrl' => route('attachments.show', ['uuid' => $media->uuid, 'download' => 1]),
-        ]);
+        return AttachmentResource::make($media);
     }
 
     /**

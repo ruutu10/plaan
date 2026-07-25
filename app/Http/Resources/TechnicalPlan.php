@@ -14,6 +14,27 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class TechnicalPlan extends JsonResource
 {
+    /** @var string|null */
+    public static $wrap = null;
+
+    /**
+     * Whether the file handles should point at fresh staged copies of the
+     * attachments rather than at the plan's own media.
+     */
+    private bool $duplicateAttachments = false;
+
+    /**
+     * Serialise the plan as the basis for a *new* plan: its attachments are
+     * duplicated into staged uploads, so submitting the copy carries the files
+     * over without affecting this plan.
+     */
+    public function withDuplicatedAttachments(): static
+    {
+        $this->duplicateAttachments = true;
+
+        return $this;
+    }
+
     /**
      * Transform the plan into an array.
      *
@@ -40,7 +61,9 @@ class TechnicalPlan extends JsonResource
             'equipment' => $plan->equipment,
             'extra' => [
                 'notes' => $plan->extra['notes'] ?? '',
-                'files' => $plan->attachmentsPayload(),
+                'files' => Attachment::collection($this->duplicateAttachments
+                    ? $plan->duplicateAttachmentsToStaging()
+                    : $plan->attachments())->resolve($request),
             ],
         ];
     }

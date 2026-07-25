@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Requests\StoreTechnicalPlanRequest;
+use App\Http\Resources\SavedTechnicalPlan as SavedTechnicalPlanResource;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
+use App\Http\Resources\TechnicalPlanSummary as TechnicalPlanSummaryResource;
+use App\Http\Resources\UpcomingPerformance as UpcomingPerformanceResource;
 use App\Models\Performance;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
@@ -42,9 +45,9 @@ class TechnicalPlanController extends Controller
     /**
      * Return a saved plan's payload as JSON (open by key).
      */
-    public function show(TechnicalPlan $plan): JsonResponse
+    public function show(TechnicalPlan $plan): TechnicalPlanResource
     {
-        return response()->json(TechnicalPlanResource::make($plan)->resolve());
+        return TechnicalPlanResource::make($plan);
     }
 
     /**
@@ -53,20 +56,17 @@ class TechnicalPlanController extends Controller
      * duplicated on disk), so submitting the new plan carries the files over
      * without affecting the source.
      */
-    public function copy(TechnicalPlan $plan, Request $request): JsonResponse
+    public function copy(TechnicalPlan $plan, Request $request): TechnicalPlanResource
     {
         abort_unless($plan->user_id === $request->user()->id, 403);
 
-        $payload = TechnicalPlanResource::make($plan)->resolve();
-        $payload['extra']['files'] = $plan->duplicateAttachmentsToStaging();
-
-        return response()->json($payload);
+        return TechnicalPlanResource::make($plan)->withDuplicatedAttachments();
     }
 
     /**
      * Store (or update) a plan and return its shareable token & public link.
      */
-    public function store(StoreTechnicalPlanRequest $request): JsonResponse
+    public function store(StoreTechnicalPlanRequest $request): SavedTechnicalPlanResource
     {
         $data = $request->validated();
         $submitting = (bool) ($data['submit'] ?? false);
@@ -96,12 +96,7 @@ class TechnicalPlanController extends Controller
 
         $plan->syncAttachments($data['extra']['files'] ?? []);
 
-        return response()->json([
-            'token' => $plan->token,
-            'status' => $plan->status->value,
-            'publicUrl' => route('technical-plan.public', $plan),
-            'files' => $plan->attachmentsPayload(),
-        ]);
+        return SavedTechnicalPlanResource::make($plan);
     }
 
     /**
@@ -110,23 +105,17 @@ class TechnicalPlanController extends Controller
      */
     public function lookup(Request $request): JsonResponse
     {
-        $results = TechnicalPlan::query()
+        $plans = TechnicalPlan::query()
             ->with('performance.team')
             ->where('user_id', $request->user()->id)
             ->where('status', TechnicalPlanStatus::Submitted)
             ->latest('submitted_at')
             ->limit(50)
-            ->get()
-            ->map(fn (TechnicalPlan $plan) => [
-                'token' => $plan->token,
-                'title' => trim(($plan->performance?->show_name ?: 'Nimeta plaan').($plan->performance?->team?->name ? ' — '.$plan->performance->team->name : '')),
-                'sub' => collect([
-                    $plan->performance?->show_date?->format('d.m.Y'),
-                    $plan->submitted_at ? 'esitatud '.$plan->submitted_at->format('d.m.Y') : null,
-                ])->filter()->implode(' · '),
-            ]);
+            ->get();
 
-        return response()->json(['results' => $results]);
+        return response()->json([
+            'results' => TechnicalPlanSummaryResource::collection($plans)->resolve($request),
+        ]);
     }
 
     /**
@@ -152,24 +141,9 @@ class TechnicalPlanController extends Controller
             ->limit(10)
             ->get();
 
-        $results = $upcoming->map(fn (Performance $performance) => [
-            'id' => $performance->id,
-            'performer' => $performance->team->name ?? '',
-            'showName' => $performance->show_name,
-            'showDate' => $performance->show_date->format('Y-m-d'),
-            'duration' => $performance->duration,
-            'description' => $performance->description ?? '',
-            'priorPlans' => $priorPlans
-                ->filter(fn (TechnicalPlan $plan) => $plan->performance
-                    && $plan->performance->show_name === $performance->show_name
-                    && $plan->performance->id !== $performance->id)
-                ->map(fn (TechnicalPlan $plan) => [
-                    'token' => $plan->token,
-                    'label' => $plan->performance->show_date->format('d.m.Y'), // @phpstan-ignore-line
-                ])
-                ->values()
-                ->all(),
-        ]);
+        $results = $upcoming->map(
+            fn (Performance $performance): array => UpcomingPerformanceResource::make($performance, $priorPlans)->resolve($request),
+        );
 
         return response()->json(['results' => $results]);
     }

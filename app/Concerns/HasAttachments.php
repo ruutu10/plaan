@@ -2,7 +2,9 @@
 
 namespace App\Concerns;
 
+use App\Http\Resources\Attachment;
 use App\Models\PendingUpload;
+use Illuminate\Support\Collection;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -48,55 +50,36 @@ trait HasAttachments
     }
 
     /**
-     * The attachments serialised for the frontend. The `url` points at the
-     * app's streaming endpoint (keyed by the unguessable media UUID), not at
-     * the private disk, which is not publicly reachable.
+     * This model's attachments. Serialising them for the frontend is the
+     * {@see Attachment} resource's job.
      *
-     * @return array<int, array{id: string, name: string, size: int, url: string, downloadUrl: string}>
+     * @return Collection<int, Media>
      */
-    public function attachmentsPayload(): array
+    public function attachments(): Collection
     {
-        return $this->getMedia($this->attachmentsCollection)
-            ->map(fn (Media $media): array => [
-                'id' => (string) $media->uuid,
-                'name' => $media->file_name,
-                'size' => (int) $media->size,
-                'url' => route('attachments.show', $media->uuid),
-                'downloadUrl' => route('attachments.show', ['uuid' => $media->uuid, 'download' => 1]),
-            ])
-            ->values()
-            ->all();
+        return $this->getMedia($this->attachmentsCollection)->values();
     }
 
     /**
      * Duplicate this model's attachments into fresh staged uploads, physically
-     * copying each file on disk. Returns handles in the same shape the upload
-     * endpoint produces, so the client can submit them to move the copies onto
-     * a new model — used to carry files across when a plan is copied, without
-     * ever touching the source's own media.
+     * copying each file on disk. The copies are staged exactly like a new
+     * upload, so the client can submit them to move them onto a new model —
+     * used to carry files across when a plan is copied, without ever touching
+     * the source's own media.
      *
-     * @return array<int, array{id: string, name: string, size: int, url: string, downloadUrl: string}>
+     * @return Collection<int, Media>
      */
-    public function duplicateAttachmentsToStaging(): array
+    public function duplicateAttachmentsToStaging(): Collection
     {
         return $this->getMedia($this->attachmentsCollection)
-            ->map(function (Media $media): array {
+            ->map(function (Media $media): Media {
                 // One holder per file: syncAttachments() deletes each staged
                 // upload after moving it, so copies must not share a holder.
                 $pending = PendingUpload::create();
 
-                $copy = $media->copy($pending, $pending->attachmentsCollection(), self::ATTACHMENTS_DISK);
-
-                return [
-                    'id' => (string) $copy->uuid,
-                    'name' => $copy->file_name,
-                    'size' => (int) $copy->size,
-                    'url' => route('attachments.show', $copy->uuid),
-                    'downloadUrl' => route('attachments.show', ['uuid' => $copy->uuid, 'download' => 1]),
-                ];
+                return $media->copy($pending, $pending->attachmentsCollection(), self::ATTACHMENTS_DISK);
             })
-            ->values()
-            ->all();
+            ->values();
     }
 
     /**

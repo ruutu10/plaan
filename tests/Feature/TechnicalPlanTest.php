@@ -98,7 +98,7 @@ class TechnicalPlanTest extends TestCase
         ]));
 
         $response->assertOk();
-        $response->assertJsonStructure(['token', 'status', 'publicUrl']);
+        $response->assertJsonStructure(['token', 'status', 'publicUrl', 'files']);
         $this->assertStringStartsWith('R10-', $response->json('token'));
         $this->assertSame('draft', $response->json('status'));
 
@@ -303,11 +303,29 @@ class TechnicalPlanTest extends TestCase
 
         $response = $this->postJson(route('technical-plan.lookup'));
 
+        $plan = TechnicalPlan::where('performance_id', $performance->id)->first();
+
         $response->assertOk();
         $response->assertJsonCount(1, 'results');
-        $response->assertJsonFragment([
-            'token' => TechnicalPlan::where('performance_id', $performance->id)->first()->token,
-        ]);
+        $response->assertJsonFragment(['token' => $plan->token]);
+
+        // Each row is labelled by its show and staging, with the submission date.
+        $row = $response->json('results.0');
+        $this->assertSame('Esitatud plaan — '.$performance->team->name, $row['title']);
+        $this->assertSame(
+            $performance->show_date->format('d.m.Y').' · esitatud '.$plan->submitted_at->format('d.m.Y'),
+            $row['sub'],
+        );
+    }
+
+    public function test_a_plan_without_a_performance_is_still_listed_in_lookup(): void
+    {
+        TechnicalPlan::factory()->for($this->user)->submitted()->create(['performance_id' => null]);
+
+        $response = $this->postJson(route('technical-plan.lookup'));
+
+        $response->assertOk();
+        $this->assertSame('Nimeta plaan', $response->json('results.0.title'));
     }
 
     public function test_ai_review_requires_configuration(): void
@@ -483,6 +501,28 @@ class TechnicalPlanTest extends TestCase
         $this->assertCount(1, $plan->getMedia($plan->attachmentsCollection()));
         $this->assertSame(0, PendingUpload::count());
         $this->assertSame(1, Media::query()->count());
+    }
+
+    public function test_file_handles_carry_the_streaming_endpoints_wherever_they_are_serialised(): void
+    {
+        Storage::fake('local');
+
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'extra' => ['files' => [['id' => $this->uploadHandle(), 'name' => 'plaan.pdf', 'size' => 120]]],
+        ]));
+
+        $handle = $response->json('files.0');
+
+        $this->assertSame('plaan.pdf', $handle['name']);
+        $this->assertSame(route('attachments.show', $handle['id']), $handle['url']);
+        $this->assertSame(
+            route('attachments.show', ['uuid' => $handle['id'], 'download' => 1]),
+            $handle['downloadUrl'],
+        );
+
+        // Re-opening the plan hands back exactly the same handle.
+        $fetched = $this->getJson(route('technical-plan.show', $response->json('token')))->json('extra.files.0');
+        $this->assertSame($handle, $fetched);
     }
 
     public function test_resubmitting_without_a_file_detaches_it(): void
