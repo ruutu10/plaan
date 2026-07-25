@@ -246,6 +246,48 @@ class TechnicalPlanTest extends TestCase
             ->where('initialPlan.meta.performer', $plan->performance->team->name));
     }
 
+    public function test_the_public_link_never_hands_the_wizard_null_text(): void
+    {
+        // Every wizard field is optional, so a stored plan can hold nulls where
+        // the frontend's `Plan` shape promises text. The wizard trims those
+        // fields as it renders, so a null would break the review step.
+        $plan = TechnicalPlan::factory()->submitted()->create([
+            'sound' => ['micsMode' => null, 'micsDetail' => null, 'musicianMode' => null, 'musicianDetail' => null],
+            'scenes' => [['id' => null, 'name' => null, 'light' => null, 'soundUrl' => null, 'soundFile' => null, 'sound' => null, 'notes' => null]],
+            'equipment' => [
+                'items' => [['id' => null, 'name' => null, 'use' => null]],
+                'smoke' => null,
+                'suggestions' => null,
+                'suggestNote' => null,
+            ],
+            'extra' => ['notes' => null],
+        ]);
+
+        $response = $this->get(route('technical-plan.public', $plan));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->where('initialPlan.sound.micsDetail', '')
+            ->where('initialPlan.sound.musicianDetail', '')
+            ->where('initialPlan.scenes.0.name', '')
+            ->where('initialPlan.scenes.0.light', '')
+            ->where('initialPlan.scenes.0.soundUrl', '')
+            ->where('initialPlan.scenes.0.sound', '')
+            ->where('initialPlan.scenes.0.notes', '')
+            ->where('initialPlan.equipment.items.0.name', '')
+            ->where('initialPlan.equipment.items.0.use', '')
+            ->where('initialPlan.equipment.suggestNote', '')
+            ->where('initialPlan.extra.notes', '')
+            // The choice fields fall back to the wizard's own defaults, and the
+            // ids stay set — they key the rendered rows.
+            ->where('initialPlan.sound.micsMode', 'no')
+            ->where('initialPlan.sound.musicianMode', 'no')
+            ->where('initialPlan.equipment.smoke', 'yes')
+            ->where('initialPlan.equipment.suggestions', 'yes')
+            ->where('initialPlan.scenes.0.id', 'stseen-1')
+            ->where('initialPlan.equipment.items.0.id', 'seade-1'));
+    }
+
     public function test_the_performances_endpoint_returns_only_upcoming_performances(): void
     {
         $upcoming = Performance::factory()->create(['show_name' => 'Tulevane etendus']);

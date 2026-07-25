@@ -57,15 +57,66 @@ class TechnicalPlan extends JsonResource
                 'duration' => $plan->performance?->duration,
                 'description' => $plan->performance?->description ?? '', // @phpstan-ignore-line
             ],
-            'sound' => $plan->sound,
+            'sound' => $this->sound(),
             'scenes' => PlanScene::forPlan($plan, $request, $this->duplicateAttachments),
-            'equipment' => $plan->equipment,
+            'equipment' => $this->equipment(),
             'extra' => [
-                'notes' => $plan->extra['notes'] ?? '',
+                'notes' => self::text($plan->extra['notes'] ?? null),
                 'files' => Attachment::collection($this->duplicateAttachments
                     ? $plan->duplicateAttachmentsToStaging()
                     : $plan->attachments())->resolve($request),
             ],
+        ];
+    }
+
+    /**
+     * A stored JSON value the wizard expects as a string. Every wizard field is
+     * optional, so a plan can hold a `null` (or nothing at all) where the
+     * frontend's `Plan` shape promises text — hand it the empty string instead.
+     */
+    public static function text(mixed $value, string $default = ''): string
+    {
+        return is_scalar($value) && (string) $value !== '' ? (string) $value : $default;
+    }
+
+    /**
+     * The plan's sound block, filled out to the shape the wizard expects.
+     *
+     * @return array<string, string>
+     */
+    private function sound(): array
+    {
+        $sound = $this->resource->sound;
+
+        return [
+            'micsMode' => self::text($sound['micsMode'] ?? null, 'no'),
+            'micsDetail' => self::text($sound['micsDetail'] ?? null),
+            'musicianMode' => self::text($sound['musicianMode'] ?? null, 'no'),
+            'musicianDetail' => self::text($sound['musicianDetail'] ?? null),
+        ];
+    }
+
+    /**
+     * The plan's equipment block, filled out to the shape the wizard expects.
+     *
+     * @return array<string, mixed>
+     */
+    private function equipment(): array
+    {
+        $equipment = $this->resource->equipment;
+
+        $items = array_values((array) ($equipment['items'] ?? []));
+
+        return [
+            'items' => array_map(fn (array $item, int $index): array => [
+                // The id is the row's list key in the wizard, so it must be set.
+                'id' => self::text($item['id'] ?? null, 'seade-'.($index + 1)),
+                'name' => self::text($item['name'] ?? null),
+                'use' => self::text($item['use'] ?? null),
+            ], $items, array_keys($items)),
+            'smoke' => self::text($equipment['smoke'] ?? null, 'yes'),
+            'suggestions' => self::text($equipment['suggestions'] ?? null, 'yes'),
+            'suggestNote' => self::text($equipment['suggestNote'] ?? null),
         ];
     }
 }

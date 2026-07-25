@@ -59,12 +59,22 @@ class PlanScene extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return array_replace($this->resource, [
+        $scene = $this->resource;
+
+        return array_replace($scene, [
+            // Every scene field is optional, so a stored scene can hold nulls
+            // where the wizard's `Scene` shape promises text.
+            'id' => TechnicalPlan::text($scene['id'] ?? null, 'stseen-1'),
+            'name' => TechnicalPlan::text($scene['name'] ?? null),
+            'light' => TechnicalPlan::text($scene['light'] ?? null),
+            'soundUrl' => TechnicalPlan::text($scene['soundUrl'] ?? null),
+            'sound' => TechnicalPlan::text($scene['sound'] ?? null),
+            'notes' => TechnicalPlan::text($scene['notes'] ?? null),
             // A plan that has not been saved yet (one being AI-reviewed) has no
             // stored media to resolve, so its submitted handle is kept as-is.
             'soundFile' => $this->soundFile
                 ? Attachment::make($this->soundFile)->resolve($request)
-                : ($this->resource['soundFile'] ?? null),
+                : ($scene['soundFile'] ?? null),
         ]);
     }
 }

@@ -85,6 +85,23 @@ export function blankPlan(): Plan {
 }
 
 /**
+ * Merge an incoming block onto its blank defaults, ignoring keys that arrived
+ * empty. Every wizard field is optional server-side, so a stored plan can carry
+ * `null` where the wizard's `Plan` shape promises a string — letting those
+ * through would blow up the first `.trim()` that touches them.
+ */
+function mergeDefined<T extends object>(
+    base: T,
+    incoming: Partial<T> | null | undefined,
+): T {
+    const defined = Object.fromEntries(
+        Object.entries(incoming ?? {}).filter(([, value]) => value != null),
+    ) as Partial<T>;
+
+    return { ...base, ...defined };
+}
+
+/**
  * Merge an incoming (possibly partial) payload onto a blank plan so the
  * wizard always has every field present.
  */
@@ -99,26 +116,27 @@ export function hydratePlan(payload: Partial<Plan> | null | undefined): Plan {
         token: payload.token ?? null,
         status: 'draft',
         submittedAt: null,
-        meta: { ...base.meta, ...(payload.meta ?? {}) },
-        sound: { ...base.sound, ...(payload.sound ?? {}) },
+        meta: mergeDefined(base.meta, payload.meta),
+        sound: mergeDefined(base.sound, payload.sound),
         scenes:
             payload.scenes && payload.scenes.length
                 ? payload.scenes.map((s, index) => ({
-                      ...blankScene(),
-                      ...s,
+                      ...mergeDefined(blankScene(), s),
                       id: `${SCENE_ID_PREFIX}${index + 1}`,
                       soundFile: storedFile(s.soundFile),
                       collapsed: false,
                   }))
                 : [blankScene()],
         equipment: {
-            ...base.equipment,
-            ...(payload.equipment ?? {}),
-            items: payload.equipment?.items ?? [],
+            ...mergeDefined(base.equipment, payload.equipment),
+            items: (payload.equipment?.items ?? []).map((item) => ({
+                ...mergeDefined({ id: '', name: '', use: '' }, item),
+                // The id is the row's list key, so it must never be blank.
+                id: item.id || uid(),
+            })),
         },
         extra: {
-            ...base.extra,
-            ...(payload.extra ?? {}),
+            ...mergeDefined(base.extra, payload.extra),
             files: (payload.extra?.files ?? [])
                 .map(storedFile)
                 .filter((file): file is PlanFile => file !== null),
