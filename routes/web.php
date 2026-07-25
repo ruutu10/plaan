@@ -13,9 +13,16 @@ Route::inertia('/', 'Welcome')->name('home');
 // Generic, model-agnostic file staging shared by any feature that needs
 // attachments (see App\Concerns\HasAttachments).
 Route::prefix('api/attachments')->name('attachments.')->group(function () {
-    Route::post('/', [AttachmentController::class, 'store'])->name('store')->middleware('throttle:20,1');
+    // Putting a file on the server — and discarding one again — is only for
+    // signed-in users; every feature that offers uploads sits behind a login.
+    Route::middleware('auth')->group(function () {
+        Route::post('/', [AttachmentController::class, 'store'])->name('store')->middleware('throttle:20,1');
+        Route::delete('{uuid}', [AttachmentController::class, 'destroy'])->name('destroy')->middleware('throttle:20,1');
+    });
+
+    // Reading a stored file stays open: a plan shared by its public link must
+    // be readable — attachments included — without an account.
     Route::get('{uuid}', [AttachmentController::class, 'show'])->name('show');
-    Route::delete('{uuid}', [AttachmentController::class, 'destroy'])->name('destroy')->middleware('throttle:20,1');
 });
 
 // Inertia-rendered wizard pages.

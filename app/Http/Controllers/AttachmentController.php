@@ -21,6 +21,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * Uploads are attached to a throwaway {@see PendingUpload} and later moved onto
  * the real model via {@see HasAttachments::syncAttachments()}, so
  * this controller is not tied to any single model.
+ *
+ * Storing and discarding require an authenticated user (see routes/web.php);
+ * streaming a stored file does not, so a publicly shared plan stays readable.
  */
 class AttachmentController extends Controller
 {

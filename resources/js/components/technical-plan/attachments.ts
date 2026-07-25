@@ -93,6 +93,12 @@ export async function uploadAttachment(
 
         const data = await response.json().catch(() => ({}));
 
+        if (response.status === 401) {
+            return failed(
+                'Sessioon on aegunud. Logi uuesti sisse ja proovi uuesti.',
+            );
+        }
+
         if (!response.ok) {
             return failed(
                 (data.message as string) ?? 'Üleslaadimine ebaõnnestus.',

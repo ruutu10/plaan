@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\HasAttachments;
 use App\Enums\TechnicalPlanStatus;
+use App\Rules\AllowedAttachment;
 use Database\Factories\TechnicalPlanFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -77,6 +78,38 @@ class TechnicalPlan extends Model implements HasMedia
     }
 
     /**
+     * The scenes' submitted sound-file handles, less any that do not point at
+     * a file the sound collection accepts.
+     *
+     * The upload endpoint already holds an upload destined for this collection
+     * to the audio allowlist, but that destination is the client's word — a
+     * file uploaded as a plain attachment could otherwise be passed off as a
+     * scene's sound, so the stored file is checked here as well.
+     *
+     * @return array<int, array{id?: string, name?: string, size?: int}>
+     */
+    private function submittedSoundFileHandles(): array
+    {
+        $handles = array_values(array_filter(array_map(
+            fn (array $scene): ?array => $scene['soundFile'] ?? null,
+            $this->scenes,
+        )));
+
+        $allowed = AllowedAttachment::extensionsFor(self::SOUND_COLLECTION);
+
+        $audible = Media::query()
+            ->whereIn('uuid', array_filter(array_column($handles, 'id')))
+            ->get()
+            ->filter(fn (Media $media): bool => in_array(strtolower($media->extension), $allowed, true))
+            ->keyBy('uuid');
+
+        return array_values(array_filter(
+            $handles,
+            fn (array $handle): bool => $audible->has($handle['id'] ?? ''),
+        ));
+    }
+
+    /**
      * Reconcile the scenes' sound files with the handles the client submitted:
      * move each newly staged upload into the plan's sound collection, drop the
      * files no scene refers to any more, and rewrite every scene's handle to
@@ -87,10 +120,7 @@ class TechnicalPlan extends Model implements HasMedia
      */
     public function syncSceneSoundFiles(): void
     {
-        $handles = array_values(array_filter(array_map(
-            fn (array $scene): ?array => $scene['soundFile'] ?? null,
-            $this->scenes,
-        )));
+        $handles = $this->submittedSoundFileHandles();
 
         $moved = $this->syncAttachments($handles, self::SOUND_COLLECTION);
 

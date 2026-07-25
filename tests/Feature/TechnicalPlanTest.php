@@ -456,6 +456,63 @@ class TechnicalPlanTest extends TestCase
         $this->get(route('attachments.show', 'does-not-exist'))->assertNotFound();
     }
 
+    public function test_uploading_requires_authentication(): void
+    {
+        Storage::fake('local');
+
+        $this->app['auth']->forgetGuards();
+
+        $response = $this->postJson(route('attachments.store'), [
+            'file' => UploadedFile::fake()->create('plaan.pdf', 120, 'application/pdf'),
+        ]);
+
+        $response->assertUnauthorized();
+        $this->assertSame(0, PendingUpload::count());
+        $this->assertSame(0, Media::query()->count());
+    }
+
+    public function test_uploading_a_sound_file_requires_authentication(): void
+    {
+        Storage::fake('local');
+
+        $this->app['auth']->forgetGuards();
+
+        $response = $this->postJson(route('attachments.store'), [
+            'file' => UploadedFile::fake()->create('muusika.mp3', 120, 'audio/mpeg'),
+            'collection' => TechnicalPlan::SOUND_COLLECTION,
+        ]);
+
+        $response->assertUnauthorized();
+        $this->assertSame(0, Media::query()->count());
+    }
+
+    public function test_discarding_a_staged_upload_requires_authentication(): void
+    {
+        Storage::fake('local');
+
+        $handle = $this->soundHandle();
+
+        $this->app['auth']->forgetGuards();
+
+        $this->deleteJson(route('attachments.destroy', $handle))->assertUnauthorized();
+
+        // The file is untouched — only its owner's session can discard it.
+        $this->assertSame(1, Media::query()->count());
+    }
+
+    public function test_a_stored_attachment_stays_readable_without_an_account(): void
+    {
+        Storage::fake('local');
+
+        // A plan shared by its public link must play its sound for a visitor
+        // who has no account, so streaming is deliberately left open.
+        $handle = $this->soundHandle();
+
+        $this->app['auth']->forgetGuards();
+
+        $this->get(route('attachments.show', $handle))->assertOk();
+    }
+
     public function test_uploading_a_disallowed_extension_is_rejected(): void
     {
         Storage::fake('local');
@@ -780,6 +837,26 @@ class TechnicalPlanTest extends TestCase
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors('file');
         $this->assertSame(1, Media::count());
+    }
+
+    public function test_a_non_audio_upload_cannot_be_passed_off_as_a_scene_sound_file(): void
+    {
+        Storage::fake('local');
+
+        // Uploaded as a plain attachment (no `collection`), so the upload
+        // endpoint's audio allowlist never applied to it.
+        $handle = $this->uploadHandle();
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'scenes' => [['soundFile' => ['id' => $handle, 'name' => 'plaan.pdf', 'size' => 120]]],
+        ]))->assertOk();
+
+        $plan = TechnicalPlan::first();
+
+        // The handle is refused on the stored file's own type: nothing lands in
+        // the sound collection and the scene is left without a file.
+        $this->assertCount(0, $plan->getMedia(TechnicalPlan::SOUND_COLLECTION));
+        $this->assertNull($plan->scenes[0]['soundFile']);
     }
 
     public function test_a_sound_upload_rejects_an_unknown_collection(): void
