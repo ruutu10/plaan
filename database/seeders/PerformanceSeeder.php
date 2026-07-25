@@ -2,53 +2,54 @@
 
 namespace Database\Seeders;
 
-use App\Models\Performance;
-use App\Models\Team;
+use App\Models\Show;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 
 class PerformanceSeeder extends Seeder
 {
     /**
-     * Example performances keyed by performing group name. Positive day offsets
-     * are upcoming (and therefore selectable in the wizard); negative offsets
-     * are in the past.
+     * The example stagings of each seeded show, keyed by the show's name.
+     * Positive day offsets are upcoming (and therefore selectable in the
+     * wizard); negative offsets are in the past. A show staged more than once is
+     * what lets the wizard offer an earlier staging's plan as the basis for the
+     * next one.
      *
-     * @var list<array{team: string, show_name: string, days: int, duration: int, description: string}>
+     * @var array<string, list<array{days: int, duration: int}>>
      */
     private const PERFORMANCES = [
-        ['team' => 'Improteater Ruutu10', 'show_name' => 'Hooaja avaetendus', 'days' => 7, 'duration' => 75, 'description' => 'Täispikk improetendus publiku ettepanekute põhjal, kahes vaatuses.'],
-        ['team' => 'Improteater Ruutu10', 'show_name' => 'Öine impro', 'days' => 21, 'duration' => 60, 'description' => 'Hilisõhtune vabas vormis kava täiskasvanud publikule.'],
-        ['team' => 'Jaanuar', 'show_name' => 'Talvefestival 2026', 'days' => 14, 'duration' => 45, 'description' => 'Lühivorm festivali raames, kiire tempo ja muusikaline saade.'],
-        ['team' => 'Improgrupp Kolm', 'show_name' => 'Kolm lugu', 'days' => 30, 'duration' => 50, 'description' => 'Kolmest omavahel põimuvast loost koosnev improetendus.'],
-        ['team' => 'Must Kast', 'show_name' => 'Pimeduse proov', 'days' => 45, 'duration' => 90, 'description' => 'Atmosfääriline lavastus minimaalse valguse ja tugeva helikujundusega.'],
-        ['team' => 'Vaba Lava Ansambel', 'show_name' => 'Suvelavastus', 'days' => 60, 'duration' => 80, 'description' => 'Vabaõhuetendus, vajab tugevat üldvalgust ja juhtmevabu mikrofone.'],
-        ['team' => 'Öökullid', 'show_name' => 'Möödunud hooaja parimad', 'days' => -10, 'duration' => 70, 'description' => 'Juba toimunud kokkuvõttev etendus (näidisandmete arhiiv).'],
+        'Hooaja avaetendus' => [
+            ['days' => -35, 'duration' => 75],
+            ['days' => 7, 'duration' => 75],
+        ],
+        'Öine impro' => [['days' => 21, 'duration' => 60]],
+        'Talvefestival 2026' => [['days' => 14, 'duration' => 45]],
+        'Kolm lugu' => [['days' => 30, 'duration' => 50]],
+        'Pimeduse proov' => [['days' => 45, 'duration' => 90]],
+        'Suvelavastus' => [['days' => 60, 'duration' => 80]],
+        'Möödunud hooaja parimad' => [['days' => -10, 'duration' => 70]],
     ];
 
     /**
-     * Seed example performances for the seeded performing groups.
+     * Seed the example performances for the seeded shows. The dates are
+     * relative to the day of seeding, so a show that already has its stagings
+     * is left alone rather than given a second set a few days apart.
      */
     public function run(): void
     {
-        foreach (self::PERFORMANCES as $performance) {
-            $team = Team::where('name', $performance['team'])->first();
+        foreach (self::PERFORMANCES as $showName => $stagings) {
+            $show = Show::where('name', $showName)->first();
 
-            if ($team === null) {
+            if ($show === null || $show->performances()->exists()) {
                 continue;
             }
 
-            Performance::firstOrCreate(
-                [
-                    'team_id' => $team->id,
-                    'show_name' => $performance['show_name'],
-                ],
-                [
-                    'show_date' => Carbon::today()->addDays($performance['days'])->toDateString(),
-                    'duration' => $performance['duration'],
-                    'description' => $performance['description'],
-                ],
-            );
+            foreach ($stagings as $staging) {
+                $show->performances()->create([
+                    'date' => Carbon::today()->addDays($staging['days'])->toDateString(),
+                    'duration' => $staging['duration'],
+                ]);
+            }
         }
     }
 }

@@ -39,11 +39,11 @@ class UpcomingPerformance extends JsonResource
 
         return [
             'id' => $performance->id,
-            'performer' => $performance->team->name ?? '',
-            'showName' => $performance->show_name,
-            'showDate' => $performance->show_date->format('Y-m-d'),
+            'performer' => $performance->show->team->name ?? '',
+            'showName' => $performance->show->name,
+            'showDate' => $performance->date->format('Y-m-d'),
             'duration' => $performance->duration,
-            'description' => $performance->description ?? '',
+            'description' => $performance->show->description ?? '',
             'priorPlans' => PriorPlan::collection($this->priorPlans($request))->resolve($request),
         ];
     }
@@ -62,7 +62,7 @@ class UpcomingPerformance extends JsonResource
 
         return $this->candidatePriorPlans
             ->filter(fn (TechnicalPlanModel $plan): bool => $plan->performance !== null
-                && $plan->performance->show_name === $performance->show_name
+                && $plan->performance->show_id === $performance->show_id
                 && ! ($plan->performance->id === $performance->id && $plan->user_id === $request->user()?->id))
             ->values();
     }

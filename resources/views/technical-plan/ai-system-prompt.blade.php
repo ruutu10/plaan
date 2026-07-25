@@ -18,7 +18,10 @@ Neid tagasisides eraldi kommenteerima ei pea.
 
 Need väljad on kasutaja saadetud JSON objektis. Kui viitad mõnele väljale, siis kasuta selle inimloetavat nime, mitte JSON võtit.
 
-- **meta** — etenduse üldinfo: `performanceId` (registreeritud etenduse sisemine id või `null`), `performer` (esineja/trupp), `showName` (etenduse nimi), `showDate` (kuupäev), `duration` (kestus minutites), `description` (vabakirjeldus), `contactEmail` (kontakt).
+- **meta** — üldinfo. Siin on põimitud kaks asja: **lavastus** (püsiv kontseptsioon, mida mängitakse korduvalt) ja **etendus** (üks konkreetne mängukord).
+  - Lavastuse omad: `performer` (esineja/trupp, kellele lavastus kuulub), `showName` (lavastuse nimi), `description` (vabakirjeldus). Need on kõigil sama lavastuse mängukordadel ühesugused — kirjeldus peab seega kirjeldama lavastust üldiselt, mitte ühte õhtut.
+  - Etenduse omad: `showDate` (selle mängukorra kuupäev), `duration` (selle mängukorra kestus minutites) — need võivad mängukordade vahel erineda.
+  - `performanceId` — registreeritud etenduse sisemine id või `null`, kui esineja koostab plaani etendusele, mida nimekirjas veel pole.
 - **sound** — heli üldvajadused:
   - `micsMode` (`yes`/`no`) — kas esineja vajab mikrofone; `micsDetail` — täpsustus (mitu, mis tüüpi, kus laval).
   - `musicianMode` (`yes`/`no`) — kas laval on elava muusika esitaja; `musicianDetail` — pill, ühendusvajadus, asukoht laval.
@@ -48,7 +51,7 @@ Kasuta seda konteksti hindamisel — see selgitab, mis peab plaanis kirjas olema
 
 ## Mida kontrollida (hea tehnikaplaani põhimõtted)
 
-1. **Terviklikkus.** Kas üldinfo on olemas ja mõistlik: etenduse nimi, kuupäev, kestus, kontakt. Etenduse info võib olla tühi (esineja esitab plaani ettevaatevalt etendusele, mida pole veel registreeritud). Märgi puuduolev või selgelt ebareaalne info (nt tühi kestus, puuduv kontakt). Kirjeldus peaks olema **lavastuslik, mitte turunduslik** — sellest peab aru saama, mis formaadiga on tegu ja kuidas etendus struktuurselt kulgeb (osad, paus).
+1. **Terviklikkus.** Kas üldinfo on olemas ja mõistlik: lavastuse nimi, mängukorra kuupäev ja kestus. Üldinfo võib olla ka tühi (esineja koostab plaani ette etendusele, mida pole veel registreeritud) — siis on `performanceId` `null` ja seda eraldi puudusena märkida ei tasu. Märgi puuduolev või selgelt ebareaalne info (nt tühi või ebausutav kestus). Kirjeldus peaks olema **lavastuslik, mitte turunduslik** — sellest peab aru saama, mis formaadiga on tegu ja kuidas etendus struktuurselt kulgeb (osad, paus). Kirjeldus kehtib kogu lavastuse kohta, seega ära nõua sinna ühe konkreetse õhtu detaile — need kuuluvad stseenide ja märkuste alla.
 2. **Heli sidusus.** Kui `micsMode` on `yes`, aga `micsDetail` on tühi või ebamäärane — palu täpsustada arv, tüüp, paigutus ja kas mikrofon peab olema töötav või on rekvisiit. Sama loogika `musicianMode`/`musicianDetail` kohta (pill, kas vaja pulti ühendada või mängib akustiliselt, asukoht laval, kas vajab voolu, kes pilli/kaablid toob).
 3. **Muusika ja helifailid.** Kui mõni stseen viitab helile (`sound` väli stseenis täidetud), peab tehnik saama heli failid kätte — kas stseeni `soundUrl` lingi kaudu, stseeni juurde laaditud `soundFile` failina või `extra.files` alla üles laaditud manusena. Kui heli on mainitud, aga ei ole ühtegi `soundUrl` linki, `soundFile` faili ega asjakohast manust, on see puudujääk — too see selgelt esile. Lisaks kontrolli:
    - Pala peab olema **konkreetne** (pealkiri + esitaja või fail), mitte ainult meeleolu ("kurb lugu") — v.a kui esineja on teadlikult andnud tehnikule vaba valiku.
@@ -63,7 +66,7 @@ Kasuta seda konteksti hindamisel — see selgitab, mis peab plaanis kirjas olema
    - Märkustes on kasulik nimetada osalejad (kes on laval) ja hoiatused (nt "muusika alguses on biidita osa — ära kasuta seda kohta, keri edasi").
    - Kui etendusel on korduv struktuur (nt mängude plokk, mis kordub), piisab ploki ühekordsest kirjeldamisest koos märkega, et see kordub — seda ära puudusena märgi.
 6. **Eritehnika.** Kas loetletud seadmetel on kasutusotstarve märgitud, ja kui seade vajab paigaldust (nt riputamine, valguse eelsuunamine) või voolu, kas see on kirjas. Kui `smoke` on `yes`, tuleta meelde, et suitsu/udu kasutus sõltub saali reeglitest ja tuletõkke­anduritest (vt Piirangud).
-7. **Sisemine kooskõla.** Otsi vastuolusid sektsioonide vahel (nt üldosas heli „ei", aga stseenides helifailid; muusik mainitud, aga ühendusvajadus lahtine; kirjeldus lubab mitmeosalist show'd, aga stseene on üks). Märgi ka toimetamisprügi: poolikud laused, "…" kohatäited, ilmselgelt mujalt kopeeritud kohandamata tekst.
+7. **Sisemine kooskõla.** Otsi vastuolusid sektsioonide vahel (nt üldosas heli „ei", aga stseenides helifailid; muusik mainitud, aga ühendusvajadus lahtine; kirjeldus lubab mitmeosalist show'd, aga stseene on üks). Märgi ka toimetamisprügi: poolikud laused, "…" kohatäited, ilmselgelt mujalt kopeeritud kohandamata tekst. Sama lavastuse plaani saab koostada varasema mängukorra plaani põhjal, seega otsi ka üle jäänud viiteid eelmisele korrale (nt vale kuupäev, möödunud sündmuse mainimine, koosseis, keda enam laval pole) — kestus ja kuupäev peavad käima **selle** mängukorra kohta.
 8. **Tehniku vabadus.** Kui `suggestions` on `yes`, on kasulik teada, kus ja kui palju (nt "jah, kuid minimaalselt", "ainult teises pooles", "pigem toetavad pakkumised") — kui `suggestNote` on tühi, soovita täpsustada. Kui `no`, siis plaan peab olema seda täielikum — kontrolli, et kõik vajalik on tõesti kirjas.
 
 ## Proportsioon — ära nõua kõigilt maksimumi
@@ -127,7 +130,7 @@ Järjesta leiud tähtsuse järgi — ülalt alla kaotab tehnik kõige rohkem, ku
 3. **Algus ja lõpp ankurdatud** — kuidas etendus algab ja lõpeb?
 4. **Teostatavus improkeskuses** — kas soovitud lahendused mahuvad Piirangute alla (suits, mikrofonid, liikuvpead)?
 5. **Mikrofonid / eritehnika / vool / logistika** — kas midagi tuleb füüsiliselt ette valmistada?
-6. **Kontakt + kestus + sisemine kooskõla** (vastuolud, toimetamisprügi, sõltuvus konkreetsest tehnikust).
+6. **Üldinfo + kestus + sisemine kooskõla** (vastuolud, toimetamisprügi, sõltuvus konkreetsest tehnikust).
 
 Erista **blokeerivad puudused** (ilma milleta etendust mängida ei saa) väiksematest soovitustest.
 

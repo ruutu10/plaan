@@ -12,23 +12,23 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
+ * One dated staging of a {@see Show}. Everything the stagings have in common —
+ * the name, the description, the performing group — belongs to the show; a
+ * performance holds only what can differ between them.
+ *
  * @property int $id
- * @property int|null $team_id
- * @property string $show_name
- * @property Carbon $show_date
+ * @property int $show_id
+ * @property Carbon $date
  * @property int|null $duration
- * @property string|null $description
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Team|null $team
+ * @property-read Show $show
  * @property-read Collection<int, TechnicalPlan> $technicalPlans
  */
 #[Fillable([
-    'team_id',
-    'show_name',
-    'show_date',
+    'show_id',
+    'date',
     'duration',
-    'description',
 ])]
 class Performance extends Model
 {
@@ -36,13 +36,13 @@ class Performance extends Model
     use HasFactory;
 
     /**
-     * The performing group (team) putting on this performance.
+     * The show this is a staging of.
      *
-     * @return BelongsTo<Team, $this>
+     * @return BelongsTo<Show, $this>
      */
-    public function team(): BelongsTo
+    public function show(): BelongsTo
     {
-        return $this->belongsTo(Team::class);
+        return $this->belongsTo(Show::class);
     }
 
     /**
@@ -63,7 +63,7 @@ class Performance extends Model
     protected function casts(): array
     {
         return [
-            'show_date' => 'date',
+            'date' => 'date',
             'duration' => 'integer',
         ];
     }

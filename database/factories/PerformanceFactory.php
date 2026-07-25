@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Performance;
-use App\Models\Team;
+use App\Models\Show;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,11 +19,9 @@ class PerformanceFactory extends Factory
     public function definition(): array
     {
         return [
-            'team_id' => Team::factory(),
-            'show_name' => fake()->words(3, true),
-            'show_date' => fake()->dateTimeBetween('now', '+2 months')->format('Y-m-d'),
+            'show_id' => Show::factory(),
+            'date' => fake()->dateTimeBetween('now', '+2 months')->format('Y-m-d'),
             'duration' => fake()->numberBetween(3, 90),
-            'description' => fake()->paragraph(),
         ];
     }
 
@@ -33,7 +31,7 @@ class PerformanceFactory extends Factory
     public function past(): static
     {
         return $this->state(fn (array $attributes) => [
-            'show_date' => fake()->dateTimeBetween('-2 months', '-1 day')->format('Y-m-d'),
+            'date' => fake()->dateTimeBetween('-2 months', '-1 day')->format('Y-m-d'),
         ]);
     }
 }

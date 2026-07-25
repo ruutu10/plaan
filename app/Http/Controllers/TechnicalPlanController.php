@@ -9,6 +9,7 @@ use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Http\Resources\TechnicalPlanSummary as TechnicalPlanSummaryResource;
 use App\Http\Resources\UpcomingPerformance as UpcomingPerformanceResource;
 use App\Models\Performance;
+use App\Models\Show;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
@@ -116,7 +117,7 @@ class TechnicalPlanController extends Controller
     public function lookup(Request $request): JsonResponse
     {
         $plans = TechnicalPlan::query()
-            ->with('performance.team')
+            ->with('performance.show.team')
             ->where('user_id', $request->user()->id)
             ->where('status', TechnicalPlanStatus::Submitted)
             ->latest('submitted_at')
@@ -130,18 +131,18 @@ class TechnicalPlanController extends Controller
 
     /**
      * List upcoming performances the user can attach a plan to. Each row also
-     * carries the plans handed in for other stagings of the same show (matched
-     * by name), so a new plan can be pre-filled from a past one. Those are not
-     * only the user's own: a plan for a performance of one of their teams counts
-     * too, which is how the next plan for a show can be written by someone else
-     * in the group than the one who sent the last.
+     * carries the plans handed in for the same show's other stagings, so a new
+     * plan can be pre-filled from a past one. Those are not only the user's own:
+     * a plan for a performance of one of their teams counts too, which is how
+     * the next plan for a show can be written by someone else in the group than
+     * the one who sent the last.
      */
     public function performances(Request $request): JsonResponse
     {
         $upcoming = Performance::query()
-            ->with('team')
-            ->whereDate('show_date', '>=', now()->toDateString())
-            ->orderBy('show_date')
+            ->with('show.team')
+            ->whereDate('date', '>=', now()->toDateString())
+            ->orderBy('date')
             ->limit(100)
             ->get();
 
@@ -149,7 +150,7 @@ class TechnicalPlanController extends Controller
             ->with(['performance', 'user'])
             ->visibleTo($request->user())
             ->whereIn('status', [TechnicalPlanStatus::Submitted, TechnicalPlanStatus::Received])
-            ->whereHas('performance', fn ($query) => $query->whereIn('show_name', $upcoming->pluck('show_name')->filter()->all()))
+            ->whereHas('performance', fn ($query) => $query->whereIn('show_id', $upcoming->pluck('show_id')->all()))
             ->latest('submitted_at')
             ->limit(25)
             ->get();
@@ -224,9 +225,9 @@ class TechnicalPlanController extends Controller
     }
 
     /**
-     * Hydrate an unsaved plan (with its performance, team and contact user) from
-     * validated wizard input, so it can be handed to the AI reviewer as a full
-     * TechnicalPlan model without touching the database.
+     * Hydrate an unsaved plan (with its performance, show, team and contact
+     * user) from validated wizard input, so it can be handed to the AI reviewer
+     * as a full TechnicalPlan model without touching the database.
      *
      * @param  array<string, mixed>  $data
      */
@@ -242,13 +243,17 @@ class TechnicalPlanController extends Controller
             'extra' => ['notes' => $data['extra']['notes'] ?? ''],
         ]);
 
-        $performance = new Performance([
-            'show_name' => $meta['showName'] ?? null,
-            'show_date' => $meta['showDate'] ?? null,
-            'duration' => $meta['duration'] ?? null,
+        $show = new Show([
+            'name' => $meta['showName'] ?? null,
             'description' => $meta['description'] ?? null,
         ]);
-        $performance->setRelation('team', new Team(['name' => $meta['performer'] ?? null]));
+        $show->setRelation('team', new Team(['name' => $meta['performer'] ?? null]));
+
+        $performance = new Performance([
+            'date' => $meta['showDate'] ?? null,
+            'duration' => $meta['duration'] ?? null,
+        ]);
+        $performance->setRelation('show', $show);
 
         $plan->setRelation('performance', $performance);
         $plan->setRelation('user', $user);

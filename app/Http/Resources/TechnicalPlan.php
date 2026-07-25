@@ -51,11 +51,11 @@ class TechnicalPlan extends JsonResource
             'submittedAt' => $plan->submitted_at?->toIso8601String(),
             'meta' => [
                 'performanceId' => $plan->performance_id,
-                'performer' => $plan->performance?->team->name ?? '',
-                'showName' => $plan->performance?->show_name ?? '', // @phpstan-ignore-line
-                'showDate' => $plan->performance?->show_date?->format('Y-m-d') ?? '',
+                'performer' => $plan->performance?->show->team->name ?? '',
+                'showName' => $plan->performance?->show->name ?? '',
+                'showDate' => $plan->performance?->date?->format('Y-m-d') ?? '',
                 'duration' => $plan->performance?->duration,
-                'description' => $plan->performance?->description ?? '', // @phpstan-ignore-line
+                'description' => $plan->performance?->show->description ?? '',
             ],
             'sound' => $this->sound(),
             'scenes' => PlanScene::forPlan($plan, $request, $this->duplicateAttachments),

@@ -23,7 +23,7 @@ class TeamSeeder extends Seeder
     ];
 
     /**
-     * Seed a handful of performing groups to attach performances to.
+     * Seed a handful of performing groups to attach shows to.
      */
     public function run(): void
     {

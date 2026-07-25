@@ -62,8 +62,8 @@ class TechnicalPlanSubmitted extends Notification implements ShouldQueue
         $performance = $this->plan->performance;
 
         $parts = array_values(array_filter([
-            $performance?->show_name,
-            $performance?->show_date?->format('d.m.Y'),
+            $performance?->show->name,
+            $performance?->date?->format('d.m.Y'),
         ]));
 
         return $parts === [] ? $this->plan->token : implode(' · ', $parts);

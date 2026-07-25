@@ -25,13 +25,13 @@ class TechnicalPlanSummary extends JsonResource
     public function toArray(Request $request): array
     {
         $plan = $this->resource;
-        $performance = $plan->performance;
+        $show = $plan->performance?->show;
 
         return [
             'token' => $plan->token,
-            'title' => trim(($performance?->show_name ?: 'Nimeta plaan').($performance?->team?->name ? ' — '.$performance->team->name : '')),
+            'title' => trim(($show?->name ?: 'Nimeta plaan').($show?->team?->name ? ' — '.$show->team->name : '')),
             'sub' => collect([
-                $performance?->show_date?->format('d.m.Y'),
+                $plan->performance?->date?->format('d.m.Y'),
                 $plan->submitted_at ? 'esitatud '.$plan->submitted_at->format('d.m.Y') : null,
             ])->filter()->implode(' · '),
         ];
