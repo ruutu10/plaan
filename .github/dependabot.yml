@@ -3,7 +3,17 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "quarterly"
+    cooldown:
+      default-days: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+  - package-ecosystem: composer
+    directory: "/"
+    schedule:
+      interval: "quarterly"
     cooldown:
       default-days: 5
     groups:

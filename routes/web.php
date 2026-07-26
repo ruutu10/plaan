@@ -1,11 +1,63 @@
 <?php
 
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\Teams\TeamInvitationController;
+use App\Http\Controllers\TechnicalPlanController;
 use App\Http\Middleware\EnsureTeamMembership;
+use App\Models\TechnicalPlan;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
+
+// Generic, model-agnostic file staging shared by any feature that needs
+// attachments (see App\Concerns\HasAttachments).
+Route::prefix('api/attachments')->name('attachments.')->group(function () {
+    // Putting a file on the server — and discarding one again — is only for
+    // signed-in users; every feature that offers uploads sits behind a login.
+    Route::middleware('auth')->group(function () {
+        Route::post('/', [AttachmentController::class, 'store'])->name('store')->middleware('throttle:20,1');
+        Route::delete('{uuid}', [AttachmentController::class, 'destroy'])->name('destroy')->middleware('throttle:20,1');
+    });
+
+    // Reading a stored file stays open: a plan shared by its public link must
+    // be readable — attachments included — without an account.
+    Route::get('{uuid}', [AttachmentController::class, 'show'])->name('show');
+});
+
+// Inertia-rendered wizard pages.
+Route::prefix('tehnikaplaan')->name('technical-plan.')->group(function () {
+    Route::get('/', [TechnicalPlanController::class, 'index'])->name('index');
+    Route::get('p/{plan:token}', [TechnicalPlanController::class, 'public'])->name('public');
+});
+
+// The technical crew's overview of every plan that has been written, whatever
+// state it is in. Closed to everyone but the holders of the view-all permission
+// (the "technician" role).
+Route::get('technical-plans', [TechnicalPlanController::class, 'overview'])
+    ->middleware(['auth', 'can:'.TechnicalPlan::VIEW_ALL_PERMISSION])
+    ->name('technical-plans.index');
+
+// JSON API consumed by the technical-plan wizard frontend.
+Route::prefix('api/tehnikaplaan')
+    ->name('technical-plan.')
+    ->group(function () {
+        // The first step of the flow is always to log the user in: e-mailing a
+        // magic link is the only action available before authentication.
+        Route::post('login', [MagicLoginController::class, 'send'])->name('login')->middleware('throttle:6,1');
+
+        // Every plan action requires an authenticated user.
+        Route::middleware(['auth', 'throttle:200,1'])
+            ->group(function () {
+                Route::post('/', [TechnicalPlanController::class, 'store'])->name('store');
+                Route::post('lookup', [TechnicalPlanController::class, 'lookup'])->name('lookup');
+                Route::get('performances', [TechnicalPlanController::class, 'performances'])->name('performances');
+                Route::post('ai-review', [TechnicalPlanController::class, 'aiReview'])->name('ai')->middleware('throttle:15,10');
+                Route::get('plans/{plan:token}', [TechnicalPlanController::class, 'show'])->name('show');
+                Route::post('plans/{plan:token}/copy', [TechnicalPlanController::class, 'copy'])->name('copy');
+            });
+    });
 
 Route::prefix('{current_team}')
     ->middleware(['auth', 'verified', EnsureTeamMembership::class])

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\TechnicalPlan;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -42,6 +43,11 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $user,
+                // What the signed-in user is allowed to do beyond their own
+                // teams — the frontend hides what the backend would refuse.
+                'can' => fn (): array => [
+                    'viewAllTechnicalPlans' => (bool) $user?->can(TechnicalPlan::VIEW_ALL_PERMISSION),
+                ],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'currentTeam' => fn () => $user?->currentTeam ? $user->toUserTeam($user->currentTeam) : null,

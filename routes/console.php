@@ -9,3 +9,7 @@ Schedule::call(function () {
         ->where('expires_at', '<', now())
         ->delete();
 })->daily()->description('Delete expired team invitations');
+
+Schedule::command('attachments:prune-stale')
+    ->weekly()
+    ->description('Delete staged uploads never attached to a model');
