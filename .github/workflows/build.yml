@@ -3,6 +3,7 @@ name: build
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   docker:
@@ -29,4 +30,4 @@ jobs:
           context: .
           file: docker/production/Dockerfile
           push: true
-          tags: ruutu10/plaan:latest
+          tags: ghcr.io/ruutu10/plaan:latest
