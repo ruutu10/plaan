@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Copy, Trash2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import type { Scene } from '@/types/technicalPlan';
 import {
@@ -259,22 +260,26 @@ function onDrop(targetId: string): void {
                     <div class="ml-auto flex shrink-0 gap-2">
                         <button
                             type="button"
-                            class="cursor-pointer rounded-full border border-white/20 bg-white/10 px-3 py-1.5 font-r10-body text-[11px] font-bold tracking-[0.06em] text-white uppercase"
+                            title="Kopeeri"
+                            aria-label="Kopeeri"
+                            class="flex cursor-pointer items-center justify-center rounded-full border border-white/20 bg-white/10 p-1.5 text-white transition hover:border-r10-orange hover:text-r10-orange"
                             @click="duplicate(index)"
                         >
-                            Kopeeri
+                            <Copy class="h-4 w-4" />
                         </button>
                         <button
                             type="button"
+                            title="Kustuta"
+                            aria-label="Kustuta"
                             :class="[
-                                'rounded-full border border-white/20 bg-white/10 px-3 py-1.5 font-r10-body text-[11px] font-bold tracking-[0.06em] text-white uppercase',
+                                'flex items-center justify-center rounded-full border border-white/20 bg-white/10 p-1.5 text-white transition',
                                 plan.scenes.length > 1
-                                    ? 'cursor-pointer'
+                                    ? 'cursor-pointer hover:border-r10-error hover:text-r10-error'
                                     : 'pointer-events-none opacity-35',
                             ]"
                             @click="remove(index)"
                         >
-                            Kustuta
+                            <Trash2 class="h-4 w-4" />
                         </button>
                     </div>
                 </div>

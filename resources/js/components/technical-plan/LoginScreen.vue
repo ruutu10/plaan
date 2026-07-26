@@ -97,7 +97,7 @@ function submit(): void {
                     class="mt-5 w-full"
                     :disabled="props.busy"
                 >
-                    {{ props.busy ? 'Saadan…' : 'Saada sisselogimislink' }}
+                    {{ props.busy ? 'Saadan…' : 'Saada link' }}
                 </R10Button>
             </div>
 

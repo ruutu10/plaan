@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, provide, reactive, ref, watch } from 'vue';
 import LoginScreen from '@/components/technical-plan/LoginScreen.vue';
 import { hydratePlan } from '@/components/technical-plan/plan';
@@ -14,7 +14,6 @@ import ShowStep from '@/components/technical-plan/steps/ShowStep.vue';
 import SoundStep from '@/components/technical-plan/steps/SoundStep.vue';
 import StandardInfoStep from '@/components/technical-plan/steps/StandardInfoStep.vue';
 import R10Layout from '@/layouts/R10Layout.vue';
-import { logout, login } from '@/routes';
 import technicalPlan from '@/routes/technical-plan';
 import type { User } from '@/types';
 import type {
@@ -417,35 +416,6 @@ watch(
     <Head title="Etenduse tehnikaplaan" />
 
     <R10Layout title="Etenduse tehnikaplaan" :no-print-header="true">
-        <template #actions>
-            <Link
-                :href="login()"
-                class="rounded-full bg-r10-orange px-5 py-2 font-r10-body text-xs font-bold tracking-[0.06em] text-r10-navy uppercase transition hover:bg-r10-orange-600"
-            >
-                Logi sisse
-            </Link>
-
-            <div
-                v-if="user"
-                class="flex items-center gap-3 border-l border-white/15 pl-4"
-            >
-                <span
-                    class="hidden max-w-[180px] truncate font-r10-body text-sm font-semibold text-white sm:inline"
-                    :title="user.name"
-                >
-                    {{ user.name }}
-                </span>
-                <Link
-                    :href="logout()"
-                    as="button"
-                    class="cursor-pointer font-r10-body text-xs font-bold tracking-[0.06em] text-white/70 uppercase transition hover:text-r10-orange"
-                    @click="() => router.flushAll()"
-                >
-                    Logi välja
-                </Link>
-            </div>
-        </template>
-
         <div
             class="mx-auto flex max-w-[1160px] flex-wrap items-start gap-[30px] px-6 pt-9 pb-16"
         >

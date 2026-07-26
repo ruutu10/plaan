@@ -1,16 +1,9 @@
 <script setup lang="ts">
-import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Head, Link } from '@inertiajs/vue3';
 import Diamond from '@/components/technical-plan/Diamond.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Layout from '@/layouts/R10Layout.vue';
-import { dashboard, login } from '@/routes';
 import { index as technicalPlan } from '@/routes/technical-plan';
-
-const page = usePage();
-const dashboardUrl = computed(() =>
-    page.props.currentTeam ? dashboard(page.props.currentTeam.slug).url : '/',
-);
 </script>
 
 <template>
@@ -18,21 +11,6 @@ const dashboardUrl = computed(() =>
     <Head title="RUUTU10" />
 
     <R10Layout>
-        <template #actions>
-            <nav class="flex items-center gap-3">
-                <Link v-if="page.props.auth.user" :href="dashboardUrl"
-                    class="font-r10-body text-xs font-bold tracking-[0.06em] text-white/80 uppercase transition hover:text-r10-orange">
-                    Töölaud
-                </Link>
-                <template v-else>
-                    <Link :href="login()"
-                        class="rounded-full bg-r10-orange px-5 py-2 font-r10-body text-xs font-bold tracking-[0.06em] text-r10-navy uppercase transition hover:bg-r10-orange-600">
-                        Logi sisse
-                    </Link>
-                </template>
-            </nav>
-        </template>
-
         <main class="mx-auto max-w-[1160px] px-6 pt-16 pb-16">
             <div
                 class="mx-auto max-w-[640px] rounded-[22px] border border-r10-grey-200 bg-white p-8 shadow-[0_6px_18px_rgba(10,14,23,0.1)] sm:p-12">
