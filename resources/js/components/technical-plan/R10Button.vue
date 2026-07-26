@@ -4,7 +4,8 @@ import { computed } from 'vue';
 const props = withDefaults(
     defineProps<{
         variant?: 'primary' | 'outline';
-        size?: 'md' | 'lg';
+        /** `sm` is slim enough for an icon-only button. */
+        size?: 'sm' | 'md' | 'lg';
         type?: 'button' | 'submit';
         disabled?: boolean;
     }>(),
@@ -22,10 +23,11 @@ const classes = computed(() => {
             ? 'bg-r10-orange text-r10-navy hover:bg-r10-orange-600'
             : 'bg-white text-r10-navy border-2 border-r10-navy hover:bg-r10-navy hover:text-white';
 
-    const size =
-        props.size === 'lg'
-            ? 'text-[15px] px-7 py-[15px]'
-            : 'text-sm px-6 py-3';
+    const size = {
+        sm: 'text-xs px-3 py-2',
+        md: 'text-sm px-6 py-3',
+        lg: 'text-[15px] px-7 py-[15px]',
+    }[props.size];
 
     return `${variant} ${size}`;
 });

@@ -187,3 +187,62 @@ export function formatFileSize(bytes: number | null | undefined): string {
 
     return (bytes / 1024 / 1024).toFixed(1) + ' MB';
 }
+
+/**
+ * Extensions a browser can decode into a waveform. Wider than the upload
+ * allowlist in `config/technical_plan.php`, because a linked file was never
+ * ours to constrain — anything the browser plays is worth showing.
+ */
+const AUDIO_EXTENSIONS = [
+    'mp3',
+    'wav',
+    'ogg',
+    'oga',
+    'm4a',
+    'aac',
+    'flac',
+    'opus',
+    'weba',
+    'aif',
+    'aiff',
+];
+
+/** Whether a file name ends in an extension a browser can decode. */
+function hasAudioExtension(name: string): boolean {
+    const extension = name.split('.').pop()?.toLowerCase() ?? '';
+
+    return AUDIO_EXTENSIONS.includes(extension);
+}
+
+/**
+ * Whether a URL points straight at an audio file. Only the path decides: a
+ * sharing page (YouTube, Google Drive, …) names no audio file, and a query
+ * string that happens to mention one (say `?file=cue.mp3`) is not the resource
+ * being fetched. Such links can only be opened, never played.
+ */
+function isDirectAudioUrl(url: string): boolean {
+    try {
+        // A relative URL needs a base before it will parse.
+        return hasAudioExtension(new URL(url, window.location.origin).pathname);
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * The URL a scene's sound can actually be played from, or `null` when it is
+ * only reachable through a link a player cannot read. An upload is judged by
+ * its stored name — the URL that streams it carries no extension — while a
+ * link is judged by its path.
+ */
+export function playableAudio(scene: Scene): string | null {
+    const file = scene.soundFile?.status === 'ready' ? scene.soundFile : null;
+
+    if (file?.url && hasAudioExtension(file.name)) {
+        return file.url;
+    }
+
+    const url = scene.soundUrl.trim();
+
+    return url && isDirectAudioUrl(url) ? url : null;
+}

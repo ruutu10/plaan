@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Spotlight } from '@lucide/vue';
+import { computed, ref } from 'vue';
 import type { User } from '@/types';
 import Diamond from '../Diamond.vue';
 import { formatFileSize } from '../plan';
 import { usePlan } from '../planKey';
 import R10Button from '../R10Button.vue';
+import ScenePlayback from '../ScenePlayback.vue';
 import StepHeader from '../StepHeader.vue';
 
 const plan = usePlan();
@@ -93,6 +95,9 @@ const statusLabel = computed(
 const durationLabel = computed(() =>
     plan.meta.duration ? plan.meta.duration + ' min' : '—',
 );
+
+/** Whether the technician's focused scene-by-scene view is open. */
+const playbackOpen = ref(false);
 
 const cellClass = 'border border-r10-grey-200 px-3 py-2 align-top';
 const headCellClass =
@@ -222,9 +227,19 @@ const headCellClass =
             </table>
 
             <div
-                class="mb-3 font-r10-display text-sm font-semibold tracking-[0.04em] text-r10-navy uppercase"
+                class="mb-3 flex flex-wrap items-center gap-3 font-r10-display text-sm font-semibold tracking-[0.04em] text-r10-navy uppercase"
             >
                 Stseenid
+                <R10Button
+                    variant="outline"
+                    size="sm"
+                    title="Tehniku vaade"
+                    aria-label="Tehniku vaade"
+                    class="r10-no-print ml-auto"
+                    @click="playbackOpen = true"
+                >
+                    <Spotlight class="h-4 w-4" />
+                </R10Button>
             </div>
             <div class="mb-[26px] overflow-x-auto">
                 <table class="w-full border-collapse text-[13px]">
@@ -509,5 +524,7 @@ const headCellClass =
                 >
             </div>
         </div>
+
+        <ScenePlayback v-if="playbackOpen" @close="playbackOpen = false" />
     </section>
 </template>
