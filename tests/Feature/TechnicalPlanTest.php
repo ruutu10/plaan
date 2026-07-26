@@ -201,6 +201,69 @@ class TechnicalPlanTest extends TestCase
 
         $this->assertSame(1, TechnicalPlan::count());
         $this->assertSame($second->id, TechnicalPlan::first()->performance_id);
+        $this->assertSame($this->user->id, TechnicalPlan::first()->user_id);
+    }
+
+    public function test_storing_over_a_plan_the_user_cannot_see_is_forbidden(): void
+    {
+        Storage::fake('local');
+
+        // A plan its owner has submitted, with a file of its own, whose public
+        // link — the token — has made the rounds.
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'extra' => [
+                'notes' => 'Originaal',
+                'files' => [['id' => $this->uploadHandle(), 'name' => 'plaan.pdf', 'size' => 120]],
+            ],
+        ]))->json('token');
+
+        // Merely holding the link is not permission to write over what it opens.
+        $this->actingAs(User::factory()->create());
+
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $token,
+            'extra' => ['notes' => 'Ülekirjutatud', 'files' => []],
+        ]));
+
+        $response->assertForbidden();
+
+        $plan = TechnicalPlan::firstWhere('token', $token);
+        $this->assertSame($this->user->id, $plan->user_id);
+        $this->assertSame('Originaal', $plan->extra['notes']);
+        $this->assertCount(1, $plan->getMedia($plan->attachmentsCollection()));
+    }
+
+    public function test_storing_over_a_team_mates_draft_is_forbidden(): void
+    {
+        $teamMate = User::factory()->create();
+        $draft = TechnicalPlan::factory()->for($teamMate)->for($this->teamPerformance())->create();
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $draft->token,
+            'extra' => ['notes' => 'Ülekirjutatud'],
+        ]))->assertForbidden();
+
+        $this->assertNotSame('Ülekirjutatud', $draft->refresh()->extra['notes']);
+    }
+
+    public function test_updating_a_team_mates_submitted_plan_leaves_its_owner_untouched(): void
+    {
+        $teamMate = User::factory()->create();
+        $performance = $this->teamPerformance();
+        $plan = TechnicalPlan::factory()->for($teamMate)->for($performance)->submitted()->create();
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $plan->token,
+            'meta' => ['performanceId' => $performance->id],
+            'extra' => ['notes' => 'Täiendatud'],
+        ]))->assertOk();
+
+        // The plan's contents follow the last person to work on it; its owner
+        // stays whoever wrote it in the first place.
+        $plan->refresh();
+        $this->assertSame('Täiendatud', $plan->extra['notes']);
+        $this->assertSame($teamMate->id, $plan->user_id);
     }
 
     public function test_a_saved_plan_can_be_fetched_by_token(): void
@@ -1170,6 +1233,21 @@ class TechnicalPlanTest extends TestCase
         $this->assertStringContainsString('Suitsumasin', $html);
         $this->assertStringContainsString('Palun jälgida ajakava.', $html);
         $this->assertStringContainsString('tehnikaplaan.pdf', $html);
+    }
+
+    /**
+     * An upcoming staging of a show put on by a team the signed-in user is a
+     * member of — the setting in which a plan is somebody else's but still the
+     * user's to see.
+     */
+    private function teamPerformance(): Performance
+    {
+        $team = Team::factory()->create();
+        $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
+
+        return Performance::factory()
+            ->for(Show::factory()->state(['team_id' => $team->id]))
+            ->create(['date' => now()->addWeek()->toDateString()]);
     }
 
     /**

@@ -27,5 +27,6 @@ jobs:
         uses: docker/build-push-action@v7.3.0
         with:
           context: .
+          file: docker/production/Dockerfile
           push: true
           tags: ruutu10/plaan:latest

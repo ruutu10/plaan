@@ -50,6 +50,7 @@ const submitting = ref(false);
 const justSubmitted = ref(false);
 const publicLink = ref('');
 const linkCopied = ref(false);
+const saveError = ref('');
 
 // AI state
 const aiLoading = ref(false);
@@ -80,16 +81,25 @@ async function requestJson(
     method: 'GET' | 'POST',
     body?: unknown,
 ): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
-    const response = await fetch(url, {
-        method,
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            'X-XSRF-TOKEN': csrfToken(),
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: body ? JSON.stringify(body) : undefined,
-    });
+    let response: globalThis.Response;
+
+    try {
+        response = await fetch(url, {
+            method,
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': csrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: body ? JSON.stringify(body) : undefined,
+        });
+    } catch {
+        // A dropped connection must not escape as a rejected promise: every
+        // caller flips a busy flag off after awaiting, and a throw would leave
+        // the wizard stuck mid-request. Status 0 stands for "never arrived".
+        return { ok: false, status: 0, data: {} };
+    }
 
     let data: Record<string, unknown> = {};
 
@@ -102,6 +112,32 @@ async function requestJson(
     return { ok: response.ok, status: response.status, data };
 }
 
+/**
+ * Turn a failed response into something the user can act on. A dropped
+ * connection and an expired session each need their own fix, and a validation
+ * failure carries the field errors that say what the server refused.
+ */
+function failureMessage(
+    status: number,
+    data: Record<string, unknown>,
+    fallback: string,
+): string {
+    if (status === 0) {
+        return 'Ühendus serveriga katkes. Kontrolli internetiühendust ja proovi uuesti.';
+    }
+
+    if (status === 401 || status === 419) {
+        return 'Sessioon aegus. Laadi leht uuesti ja logi sisse — plaan on siin mustandina alles.';
+    }
+
+    const message = (data.message as string) ?? fallback;
+    const errors = Object.values(
+        (data.errors as Record<string, string[]>) ?? {},
+    ).flat();
+
+    return errors.length ? `${message} ${errors.join(' ')}` : message;
+}
+
 /* ---- Plan lifecycle -------------------------------------------------- */
 
 function scrollTop(): void {
@@ -112,6 +148,7 @@ function resetTransient(): void {
     justSubmitted.value = false;
     publicLink.value = '';
     linkCopied.value = false;
+    saveError.value = '';
     aiResult.value = '';
     aiError.value = '';
     submitting.value = false;
@@ -244,13 +281,30 @@ function buildPayload(submit: boolean): Record<string, unknown> {
 }
 
 async function savePlan(submit: boolean): Promise<boolean> {
-    const { ok, data } = await requestJson(
+    saveError.value = '';
+
+    const { ok, status, data } = await requestJson(
         '/api/tehnikaplaan',
         'POST',
         buildPayload(submit),
     );
 
     if (!ok) {
+        // A rejected key means the plan behind it is gone, so saving over it
+        // can never succeed — starting over is the only way out, and the user
+        // has to be told that rather than left pressing the button.
+        const keyRejected = Boolean(
+            (data.errors as Record<string, string[]> | undefined)?.token,
+        );
+
+        saveError.value = keyRejected
+            ? 'Selle plaani võtit ei tunta enam ära — plaan on vahepeal kustutatud. Vajuta vasakul „Alusta otsast“, et saata sisu uue plaanina.'
+            : failureMessage(
+                  status,
+                  data,
+                  'Plaani salvestamine ebaõnnestus. Proovi uuesti.',
+              );
+
         return false;
     }
 
@@ -348,7 +402,7 @@ async function aiReview(): Promise<void> {
     aiLoading.value = true;
     aiError.value = '';
     aiResult.value = '';
-    const { ok, data } = await requestJson(
+    const { ok, status, data } = await requestJson(
         '/api/tehnikaplaan/ai-review',
         'POST',
         buildPayload(false),
@@ -358,9 +412,11 @@ async function aiReview(): Promise<void> {
     if (ok) {
         aiResult.value = (data.review as string) ?? '';
     } else {
-        aiError.value =
-            (data.message as string) ??
-            'AI ülevaatus ebaõnnestus. Viga logiti.';
+        aiError.value = failureMessage(
+            status,
+            data,
+            'AI ülevaatus ebaõnnestus. Viga logiti.',
+        );
     }
 }
 
@@ -448,6 +504,7 @@ watch(
                         v-else
                         :submitting="submitting"
                         :just-submitted="justSubmitted"
+                        :save-error="saveError"
                         :public-link="publicLink"
                         :link-copied="linkCopied"
                         :ai-loading="aiLoading"

@@ -113,6 +113,16 @@ class TechnicalPlanController extends Controller
         $plan = TechnicalPlan::query()
             ->firstOrNew(['token' => $data['token'] ?? null]);
 
+        // The token is handed out by the public share link, so anyone holding
+        // it could otherwise post over the plan behind it. Writing to a plan
+        // that already exists is held to the same rule as opening it, and its
+        // owner is settled at creation — a later save never reassigns it.
+        if ($plan->exists) {
+            abort_unless($plan->isVisibleTo($user), 403);
+
+            unset($attributes['user_id']);
+        }
+
         if ($submitting) {
             $attributes['status'] = TechnicalPlanStatus::Submitted;
             $attributes['submitted_at'] = now();

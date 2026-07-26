@@ -16,6 +16,7 @@ const page = usePage<{ auth: { user: User | null } }>();
 defineProps<{
     submitting: boolean;
     justSubmitted: boolean;
+    saveError: string;
     publicLink: string;
     linkCopied: boolean;
     aiLoading: boolean;
@@ -414,6 +415,19 @@ const headCellClass =
             >
                 {{ submitting ? 'Esitan…' : 'Esita tehnikutiimile' }}
             </R10Button>
+        </div>
+
+        <div
+            v-if="saveError"
+            role="alert"
+            class="r10-no-print mt-4 flex items-start gap-2.5 rounded-[14px] border border-r10-orange bg-r10-orange-100 px-[18px] py-3.5"
+        >
+            <span
+                class="mt-[5px] h-2.5 w-2.5 shrink-0 rotate-45 rounded-[1px] bg-r10-error"
+            />
+            <span class="text-sm leading-normal text-r10-navy">{{
+                saveError
+            }}</span>
         </div>
 
         <div
