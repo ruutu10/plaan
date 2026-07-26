@@ -3,6 +3,8 @@
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MagicLoginController;
+use App\Http\Controllers\ShowController;
+use App\Http\Controllers\ShowPageController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Controllers\TechnicalPlanController;
 use App\Http\Middleware\EnsureTeamMembership;
@@ -57,6 +59,26 @@ Route::prefix('api/tehnikaplaan')
                 Route::get('plans/{plan:token}', [TechnicalPlanController::class, 'show'])->name('show');
                 Route::post('plans/{plan:token}/copy', [TechnicalPlanController::class, 'copy'])->name('copy');
             });
+    });
+
+// Inertia-rendered show-management pages. Each is a shell: what it lists and
+// what it saves travels over the JSON API below, so the browser is served by
+// the same endpoints as any other client.
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('shows', [ShowPageController::class, 'index'])->name('shows.index');
+    Route::get('shows/{show}/edit', [ShowPageController::class, 'edit'])->name('shows.edit');
+});
+
+// JSON API for show management. A user reaches the shows of the groups they
+// belong to and no others; holders of App\Models\Show::EDIT_ALL_PERMISSION
+// reach every show in the house.
+Route::prefix('api/shows')
+    ->name('api.shows.')
+    ->middleware(['auth', 'verified', 'throttle:200,1'])
+    ->group(function () {
+        Route::get('/', [ShowController::class, 'index'])->name('index');
+        Route::get('{show}', [ShowController::class, 'show'])->name('show');
+        Route::patch('{show}', [ShowController::class, 'update'])->name('update');
     });
 
 Route::prefix('{current_team}')
