@@ -3,8 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\TeamRole;
+use App\Enums\TechnicalPlanStatus;
+use App\Models\Performance;
+use App\Models\Show;
 use App\Models\Team;
 use App\Models\TeamInvitation;
+use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -146,5 +150,121 @@ class DashboardTest extends TestCase
         $this->assertDatabaseHas('team_invitations', [
             'id' => $invitation->id,
         ]);
+    }
+
+    public function test_dashboard_counts_the_stagings_that_are_still_ahead(): void
+    {
+        Performance::factory()->count(2)->create(['date' => now()->addWeek()->toDateString()]);
+        Performance::factory()->create(['date' => now()->toDateString()]);
+        Performance::factory()->past()->create();
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Dashboard')
+                // The staging playing tonight is still ahead; yesterday's is not.
+                ->where('upcoming.performances', 3));
+    }
+
+    public function test_dashboard_names_the_next_staging_still_to_come(): void
+    {
+        $team = Team::factory()->create(['name' => 'Märold']);
+        $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
+
+        Performance::factory()->create([
+            'show_id' => $show->id,
+            'date' => now()->addDays(3)->toDateString(),
+        ]);
+        Performance::factory()->create(['date' => now()->addMonth()->toDateString()]);
+        Performance::factory()->past()->create();
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('upcoming.next.showName', 'Festival 2026')
+                ->where('upcoming.next.teamName', 'Märold')
+                ->where('upcoming.next.date', now()->addDays(3)->toDateString()));
+    }
+
+    public function test_dashboard_reports_no_next_staging_when_none_is_ahead(): void
+    {
+        Performance::factory()->past()->create();
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('upcoming.performances', 0)
+                ->where('upcoming.missingPlans', 0)
+                ->where('upcoming.next', null));
+    }
+
+    public function test_dashboard_counts_the_upcoming_stagings_without_a_handed_in_plan(): void
+    {
+        $covered = Performance::factory()->create(['date' => now()->addWeek()->toDateString()]);
+        TechnicalPlan::factory()->submitted()->create(['performance_id' => $covered->id]);
+
+        // A draft is nobody's plan yet, so its staging still counts as missing.
+        $drafted = Performance::factory()->create(['date' => now()->addWeek()->toDateString()]);
+        TechnicalPlan::factory()->create([
+            'status' => TechnicalPlanStatus::Draft,
+            'performance_id' => $drafted->id,
+        ]);
+
+        Performance::factory()->create(['date' => now()->addWeek()->toDateString()]);
+
+        // Nothing can be done about a staging that has already been played.
+        Performance::factory()->past()->create();
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('upcoming.performances', 3)
+                ->where('upcoming.missingPlans', 2));
+    }
+
+    public function test_the_plan_timeline_lists_the_newest_submissions_first_for_technicians(): void
+    {
+        $author = User::factory()->create(['name' => 'Mart Naide']);
+        $team = Team::factory()->create(['name' => 'Märold']);
+        $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
+
+        $older = TechnicalPlan::factory()->submitted()->create([
+            'submitted_at' => now()->subWeek(),
+        ]);
+        $newer = TechnicalPlan::factory()->submitted()->create([
+            'user_id' => $author->id,
+            'performance_id' => Performance::factory()->create(['show_id' => $show->id]),
+            'submitted_at' => now()->subDay(),
+        ]);
+
+        // Drafts have not been handed in, so they are not on the timeline.
+        TechnicalPlan::factory()->create(['status' => TechnicalPlanStatus::Draft]);
+
+        $this->actingAs(User::factory()->create()->assignRole('technician'))
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('latestPlans', 2)
+                ->where('latestPlans.0.token', $newer->token)
+                ->where('latestPlans.0.showName', 'Festival 2026')
+                ->where('latestPlans.0.teamName', 'Märold')
+                ->where('latestPlans.0.submittedBy', 'Mart Naide')
+                ->where('latestPlans.0.url', route('technical-plan.public', $newer))
+                ->where('latestPlans.1.token', $older->token));
+    }
+
+    public function test_the_plan_timeline_stays_empty_without_the_view_all_permission(): void
+    {
+        TechnicalPlan::factory()->submitted()->create();
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('latestPlans', 0));
     }
 }

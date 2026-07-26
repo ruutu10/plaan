@@ -2,6 +2,7 @@
 import { Head } from '@inertiajs/vue3';
 import { ExternalLink } from '@lucide/vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
+import { formatEstonianDate } from '@/lib/date';
 import { index } from '@/routes/technical-plans';
 import type { AdminPlanRow } from '@/types/technicalPlan';
 
@@ -10,17 +11,6 @@ type Props = {
 };
 
 defineProps<Props>();
-
-/** ISO date to the Estonian day.month.year the rest of the app shows. */
-function formatDate(iso: string | null): string {
-    if (!iso) {
-        return '—';
-    }
-
-    const parts = iso.split('-');
-
-    return parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0]}` : iso;
-}
 
 /** The R10 pill each status is shown as, keyed by its backing value. */
 const statusPills: Record<string, string> = {
@@ -94,7 +84,7 @@ defineOptions({
                             {{ plan.teamName ?? '—' }}
                         </td>
                         <td class="px-5 py-4 align-top whitespace-nowrap">
-                            {{ formatDate(plan.performanceDate) }}
+                            {{ formatEstonianDate(plan.performanceDate) }}
                         </td>
                         <td class="px-5 py-4 align-top">
                             <span class="block text-r10-ink">
