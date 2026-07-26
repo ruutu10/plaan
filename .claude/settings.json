@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__laravel-boost__database-query",
+      "Bash(vendor/bin/sail artisan *)",
+      "Bash(vendor/bin/sail php *)"
+    ]
+  }
+}
