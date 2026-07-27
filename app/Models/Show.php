@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
@@ -24,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $description
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property-read Team|null $team
  * @property-read Collection<int, Performance> $performances
  * @property-read int|null $performances_count
@@ -36,7 +38,22 @@ use Illuminate\Support\Carbon;
 class Show extends Model
 {
     /** @use HasFactory<ShowFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
+
+    /**
+     * Bootstrap the model and its traits.
+     */
+    protected static function booted(): void
+    {
+        // A show put aside takes its stagings with it, so nothing is left
+        // pointing at a show the rest of the app no longer sees. A hard delete
+        // needs no help — the database cascades that one itself.
+        static::deleting(function (Show $show): void {
+            if (! $show->isForceDeleting()) {
+                $show->performances()->delete();
+            }
+        });
+    }
 
     /**
      * The permission — held by the "technician" role — that opens every show in

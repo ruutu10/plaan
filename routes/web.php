@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MagicLoginController;
+use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\ShowController;
 use App\Http\Controllers\ShowPageController;
 use App\Http\Controllers\Teams\TeamInvitationController;
@@ -77,8 +78,22 @@ Route::prefix('api/shows')
     ->middleware(['auth', 'verified', 'throttle:200,1'])
     ->group(function () {
         Route::get('/', [ShowController::class, 'index'])->name('index');
+        Route::post('/', [ShowController::class, 'store'])->name('store');
         Route::get('{show}', [ShowController::class, 'show'])->name('show');
         Route::patch('{show}', [ShowController::class, 'update'])->name('update');
+        Route::delete('{show}', [ShowController::class, 'destroy'])->name('destroy');
+
+        // A show's dated stagings. Scoped bindings tie the staging to the show
+        // in the URL, so one show's id can never reach another's performance.
+        Route::prefix('{show}/performances')
+            ->name('performances.')
+            ->scopeBindings()
+            ->group(function () {
+                Route::get('/', [PerformanceController::class, 'index'])->name('index');
+                Route::post('/', [PerformanceController::class, 'store'])->name('store');
+                Route::patch('{performance}', [PerformanceController::class, 'update'])->name('update');
+                Route::delete('{performance}', [PerformanceController::class, 'destroy'])->name('destroy');
+            });
     });
 
 Route::prefix('{current_team}')

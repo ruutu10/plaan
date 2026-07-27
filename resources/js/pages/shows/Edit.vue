@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import { Head, Link, setLayoutProps, useHttp } from '@inertiajs/vue3';
-import { ArrowLeft } from '@lucide/vue';
+import { ArrowLeft, Pencil, Plus, Trash2 } from '@lucide/vue';
 import { onMounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
+import DeletePerformanceModal from '@/components/DeletePerformanceModal.vue';
+import PerformanceModal from '@/components/PerformanceModal.vue';
+import ShowFormFields from '@/components/ShowFormFields.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
-import R10Input from '@/components/technical-plan/R10Input.vue';
-import R10Textarea from '@/components/technical-plan/R10Textarea.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
+import { formatEstonianDate } from '@/lib/date';
 import { show as showApi, update } from '@/routes/api/shows';
+import { index as performancesApi } from '@/routes/api/shows/performances';
 import { edit, index } from '@/routes/shows';
-import type { BreadcrumbItem, Show, ShowTeamOption } from '@/types';
+import type {
+    BreadcrumbItem,
+    Performance,
+    Show,
+    ShowFormData,
+    ShowTeamOption,
+} from '@/types';
 
 type Props = {
     showId: number;
@@ -22,10 +31,20 @@ const show = ref<Show | null>(null);
 const teams = ref<ShowTeamOption[]>([]);
 const loadFailed = ref(false);
 
-const loader = useHttp();
+/** Likewise null until the stagings land; a show may legitimately have none. */
+const performances = ref<Performance[] | null>(null);
+const performancesFailed = ref(false);
 
-const form = useHttp({
-    team_id: null as number | null,
+const performanceModalOpen = ref(false);
+const deleteModalOpen = ref(false);
+/** The staging a modal is working on; null in the add-a-staging case. */
+const chosenPerformance = ref<Performance | null>(null);
+
+const loader = useHttp();
+const performanceLoader = useHttp();
+
+const form = useHttp<ShowFormData>({
+    team_id: null,
     name: '',
     description: '',
 });
@@ -54,7 +73,7 @@ function nameTheTrail(name: string): void {
     });
 }
 
-onMounted(async () => {
+async function loadShow(): Promise<void> {
     try {
         const response = (await loader.submit(showApi(props.showId))) as {
             data: Show;
@@ -73,7 +92,49 @@ onMounted(async () => {
     } catch {
         loadFailed.value = true;
     }
+}
+
+async function loadPerformances(): Promise<void> {
+    try {
+        const { data } = (await performanceLoader.submit(
+            performancesApi(props.showId),
+        )) as { data: Performance[] };
+
+        performances.value = data;
+    } catch {
+        performancesFailed.value = true;
+    }
+}
+
+// The show and its stagings are separate resources, so they are fetched side by
+// side rather than one after the other.
+onMounted(() => {
+    void loadShow();
+    void loadPerformances();
 });
+
+function openAddPerformance(): void {
+    chosenPerformance.value = null;
+    performanceModalOpen.value = true;
+}
+
+function openEditPerformance(performance: Performance): void {
+    chosenPerformance.value = performance;
+    performanceModalOpen.value = true;
+}
+
+function openDeletePerformance(performance: Performance): void {
+    chosenPerformance.value = performance;
+    deleteModalOpen.value = true;
+}
+
+/**
+ * Fetch the stagings afresh after any change: the server decides their order,
+ * and a saved date may have moved the row somewhere else in it.
+ */
+function reloadPerformances(): void {
+    void loadPerformances();
+}
 
 async function save(): Promise<void> {
     try {
@@ -138,66 +199,13 @@ async function save(): Promise<void> {
             class="flex max-w-2xl flex-col gap-6 rounded-xl border-2 border-r10-grey-200 bg-white p-5 md:p-7"
             @submit.prevent="save"
         >
-            <label class="flex flex-col gap-1.5">
-                <span
-                    class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-ink uppercase"
-                >
-                    Trupp
-                    <span class="text-r10-orange">*</span>
-                </span>
-                <span class="-mt-0.5 text-xs text-r10-grey-500">
-                    Trupp, kellele lavastus kuulub.
-                </span>
-                <select
-                    v-model="form.team_id"
-                    data-test="show-team-select"
-                    class="w-full rounded-lg border-2 border-r10-grey-200 bg-white px-4 py-3 font-r10-body text-[15px] text-r10-ink outline-none focus:border-r10-orange"
-                >
-                    <option :value="null" disabled>Vali trupp</option>
-                    <option
-                        v-for="team in teams"
-                        :key="team.id"
-                        :value="team.id"
-                    >
-                        {{ team.name }}
-                    </option>
-                </select>
-                <span
-                    v-if="form.errors.team_id"
-                    class="text-xs font-medium text-r10-orange-700"
-                >
-                    {{ form.errors.team_id }}
-                </span>
-            </label>
-
-            <div class="flex flex-col gap-1.5">
-                <R10Input
-                    v-model="form.name"
-                    label="Nimi"
-                    required
-                    placeholder="Lavastuse nimi"
-                />
-                <span
-                    v-if="form.errors.name"
-                    class="text-xs font-medium text-r10-orange-700"
-                >
-                    {{ form.errors.name }}
-                </span>
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                <R10Textarea
-                    v-model="form.description"
-                    label="Kirjeldus"
-                    hint="Lühikirjeldus, mida lavastus endast kujutab."
-                />
-                <span
-                    v-if="form.errors.description"
-                    class="text-xs font-medium text-r10-orange-700"
-                >
-                    {{ form.errors.description }}
-                </span>
-            </div>
+            <ShowFormFields
+                v-model:team-id="form.team_id"
+                v-model:name="form.name"
+                v-model:description="form.description"
+                :teams="teams"
+                :errors="form.errors"
+            />
 
             <div class="flex items-center gap-3">
                 <R10Button
@@ -217,5 +225,154 @@ async function save(): Promise<void> {
                 </Link>
             </div>
         </form>
+
+        <section class="mt-9 max-w-2xl">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2
+                        class="m-0 font-r10-display text-xl font-bold tracking-[0.02em] text-r10-ink uppercase"
+                    >
+                        Etendused
+                    </h2>
+                    <p class="mt-1 text-[15px] text-r10-grey-500">
+                        Selle lavastuse kuupäevad. Etendus on see, mille külge
+                        tehnikaplaan käib.
+                    </p>
+                </div>
+
+                <R10Button
+                    size="sm"
+                    data-test="add-performance-button"
+                    @click="openAddPerformance"
+                >
+                    <Plus class="h-4 w-4" />
+                    Lisa etendus
+                </R10Button>
+            </div>
+
+            <div
+                class="overflow-x-auto rounded-xl border-2 border-r10-grey-200 bg-white"
+            >
+                <table class="w-full border-collapse text-left text-sm">
+                    <thead class="border-b-2 border-r10-navy">
+                        <tr
+                            class="font-r10-body text-[11px] font-bold tracking-[0.12em] text-r10-navy uppercase"
+                        >
+                            <th class="px-5 py-3.5">Kuupäev</th>
+                            <th class="px-5 py-3.5">Kestus</th>
+                            <th class="px-5 py-3.5">Tehnikaplaane</th>
+                            <th class="px-5 py-3.5 text-right">
+                                <span class="sr-only">Tegevused</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr
+                            v-for="performance in performances ?? []"
+                            :key="performance.id"
+                            data-test="performance-row"
+                            class="border-b border-r10-grey-200 transition-colors last:border-0 hover:bg-r10-grey-100"
+                        >
+                            <td
+                                class="px-5 py-4 font-medium whitespace-nowrap text-r10-ink"
+                            >
+                                {{ formatEstonianDate(performance.date) }}
+                            </td>
+                            <td class="px-5 py-4 whitespace-nowrap">
+                                {{
+                                    performance.duration
+                                        ? `${performance.duration} min`
+                                        : '—'
+                                }}
+                            </td>
+                            <td class="px-5 py-4 tabular-nums">
+                                {{ performance.technicalPlanCount ?? 0 }}
+                            </td>
+                            <td class="px-5 py-4 text-right whitespace-nowrap">
+                                <div
+                                    class="inline-flex items-center justify-end gap-2"
+                                >
+                                    <button
+                                        type="button"
+                                        title="Muuda etendust"
+                                        data-test="edit-performance-button"
+                                        class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-navy bg-white p-2 text-r10-navy transition hover:bg-r10-navy hover:text-white"
+                                        @click="
+                                            openEditPerformance(performance)
+                                        "
+                                    >
+                                        <Pencil class="h-3.5 w-3.5" />
+                                        <span class="sr-only">Muuda</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        title="Kustuta etendus"
+                                        data-test="delete-performance-button"
+                                        class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-grey-200 bg-white p-2 text-r10-grey-500 transition hover:border-r10-error hover:text-r10-error"
+                                        @click="
+                                            openDeletePerformance(performance)
+                                        "
+                                    >
+                                        <Trash2 class="h-3.5 w-3.5" />
+                                        <span class="sr-only">Kustuta</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr
+                            v-for="row in performances === null &&
+                            !performancesFailed
+                                ? 2
+                                : 0"
+                            :key="`performance-skeleton-${row}`"
+                            data-test="performance-skeleton-row"
+                            class="border-b border-r10-grey-200 last:border-0"
+                        >
+                            <td v-for="cell in 4" :key="cell" class="px-5 py-4">
+                                <span
+                                    class="block h-4 animate-pulse rounded-full bg-r10-grey-200"
+                                    :class="cell === 1 ? 'w-24' : 'w-12'"
+                                />
+                            </td>
+                        </tr>
+
+                        <tr v-if="performancesFailed">
+                            <td
+                                colspan="4"
+                                class="px-5 py-10 text-center text-[15px] text-r10-orange-700"
+                            >
+                                Etenduste laadimine ebaõnnestus. Proovi lehte
+                                värskendada.
+                            </td>
+                        </tr>
+
+                        <tr v-else-if="performances?.length === 0">
+                            <td
+                                colspan="4"
+                                class="px-5 py-10 text-center text-[15px] text-r10-grey-500"
+                            >
+                                Sellel lavastusel pole veel ühtegi etendust.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <PerformanceModal
+            v-model:open="performanceModalOpen"
+            :show-id="showId"
+            :performance="chosenPerformance"
+            @saved="reloadPerformances"
+        />
+
+        <DeletePerformanceModal
+            v-model:open="deleteModalOpen"
+            :show-id="showId"
+            :performance="chosenPerformance"
+            @deleted="reloadPerformances"
+        />
     </div>
 </template>

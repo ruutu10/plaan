@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Http\Requests\Shows\SaveShowRequest;
 use App\Models\Show;
 use App\Models\User;
 
@@ -13,6 +14,16 @@ class ShowPolicy
      * groups by {@see Show::editableBy()}.
      */
     public function viewAny(User $user): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can enter a new show. Everyone signed in may;
+     * which group it ends up under is held to the ones they belong to by
+     * {@see SaveShowRequest}.
+     */
+    public function create(User $user): bool
     {
         return true;
     }
@@ -30,6 +41,15 @@ class ShowPolicy
      * Determine whether the user can update the show.
      */
     public function update(User $user, Show $show): bool
+    {
+        return $show->isEditableBy($user);
+    }
+
+    /**
+     * Determine whether the user can delete the show. Deleting only puts the
+     * show aside, so it is held to the same right as correcting one.
+     */
+    public function delete(User $user, Show $show): bool
     {
         return $show->isEditableBy($user);
     }

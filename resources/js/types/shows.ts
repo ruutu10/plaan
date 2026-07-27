@@ -10,8 +10,38 @@ export interface Show {
     performanceCount: number | null;
 }
 
-/** A group the show may be handed to, as offered by the edit form. */
+/** A group the show may be handed to, as offered by the show forms. */
 export interface ShowTeamOption {
     id: number;
     name: string;
 }
+
+/** The fields a show is written through, and what the server refused about them. */
+export interface ShowFormData {
+    team_id: number | null;
+    name: string;
+    description: string;
+}
+
+export type ShowFieldErrors = Partial<Record<keyof ShowFormData, string>>;
+
+/** One dated staging of a show. */
+export interface Performance {
+    id: number;
+    /** ISO date (YYYY-MM-DD). */
+    date: string;
+    /** Minutes, or null when the staging is not timed. */
+    duration: number | null;
+    /** Plans written for this staging; they outlive it, without a staging. */
+    technicalPlanCount: number | null;
+}
+
+/** The fields a staging is written through. */
+export interface PerformanceFormData {
+    date: string;
+    duration: number | null;
+}
+
+export type PerformanceFieldErrors = Partial<
+    Record<keyof PerformanceFormData, string>
+>;

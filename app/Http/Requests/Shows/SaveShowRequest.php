@@ -11,11 +11,17 @@ use Illuminate\Validation\Rule;
 class SaveShowRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Determine if the user is authorized to make this request. The same rules
+     * cover entering a show and correcting one, so which right is asked for
+     * turns on whether the route names a show at all.
      */
     public function authorize(): bool
     {
-        return Gate::allows('update', $this->route('show'));
+        $show = $this->route('show');
+
+        return $show instanceof Show
+            ? Gate::allows('update', $show)
+            : Gate::allows('create', Show::class);
     }
 
     /**
@@ -44,7 +50,7 @@ class SaveShowRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'team_id.in' => __('Lavastuse saab anda ainult trupile, kuhu sa ise kuulud.'),
+            'team_id.in' => __('Lavastuse saab anda ainult tiimile, kuhu sa ise kuulud.'),
         ];
     }
 }
