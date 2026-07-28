@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 
 trait HasTeams
@@ -91,6 +92,65 @@ trait HasTeams
         URL::defaults(['current_team' => $team->slug]);
 
         return true;
+    }
+
+    /**
+     * Move the user out of a team they have left of their own accord, to
+     * whichever of their remaining teams comes first by name.
+     *
+     * @return Team|null The team they landed in, or null if they did not move.
+     */
+    public function relocateFrom(Team $team): ?Team
+    {
+        return $this->moveOutOf($team, $this->fallbackTeam($team));
+    }
+
+    /**
+     * Move the user out of a team somebody else took them out of — because they
+     * were removed, or because the team was deleted. They go home to their own
+     * personal team where they have one, since being put somewhere they did not
+     * choose is better than being put in a stranger's team.
+     *
+     * @return Team|null The team they landed in, or null if they did not move.
+     */
+    public function sendHomeFrom(Team $team): ?Team
+    {
+        return $this->moveOutOf($team, $this->personalTeam() ?? $this->fallbackTeam($team));
+    }
+
+    /**
+     * The mechanics both ways of leaving share. A user who was working
+     * somewhere else is left alone — there is nothing to move. A user with
+     * nowhere left to go is left without a current team rather than pointed at
+     * one they have lost; the screens have to cope with that, and the warning
+     * is the only notice that they are being asked to.
+     */
+    private function moveOutOf(Team $team, ?Team $destination): ?Team
+    {
+        if (! $this->isCurrentTeam($team)) {
+            return null;
+        }
+
+        if (! $destination) {
+            Log::warning('Member left without a current team after their team was deleted', [
+                'user_id' => $this->id,
+                'from_team_id' => $team->id,
+            ]);
+
+            $this->update(['current_team_id' => null]);
+
+            return null;
+        }
+
+        Log::info('Moved a member out of a team', [
+            'user_id' => $this->id,
+            'from_team_id' => $team->id,
+            'to_team_id' => $destination->id,
+        ]);
+
+        $this->switchTeam($destination);
+
+        return $destination;
     }
 
     /**

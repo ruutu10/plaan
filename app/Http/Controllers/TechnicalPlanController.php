@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\StagePlanCopy;
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Requests\StoreTechnicalPlanRequest;
 use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
@@ -17,6 +18,7 @@ use App\Models\User;
 use App\Notifications\TechnicalPlanSubmitted;
 use App\Rules\AllowedAttachment;
 use App\Services\TechnicalPlanReviewer;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -26,6 +28,12 @@ use Inertia\Response;
 
 class TechnicalPlanController extends Controller
 {
+    /**
+     * How many past plans a show offers as a starting point. More than a
+     * handful is not a choice, it is a list to read through.
+     */
+    private const PRIOR_PLANS_PER_SHOW = 5;
+
     /**
      * Show the landing page (gate) of the technical-plan wizard.
      */
@@ -85,7 +93,7 @@ class TechnicalPlanController extends Controller
      * duplicated on disk), so submitting the new plan carries the files over
      * without affecting the source.
      */
-    public function copy(TechnicalPlan $plan, Request $request): TechnicalPlanResource
+    public function copy(TechnicalPlan $plan, Request $request, StagePlanCopy $stageCopy): TechnicalPlanResource
     {
         if (! $plan->isVisibleTo($request->user())) {
             Log::warning('Refused to copy a plan the user may not open', [
@@ -102,7 +110,7 @@ class TechnicalPlanController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        return TechnicalPlanResource::make($plan)->withDuplicatedAttachments();
+        return TechnicalPlanResource::make($plan)->withStagedCopy($stageCopy->handle($plan));
     }
 
     /**
@@ -221,14 +229,19 @@ class TechnicalPlanController extends Controller
             ->limit(100)
             ->get();
 
+        // Kept per show rather than as one global list: a single busy show would
+        // otherwise fill a shared limit and leave every other row offering no
+        // prior plan at all. The set is bounded by the upcoming performances
+        // above, so it stays small without a limit of its own.
         $priorPlans = TechnicalPlan::query()
             ->with(['performance', 'user'])
             ->visibleTo($request->user())
-            ->whereIn('status', [TechnicalPlanStatus::Submitted, TechnicalPlanStatus::Received])
+            ->whereIn('status', TechnicalPlanStatus::delivered())
             ->whereHas('performance', fn ($query) => $query->whereIn('show_id', $upcoming->pluck('show_id')->all()))
             ->latest('submitted_at')
-            ->limit(25)
-            ->get();
+            ->get()
+            ->groupBy(fn (TechnicalPlan $plan): int => $plan->performance->show_id)
+            ->flatMap(fn (Collection $plans): Collection => $plans->take(self::PRIOR_PLANS_PER_SHOW));
 
         $results = $upcoming->map(
             fn (Performance $performance): array => UpcomingPerformanceResource::make($performance, $priorPlans)->resolve($request),

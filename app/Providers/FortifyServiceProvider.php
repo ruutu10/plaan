@@ -130,10 +130,7 @@ class FortifyServiceProvider extends ServiceProvider
         $invitation = TeamInvitation::query()
             ->with('team')
             ->where('code', $invitationCode)
-            ->whereNull('accepted_at')
-            ->where(fn ($query) => $query
-                ->whereNull('expires_at')
-                ->orWhere('expires_at', '>=', now()))
+            ->pending()
             ->first();
 
         if (! $invitation) {

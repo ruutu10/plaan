@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\TeamRole;
 use Database\Factories\TeamInvitationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -79,6 +81,24 @@ class TeamInvitation extends Model
     public function isPending(): bool
     {
         return $this->accepted_at === null && ! $this->isExpired();
+    }
+
+    /**
+     * Invitations still open to be accepted: not taken up, and either without
+     * an expiry or not yet past it. The query form of {@see isPending()}, and
+     * the one place the rule is written — it used to be spelled out at each
+     * call site, and the copies had come to disagree about an invitation
+     * expiring at this very second.
+     *
+     * @param  Builder<TeamInvitation>  $query
+     */
+    #[Scope]
+    protected function pending(Builder $query): void
+    {
+        $query->whereNull('accepted_at')
+            ->where(fn (Builder $query) => $query
+                ->whereNull('expires_at')
+                ->orWhere('expires_at', '>=', now()));
     }
 
     /**

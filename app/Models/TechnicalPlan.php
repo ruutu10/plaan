@@ -191,7 +191,7 @@ class TechnicalPlan extends Model implements HasMedia
         $query->where(fn (Builder $query) => $query
             ->where('user_id', $user->id)
             ->orWhere(fn (Builder $query) => $query
-                ->whereIn('status', [TechnicalPlanStatus::Submitted, TechnicalPlanStatus::Received])
+                ->whereIn('status', TechnicalPlanStatus::delivered())
                 // A performance is the team's through the show it stages.
                 ->whereHas('performance.show', fn (Builder $show) => $show->whereIn('team_id', $teamIds))));
     }

@@ -443,6 +443,47 @@ class TechnicalPlanTest extends TestCase
         $this->assertNull($priorPlans[0]['author']);
     }
 
+    public function test_a_busy_show_does_not_starve_the_other_shows_of_prior_plans(): void
+    {
+        // One show with a long history, and one with a single past plan. The
+        // prior plans used to be taken from one shared list of the most recent
+        // 25, so a show like the first could fill it and leave the second
+        // offering nothing to start from.
+        $busy = Show::factory()->create(['name' => 'Igaõhtune']);
+        $quiet = Show::factory()->create(['name' => 'Harv']);
+
+        Performance::factory()->for($busy)->create(['date' => now()->addWeek()->toDateString()]);
+        Performance::factory()->for($quiet)->create(['date' => now()->addWeeks(2)->toDateString()]);
+
+        foreach (range(1, 30) as $index) {
+            TechnicalPlan::factory()
+                ->for($this->user)
+                ->for(Performance::factory()->for($busy)->past()->create())
+                ->submitted()
+                ->create(['submitted_at' => now()->subDays($index)]);
+        }
+
+        $quietPlan = TechnicalPlan::factory()
+            ->for($this->user)
+            ->for(Performance::factory()->for($quiet)->past()->create())
+            ->submitted()
+            ->create(['submitted_at' => now()->subYear()]);
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+
+        $results = collect($response->json('results'))->keyBy('showName');
+
+        $this->assertSame(
+            [$quietPlan->token],
+            array_column($results['Harv']['priorPlans'], 'token'),
+        );
+
+        // The busy show is capped rather than listing its whole history.
+        $this->assertCount(5, $results['Igaõhtune']['priorPlans']);
+    }
+
     public function test_performances_do_not_surface_plans_of_a_different_show_of_the_same_name(): void
     {
         // Two groups happen to call their show the same thing — they are still

@@ -155,22 +155,18 @@ class TeamController extends Controller
 
         $user = $request->user();
 
-        $fallbackTeam = $user->isCurrentTeam($team)
-            ? $user->fallbackTeam($team)
-            : null;
-
         $team->memberships()
             ->where('user_id', $user->id)
             ->delete();
 
-        if ($fallbackTeam) {
-            $user->switchTeam($fallbackTeam);
-        }
+        // Only once the membership is gone, so the team they are leaving is not
+        // itself a candidate to be moved into.
+        $home = $user->relocateFrom($team);
 
         Log::info('User left a team', [
             'user_id' => $user->id,
             'team_id' => $team->id,
-            'moved_to_team_id' => $fallbackTeam?->id,
+            'moved_to_team_id' => $home?->id,
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('You left the team ":name"', ['name' => $team->name])]);
@@ -184,22 +180,18 @@ class TeamController extends Controller
     public function destroy(DeleteTeamRequest $request, Team $team, DeleteTeam $deleteTeam): RedirectResponse
     {
         $user = $request->user();
-        $fallbackTeam = $user->isCurrentTeam($team)
-            ? $user->fallbackTeam($team)
-            : null;
 
         Log::notice('Team deletion requested by its owner', [
             'team_id' => $team->id,
             'slug' => $team->slug,
             'user_id' => $user->id,
-            'moving_to_team_id' => $fallbackTeam?->id,
         ]);
 
         $deleteTeam->handle($team, except: $user);
 
-        if ($fallbackTeam) {
-            $user->switchTeam($fallbackTeam);
-        }
+        // After the deletion, so their membership of the team being deleted has
+        // already been cleared and cannot be picked as the team to move into.
+        $user->relocateFrom($team);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Team deleted.')]);
 

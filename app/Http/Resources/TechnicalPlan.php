@@ -2,9 +2,12 @@
 
 namespace App\Http\Resources;
 
+use App\Actions\StagePlanCopy;
 use App\Models\TechnicalPlan as TechnicalPlanModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * The nested payload consumed by the frontend wizard, mirroring the
@@ -18,20 +21,24 @@ class TechnicalPlan extends JsonResource
     public static $wrap = null;
 
     /**
-     * Whether the file handles — the plan's own attachments as well as the
-     * scenes' sound files — should point at fresh staged copies rather than at
-     * the plan's own media.
+     * File handles to report in place of the plan's own — the staged copies
+     * made by {@see StagePlanCopy} when the plan is being opened
+     * as the basis for a new one.
+     *
+     * @var array{files: Collection<int, Media>, sceneSoundFiles: Collection<string, Media>}|null
      */
-    private bool $duplicateAttachments = false;
+    private ?array $stagedCopy = null;
 
     /**
-     * Serialise the plan as the basis for a *new* plan: its attachments are
-     * duplicated into staged uploads, so submitting the copy carries the files
-     * over without affecting this plan.
+     * Serialise the plan as the basis for a *new* plan, reporting the staged
+     * copies of its files rather than the plan's own, so submitting the copy
+     * carries the files over without affecting this plan.
+     *
+     * @param  array{files: Collection<int, Media>, sceneSoundFiles: Collection<string, Media>}  $staged
      */
-    public function withDuplicatedAttachments(): static
+    public function withStagedCopy(array $staged): static
     {
-        $this->duplicateAttachments = true;
+        $this->stagedCopy = $staged;
 
         return $this;
     }
@@ -58,13 +65,13 @@ class TechnicalPlan extends JsonResource
                 'description' => $plan->performance?->show->description ?? '',
             ],
             'sound' => $this->sound(),
-            'scenes' => PlanScene::forPlan($plan, $request, $this->duplicateAttachments),
+            'scenes' => PlanScene::forPlan($plan, $request, $this->stagedCopy['sceneSoundFiles'] ?? null),
             'equipment' => $this->equipment(),
             'extra' => [
                 'notes' => self::text($plan->extra['notes'] ?? null),
-                'files' => Attachment::collection($this->duplicateAttachments
-                    ? $plan->duplicateAttachmentsToStaging()
-                    : $plan->attachments())->resolve($request),
+                'files' => Attachment::collection(
+                    $this->stagedCopy['files'] ?? $plan->attachments()
+                )->resolve($request),
             ],
         ];
     }

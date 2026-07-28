@@ -100,22 +100,7 @@ class TeamAdminMemberController extends Controller
             ->firstOrFail()
             ->delete();
 
-        $home = null;
-
-        if ($user->isCurrentTeam($team)) {
-            $home = $user->personalTeam() ?? $user->fallbackTeam($team);
-
-            $home
-                ? $user->switchTeam($home)
-                : $user->update(['current_team_id' => null]);
-
-            if (! $home) {
-                Log::warning('Removed member has no team left to work in', [
-                    'member_id' => $user->id,
-                    'team_id' => $team->id,
-                ]);
-            }
-        }
+        $home = $user->sendHomeFrom($team);
 
         Log::notice('Team member removed from the management screen', [
             'team_id' => $team->id,

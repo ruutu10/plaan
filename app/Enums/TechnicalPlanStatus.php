@@ -31,4 +31,17 @@ enum TechnicalPlanStatus: string
     {
         return array_column(self::cases(), 'value');
     }
+
+    /**
+     * The statuses of a plan that has reached the technical team. A draft is
+     * still the performer's own; an archived plan is done with. Everything in
+     * between is a plan the crew holds, and is what the dashboard counts and
+     * what a new plan may be filled in from.
+     *
+     * @return array<int, self>
+     */
+    public static function delivered(): array
+    {
+        return [self::Submitted, self::Received];
+    }
 }

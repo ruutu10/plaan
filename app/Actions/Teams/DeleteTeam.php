@@ -28,7 +28,7 @@ class DeleteTeam
             User::where('current_team_id', $team->id)
                 ->when($except, fn ($query) => $query->where('id', '!=', $except->id))
                 ->each(function (User $member) use ($team, &$moved): void {
-                    $this->moveElsewhere($member, $team);
+                    $member->sendHomeFrom($team);
                     $moved++;
                 });
 
@@ -50,36 +50,5 @@ class DeleteTeam
                 'left_standing_user_id' => $except?->id,
             ]);
         });
-    }
-
-    /**
-     * Move a user out of the team being deleted: home to their personal team,
-     * or to any other team they belong to. A user with nowhere left to go is
-     * left without a current team rather than pointed at a deleted one.
-     */
-    private function moveElsewhere(User $member, Team $team): void
-    {
-        $fallback = $member->personalTeam() ?? $member->fallbackTeam($team);
-
-        if ($fallback) {
-            Log::info('Moved a member out of a team being deleted', [
-                'user_id' => $member->id,
-                'from_team_id' => $team->id,
-                'to_team_id' => $fallback->id,
-            ]);
-
-            $member->switchTeam($fallback);
-
-            return;
-        }
-
-        // The user lands on the app with no team at all; the screens have to
-        // cope, and this is the only warning that they are being asked to.
-        Log::warning('Member left without a current team after their team was deleted', [
-            'user_id' => $member->id,
-            'from_team_id' => $team->id,
-        ]);
-
-        $member->update(['current_team_id' => null]);
     }
 }

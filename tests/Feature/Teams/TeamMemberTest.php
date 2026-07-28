@@ -130,6 +130,52 @@ class TeamMemberTest extends TestCase
         );
     }
 
+    public function test_the_owners_role_cannot_be_changed(): void
+    {
+        $owner = User::factory()->create();
+        $team = Team::factory()->create();
+
+        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+
+        $response = $this
+            ->actingAs($owner)
+            ->patch(route('teams.members.update', [$team, $owner]), [
+                'role' => TeamRole::Member->value,
+            ]);
+
+        $response->assertForbidden();
+
+        // Demoting the owner would leave the team with nobody who fully
+        // answers for it, and no screen from which to put that right.
+        $this->assertEquals(
+            TeamRole::Owner->value,
+            $team->members()->where('user_id', $owner->id)->first()->pivot->role->value,
+        );
+    }
+
+    public function test_a_removed_member_without_a_personal_team_is_left_without_a_current_team(): void
+    {
+        $owner = User::factory()->create();
+        $member = User::factory()->create();
+        $team = Team::factory()->create();
+
+        // Accounts provisioned by e-mail never get a personal team, so the
+        // member has nowhere to be sent back to.
+        $member->teamMemberships()->delete();
+
+        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+
+        $member->update(['current_team_id' => $team->id]);
+
+        $this
+            ->actingAs($owner)
+            ->delete(route('teams.members.destroy', [$team, $member]))
+            ->assertRedirect(route('teams.edit', $team));
+
+        $this->assertNull($member->fresh()->current_team_id);
+    }
+
     public function test_removed_member_current_team_is_set_to_personal_team()
     {
         $owner = User::factory()->create();

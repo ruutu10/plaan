@@ -20,18 +20,6 @@ class DashboardController extends Controller
      */
     private const TIMELINE_LENGTH = 8;
 
-    /**
-     * The statuses a performance counts as covered by: a draft is nobody's
-     * plan yet, and an archived one belongs to a performance that has been and
-     * gone.
-     *
-     * @var array<int, TechnicalPlanStatus>
-     */
-    private const DELIVERED_STATUSES = [
-        TechnicalPlanStatus::Submitted,
-        TechnicalPlanStatus::Received,
-    ];
-
     public function __invoke(Request $request): Response
     {
         $email = strtolower($request->user()->email);
@@ -39,10 +27,7 @@ class DashboardController extends Controller
         $pendingInvitations = TeamInvitation::query()
             ->with(['inviter', 'team'])
             ->whereRaw('LOWER(email) = ?', [$email])
-            ->whereNull('accepted_at')
-            ->where(fn ($query) => $query
-                ->whereNull('expires_at')
-                ->orWhere('expires_at', '>=', now()))
+            ->pending()
             ->latest()
             ->get()
             ->map(fn (TeamInvitation $invitation) => [
@@ -90,7 +75,7 @@ class DashboardController extends Controller
             'missingPlans' => $this->upcomingPerformances()
                 ->whereDoesntHave(
                     'technicalPlans',
-                    fn (Builder $plans) => $plans->whereIn('status', self::DELIVERED_STATUSES),
+                    fn (Builder $plans) => $plans->whereIn('status', TechnicalPlanStatus::delivered()),
                 )
                 ->count(),
             'next' => $next ? [
@@ -121,7 +106,7 @@ class DashboardController extends Controller
     {
         return TechnicalPlan::query()
             ->with(['user', 'performance.show.team'])
-            ->whereIn('status', self::DELIVERED_STATUSES)
+            ->whereIn('status', TechnicalPlanStatus::delivered())
             ->whereNotNull('submitted_at')
             ->latest('submitted_at')
             ->limit(self::TIMELINE_LENGTH)

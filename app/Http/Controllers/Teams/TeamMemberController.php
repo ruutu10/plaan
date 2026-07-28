@@ -28,6 +28,10 @@ class TeamMemberController extends Controller
             ->where('user_id', $user->id)
             ->firstOrFail();
 
+        // The owner is the one member who cannot be demoted — a team with
+        // nobody left who may manage it cannot be put right from the screens.
+        abort_if($membership->role === TeamRole::Owner, 403, __('The team owner\'s role cannot be changed.'));
+
         $previousRole = $membership->role;
 
         $membership->update(['role' => $newRole]);
@@ -60,17 +64,13 @@ class TeamMemberController extends Controller
             ->where('user_id', $user->id)
             ->delete();
 
-        $moved = $user->isCurrentTeam($team);
-
-        if ($moved) {
-            $user->switchTeam($user->personalTeam());
-        }
+        $home = $user->sendHomeFrom($team);
 
         Log::notice('Team member removed', [
             'team_id' => $team->id,
             'member_id' => $user->id,
             'removed_by' => $request->user()->id,
-            'moved_home' => $moved,
+            'moved_to_team_id' => $home?->id,
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Member removed.')]);
