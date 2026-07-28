@@ -207,11 +207,15 @@ class TechnicalPlanController extends Controller
      * a plan for a performance of one of their teams counts too, which is how
      * the next plan for a show can be written by someone else in the group than
      * the one who sent the last.
+     *
+     * Drafts are left out: a performance the import guessed at is not one to
+     * write a plan for until an admin has vouched for it.
      */
     public function performances(Request $request): JsonResponse
     {
         $upcoming = Performance::query()
             ->with('show.team')
+            ->vouchedFor()
             ->whereDate('date', '>=', now()->toDateString())
             ->orderBy('date')
             ->limit(100)

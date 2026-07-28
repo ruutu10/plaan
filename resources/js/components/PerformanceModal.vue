@@ -30,14 +30,16 @@ const emit = defineEmits<{ saved: [] }>();
 
 const open = defineModel<boolean>('open', { required: true });
 
-// Both fields are held as the strings the inputs deal in; the duration becomes
-// a number (or nothing at all) on its way out.
+// The dated fields are held as the strings the inputs deal in; the duration
+// becomes a number (or nothing at all) on its way out.
 const form = useHttp({
     date: '',
     duration: '',
+    is_draft: false,
 }).transform((data) => ({
     date: data.date,
     duration: data.duration === '' ? null : Number(data.duration),
+    is_draft: data.is_draft,
 }));
 
 const isEditing = computed(() => props.performance !== null);
@@ -52,6 +54,9 @@ watch(open, (isOpen) => {
     form.clearErrors();
     form.date = props.performance?.date ?? '';
     form.duration = props.performance?.duration?.toString() ?? '';
+    // A performance added here is vouched for by the adding; only an imported
+    // one starts out waiting to be reviewed.
+    form.is_draft = props.performance?.isDraft ?? false;
 });
 
 async function save(): Promise<void> {
@@ -121,6 +126,38 @@ async function save(): Promise<void> {
                         class="text-xs font-medium text-r10-orange-700"
                     >
                         {{ form.errors.duration }}
+                    </span>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                    <label
+                        class="flex cursor-pointer items-start gap-3 rounded-lg border-2 border-r10-grey-200 bg-white p-4"
+                    >
+                        <input
+                            v-model="form.is_draft"
+                            type="checkbox"
+                            data-test="performance-draft-toggle"
+                            class="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-r10-orange"
+                        />
+                        <span class="flex flex-col gap-0.5">
+                            <span
+                                class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-ink uppercase"
+                            >
+                                Ülevaatamata
+                            </span>
+                            <span class="text-xs text-r10-grey-500">
+                                Ülevaatamata etendust ei pakuta tehnikaplaani
+                                koostajale. Imporditud etendused ootavad siin
+                                ülevaatamist — eemalda linnuke, kui kuupäev on
+                                õige.
+                            </span>
+                        </span>
+                    </label>
+                    <span
+                        v-if="form.errors.is_draft"
+                        class="text-xs font-medium text-r10-orange-700"
+                    >
+                        {{ form.errors.is_draft }}
                     </span>
                 </div>
 

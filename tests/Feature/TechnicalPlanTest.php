@@ -373,6 +373,19 @@ class TechnicalPlanTest extends TestCase
         $response->assertJsonMissing(['showName' => 'Möödunud etendus']);
     }
 
+    public function test_the_performances_endpoint_leaves_out_the_ones_waiting_to_be_reviewed(): void
+    {
+        $reviewed = Performance::factory()->for(Show::factory()->state(['name' => 'Üle vaadatud']))->create();
+        Performance::factory()->draft()->for(Show::factory()->state(['name' => 'Ülevaatamata']))->create();
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'results');
+        $response->assertJsonPath('results.0.id', $reviewed->id);
+        $response->assertJsonMissing(['showName' => 'Ülevaatamata']);
+    }
+
     public function test_every_upcoming_performance_of_a_show_is_listed_separately(): void
     {
         // The picker lists performances, not shows: a show staged twice is two

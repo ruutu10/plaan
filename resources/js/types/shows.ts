@@ -32,6 +32,11 @@ export interface Performance {
     date: string;
     /** Minutes, or null when the performance is not timed. */
     duration: number | null;
+    /**
+     * Imported and not reviewed yet. A draft is kept out of the listing technical
+     * plans are written from until somebody clears it here.
+     */
+    isDraft: boolean;
     /** Plans written for this performance; they outlive it, without a performance. */
     technicalPlanCount: number | null;
 }
@@ -40,6 +45,7 @@ export interface Performance {
 export interface PerformanceFormData {
     date: string;
     duration: number | null;
+    is_draft: boolean;
 }
 
 export type PerformanceFieldErrors = Partial<

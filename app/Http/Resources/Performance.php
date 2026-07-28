@@ -20,6 +20,7 @@ class Performance extends JsonResource
      *     id: int,
      *     date: string,
      *     duration: int|null,
+     *     isDraft: bool,
      *     technicalPlanCount: int|null,
      * }
      */
@@ -31,6 +32,9 @@ class Performance extends JsonResource
             'id' => $performance->id,
             'date' => $performance->date->toDateString(),
             'duration' => $performance->duration,
+            // Imported and not reviewed yet, which keeps it out of the listing
+            // plans are written from until somebody clears it here.
+            'isDraft' => $performance->is_draft,
             // Deleting a performance leaves the plans written for it behind without
             // one, so the screen warns before that happens.
             'technicalPlanCount' => $performance->technical_plans_count,

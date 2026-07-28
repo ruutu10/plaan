@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, setLayoutProps, useHttp } from '@inertiajs/vue3';
-import { ArrowLeft, Pencil, Plus, Trash2 } from '@lucide/vue';
+import { ArrowLeft, FileClock, Pencil, Plus, Trash2 } from '@lucide/vue';
 import { onMounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import DeletePerformanceModal from '@/components/DeletePerformanceModal.vue';
@@ -260,6 +260,7 @@ async function save(): Promise<void> {
                         >
                             <th class="px-5 py-3.5">Kuupäev</th>
                             <th class="px-5 py-3.5">Kestus</th>
+                            <th class="px-5 py-3.5">Olek</th>
                             <th class="px-5 py-3.5">Tehnikaplaane</th>
                             <th class="px-5 py-3.5 text-right">
                                 <span class="sr-only">Tegevused</span>
@@ -284,6 +285,23 @@ async function save(): Promise<void> {
                                         ? `${performance.duration} min`
                                         : '—'
                                 }}
+                            </td>
+                            <td class="px-5 py-4 whitespace-nowrap">
+                                <span
+                                    v-if="performance.isDraft"
+                                    data-test="performance-draft-badge"
+                                    title="Ülevaatamata etendust ei pakuta tehnikaplaani koostajale."
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-r10-orange-100 px-2.5 py-1 font-r10-body text-[11px] font-bold tracking-[0.08em] text-r10-orange-700 uppercase"
+                                >
+                                    <FileClock class="h-3.5 w-3.5" />
+                                    Ülevaatamata
+                                </span>
+                                <span
+                                    v-else
+                                    class="font-r10-body text-[11px] font-bold tracking-[0.08em] text-r10-grey-500 uppercase"
+                                >
+                                    Kinnitatud
+                                </span>
                             </td>
                             <td class="px-5 py-4 tabular-nums">
                                 {{ performance.technicalPlanCount ?? 0 }}
@@ -330,7 +348,7 @@ async function save(): Promise<void> {
                             data-test="performance-skeleton-row"
                             class="border-b border-r10-grey-200 last:border-0"
                         >
-                            <td v-for="cell in 4" :key="cell" class="px-5 py-4">
+                            <td v-for="cell in 5" :key="cell" class="px-5 py-4">
                                 <span
                                     class="block h-4 animate-pulse rounded-full bg-r10-grey-200"
                                     :class="cell === 1 ? 'w-24' : 'w-12'"
@@ -340,7 +358,7 @@ async function save(): Promise<void> {
 
                         <tr v-if="performancesFailed">
                             <td
-                                colspan="4"
+                                colspan="5"
                                 class="px-5 py-10 text-center text-[15px] text-r10-orange-700"
                             >
                                 Etenduste laadimine ebaõnnestus. Proovi lehte
@@ -350,7 +368,7 @@ async function save(): Promise<void> {
 
                         <tr v-else-if="performances?.length === 0">
                             <td
-                                colspan="4"
+                                colspan="5"
                                 class="px-5 py-10 text-center text-[15px] text-r10-grey-500"
                             >
                                 Sellel lavastusel pole veel ühtegi etendust.

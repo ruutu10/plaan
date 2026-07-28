@@ -136,6 +136,21 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertNull($jada->performances()->sole()->duration);
     }
 
+    public function test_an_imported_performance_waits_to_be_reviewed(): void
+    {
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([$this->performance('Trupp 1')]);
+
+        $this->artisan('planka:import-performances')
+            ->assertSuccessful();
+
+        // A card is a claim about a night, so the performance it announces is a
+        // draft until an admin has vouched for it — and until then it is not
+        // among the performances a technical plan can be written for.
+        $this->assertTrue(Performance::sole()->is_draft);
+        $this->assertSame(0, Performance::query()->vouchedFor()->count());
+    }
+
     public function test_running_it_again_changes_nothing(): void
     {
         $this->fakeBoard([$this->card()]);

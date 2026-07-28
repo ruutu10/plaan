@@ -22,7 +22,19 @@ class PerformanceFactory extends Factory
             'show_id' => Show::factory(),
             'date' => fake()->dateTimeBetween('now', '+2 months')->format('Y-m-d'),
             'duration' => fake()->numberBetween(3, 90),
+            'is_draft' => false,
         ];
+    }
+
+    /**
+     * Indicate that the performance is still waiting to be reviewed, as the ones
+     * the Planka import registers do.
+     */
+    public function draft(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_draft' => true,
+        ]);
     }
 
     /**

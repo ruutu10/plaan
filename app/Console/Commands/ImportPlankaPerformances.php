@@ -194,6 +194,9 @@ class ImportPlankaPerformances extends Command
                     $created = $show->performances()->create([
                         'date' => $performance->date,
                         'duration' => $performance->duration,
+                        // What a card announces is a claim, not a booking: it
+                        // waits as a draft until an admin has looked it over.
+                        'is_draft' => true,
                     ]);
 
                     Log::info('Registered a performance from a Planka card', [
@@ -201,6 +204,7 @@ class ImportPlankaPerformances extends Command
                         'show_id' => $show->id,
                         'date' => $performance->date->toDateString(),
                         'duration' => $performance->duration,
+                        'is_draft' => true,
                     ]);
                 }
             }
