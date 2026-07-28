@@ -10,7 +10,7 @@ class ShowSeeder extends Seeder
 {
     /**
      * Example shows, each owned by one of the seeded performing groups. Their
-     * dated stagings are seeded by {@see PerformanceSeeder}.
+     * dated performances are seeded by {@see PerformanceSeeder}.
      *
      * @var list<array{team: string, name: string, description: string}>
      */

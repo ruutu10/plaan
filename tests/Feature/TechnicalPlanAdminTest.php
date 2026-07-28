@@ -95,7 +95,7 @@ class TechnicalPlanAdminTest extends TestCase
                     ->contains($archived->token)));
     }
 
-    public function test_the_overview_sorts_the_newest_staging_first(): void
+    public function test_the_overview_sorts_the_newest_performance_first(): void
     {
         $older = TechnicalPlan::factory()->create([
             'performance_id' => Performance::factory()->create(['date' => '2026-01-10']),

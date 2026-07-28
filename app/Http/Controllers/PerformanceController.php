@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
- * The JSON API behind a show's dated stagings. Every route is nested under the
- * show and the bindings are scoped to it, so a staging is only ever reachable
+ * The JSON API behind a show's dated performances. Every route is nested under the
+ * show and the bindings are scoped to it, so a performance is only ever reachable
  * through the show it belongs to.
  *
  * Who may write here is settled by {@see PerformancePolicy}.
@@ -24,7 +24,7 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 class PerformanceController extends Controller
 {
     /**
-     * List the show's stagings, soonest first.
+     * List the show's performances, soonest first.
      *
      * @return AnonymousResourceCollection<int, PerformanceResource>
      */
@@ -41,7 +41,7 @@ class PerformanceController extends Controller
     }
 
     /**
-     * Add a staging to the show.
+     * Add a performance to the show.
      */
     public function store(SavePerformanceRequest $request, Show $show): JsonResponse
     {
@@ -53,7 +53,7 @@ class PerformanceController extends Controller
     }
 
     /**
-     * Update one of the show's stagings.
+     * Update one of the show's performances.
      */
     public function update(SavePerformanceRequest $request, Show $show, Performance $performance): PerformanceResource
     {
@@ -63,8 +63,8 @@ class PerformanceController extends Controller
     }
 
     /**
-     * Delete one of the show's stagings. The technical plans written for it are
-     * not deleted with it — they are left without a staging, the column being
+     * Delete one of the show's performances. The technical plans written for it are
+     * not deleted with it — they are left without a performance, the column being
      * nulled, which is why the screen warns when there are any.
      */
     public function destroy(Show $show, Performance $performance): Response

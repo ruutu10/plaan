@@ -23,7 +23,7 @@ class PerformanceManagementTest extends TestCase
             ->assertUnauthorized();
     }
 
-    public function test_a_member_can_list_the_stagings_of_their_teams_show(): void
+    public function test_a_member_can_list_the_performances_of_their_teams_show(): void
     {
         [$user, $show] = $this->showOfOwnTeam();
 
@@ -42,7 +42,7 @@ class PerformanceManagementTest extends TestCase
             ->assertJsonPath('data.1.id', $later->id);
     }
 
-    public function test_a_show_without_stagings_lists_none(): void
+    public function test_a_show_without_performances_lists_none(): void
     {
         [$user, $show] = $this->showOfOwnTeam();
 
@@ -52,7 +52,7 @@ class PerformanceManagementTest extends TestCase
             ->assertJsonCount(0, 'data');
     }
 
-    public function test_the_stagings_of_another_teams_show_are_forbidden(): void
+    public function test_the_performances_of_another_teams_show_are_forbidden(): void
     {
         $show = Show::factory()->create();
 
@@ -61,7 +61,7 @@ class PerformanceManagementTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_a_member_can_add_a_staging(): void
+    public function test_a_member_can_add_a_performance(): void
     {
         [$user, $show] = $this->showOfOwnTeam();
 
@@ -82,7 +82,7 @@ class PerformanceManagementTest extends TestCase
         ]);
     }
 
-    public function test_a_staging_may_be_added_without_a_duration(): void
+    public function test_a_performance_may_be_added_without_a_duration(): void
     {
         [$user, $show] = $this->showOfOwnTeam();
 
@@ -105,7 +105,7 @@ class PerformanceManagementTest extends TestCase
             ->assertJsonPath('data.duration', null);
     }
 
-    public function test_adding_a_staging_to_another_teams_show_is_forbidden(): void
+    public function test_adding_a_performance_to_another_teams_show_is_forbidden(): void
     {
         $show = Show::factory()->create();
 
@@ -116,7 +116,7 @@ class PerformanceManagementTest extends TestCase
         $this->assertDatabaseCount('performances', 0);
     }
 
-    public function test_a_staging_needs_a_valid_date_and_a_sane_duration(): void
+    public function test_a_performance_needs_a_valid_date_and_a_sane_duration(): void
     {
         [$user, $show] = $this->showOfOwnTeam();
 
@@ -134,7 +134,7 @@ class PerformanceManagementTest extends TestCase
             ->assertJsonValidationErrors(['date', 'duration']);
     }
 
-    public function test_a_member_can_update_a_staging(): void
+    public function test_a_member_can_update_a_performance(): void
     {
         [$user, $show] = $this->showOfOwnTeam();
         $performance = Performance::factory()->create(['show_id' => $show->id, 'date' => '2026-08-01']);
@@ -155,7 +155,7 @@ class PerformanceManagementTest extends TestCase
         ]);
     }
 
-    public function test_updating_another_teams_staging_is_forbidden(): void
+    public function test_updating_another_teams_performance_is_forbidden(): void
     {
         $performance = Performance::factory()->create(['date' => '2026-08-01']);
 
@@ -168,7 +168,7 @@ class PerformanceManagementTest extends TestCase
         $this->assertSame('2026-08-01', $performance->fresh()->date->toDateString());
     }
 
-    public function test_a_member_can_delete_a_staging(): void
+    public function test_a_member_can_delete_a_performance(): void
     {
         [$user, $show] = $this->showOfOwnTeam();
         $performance = Performance::factory()->create(['show_id' => $show->id]);
@@ -186,7 +186,7 @@ class PerformanceManagementTest extends TestCase
             ->assertJsonCount(0, 'data');
     }
 
-    public function test_a_deleted_staging_keeps_the_technical_plans_written_for_it(): void
+    public function test_a_deleted_performance_keeps_the_technical_plans_written_for_it(): void
     {
         [$user, $show] = $this->showOfOwnTeam();
         $performance = Performance::factory()->create(['show_id' => $show->id]);
@@ -196,19 +196,19 @@ class PerformanceManagementTest extends TestCase
             ->deleteJson(route('api.shows.performances.destroy', [$show, $performance]))
             ->assertNoContent();
 
-        // The plan survives, and so does its trail back to the staging: the
-        // staging is only hidden, so restoring it would join the two up again.
+        // The plan survives, and so does its trail back to the performance: the
+        // performance is only hidden, so restoring it would join the two up again.
         $this->assertDatabaseHas('technical_plans', [
             'id' => $plan->id,
             'performance_id' => $performance->id,
         ]);
 
-        // Until then the plan reads as one without a staging, because the
+        // Until then the plan reads as one without a performance, because the
         // relation does not reach through a soft delete.
         $this->assertNull($plan->fresh()->performance);
     }
 
-    public function test_a_deleted_staging_can_no_longer_be_reached(): void
+    public function test_a_deleted_performance_can_no_longer_be_reached(): void
     {
         [$user, $show] = $this->showOfOwnTeam();
         $performance = Performance::factory()->trashed()->create(['show_id' => $show->id]);
@@ -232,7 +232,7 @@ class PerformanceManagementTest extends TestCase
             ->assertJsonPath('data.0.technicalPlanCount', 2);
     }
 
-    public function test_deleting_another_teams_staging_is_forbidden(): void
+    public function test_deleting_another_teams_performance_is_forbidden(): void
     {
         $performance = Performance::factory()->create();
 
@@ -243,12 +243,12 @@ class PerformanceManagementTest extends TestCase
         $this->assertDatabaseHas('performances', ['id' => $performance->id]);
     }
 
-    public function test_a_staging_cannot_be_reached_through_another_shows_url(): void
+    public function test_a_performance_cannot_be_reached_through_another_shows_url(): void
     {
         [$user, $show] = $this->showOfOwnTeam();
         $strangersPerformance = Performance::factory()->create();
 
-        // The user may manage $show's stagings, but this one is not among them.
+        // The user may manage $show's performances, but this one is not among them.
         $this->actingAs($user)
             ->patchJson(route('api.shows.performances.update', [$show, $strangersPerformance]), [
                 'date' => '2026-09-09',
@@ -256,7 +256,7 @@ class PerformanceManagementTest extends TestCase
             ->assertNotFound();
     }
 
-    public function test_a_technician_may_manage_the_stagings_of_any_show(): void
+    public function test_a_technician_may_manage_the_performances_of_any_show(): void
     {
         $technician = User::factory()->create()->assignRole('technician');
         $show = Show::factory()->create();
@@ -287,7 +287,7 @@ class PerformanceManagementTest extends TestCase
         $user = User::factory()->create()->givePermissionTo(Performance::EDIT_ALL_PERMISSION);
         $show = Show::factory()->create();
 
-        // The stagings of anybody's show: yes.
+        // The performances of anybody's show: yes.
         $this->actingAs($user)
             ->postJson(route('api.shows.performances.store', $show), ['date' => '2026-12-01'])
             ->assertCreated();

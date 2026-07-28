@@ -68,7 +68,7 @@ class ShowManagementTest extends TestCase
         $this->assertNotContains($somebodyElses->id, array_column($response->json('data'), 'id'));
     }
 
-    public function test_the_listing_counts_the_stagings_and_sorts_by_name(): void
+    public function test_the_listing_counts_the_performances_and_sorts_by_name(): void
     {
         $user = User::factory()->create();
         $team = $this->teamOf($user);
@@ -372,7 +372,7 @@ class ShowManagementTest extends TestCase
             ->assertJsonCount(0, 'data');
     }
 
-    public function test_deleting_a_show_takes_its_stagings_with_it(): void
+    public function test_deleting_a_show_takes_its_performances_with_it(): void
     {
         $user = User::factory()->create();
         $team = $this->teamOf($user);
@@ -388,7 +388,7 @@ class ShowManagementTest extends TestCase
         $performances->each(fn (Performance $performance) => $this->assertSoftDeleted($performance));
     }
 
-    public function test_a_staging_already_deleted_on_its_own_is_not_disturbed(): void
+    public function test_a_performance_already_deleted_on_its_own_is_not_disturbed(): void
     {
         $user = User::factory()->create();
         $team = $this->teamOf($user);

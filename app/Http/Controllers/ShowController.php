@@ -84,7 +84,7 @@ class ShowController extends Controller
     }
 
     /**
-     * Put the show aside. It is soft-deleted, taking its stagings with it (see
+     * Put the show aside. It is soft-deleted, taking its performances with it (see
      * {@see Show::booted()}), so the plans written for them keep their trail.
      */
     public function destroy(Show $show): Response

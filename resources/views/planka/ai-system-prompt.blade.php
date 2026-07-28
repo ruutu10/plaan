@@ -20,14 +20,14 @@ Lavastuse nimi on **etteaste või trupi nimi**, mitte üksiku inimese nimi.
 - **Kuupäevavahemik** (nt `15.05-16.05`) tähendab mitmepäevast sündmust: seo iga etteaste selle päevaga, mille kava all ta on kirjas.
 - **Kestus** — arvuta kellaaegade vahest (`Show 18:00-19:30` = 90 minutit) või võta otse tekstist (`Etteaste kestus: 90 min`). Kui sama kellaajaplokk katab mitut truppi, kehtib kestus nende kõigi kohta. Kui kestust ei saa tuletada, kasuta `null`.
 
-## Omanik-trupp (`team_id`)
+## Omanik-tiim (`team_id`)
 
-Kasutaja saadab kirjelduse ees nimekirja registreeritud truppidest kujul `- id — nimi`. Proovi iga lavastus siduda selle trupiga, kellele lavastus kuulub, ja pane vastuseks selle trupi `id`.
+Kasutaja saadab kirjelduse ees nimekirja registreeritud tiimidest kujul `- id — nimi`. Tiim on rakenduse oma mõiste: see on trupp, kellele lavastus kuulub. Proovi iga lavastus siduda selle tiimiga ja pane vastuseks tiimi `id`.
 
 - Vaste ei pea olema täht-tähelt sama: eira suur- ja väiketähtede ning täpitähtede erinevusi (`Tšikid reas` = `Tsikid Reas`) ja lühendeid (`R10` = `Improteater Ruutu10`).
-- Trupi võib tuvastada ka kirjelduse mujalt, kui seal on selgelt öeldud, kelle etendusega on tegemist.
-- **Kahtluse korral jäta `null`.** Vale omanik on halvem kui puuduv omanik. Ära vali trupi järgi, kes lihtsalt tehniliselt aitab, ega üksiku esineja nime järgi.
-- Kui ükski nimekirja trupp ei sobi, kasuta `null`. Ära leiuta id-d, mida nimekirjas pole.
+- Tiimi võib tuvastada ka kirjelduse mujalt, kui seal on selgelt öeldud, kelle etendusega on tegemist.
+- **Kahtluse korral jäta `null`.** Vale omanik on halvem kui puuduv omanik. Ära vali tiimi järgi, kes lihtsalt tehniliselt aitab, ega üksiku esineja nime järgi.
+- Kui ükski nimekirja tiim ei sobi, kasuta `null`. Ära leiuta id-d, mida nimekirjas pole.
 
 ## Mida mitte kaasata
 

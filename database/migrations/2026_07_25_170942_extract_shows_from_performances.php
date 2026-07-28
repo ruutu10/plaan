@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Split the show's concept off the performance: what a show is called, is about
  * and belongs to now lives in `shows`, while a performance keeps only what
- * differs between stagings — its date and duration.
+ * differs between performances — its date and duration.
  */
 return new class extends Migration
 {

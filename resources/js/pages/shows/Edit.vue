@@ -31,13 +31,13 @@ const show = ref<Show | null>(null);
 const teams = ref<ShowTeamOption[]>([]);
 const loadFailed = ref(false);
 
-/** Likewise null until the stagings land; a show may legitimately have none. */
+/** Likewise null until the performances land; a show may legitimately have none. */
 const performances = ref<Performance[] | null>(null);
 const performancesFailed = ref(false);
 
 const performanceModalOpen = ref(false);
 const deleteModalOpen = ref(false);
-/** The staging a modal is working on; null in the add-a-staging case. */
+/** The performance a modal is working on; null in the add-a-performance case. */
 const chosenPerformance = ref<Performance | null>(null);
 
 const loader = useHttp();
@@ -106,7 +106,7 @@ async function loadPerformances(): Promise<void> {
     }
 }
 
-// The show and its stagings are separate resources, so they are fetched side by
+// The show and its performances are separate resources, so they are fetched side by
 // side rather than one after the other.
 onMounted(() => {
     void loadShow();
@@ -129,7 +129,7 @@ function openDeletePerformance(performance: Performance): void {
 }
 
 /**
- * Fetch the stagings afresh after any change: the server decides their order,
+ * Fetch the performances afresh after any change: the server decides their order,
  * and a saved date may have moved the row somewhere else in it.
  */
 function reloadPerformances(): void {

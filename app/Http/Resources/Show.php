@@ -8,7 +8,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * One show as the management screens show it: what it is called, what it is
- * about, whose it is, and how many stagings hang off it.
+ * about, whose it is, and how many performances hang off it.
  *
  * @property-read ShowModel $resource
  */
@@ -36,7 +36,7 @@ class Show extends JsonResource
             'description' => $show->description,
             'teamId' => $show->team_id,
             'teamName' => $show->team?->name,
-            // Only the listing counts the stagings; the edit page does not.
+            // Only the listing counts the performances; the edit page does not.
             'performanceCount' => $show->performances_count,
         ];
     }

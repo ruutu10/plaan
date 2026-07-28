@@ -15,12 +15,12 @@ import { store, update } from '@/routes/api/shows/performances';
 import type { Performance } from '@/types';
 
 /**
- * Adds a staging to a show, or corrects one — the two differ only in where the
+ * Adds a performance to a show, or corrects one — the two differ only in where the
  * form is posted and what it starts from, so one dialog serves both.
  */
 type Props = {
     showId: number;
-    /** The staging being corrected, or null when a new one is being added. */
+    /** The performance being corrected, or null when a new one is being added. */
     performance: Performance | null;
 };
 
@@ -42,7 +42,7 @@ const form = useHttp({
 
 const isEditing = computed(() => props.performance !== null);
 
-// Fill the form as the dialog opens, so it never shows the previous staging's
+// Fill the form as the dialog opens, so it never shows the previous performance's
 // values for a beat before the right ones land.
 watch(open, (isOpen) => {
     if (!isOpen) {

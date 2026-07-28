@@ -9,10 +9,10 @@ use Illuminate\Support\Carbon;
 class PerformanceSeeder extends Seeder
 {
     /**
-     * The example stagings of each seeded show, keyed by the show's name.
+     * The example performances of each seeded show, keyed by the show's name.
      * Positive day offsets are upcoming (and therefore selectable in the
      * wizard); negative offsets are in the past. A show staged more than once is
-     * what lets the wizard offer an earlier staging's plan as the basis for the
+     * what lets the wizard offer an earlier performance's plan as the basis for the
      * next one.
      *
      * @var array<string, list<array{days: int, duration: int}>>
@@ -32,22 +32,22 @@ class PerformanceSeeder extends Seeder
 
     /**
      * Seed the example performances for the seeded shows. The dates are
-     * relative to the day of seeding, so a show that already has its stagings
+     * relative to the day of seeding, so a show that already has its performances
      * is left alone rather than given a second set a few days apart.
      */
     public function run(): void
     {
-        foreach (self::PERFORMANCES as $showName => $stagings) {
+        foreach (self::PERFORMANCES as $showName => $performances) {
             $show = Show::where('name', $showName)->first();
 
             if ($show === null || $show->performances()->exists()) {
                 continue;
             }
 
-            foreach ($stagings as $staging) {
+            foreach ($performances as $performance) {
                 $show->performances()->create([
-                    'date' => Carbon::today()->addDays($staging['days'])->toDateString(),
-                    'duration' => $staging['duration'],
+                    'date' => Carbon::today()->addDays($performance['days'])->toDateString(),
+                    'duration' => $performance['duration'],
                 ]);
             }
         }

@@ -83,7 +83,7 @@ Route::prefix('api/shows')
         Route::patch('{show}', [ShowController::class, 'update'])->name('update');
         Route::delete('{show}', [ShowController::class, 'destroy'])->name('destroy');
 
-        // A show's dated stagings. Scoped bindings tie the staging to the show
+        // A show's dated performances. Scoped bindings tie the performance to the show
         // in the URL, so one show's id can never reach another's performance.
         Route::prefix('{show}/performances')
             ->name('performances.')

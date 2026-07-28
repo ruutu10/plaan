@@ -66,7 +66,7 @@ class PlankaPerformanceExtractorTest extends TestCase
         );
     }
 
-    public function test_it_turns_the_ai_answer_into_stagings(): void
+    public function test_it_turns_the_ai_answer_into_performances(): void
     {
         $extractor = $this->extractorAnswering((string) json_encode([
             'performances' => [
@@ -145,7 +145,7 @@ class PlankaPerformanceExtractorTest extends TestCase
     {
         $this->extractorAnswering('{"performances": []}')->extract('13.09 õhtu', 'Kaardi tekst');
 
-        $this->assertStringContainsString('Truppe pole registreeritud', $this->sentBodies[0]['messages'][0]['content']);
+        $this->assertStringContainsString('Tiime pole registreeritud', $this->sentBodies[0]['messages'][0]['content']);
     }
 
     public function test_it_keeps_a_group_the_ai_matched(): void

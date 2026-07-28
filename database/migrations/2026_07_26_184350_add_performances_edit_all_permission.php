@@ -7,7 +7,7 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Managing a show's dated stagings house-wide is its own right, held by the
+ * Managing a show's dated performances house-wide is its own right, held by the
  * technical crew alongside the ones they already have.
  */
 return new class extends Migration

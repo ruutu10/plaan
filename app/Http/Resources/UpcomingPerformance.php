@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 
 /**
  * A performance the user can attach a new plan to. Each row also carries the
- * plans handed in for other stagings of the same show — the user's own and their
+ * plans handed in for other performances of the same show — the user's own and their
  * teams' alike — so a new plan can be pre-filled from a past one.
  *
  * @property-read Performance $resource
@@ -21,7 +21,7 @@ class UpcomingPerformance extends JsonResource
     public static $wrap = null;
 
     /**
-     * @param  Collection<int, TechnicalPlanModel>  $candidatePriorPlans  the plans available to the user for any of the listed shows; the ones belonging to this show's other stagings are picked out here
+     * @param  Collection<int, TechnicalPlanModel>  $candidatePriorPlans  the plans available to the user for any of the listed shows; the ones belonging to this show's other performances are picked out here
      */
     public function __construct(Performance $performance, private Collection $candidatePriorPlans = new Collection)
     {
@@ -49,8 +49,8 @@ class UpcomingPerformance extends JsonResource
     }
 
     /**
-     * The plans written for other stagings of the same show. A plan for this
-     * very staging is left out only when it is the user's own — theirs is to be
+     * The plans written for other performances of the same show. A plan for this
+     * very performance is left out only when it is the user's own — theirs is to be
      * edited, not cloned — while a team-mate's is offered, since taking over an
      * existing plan for the upcoming show is the point.
      *

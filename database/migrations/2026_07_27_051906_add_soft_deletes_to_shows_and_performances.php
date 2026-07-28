@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * A deleted show or staging is put aside rather than destroyed: the plans
+ * A deleted show or performance is put aside rather than destroyed: the plans
  * written for it, and the record that it was ever staged, outlive the row's
  * usefulness in the lists.
  */

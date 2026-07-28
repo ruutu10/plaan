@@ -11,8 +11,8 @@ class SavePerformanceRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request. The same rules
-     * cover adding a staging and correcting one, so which right is asked for
-     * turns on whether the route names a staging at all.
+     * cover adding a performance and correcting one, so which right is asked for
+     * turns on whether the route names a performance at all.
      */
     public function authorize(): bool
     {
@@ -25,7 +25,7 @@ class SavePerformanceRequest extends FormRequest
 
     /**
      * A cleared duration field arrives as an empty string from a plain HTML
-     * client, which is a staging without a duration rather than a bad integer.
+     * client, which is a performance without a duration rather than a bad integer.
      */
     protected function prepareForValidation(): void
     {
@@ -37,7 +37,7 @@ class SavePerformanceRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * The show is not among them: a staging belongs to the show in the URL and
+     * The show is not among them: a performance belongs to the show in the URL and
      * is never moved to another by saving it.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
@@ -46,7 +46,7 @@ class SavePerformanceRequest extends FormRequest
     {
         return [
             'date' => ['required', 'date_format:Y-m-d'],
-            // Minutes. A staging may be timed loosely or not at all, but a full
+            // Minutes. A performance may be timed loosely or not at all, but a full
             // day of it is a typo rather than a plan.
             'duration' => ['nullable', 'integer', 'min:1', 'max:1440'],
         ];

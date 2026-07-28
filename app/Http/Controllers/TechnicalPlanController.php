@@ -43,7 +43,7 @@ class TechnicalPlanController extends Controller
      */
     public function overview(Request $request): Response
     {
-        // Newest staging first: what is coming up (or has just been played) is
+        // Newest performance first: what is coming up (or has just been played) is
         // what the crew looks for. Plans not tied to a performance have no date
         // to sort by and land at the end, newest of those first.
         $plans = TechnicalPlan::query()
@@ -165,7 +165,7 @@ class TechnicalPlanController extends Controller
 
     /**
      * List upcoming performances the user can attach a plan to. Each row also
-     * carries the plans handed in for the same show's other stagings, so a new
+     * carries the plans handed in for the same show's other performances, so a new
      * plan can be pre-filled from a past one. Those are not only the user's own:
      * a plan for a performance of one of their teams counts too, which is how
      * the next plan for a show can be written by someone else in the group than

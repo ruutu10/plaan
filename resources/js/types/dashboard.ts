@@ -1,4 +1,4 @@
-/** The next staging still to be played. */
+/** The next performance still to be played. */
 export type UpcomingShow = {
     showName: string;
     teamName: string | null;
@@ -8,7 +8,7 @@ export type UpcomingShow = {
 
 /** What the house still has ahead of it, and how ready it is for it. */
 export type UpcomingSummary = {
-    /** Stagings from today on. */
+    /** Performances from today on. */
     performances: number;
     /** Those of them nobody has handed a technical plan in for. */
     missingPlans: number;

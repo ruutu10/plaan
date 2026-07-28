@@ -96,7 +96,7 @@ class ImportPlankaPerformancesTest extends TestCase
     }
 
     /**
-     * Make the AI hand back exactly these stagings for every card it is given.
+     * Make the AI hand back exactly these performances for every card it is given.
      *
      * @param  list<ImportedPerformance>  $performances
      */
@@ -108,7 +108,7 @@ class ImportPlankaPerformancesTest extends TestCase
         );
     }
 
-    private function staging(string $name, string $date = '2025-09-13', ?int $duration = 90, ?int $teamId = null): ImportedPerformance
+    private function performance(string $name, string $date = '2025-09-13', ?int $duration = 90, ?int $teamId = null): ImportedPerformance
     {
         return new ImportedPerformance($name, Carbon::parse($date), $duration, $teamId);
     }
@@ -117,8 +117,8 @@ class ImportPlankaPerformancesTest extends TestCase
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
-            $this->staging('Trupp 1'),
-            $this->staging('JadaJada Special', duration: null),
+            $this->performance('Trupp 1'),
+            $this->performance('JadaJada Special', duration: null),
         ]);
 
         $this->artisan('planka:import-performances')
@@ -139,7 +139,7 @@ class ImportPlankaPerformancesTest extends TestCase
     public function test_running_it_again_changes_nothing(): void
     {
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->staging('Trupp 1')]);
+        $this->fakeExtraction([$this->performance('Trupp 1')]);
 
         $this->artisan('planka:import-performances')->assertSuccessful();
 
@@ -155,8 +155,8 @@ class ImportPlankaPerformancesTest extends TestCase
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
-            $this->staging('Trupp 1'),
-            $this->staging('trupp 1'),
+            $this->performance('Trupp 1'),
+            $this->performance('trupp 1'),
         ]);
 
         $this->artisan('planka:import-performances')->assertSuccessful();
@@ -169,8 +169,8 @@ class ImportPlankaPerformancesTest extends TestCase
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
-            $this->staging('Trupp 1', '2025-09-13'),
-            $this->staging('Trupp 1', '2025-10-11'),
+            $this->performance('Trupp 1', '2025-09-13'),
+            $this->performance('Trupp 1', '2025-10-11'),
         ]);
 
         $this->artisan('planka:import-performances')->assertSuccessful();
@@ -184,7 +184,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $existing = Show::factory()->create(['name' => 'JadaJada Special']);
 
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->staging('jadajada special')]);
+        $this->fakeExtraction([$this->performance('jadajada special')]);
 
         $this->artisan('planka:import-performances')->assertSuccessful();
 
@@ -198,7 +198,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $deleted->delete();
 
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->staging('Trupp 1')]);
+        $this->fakeExtraction([$this->performance('Trupp 1')]);
 
         $this->artisan('planka:import-performances')
             ->expectsOutputToContain('the show was deleted here')
@@ -214,7 +214,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $team = Team::factory()->create(['name' => 'Tsikid Reas']);
 
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->staging('Tšikid reas', teamId: $team->id)]);
+        $this->fakeExtraction([$this->performance('Tšikid reas', teamId: $team->id)]);
 
         $this->artisan('planka:import-performances')
             ->expectsOutputToContain('Creating show: Tšikid reas (owner: Tsikid Reas)')
@@ -229,7 +229,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $show = Show::factory()->create(['name' => 'Tšikid reas', 'team_id' => null]);
 
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->staging('Tšikid reas', teamId: $team->id)]);
+        $this->fakeExtraction([$this->performance('Tšikid reas', teamId: $team->id)]);
 
         $this->artisan('planka:import-performances')
             ->expectsOutputToContain('Handing over show: Tšikid reas (owner: Tsikid Reas)')
@@ -246,7 +246,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $show = Show::factory()->create(['name' => 'Tšikid reas', 'team_id' => $owner->id]);
 
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->staging('Tšikid reas', teamId: $other->id)]);
+        $this->fakeExtraction([$this->performance('Tšikid reas', teamId: $other->id)]);
 
         $this->artisan('planka:import-performances')->assertSuccessful();
 
@@ -256,7 +256,7 @@ class ImportPlankaPerformancesTest extends TestCase
     public function test_a_show_the_ai_could_not_place_is_left_ownerless(): void
     {
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->staging('Trupp 1', teamId: null)]);
+        $this->fakeExtraction([$this->performance('Trupp 1', teamId: null)]);
 
         $this->artisan('planka:import-performances')
             ->expectsOutputToContain('Creating show: Trupp 1')
@@ -273,8 +273,8 @@ class ImportPlankaPerformancesTest extends TestCase
 
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
-            $this->staging('Tšikid reas', '2025-08-14', teamId: $team->id),
-            $this->staging('Tšikid reas', '2025-09-05', teamId: $team->id),
+            $this->performance('Tšikid reas', '2025-08-14', teamId: $team->id),
+            $this->performance('Tšikid reas', '2025-09-05', teamId: $team->id),
         ]);
 
         $this->artisan('planka:import-performances')
@@ -288,7 +288,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $show = Show::factory()->create(['name' => 'Tšikid reas', 'team_id' => null]);
 
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->staging('Tšikid reas', teamId: $team->id)]);
+        $this->fakeExtraction([$this->performance('Tšikid reas', teamId: $team->id)]);
 
         $this->artisan('planka:import-performances', ['--dry-run' => true])
             ->expectsOutputToContain('Would hand over show: Tšikid reas (owner: Tsikid Reas)')
@@ -300,7 +300,7 @@ class ImportPlankaPerformancesTest extends TestCase
     public function test_it_creates_a_show_the_house_has_never_had(): void
     {
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->staging('Trupp 1')]);
+        $this->fakeExtraction([$this->performance('Trupp 1')]);
 
         $this->artisan('planka:import-performances')
             ->expectsOutputToContain('Creating show: Trupp 1')
@@ -317,7 +317,7 @@ class ImportPlankaPerformancesTest extends TestCase
         Performance::factory()->for($show)->create(['date' => '2025-09-13'])->delete();
 
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->staging('Trupp 1')]);
+        $this->fakeExtraction([$this->performance('Trupp 1')]);
 
         $this->artisan('planka:import-performances')->assertSuccessful();
 
@@ -328,9 +328,9 @@ class ImportPlankaPerformancesTest extends TestCase
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
-            $this->staging('Barprov TRT', '2025-09-01'),
-            $this->staging('Barprov TRT', '2025-10-06'),
-            $this->staging('Barprov TRT', '2025-11-03'),
+            $this->performance('Barprov TRT', '2025-09-01'),
+            $this->performance('Barprov TRT', '2025-10-06'),
+            $this->performance('Barprov TRT', '2025-11-03'),
         ]);
 
         $this->artisan('planka:import-performances')
@@ -345,8 +345,8 @@ class ImportPlankaPerformancesTest extends TestCase
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
-            $this->staging('Barprov TRT', '2025-09-01'),
-            $this->staging('Barprov TRT', '2025-10-06'),
+            $this->performance('Barprov TRT', '2025-09-01'),
+            $this->performance('Barprov TRT', '2025-10-06'),
         ]);
 
         // Nothing is written in a dry run, so a second look at the database
@@ -360,8 +360,8 @@ class ImportPlankaPerformancesTest extends TestCase
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
-            $this->staging('MÄRTU10', '2025-10-09'),
-            $this->staging('Märtu10', '2025-11-15'),
+            $this->performance('MÄRTU10', '2025-10-09'),
+            $this->performance('Märtu10', '2025-11-15'),
         ]);
 
         $this->artisan('planka:import-performances')
@@ -377,8 +377,8 @@ class ImportPlankaPerformancesTest extends TestCase
 
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
-            $this->staging('Tšikid reas', '2025-08-14'),
-            $this->staging('TŠIKID REAS', '2025-09-05'),
+            $this->performance('Tšikid reas', '2025-08-14'),
+            $this->performance('TŠIKID REAS', '2025-09-05'),
         ]);
 
         $this->artisan('planka:import-performances')
@@ -394,7 +394,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $kept = Show::factory()->create(['name' => 'Tšikid reas']);
 
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->staging('Tšikid reas', '2025-08-14')]);
+        $this->fakeExtraction([$this->performance('Tšikid reas', '2025-08-14')]);
 
         $this->artisan('planka:import-performances')->assertSuccessful();
 
@@ -404,7 +404,7 @@ class ImportPlankaPerformancesTest extends TestCase
     public function test_a_dry_run_writes_nothing(): void
     {
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->staging('Trupp 1')]);
+        $this->fakeExtraction([$this->performance('Trupp 1')]);
 
         $this->artisan('planka:import-performances', ['--dry-run' => true])
             ->expectsOutputToContain('Would import 1 show(s) and 1 performance(s)')
@@ -420,7 +420,7 @@ class ImportPlankaPerformancesTest extends TestCase
 
         $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
             $mock->shouldReceive('extract')->once()->andThrow(new RuntimeException('AI is down'));
-            $mock->shouldReceive('extract')->once()->andReturn([$this->staging('Trupp 1')]);
+            $mock->shouldReceive('extract')->once()->andReturn([$this->performance('Trupp 1')]);
         });
 
         $this->artisan('planka:import-performances')
@@ -441,7 +441,7 @@ class ImportPlankaPerformancesTest extends TestCase
             ->shouldReceive('extract')
             ->once()
             ->with('13.09 õhtu', \Mockery::any(), \Mockery::any())
-            ->andReturn([$this->staging('Trupp 1')]));
+            ->andReturn([$this->performance('Trupp 1')]));
 
         $this->artisan('planka:import-performances')
             ->expectsOutputToContain('Passing over "Töötuba": labelled TÖÖTUBA.')
@@ -469,7 +469,7 @@ class ImportPlankaPerformancesTest extends TestCase
     public function test_a_card_carrying_no_label_is_read(): void
     {
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->staging('Trupp 1')]);
+        $this->fakeExtraction([$this->performance('Trupp 1')]);
 
         $this->artisan('planka:import-performances')->assertSuccessful();
 
@@ -513,8 +513,8 @@ class ImportPlankaPerformancesTest extends TestCase
         ]);
 
         $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
-            $mock->shouldReceive('extract')->once()->andReturn([$this->staging('Trupp 1', '2025-09-13')]);
-            $mock->shouldReceive('extract')->once()->andReturn([$this->staging('Trupp 2', '2025-10-11')]);
+            $mock->shouldReceive('extract')->once()->andReturn([$this->performance('Trupp 1', '2025-09-13')]);
+            $mock->shouldReceive('extract')->once()->andReturn([$this->performance('Trupp 2', '2025-10-11')]);
         });
 
         $this->artisan('planka:import-performances')

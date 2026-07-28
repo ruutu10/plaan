@@ -16,8 +16,9 @@ use Illuminate\Support\Carbon;
 
 /**
  * The show as a concept: what it is called and what it is about. A show is
- * staged one or more times, and every staging is a {@see Performance} with its
- * own date. The team owning the show owns its performances by implication.
+ * played one or more times, and every {@see Performance} is one of those times,
+ * with its own date. The team owning the show owns its performances by
+ * implication.
  *
  * @property int $id
  * @property int|null $team_id
@@ -45,7 +46,7 @@ class Show extends Model
      */
     protected static function booted(): void
     {
-        // A show put aside takes its stagings with it, so nothing is left
+        // A show put aside takes its performances with it, so nothing is left
         // pointing at a show the rest of the app no longer sees. A hard delete
         // needs no help — the database cascades that one itself.
         static::deleting(function (Show $show): void {
@@ -117,7 +118,7 @@ class Show extends Model
     }
 
     /**
-     * The dated stagings of this show.
+     * The dated performances of this show.
      *
      * @return HasMany<Performance, $this>
      */

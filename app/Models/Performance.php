@@ -15,9 +15,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
- * One dated staging of a {@see Show}. Everything the stagings have in common —
- * the name, the description, the performing group — belongs to the show; a
- * performance holds only what can differ between them.
+ * One dated performance of a {@see Show}. Everything the performances of a show
+ * have in common — the name, the description, the performing group — belongs to
+ * the show; a performance holds only what can differ between them.
  *
  * @property int $id
  * @property int $show_id
@@ -41,13 +41,13 @@ class Performance extends Model
     use HasFactory, SoftDeletes;
 
     /**
-     * The permission — held by the "technician" role — that opens the stagings
+     * The permission — held by the "technician" role — that opens the performances
      * of every show in the house, not just those of the holder's own groups.
      */
     public const EDIT_ALL_PERMISSION = 'performances.edit_all';
 
     /**
-     * Limit the query to the stagings the given user may manage: those of the
+     * Limit the query to the performances the given user may manage: those of the
      * shows their groups own. Holders of {@see EDIT_ALL_PERMISSION} are not
      * limited at all.
      *
@@ -62,12 +62,12 @@ class Performance extends Model
 
         $teamIds = $user->teams()->pluck('teams.id');
 
-        // A staging is the group's through the show it stages.
+        // A performance is the group's through the show it belongs to.
         $query->whereHas('show', fn (Builder $show) => $show->whereIn('team_id', $teamIds));
     }
 
     /**
-     * Determine whether the user may manage this staging — see
+     * Determine whether the user may manage this performance — see
      * {@see editableBy()}.
      */
     public function isEditableBy(User $user): bool
@@ -79,7 +79,7 @@ class Performance extends Model
     }
 
     /**
-     * Determine whether the user may manage the stagings of the given show at
+     * Determine whether the user may manage the performances of the given show at
      * all — the question {@see editableBy()} asks, for a show that has none yet.
      */
     public static function manageableFor(User $user, Show $show): bool
@@ -93,7 +93,7 @@ class Performance extends Model
     }
 
     /**
-     * The show this is a staging of.
+     * The show this is a performance of.
      *
      * @return BelongsTo<Show, $this>
      */

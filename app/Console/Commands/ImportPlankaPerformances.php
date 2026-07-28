@@ -114,7 +114,7 @@ class ImportPlankaPerformances extends Command
 
             foreach ($performances as $performance) {
                 // The same act can be named twice on one card, or spread over
-                // two cards for the same night; either way it is one staging.
+                // two cards for the same night; either way it is one performance.
                 if (isset($seen[$performance->fingerprint()])) {
                     continue;
                 }
@@ -318,7 +318,7 @@ class ImportPlankaPerformances extends Command
     }
 
     /**
-     * Determine whether this staging is already on the books. A show that does
+     * Determine whether this performance is already on the books. A show that does
      * not exist yet (or was not created, in a dry run) has none.
      */
     protected function performanceExists(?Show $show, ImportedPerformance $performance): bool

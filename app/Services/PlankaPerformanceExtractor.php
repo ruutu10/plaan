@@ -203,12 +203,12 @@ class PlankaPerformanceExtractor
             : Carbon::parse($dueDate)->toDateString();
 
         $teams = $this->teams() === []
-            ? 'Truppe pole registreeritud — jäta `team_id` alati tühjaks.'
+            ? 'Tiime pole registreeritud — jäta `team_id` alati tühjaks.'
             : collect($this->teams())
                 ->map(fn (string $name, int $id): string => "- {$id} — {$name}")
                 ->implode("\n");
 
-        return "# Registreeritud trupid\n\n{$teams}\n\n# Kaardi pealkiri\n\n{$cardName}"
+        return "# Registreeritud tiimid\n\n{$teams}\n\n# Kaardi pealkiri\n\n{$cardName}"
             ."\n\n# Planka tähtaeg\n\n{$due}\n\n# Kaardi kirjeldus\n\n{$cardDescription}";
     }
 

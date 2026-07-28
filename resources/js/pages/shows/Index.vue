@@ -50,7 +50,7 @@ onMounted(loadShows);
 
 /**
  * Fetch the listing afresh rather than splicing the row in or out: the server
- * decides both the order and the staging count, and it has just moved.
+ * decides both the order and the performance count, and it has just moved.
  */
 function reloadShows(): void {
     void loadShows();
