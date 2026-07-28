@@ -105,7 +105,8 @@ function submit(): void {
                 class="mt-3.5 flex items-center gap-2 text-[13px] leading-relaxed text-r10-grey-500"
             >
                 <Diamond :size="7" />
-                Kui sa pole varem tehnikaplaani esitanud, registreerime sinu emaili uue kasutajana.
+                Kui sa pole varem tehnikaplaani esitanud, registreerime sinu
+                emaili uue kasutajana.
             </p>
         </form>
     </section>

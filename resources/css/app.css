@@ -199,7 +199,8 @@
     --color-r10-paper: #f7f8fa;
     --color-r10-error: #e04236;
 
-    --font-r10-display: 'Mostra Nuova', 'Futura', 'Century Gothic', ui-sans-serif, sans-serif;
+    --font-r10-display:
+        'Mostra Nuova', 'Futura', 'Century Gothic', ui-sans-serif, sans-serif;
     --font-r10-body: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -240,7 +241,6 @@
         padding: 0 !important;
     }
 }
-
 
 /* ============================================================
    Markdown output styling.
