@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\TeamRole;
 use App\Models\Performance;
 use App\Models\Show;
 use App\Models\Team;
@@ -439,25 +438,5 @@ class ShowManagementTest extends TestCase
         $this->actingAs($user)
             ->get(route('shows.edit', $show))
             ->assertNotFound();
-    }
-
-    /**
-     * A user holding the technician role, which carries the edit-all permission.
-     */
-    private function technician(): User
-    {
-        return User::factory()->create()->assignRole('technician');
-    }
-
-    /**
-     * Attach the user to a (new) team as its owner.
-     */
-    private function teamOf(User $user, ?string $name = null): Team
-    {
-        $team = Team::factory()->create($name ? ['name' => $name] : []);
-
-        $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
-
-        return $team;
     }
 }

@@ -16,14 +16,6 @@ class TechnicalPlanAdminTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * A user holding the technician role, which carries the view-all permission.
-     */
-    private function technician(): User
-    {
-        return User::factory()->create()->assignRole('technician');
-    }
-
     public function test_guests_are_redirected_to_the_login_page(): void
     {
         $this->get(route('technical-plans.index'))

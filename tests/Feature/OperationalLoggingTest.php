@@ -43,15 +43,6 @@ class OperationalLoggingTest extends TestCase
             ->once();
     }
 
-    private function teamOf(User $user, TeamRole $role = TeamRole::Owner): Team
-    {
-        $team = Team::factory()->create();
-
-        $team->members()->attach($user, ['role' => $role->value]);
-
-        return $team;
-    }
-
     public function test_a_sign_in_is_logged_with_its_method_and_origin(): void
     {
         $user = User::factory()->create();
