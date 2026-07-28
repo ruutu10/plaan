@@ -186,7 +186,7 @@ class TechnicalPlan extends Model implements HasMedia
     #[Scope]
     protected function visibleTo(Builder $query, User $user): void
     {
-        $teamIds = $user->teams()->pluck('teams.id');
+        $teamIds = $user->teamIds();
 
         $query->where(fn (Builder $query) => $query
             ->where('user_id', $user->id)

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\ScopedByTeamAccess;
 use Database\Factories\PerformanceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -40,7 +41,7 @@ use Illuminate\Support\Carbon;
 class Performance extends Model
 {
     /** @use HasFactory<PerformanceFactory> */
-    use HasFactory, SoftDeletes;
+    use HasFactory, ScopedByTeamAccess, SoftDeletes;
 
     /**
      * The permission — held by the "technician" role — that opens the performances
@@ -70,11 +71,11 @@ class Performance extends Model
     #[Scope]
     protected function editableBy(Builder $query, User $user): void
     {
-        if ($user->can(self::EDIT_ALL_PERMISSION)) {
+        if (self::seesEverything($user)) {
             return;
         }
 
-        $teamIds = $user->teams()->pluck('teams.id');
+        $teamIds = $user->teamIds();
 
         // A performance is the group's through the show it belongs to.
         $query->whereHas('show', fn (Builder $show) => $show->whereIn('team_id', $teamIds));
@@ -92,18 +93,6 @@ class Performance extends Model
     protected function vouchedFor(Builder $query): void
     {
         $query->where('is_draft', false);
-    }
-
-    /**
-     * Determine whether the user may manage this performance — see
-     * {@see editableBy()}.
-     */
-    public function isEditableBy(User $user): bool
-    {
-        return static::query()
-            ->whereKey($this->getKey())
-            ->editableBy($user)
-            ->exists();
     }
 
     /**

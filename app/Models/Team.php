@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Concerns\GeneratesUniqueTeamSlugs;
+use App\Concerns\ScopedByTeamAccess;
 use App\Enums\TeamRole;
-use App\Policies\TeamPolicy;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -36,7 +36,7 @@ use Illuminate\Support\Carbon;
 class Team extends Model
 {
     /** @use HasFactory<TeamFactory> */
-    use GeneratesUniqueTeamSlugs, HasFactory, SoftDeletes;
+    use GeneratesUniqueTeamSlugs, HasFactory, ScopedByTeamAccess, SoftDeletes;
 
     /**
      * Bootstrap the model and its traits.
@@ -74,24 +74,11 @@ class Team extends Model
     #[Scope]
     protected function editableBy(Builder $query, User $user): void
     {
-        if ($user->can(self::EDIT_ALL_PERMISSION)) {
+        if (self::seesEverything($user)) {
             return;
         }
 
-        $query->whereIn('teams.id', $user->teams()->pluck('teams.id'));
-    }
-
-    /**
-     * Determine whether the user may reach this team — see {@see editableBy()}.
-     * Reaching a team is not the same as being allowed to change it; what a
-     * member may do once there is settled by {@see TeamPolicy}.
-     */
-    public function isEditableBy(User $user): bool
-    {
-        return static::query()
-            ->whereKey($this->getKey())
-            ->editableBy($user)
-            ->exists();
+        $query->whereIn('teams.id', $user->teamIds());
     }
 
     /**

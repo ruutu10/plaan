@@ -2,8 +2,12 @@
 
 namespace App\Enums;
 
+use App\Concerns\HasValues;
+
 enum TechnicalPlanStatus: string
 {
+    use HasValues;
+
     case Draft = 'draft';
     case Submitted = 'submitted';
     case Received = 'received';
@@ -20,16 +24,6 @@ enum TechnicalPlanStatus: string
             self::Received => 'Tehnik kätte saanud',
             self::Archived => 'Arhiveeritud',
         };
-    }
-
-    /**
-     * Get the list of backing values for the database enum column.
-     *
-     * @return array<int, string>
-     */
-    public static function values(): array
-    {
-        return array_column(self::cases(), 'value');
     }
 
     /**

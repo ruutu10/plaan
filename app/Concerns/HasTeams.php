@@ -68,6 +68,18 @@ trait HasTeams
     }
 
     /**
+     * The ids of the teams the user belongs to, for scoping a query to what
+     * they may reach. Memoised for the request: several models ask this while
+     * building the same listing, and it was a separate query every time.
+     *
+     * @return array<int, int>
+     */
+    public function teamIds(): array
+    {
+        return once(fn (): array => $this->teams()->pluck('teams.id')->all());
+    }
+
+    /**
      * Get the user's personal team.
      */
     public function personalTeam(): ?Team

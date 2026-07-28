@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\NotifyPlanSubmitted;
+use App\Actions\SaveTechnicalPlan;
 use App\Actions\StagePlanCopy;
+use App\Data\PlanContent;
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Requests\StoreTechnicalPlanRequest;
 use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
@@ -15,7 +18,6 @@ use App\Models\Show;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
-use App\Notifications\TechnicalPlanSubmitted;
 use App\Rules\AllowedAttachment;
 use App\Services\TechnicalPlanReviewer;
 use Illuminate\Database\Eloquent\Collection;
@@ -116,74 +118,39 @@ class TechnicalPlanController extends Controller
     /**
      * Store (or update) a plan and return its shareable token & public link.
      */
-    public function store(StoreTechnicalPlanRequest $request): SavedTechnicalPlanResource
-    {
+    public function store(
+        StoreTechnicalPlanRequest $request,
+        SaveTechnicalPlan $save,
+        NotifyPlanSubmitted $notify,
+    ): SavedTechnicalPlanResource {
         $data = $request->validated();
         $submitting = (bool) ($data['submit'] ?? false);
-
         $user = $request->user();
-
-        $attributes = [
-            'user_id' => $user->id,
-            'performance_id' => $data['meta']['performanceId'] ?? null,
-            'sound' => $data['sound'],
-            'scenes' => array_values($data['scenes']),
-            'equipment' => array_merge($data['equipment'], ['items' => array_values($data['equipment']['items'] ?? [])]),
-            'extra' => ['notes' => $data['extra']['notes'] ?? ''],
-        ];
 
         $plan = TechnicalPlan::query()
             ->firstOrNew(['token' => $data['token'] ?? null]);
 
         // The token is handed out by the public share link, so anyone holding
         // it could otherwise post over the plan behind it. Writing to a plan
-        // that already exists is held to the same rule as opening it, and its
-        // owner is settled at creation — a later save never reassigns it.
-        if ($plan->exists) {
-            if (! $plan->isVisibleTo($user)) {
-                // The token travels in a public share link, so a refusal here
-                // is somebody writing to a plan they only ever received a link
-                // to. Worth seeing.
-                Log::warning('Refused a write to a plan the user may not open', [
-                    'plan_id' => $plan->id,
-                    'user_id' => $user->id,
-                    'ip' => $request->ip(),
-                ]);
+        // that already exists is held to the same rule as opening it.
+        if ($plan->exists && ! $plan->isVisibleTo($user)) {
+            // A refusal here is somebody writing to a plan they only ever
+            // received a link to. Worth seeing.
+            Log::warning('Refused a write to a plan the user may not open', [
+                'plan_id' => $plan->id,
+                'user_id' => $user->id,
+                'ip' => $request->ip(),
+            ]);
 
-                abort(403);
-            }
-
-            unset($attributes['user_id']);
+            abort(403);
         }
 
-        if ($submitting) {
-            $attributes['status'] = TechnicalPlanStatus::Submitted;
-            $attributes['submitted_at'] = now();
-        } elseif (! $plan->exists) {
-            $attributes['status'] = TechnicalPlanStatus::Draft;
-        }
-
-        $wasNew = ! $plan->exists;
-
-        $plan->fill($attributes)->save();
-
-        $plan->syncAttachments($data['extra']['files'] ?? []);
-        $plan->syncSceneSoundFiles();
-
-        Log::info($submitting ? 'Technical plan submitted' : 'Technical plan saved as a draft', [
-            'plan_id' => $plan->id,
-            'user_id' => $user->id,
-            'performance_id' => $plan->performance_id,
-            'status' => $plan->status->value,
-            'created' => $wasNew,
-            'scenes' => count($plan->scenes),
-            'attachments' => count($data['extra']['files'] ?? []),
-        ]);
+        $plan = $save->handle($plan, $data, $user, $submitting);
 
         // Only once the files are in place does the plan mail out complete —
         // the notification links to the plan's stored attachments.
         if ($submitting) {
-            $this->notifySubmission($plan);
+            $notify->handle($plan);
         }
 
         return SavedTechnicalPlanResource::make($plan);
@@ -287,40 +254,6 @@ class TechnicalPlanController extends Controller
     }
 
     /**
-     * Mail the submitted plan out: the performer keeps a copy of what they
-     * sent, and the technical team gets the plan they will run the show from.
-     * Resubmitting notifies again — the plan the team holds has to be the
-     * current one.
-     */
-    private function notifySubmission(TechnicalPlan $plan): void
-    {
-        $notification = new TechnicalPlanSubmitted($plan);
-
-        $plan->user?->notify($notification);
-
-        $techEmail = (string) config('technical_plan.tech_email');
-        $notifiedTech = $techEmail !== '' && $techEmail !== $plan->user?->email;
-
-        if ($notifiedTech) {
-            Notification::route('mail', $techEmail)->notify($notification);
-        }
-
-        // A submitted plan the technical team never received is the failure
-        // that costs a show, so who was mailed is recorded either way.
-        Log::info('Mailed out a submitted plan', [
-            'plan_id' => $plan->id,
-            'notified_owner' => $plan->user !== null,
-            'notified_tech' => $notifiedTech,
-        ]);
-
-        if ($techEmail === '') {
-            Log::warning('No technical contact configured; a submitted plan reached nobody but its author', [
-                'plan_id' => $plan->id,
-            ]);
-        }
-    }
-
-    /**
      * Static configuration passed to the wizard frontend.
      *
      * @return array<string, mixed>
@@ -347,12 +280,8 @@ class TechnicalPlanController extends Controller
     {
         $meta = $data['meta'];
 
-        $plan = new TechnicalPlan([
+        $plan = new TechnicalPlan(PlanContent::fromValidated($data) + [
             'status' => TechnicalPlanStatus::Draft,
-            'sound' => $data['sound'],
-            'scenes' => array_values($data['scenes']),
-            'equipment' => array_merge($data['equipment'], ['items' => array_values($data['equipment']['items'] ?? [])]),
-            'extra' => ['notes' => $data['extra']['notes'] ?? ''],
         ]);
 
         $show = new Show([
