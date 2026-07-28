@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { ClipboardList, FolderGit2, LayoutGrid, ListPlus } from '@lucide/vue';
+import {
+    ClipboardList,
+    FolderGit2,
+    LayoutGrid,
+    ListPlus,
+    Theater,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
@@ -17,6 +23,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as shows } from '@/routes/shows';
 import { index as technicalPlan } from '@/routes/technical-plan';
 import { index as technicalPlans } from '@/routes/technical-plans';
 import type { NavItem } from '@/types';
@@ -37,6 +44,13 @@ const mainNavItems = computed<NavItem[]>(() => [
         title: 'Uus tehnikaplaan',
         href: technicalPlan().url,
         icon: ListPlus,
+    },
+    // Everyone manages their own groups' shows; the list is empty rather than
+    // shut for a user whose groups have staged nothing yet.
+    {
+        title: 'Lavastused',
+        href: shows().url,
+        icon: Theater,
     },
     // The plan overview belongs to the technical crew; everyone else is not
     // shown a door the server would shut anyway.

@@ -152,7 +152,7 @@ class DashboardTest extends TestCase
         ]);
     }
 
-    public function test_dashboard_counts_the_stagings_that_are_still_ahead(): void
+    public function test_dashboard_counts_the_performances_that_are_still_ahead(): void
     {
         Performance::factory()->count(2)->create(['date' => now()->addWeek()->toDateString()]);
         Performance::factory()->create(['date' => now()->toDateString()]);
@@ -163,11 +163,11 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Dashboard')
-                // The staging playing tonight is still ahead; yesterday's is not.
+                // The performance playing tonight is still ahead; yesterday's is not.
                 ->where('upcoming.performances', 3));
     }
 
-    public function test_dashboard_names_the_next_staging_still_to_come(): void
+    public function test_dashboard_names_the_next_performance_still_to_come(): void
     {
         $team = Team::factory()->create(['name' => 'Märold']);
         $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
@@ -188,7 +188,7 @@ class DashboardTest extends TestCase
                 ->where('upcoming.next.date', now()->addDays(3)->toDateString()));
     }
 
-    public function test_dashboard_reports_no_next_staging_when_none_is_ahead(): void
+    public function test_dashboard_reports_no_next_performance_when_none_is_ahead(): void
     {
         Performance::factory()->past()->create();
 
@@ -201,12 +201,12 @@ class DashboardTest extends TestCase
                 ->where('upcoming.next', null));
     }
 
-    public function test_dashboard_counts_the_upcoming_stagings_without_a_handed_in_plan(): void
+    public function test_dashboard_counts_the_upcoming_performances_without_a_handed_in_plan(): void
     {
         $covered = Performance::factory()->create(['date' => now()->addWeek()->toDateString()]);
         TechnicalPlan::factory()->submitted()->create(['performance_id' => $covered->id]);
 
-        // A draft is nobody's plan yet, so its staging still counts as missing.
+        // A draft is nobody's plan yet, so its performance still counts as missing.
         $drafted = Performance::factory()->create(['date' => now()->addWeek()->toDateString()]);
         TechnicalPlan::factory()->create([
             'status' => TechnicalPlanStatus::Draft,
@@ -215,7 +215,7 @@ class DashboardTest extends TestCase
 
         Performance::factory()->create(['date' => now()->addWeek()->toDateString()]);
 
-        // Nothing can be done about a staging that has already been played.
+        // Nothing can be done about a performance that has already been played.
         Performance::factory()->past()->create();
 
         $this->actingAs(User::factory()->create())

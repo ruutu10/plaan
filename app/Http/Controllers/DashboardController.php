@@ -22,7 +22,7 @@ class DashboardController extends Controller
 
     /**
      * The statuses a performance counts as covered by: a draft is nobody's
-     * plan yet, and an archived one belongs to a staging that has been and
+     * plan yet, and an archived one belongs to a performance that has been and
      * gone.
      *
      * @var array<int, TechnicalPlanStatus>
@@ -69,7 +69,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * What is still to be played, house-wide: how many stagings are ahead, the
+     * What is still to be played, house-wide: how many performances are ahead, the
      * next one of them, and how many of them nobody has handed a plan in for.
      *
      * @return array{
@@ -102,7 +102,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * The stagings from today on. A performance is dated to the day, so the one
+     * The performances from today on. A performance is dated to the day, so the one
      * playing tonight is still ahead.
      *
      * @return Builder<Performance>

@@ -57,7 +57,7 @@ defineOptions({
                         class="font-r10-body text-[11px] font-bold tracking-[0.12em] text-r10-navy uppercase"
                     >
                         <th class="px-5 py-3.5">Etendus</th>
-                        <th class="px-5 py-3.5">Trupp</th>
+                        <th class="px-5 py-3.5">Tiim</th>
                         <th class="px-5 py-3.5">Kuupäev</th>
                         <th class="px-5 py-3.5">Esitaja</th>
                         <th class="px-5 py-3.5">Staatus</th>

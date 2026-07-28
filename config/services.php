@@ -43,4 +43,19 @@ return [
         'max_tokens' => 10000,
     ],
 
+    /*
+    | The Planka board the season is planned on. Every card in the watched
+    | lists describes one evening; the import reads their descriptions. The
+    | token is a Planka API key, sent in the `X-Api-Key` header.
+    */
+    'planka' => [
+        'url' => env('PLANKA_URL'),
+        'list_ids' => env('PLANKA_LIST_IDS'),
+        'token' => env('PLANKA_ACCESS_TOKEN'),
+
+        // Cards carrying any of these board labels are not performances and
+        // are passed over without being read.
+        'excluded_labels' => ['TÖÖTUBA'],
+    ],
+
 ];

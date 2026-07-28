@@ -3,6 +3,9 @@
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MagicLoginController;
+use App\Http\Controllers\PerformanceController;
+use App\Http\Controllers\ShowController;
+use App\Http\Controllers\ShowPageController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Controllers\TechnicalPlanController;
 use App\Http\Middleware\EnsureTeamMembership;
@@ -56,6 +59,40 @@ Route::prefix('api/tehnikaplaan')
                 Route::post('ai-review', [TechnicalPlanController::class, 'aiReview'])->name('ai')->middleware('throttle:15,10');
                 Route::get('plans/{plan:token}', [TechnicalPlanController::class, 'show'])->name('show');
                 Route::post('plans/{plan:token}/copy', [TechnicalPlanController::class, 'copy'])->name('copy');
+            });
+    });
+
+// Inertia-rendered show-management pages. Each is a shell: what it lists and
+// what it saves travels over the JSON API below, so the browser is served by
+// the same endpoints as any other client.
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('shows', [ShowPageController::class, 'index'])->name('shows.index');
+    Route::get('shows/{show}/edit', [ShowPageController::class, 'edit'])->name('shows.edit');
+});
+
+// JSON API for show management. A user reaches the shows of the groups they
+// belong to and no others; holders of App\Models\Show::EDIT_ALL_PERMISSION
+// reach every show in the house.
+Route::prefix('api/shows')
+    ->name('api.shows.')
+    ->middleware(['auth', 'verified', 'throttle:200,1'])
+    ->group(function () {
+        Route::get('/', [ShowController::class, 'index'])->name('index');
+        Route::post('/', [ShowController::class, 'store'])->name('store');
+        Route::get('{show}', [ShowController::class, 'show'])->name('show');
+        Route::patch('{show}', [ShowController::class, 'update'])->name('update');
+        Route::delete('{show}', [ShowController::class, 'destroy'])->name('destroy');
+
+        // A show's dated performances. Scoped bindings tie the performance to the show
+        // in the URL, so one show's id can never reach another's performance.
+        Route::prefix('{show}/performances')
+            ->name('performances.')
+            ->scopeBindings()
+            ->group(function () {
+                Route::get('/', [PerformanceController::class, 'index'])->name('index');
+                Route::post('/', [PerformanceController::class, 'store'])->name('store');
+                Route::patch('{performance}', [PerformanceController::class, 'update'])->name('update');
+                Route::delete('{performance}', [PerformanceController::class, 'destroy'])->name('destroy');
             });
     });
 

@@ -19,7 +19,7 @@ Neid tagasisides eraldi kommenteerima ei pea.
 Need väljad on kasutaja saadetud JSON objektis. Kui viitad mõnele väljale, siis kasuta selle inimloetavat nime, mitte JSON võtit.
 
 - **meta** — üldinfo. Siin on põimitud kaks asja: **lavastus** (püsiv kontseptsioon, mida mängitakse korduvalt) ja **etendus** (üks konkreetne mängukord).
-  - Lavastuse omad: `performer` (esineja/trupp, kellele lavastus kuulub), `showName` (lavastuse nimi), `description` (vabakirjeldus). Need on kõigil sama lavastuse mängukordadel ühesugused — kirjeldus peab seega kirjeldama lavastust üldiselt, mitte ühte õhtut.
+  - Lavastuse omad: `performer` (esineja/tiim, kellele lavastus kuulub), `showName` (lavastuse nimi), `description` (vabakirjeldus). Need on kõigil sama lavastuse mängukordadel ühesugused — kirjeldus peab seega kirjeldama lavastust üldiselt, mitte ühte õhtut.
   - Etenduse omad: `showDate` (selle mängukorra kuupäev), `duration` (selle mängukorra kestus minutites) — need võivad mängukordade vahel erineda.
   - `performanceId` — registreeritud etenduse sisemine id või `null`, kui esineja koostab plaani etendusele, mida nimekirjas veel pole.
 - **sound** — heli üldvajadused:

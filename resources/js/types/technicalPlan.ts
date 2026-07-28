@@ -46,7 +46,7 @@ export interface PlanMeta {
 export interface PriorPlan {
     /** Token of a past submitted plan that can seed a new one. */
     token: string;
-    /** Human label distinguishing the plan (the past staging's date). */
+    /** Human label distinguishing the plan (the past performance's date). */
     label: string;
     /** Who handed the plan in, when that was not the user themselves. */
     author: string | null;
@@ -59,7 +59,7 @@ export interface UpcomingPerformance {
     showDate: string;
     duration: number | null;
     description: string;
-    /** Plans handed in for other stagings of the same show, by the user or their teams. */
+    /** Plans handed in for other performances of the same show, by the user or their teams. */
     priorPlans: PriorPlan[];
 }
 
@@ -115,7 +115,7 @@ export interface AdminPlanRow {
     token: string;
     showName: string | null;
     teamName: string | null;
-    /** ISO date (YYYY-MM-DD) of the staging, if the plan names one. */
+    /** ISO date (YYYY-MM-DD) of the performance, if the plan names one. */
     performanceDate: string | null;
     submittedBy: string | null;
     submittedByEmail: string | null;

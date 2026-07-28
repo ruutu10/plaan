@@ -8,7 +8,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * A past plan for the same show offered as the basis for a new one, labelled by
- * the date of the staging it was written for. A plan handed in by a team-mate
+ * the date of the performance it was written for. A plan handed in by a team-mate
  * also names its author — the plan being taken over is somebody else's work.
  * Only serialised nested inside an {@see UpcomingPerformance}.
  *

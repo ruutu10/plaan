@@ -4,17 +4,21 @@ namespace App\Models;
 
 use Database\Factories\ShowFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
  * The show as a concept: what it is called and what it is about. A show is
- * staged one or more times, and every staging is a {@see Performance} with its
- * own date. The team owning the show owns its performances by implication.
+ * played one or more times, and every {@see Performance} is one of those times,
+ * with its own date. The team owning the show owns its performances by
+ * implication.
  *
  * @property int $id
  * @property int|null $team_id
@@ -22,8 +26,10 @@ use Illuminate\Support\Carbon;
  * @property string|null $description
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property-read Team|null $team
  * @property-read Collection<int, Performance> $performances
+ * @property-read int|null $performances_count
  */
 #[Fillable([
     'team_id',
@@ -33,7 +39,73 @@ use Illuminate\Support\Carbon;
 class Show extends Model
 {
     /** @use HasFactory<ShowFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
+
+    /**
+     * Bootstrap the model and its traits.
+     */
+    protected static function booted(): void
+    {
+        // A show put aside takes its performances with it, so nothing is left
+        // pointing at a show the rest of the app no longer sees. A hard delete
+        // needs no help — the database cascades that one itself.
+        static::deleting(function (Show $show): void {
+            if (! $show->isForceDeleting()) {
+                $show->performances()->delete();
+            }
+        });
+    }
+
+    /**
+     * The permission — held by the "technician" role — that opens every show in
+     * the house to its holder, not just the ones their own groups staged.
+     */
+    public const EDIT_ALL_PERMISSION = 'shows.edit_all';
+
+    /**
+     * Limit the query to the shows the given user may see and edit: the ones
+     * owned by a team they belong to. Holders of {@see EDIT_ALL_PERMISSION} are
+     * not limited at all — shows without an owning team included, as those are
+     * reachable no other way.
+     *
+     * @param  Builder<Show>  $query
+     */
+    #[Scope]
+    protected function editableBy(Builder $query, User $user): void
+    {
+        if ($user->can(self::EDIT_ALL_PERMISSION)) {
+            return;
+        }
+
+        $query->whereIn('team_id', $user->teams()->pluck('teams.id'));
+    }
+
+    /**
+     * Determine whether the user may edit this show — see {@see editableBy()}.
+     */
+    public function isEditableBy(User $user): bool
+    {
+        return static::query()
+            ->whereKey($this->getKey())
+            ->editableBy($user)
+            ->exists();
+    }
+
+    /**
+     * The teams the given user may hand a show to: the ones they belong to, or
+     * every group in the house for the holders of {@see EDIT_ALL_PERMISSION}.
+     * A show is never moved somewhere its editor cannot follow it.
+     *
+     * @return Collection<int, Team>
+     */
+    public static function assignableTeams(User $user): Collection
+    {
+        $teams = $user->can(self::EDIT_ALL_PERMISSION)
+            ? Team::query()
+            : $user->teams();
+
+        return $teams->orderByRaw('LOWER(teams.name)')->get();
+    }
 
     /**
      * The performing group (team) whose show this is.
@@ -46,7 +118,7 @@ class Show extends Model
     }
 
     /**
-     * The dated stagings of this show.
+     * The dated performances of this show.
      *
      * @return HasMany<Performance, $this>
      */

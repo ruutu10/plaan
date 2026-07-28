@@ -373,7 +373,7 @@ class TechnicalPlanTest extends TestCase
         $response->assertJsonMissing(['showName' => 'Möödunud etendus']);
     }
 
-    public function test_every_upcoming_staging_of_a_show_is_listed_separately(): void
+    public function test_every_upcoming_performance_of_a_show_is_listed_separately(): void
     {
         // The picker lists performances, not shows: a show staged twice is two
         // rows, told apart by their dates, each carrying the show's own details.
@@ -415,7 +415,7 @@ class TechnicalPlanTest extends TestCase
         TechnicalPlan::factory()->for($this->user)->create([ // unsubmitted draft, same show
             'performance_id' => Performance::factory()->for($show)->past()->create(),
         ]);
-        TechnicalPlan::factory()->for($this->user)->for($upcoming)->submitted()->create(); // their own, for this very staging
+        TechnicalPlan::factory()->for($this->user)->for($upcoming)->submitted()->create(); // their own, for this very performance
 
         $response = $this->getJson(route('technical-plan.performances'));
 
@@ -457,7 +457,7 @@ class TechnicalPlanTest extends TestCase
         $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
         $teamMate = User::factory()->create(['name' => 'Kadri Kolleeg']);
 
-        // The team's upcoming staging, and its plan for an earlier one — handed
+        // The team's upcoming performance, and its plan for an earlier one — handed
         // in by somebody else in the group, so the user can take it over.
         $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Talveetendus']);
         $upcoming = Performance::factory()->for($show)->create(['date' => now()->addWeek()->toDateString()]);
@@ -489,7 +489,7 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame($upcoming->id, $response->json('results.0.id'));
     }
 
-    public function test_a_team_mates_plan_for_the_upcoming_staging_can_be_taken_over(): void
+    public function test_a_team_mates_plan_for_the_upcoming_performance_can_be_taken_over(): void
     {
         $team = Team::factory()->create();
         $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
@@ -524,7 +524,7 @@ class TechnicalPlanTest extends TestCase
         $response->assertJsonCount(1, 'results');
         $response->assertJsonFragment(['token' => $plan->token]);
 
-        // Each row is labelled by its show and staging, with the submission date.
+        // Each row is labelled by its show and performance, with the submission date.
         $row = $response->json('results.0');
         $this->assertSame('Esitatud plaan — '.$performance->show->team->name, $row['title']);
         $this->assertSame(
@@ -1236,7 +1236,7 @@ class TechnicalPlanTest extends TestCase
     }
 
     /**
-     * An upcoming staging of a show put on by a team the signed-in user is a
+     * An upcoming performance of a show put on by a team the signed-in user is a
      * member of — the setting in which a plan is somebody else's but still the
      * user's to see.
      */
