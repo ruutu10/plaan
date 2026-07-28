@@ -6,6 +6,7 @@ import {
     LayoutGrid,
     ListPlus,
     Theater,
+    Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
@@ -23,6 +24,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as adminTeams } from '@/routes/admin/teams';
 import { index as shows } from '@/routes/shows';
 import { index as technicalPlan } from '@/routes/technical-plan';
 import { index as technicalPlans } from '@/routes/technical-plans';
@@ -60,6 +62,17 @@ const mainNavItems = computed<NavItem[]>(() => [
                   title: 'Saadetud plaanid',
                   href: technicalPlans().url,
                   icon: ClipboardList,
+              },
+          ]
+        : []),
+    // Likewise the group overview: everybody keeps their own teams straight
+    // under Seaded, the crew keeps the whole house's.
+    ...(page.props.auth?.can?.manageAllTeams
+        ? [
+              {
+                  title: 'Tiimid',
+                  href: adminTeams().url,
+                  icon: Users,
               },
           ]
         : []),

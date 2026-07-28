@@ -6,6 +6,12 @@ use App\Enums\TeamPermission;
 use App\Models\Team;
 use App\Models\User;
 
+/**
+ * Who may touch a team. Ordinarily the answer comes from the role the user
+ * holds inside that team, but a technician holding
+ * {@see Team::EDIT_ALL_PERMISSION} keeps every group in the house straight and
+ * is answered yes wherever a team's own admin would be.
+ */
 class TeamPolicy
 {
     /**
@@ -21,7 +27,7 @@ class TeamPolicy
      */
     public function view(User $user, Team $team): bool
     {
-        return $user->belongsToTeam($team);
+        return $team->isEditableBy($user);
     }
 
     /**
@@ -37,7 +43,7 @@ class TeamPolicy
      */
     public function update(User $user, Team $team): bool
     {
-        return $user->hasTeamPermission($team, TeamPermission::UpdateTeam);
+        return $this->hasTeamPermission($user, $team, TeamPermission::UpdateTeam);
     }
 
     /**
@@ -55,7 +61,7 @@ class TeamPolicy
      */
     public function addMember(User $user, Team $team): bool
     {
-        return $user->hasTeamPermission($team, TeamPermission::AddMember);
+        return $this->hasTeamPermission($user, $team, TeamPermission::AddMember);
     }
 
     /**
@@ -63,7 +69,7 @@ class TeamPolicy
      */
     public function updateMember(User $user, Team $team): bool
     {
-        return $user->hasTeamPermission($team, TeamPermission::UpdateMember);
+        return $this->hasTeamPermission($user, $team, TeamPermission::UpdateMember);
     }
 
     /**
@@ -71,7 +77,7 @@ class TeamPolicy
      */
     public function removeMember(User $user, Team $team): bool
     {
-        return $user->hasTeamPermission($team, TeamPermission::RemoveMember);
+        return $this->hasTeamPermission($user, $team, TeamPermission::RemoveMember);
     }
 
     /**
@@ -79,7 +85,7 @@ class TeamPolicy
      */
     public function inviteMember(User $user, Team $team): bool
     {
-        return $user->hasTeamPermission($team, TeamPermission::CreateInvitation);
+        return $this->hasTeamPermission($user, $team, TeamPermission::CreateInvitation);
     }
 
     /**
@@ -87,14 +93,26 @@ class TeamPolicy
      */
     public function cancelInvitation(User $user, Team $team): bool
     {
-        return $user->hasTeamPermission($team, TeamPermission::CancelInvitation);
+        return $this->hasTeamPermission($user, $team, TeamPermission::CancelInvitation);
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Determine whether the user can delete the model. A personal team is the
+     * one team nobody may delete: it is the home a user is put back into when
+     * the groups they joined go away.
      */
     public function delete(User $user, Team $team): bool
     {
-        return ! $team->is_personal && $user->hasTeamPermission($team, TeamPermission::DeleteTeam);
+        return ! $team->is_personal && $this->hasTeamPermission($user, $team, TeamPermission::DeleteTeam);
+    }
+
+    /**
+     * Determine whether the user holds the given right on the team, either
+     * through their role in it or through the house-wide permission.
+     */
+    private function hasTeamPermission(User $user, Team $team, TeamPermission $permission): bool
+    {
+        return $user->hasTeamPermission($team, $permission)
+            || $user->can(Team::EDIT_ALL_PERMISSION);
     }
 }

@@ -55,3 +55,55 @@ export type RoleOption = {
     value: TeamRole;
     label: string;
 };
+
+/** One team as the management screens list and edit it. */
+export interface ManagedTeam {
+    id: number;
+    name: string;
+    slug: string;
+    isPersonal: boolean;
+    /** How many people belong to the team; only the listing counts them. */
+    memberCount: number | null;
+    /** How much the team has staged; only the listing counts it. */
+    showCount: number | null;
+    /** The people themselves, which only the edit page reads. */
+    members?: ManagedTeamMember[];
+}
+
+/** One person in a team, as the management screen lists them. */
+export interface ManagedTeamMember {
+    id: number;
+    name: string;
+    email: string;
+    role: TeamRole;
+    roleLabel: string;
+    /** The owner is the one member nobody may demote or take out. */
+    isOwner: boolean;
+}
+
+/** What the reader may write on a team, as the management screen is told. */
+export interface ManagedTeamPermissions {
+    canUpdate: boolean;
+    canAddMember: boolean;
+    canUpdateMember: boolean;
+    canRemoveMember: boolean;
+}
+
+/** The fields a team is written through, and what the server refused. */
+export interface ManagedTeamFormData {
+    name: string;
+}
+
+export type ManagedTeamFieldErrors = Partial<
+    Record<keyof ManagedTeamFormData, string>
+>;
+
+/** The fields a new member is added through. */
+export interface AddTeamMemberFormData {
+    email: string;
+    role: TeamRole;
+}
+
+export type AddTeamMemberFieldErrors = Partial<
+    Record<keyof AddTeamMemberFormData, string>
+>;
