@@ -4,32 +4,11 @@
     client support; the logo is embedded via CID so it renders without an
     external request.
 
-    Mirrors the wizard's final review page, so the mail and the printout the
-    performer sees carry the same document.
+    The document itself comes in already rendered as `$doc`, by the same rules
+    the wizard's review page and the printout use — see
+    App\Http\Resources\PlanDocument. Nothing here decides how a value reads.
 --}}
 @php
-    /** A value the plan may have left empty, shown as an em dash. */
-    $dash = fn ($value): string => trim((string) $value) !== '' ? trim((string) $value) : '—';
-
-    /** A "yes/no" answer plus its free-text detail, on one line. */
-    $answer = fn (string $mode, string $detail): string => $mode === 'yes'
-        ? 'Jah'.(trim($detail) !== '' ? ' — '.trim($detail) : '')
-        : 'Ei';
-
-    $smoke = match ($plan['equipment']['smoke']) {
-        'no' => 'Ei tohi',
-        'yes' => 'Jah',
-        default => 'Jah, kuid minimaalselt',
-    };
-
-    $suggestions = ($plan['equipment']['suggestions'] === 'yes' ? 'Jah' : 'Ei')
-        .(trim($plan['equipment']['suggestNote']) !== '' ? ' — '.trim($plan['equipment']['suggestNote']) : '');
-
-    $equipmentItems = array_filter(
-        $plan['equipment']['items'],
-        fn (array $item): bool => trim($item['name']) !== '' || trim($item['use']) !== '',
-    );
-
     $cell = 'border:1px solid #dce0e7; padding:8px 11px; vertical-align:top; font-size:14px; line-height:1.5; color:#3d4557;';
     $labelCell = $cell.' width:34%; background-color:#f2f4f7; font-weight:700; color:#0c0f16;';
     $headCell = 'border:1px solid #11234f; background-color:#11234f; padding:7px 10px; text-align:left; font-size:12px; font-weight:700; color:#ffffff;';
@@ -47,7 +26,7 @@
 <body style="margin:0; padding:0; background-color:#f7f8fa; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%;">
     {{-- Preheader (hidden preview text) --}}
     <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:#f7f8fa; font-size:1px; line-height:1px;">
-        {{ $dash($plan['meta']['showName']) }} · tehnikaplaan on esitatud.
+        {{ $doc['showName'] }} · tehnikaplaan on esitatud.
     </div>
 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f7f8fa;">
@@ -77,7 +56,7 @@
                     <tr>
                         <td style="padding:34px 40px 32px 40px; font-family:'Roboto','Helvetica Neue',Arial,sans-serif; color:#3d4557;">
                             <h1 style="margin:0 0 16px 0; font-family:'Futura','Century Gothic','Roboto',Arial,sans-serif; font-size:24px; line-height:1.15; font-weight:700; letter-spacing:0.01em; text-transform:uppercase; color:#0c0f16;">
-                                {{ $dash($plan['meta']['showName']) }}
+                                {{ $doc['showName'] }}
                             </h1>
 
                             @if ($isAuthor)
@@ -90,7 +69,7 @@
                                 <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6;">
                                     Esineja esitas uue tehnikaplaani. Allpool on plaan tervikuna;
                                     küsimustega saab pöörduda plaani koostaja poole aadressil
-                                    <a href="mailto:{{ $contactEmail }}" style="{{ $link }}">{{ $dash($contactEmail) }}</a>.
+                                    <a href="mailto:{{ $contactEmail }}" style="{{ $link }}">{{ $doc['contact'] }}</a>.
                                 </p>
                             @endif
 
@@ -105,7 +84,7 @@
                                             <a href="{{ $publicUrl }}" target="_blank" style="{{ $link }}">{{ $publicUrl }}</a>
                                         </p>
                                         <p style="margin:8px 0 0 0; font-size:12px; line-height:1.6; color:#6b7386;">
-                                            Plaani võti: <strong style="color:#3d4557;">{{ $plan['token'] }}</strong>
+                                            Plaani võti: <strong style="color:#3d4557;">{{ $doc['token'] }}</strong>
                                         </p>
                                     </td>
                                 </tr>
@@ -115,23 +94,23 @@
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
                                 <tr>
                                     <td style="{{ $labelCell }}">Esineja</td>
-                                    <td style="{{ $cell }}">{{ $dash($plan['meta']['performer']) }}</td>
+                                    <td style="{{ $cell }}">{{ $doc['performer'] }}</td>
                                 </tr>
                                 <tr>
                                     <td style="{{ $labelCell }}">Kontakt</td>
-                                    <td style="{{ $cell }}">{{ $dash($contactEmail) }}</td>
+                                    <td style="{{ $cell }}">{{ $doc['contact'] }}</td>
                                 </tr>
                                 <tr>
                                     <td style="{{ $labelCell }}">Kuupäev</td>
-                                    <td style="{{ $cell }}">{{ $dash($plan['meta']['showDate']) }}</td>
+                                    <td style="{{ $cell }}">{{ $doc['showDate'] }}</td>
                                 </tr>
                                 <tr>
                                     <td style="{{ $labelCell }}">Kestus</td>
-                                    <td style="{{ $cell }}">{{ $plan['meta']['duration'] ? $plan['meta']['duration'].' min' : '—' }}</td>
+                                    <td style="{{ $cell }}">{{ $doc['durationLabel'] }}</td>
                                 </tr>
                                 <tr>
                                     <td style="{{ $labelCell }}">Lühikirjeldus</td>
-                                    <td style="{{ $cell }} white-space:pre-line;">{{ $dash($plan['meta']['description']) }}</td>
+                                    <td style="{{ $cell }} white-space:pre-line;">{{ $doc['description'] }}</td>
                                 </tr>
                             </table>
 
@@ -139,11 +118,11 @@
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
                                 <tr>
                                     <td style="{{ $labelCell }}">Mikrofonid</td>
-                                    <td style="{{ $cell }} white-space:pre-line;">{{ $answer($plan['sound']['micsMode'], $plan['sound']['micsDetail']) }}</td>
+                                    <td style="{{ $cell }} white-space:pre-line;">{{ $doc['micsSummary'] }}</td>
                                 </tr>
                                 <tr>
                                     <td style="{{ $labelCell }}">Oma muusik</td>
-                                    <td style="{{ $cell }} white-space:pre-line;">{{ $answer($plan['sound']['musicianMode'], $plan['sound']['musicianDetail']) }}</td>
+                                    <td style="{{ $cell }} white-space:pre-line;">{{ $doc['musicianSummary'] }}</td>
                                 </tr>
                             </table>
 
@@ -156,60 +135,60 @@
                                     <th style="{{ $headCell }}">Heli</th>
                                     <th style="{{ $headCell }}">Märkmed</th>
                                 </tr>
-                                @foreach ($plan['scenes'] as $index => $scene)
+                                @foreach ($doc['scenes'] as $scene)
                                     <tr>
-                                        <td style="{{ $cell }} text-align:center; font-weight:700; color:#11234f;">{{ $index + 1 }}</td>
-                                        <td style="{{ $cell }} font-weight:700; word-break:break-word;">{{ $dash($scene['name']) }}</td>
-                                        <td style="{{ $cell }} word-break:break-word; white-space:pre-line;">{{ $dash($scene['light']) }}</td>
+                                        <td style="{{ $cell }} text-align:center; font-weight:700; color:#11234f;">{{ $scene['num'] }}</td>
+                                        <td style="{{ $cell }} font-weight:700; word-break:break-word;">{{ $scene['name'] }}</td>
+                                        <td style="{{ $cell }} word-break:break-word; white-space:pre-line;">{{ $scene['light'] }}</td>
                                         <td style="{{ $cell }} word-break:break-word;">
                                             {{-- The uploaded file gets its own line so it stays clickable. --}}
                                             @if ($scene['soundFile'])
                                                 <a href="{{ $scene['soundFile']['url'] }}" style="{{ $link }}">{{ $scene['soundFile']['name'] }}</a>
-                                                ({{ \Illuminate\Support\Number::fileSize($scene['soundFile']['size'], precision: 1) }})<br>
+                                                ({{ $scene['soundFile']['sizeLabel'] }})<br>
                                             @endif
                                             @if ($scene['soundUrl'])
                                                 <a href="{{ $scene['soundUrl'] }}" style="{{ $link }}">{{ $scene['soundUrl'] }}</a><br>
                                             @endif
-                                            <span style="white-space:pre-line;">{{ $scene['sound'] !== '' || (! $scene['soundFile'] && ! $scene['soundUrl']) ? $dash($scene['sound']) : '' }}</span>
+                                            <span style="white-space:pre-line;">{{ $scene['soundText'] }}</span>
                                         </td>
-                                        <td style="{{ $cell }} word-break:break-word; white-space:pre-line;">{{ $dash($scene['notes']) }}</td>
+                                        <td style="{{ $cell }} word-break:break-word; white-space:pre-line;">{{ $scene['notes'] }}</td>
                                     </tr>
                                 @endforeach
                             </table>
 
                             <div style="{{ $sectionTitle }}">Erivahendid &amp; load</div>
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
-                                @foreach ($equipmentItems as $item)
+                                @foreach ($doc['equipmentItems'] as $item)
                                     <tr>
-                                        <td style="{{ $labelCell }}">{{ $dash($item['name']) }}</td>
-                                        <td style="{{ $cell }}">{{ $dash($item['use']) }}</td>
+                                        <td style="{{ $labelCell }}">{{ $item['name'] }}</td>
+                                        <td style="{{ $cell }}">{{ $item['use'] }}</td>
                                     </tr>
                                 @endforeach
                                 <tr>
                                     <td style="{{ $labelCell }}">Suitsuefektid</td>
-                                    <td style="{{ $cell }}">{{ $smoke }}</td>
+                                    <td style="{{ $cell }}">{{ $doc['smokeSummary'] }}</td>
                                 </tr>
                                 <tr>
                                     <td style="{{ $labelCell }}">Tehniku pakkumised</td>
-                                    <td style="{{ $cell }} white-space:pre-line;">{{ $suggestions }}</td>
+                                    <td style="{{ $cell }} white-space:pre-line;">{{ $doc['suggestionsLine'] }}</td>
                                 </tr>
                             </table>
 
                             <div style="{{ $sectionTitle }}">Lisainfo</div>
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
                                 <tr>
-                                    <td style="{{ $cell }} white-space:pre-line;">{{ $dash($plan['extra']['notes']) }}</td>
+                                    <td style="{{ $cell }} white-space:pre-line;">{{ $doc['notes'] }}</td>
                                 </tr>
                             </table>
 
-                            @if ($plan['extra']['files'])
+                            @if ($doc['files'])
                                 <p style="margin:14px 0 6px 0; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#11234f;">
                                     Manused
                                 </p>
-                                @foreach ($plan['extra']['files'] as $file)
+                                @foreach ($doc['files'] as $file)
                                     <p style="margin:0 0 5px 0; font-size:13px; line-height:1.5; word-break:break-all;">
                                         <a href="{{ $file['url'] }}" style="{{ $link }}">{{ $file['name'] }}</a>
-                                        <span style="color:#6b7386;">({{ \Illuminate\Support\Number::fileSize($file['size'], precision: 1) }})</span>
+                                        <span style="color:#6b7386;">({{ $file['sizeLabel'] }})</span>
                                     </p>
                                 @endforeach
                             @endif

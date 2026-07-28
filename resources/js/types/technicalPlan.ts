@@ -93,6 +93,50 @@ export interface Plan {
     extra: PlanExtra;
 }
 
+/**
+ * A plan rendered as the document the reader sees: every value already turned
+ * into its final string. Produced by `presentPlan()` for the review page, the
+ * printout and the technician's playback view, and by `App\Http\Resources\
+ * PlanDocument` for the mail. The two shapes are held together by
+ * `tests/fixtures/plan-document.json`.
+ */
+export interface PlanDocumentScene {
+    num: number;
+    name: string;
+    light: string;
+    soundFile: PlanDocumentFile | null;
+    soundUrl: string;
+    /** Empty when the file or the link already says it; an em dash when there is no sound at all. */
+    soundText: string;
+    notes: string;
+}
+
+export interface PlanDocumentFile {
+    name: string;
+    sizeLabel: string;
+    url?: string | null;
+    downloadUrl?: string | null;
+}
+
+export interface PlanDocument {
+    token: string | null;
+    statusLabel: string;
+    showName: string;
+    performer: string;
+    contact: string;
+    showDate: string;
+    durationLabel: string;
+    description: string;
+    micsSummary: string;
+    musicianSummary: string;
+    scenes: PlanDocumentScene[];
+    equipmentItems: { name: string; use: string }[];
+    smokeSummary: string;
+    suggestionsLine: string;
+    notes: string;
+    files: PlanDocumentFile[];
+}
+
 export interface WizardConfig {
     deadlineHours: number;
     techEmail: string;

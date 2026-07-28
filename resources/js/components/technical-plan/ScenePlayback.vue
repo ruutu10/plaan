@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import Diamond from './Diamond.vue';
 import { formatFileSize, playableAudio } from './plan';
 import { usePlan } from './planKey';
+import { normaliseScenes } from './presentPlan';
 import SceneAudio from './SceneAudio.vue';
 
 const plan = usePlan();
@@ -12,19 +13,16 @@ const emit = defineEmits<{ close: [] }>();
 
 /**
  * Scenes keep the numbering the review table and the printout use, so a cue
- * called out as "stseen 4" is the fourth row everywhere.
+ * called out as "stseen 4" is the fourth row everywhere — hence the shared
+ * `normaliseScenes()`. The wording stays this view's own: a blank cue is left
+ * blank here rather than stood in with an em dash, because this is what the
+ * technician reads off during the show.
  */
 const scenes = computed(() =>
-    plan.scenes.map((scene, index) => ({
-        num: index + 1,
-        name: scene.name.trim(),
-        light: scene.light.trim(),
-        soundUrl: scene.soundUrl.trim(),
-        soundFile: scene.soundFile?.status === 'ready' ? scene.soundFile : null,
-        sound: scene.sound.trim(),
-        notes: scene.notes.trim(),
+    normaliseScenes(plan).map((scene, index) => ({
+        ...scene,
         // Null for sound that only exists behind a link no player can read.
-        audio: playableAudio(scene),
+        audio: playableAudio(plan.scenes[index]),
     })),
 );
 

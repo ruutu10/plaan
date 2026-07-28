@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Http\Resources\PlanDocument;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Models\TechnicalPlan;
 use App\Models\User;
@@ -43,12 +44,18 @@ class TechnicalPlanSubmitted extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $contactEmail = $this->plan->user?->email;
+
         return (new MailMessage)
             ->subject('Tehnikaplaan · '.$this->planLabel())
             ->view('emails.technical-plan-submitted', [
-                'plan' => TechnicalPlanResource::make($this->plan)->resolve(),
+                // The document the wizard's review page and the printout show,
+                // rendered by the same rules — see App\Http\Resources\PlanDocument.
+                'doc' => PlanDocument::make(TechnicalPlanResource::make($this->plan)->resolve())
+                    ->withContact($contactEmail)
+                    ->resolve(),
                 'publicUrl' => route('technical-plan.public', $this->plan),
-                'contactEmail' => $this->plan->user?->email,
+                'contactEmail' => $contactEmail,
                 'isAuthor' => $notifiable instanceof User && $notifiable->is($this->plan->user),
             ]);
     }

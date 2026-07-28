@@ -172,20 +172,31 @@ export function applyPlanContent(plan: Plan, source: Partial<Plan>): void {
     plan.extra = hydrated.extra;
 }
 
+/**
+ * A file size the browser and the mail render identically. Mirrors
+ * `PlanDocument::fileSize()`, which deliberately avoids Laravel's
+ * locale-formatted `Number::fileSize()` — the two are pinned together by
+ * `tests/fixtures/plan-document.json`.
+ */
 export function formatFileSize(bytes: number | null | undefined): string {
     if (bytes == null) {
         return '';
     }
 
     if (bytes < 1024) {
-        return bytes + ' B';
+        return `${bytes} B`;
     }
 
-    if (bytes < 1024 * 1024) {
-        return (bytes / 1024).toFixed(0) + ' KB';
+    const units = ['KB', 'MB', 'GB', 'TB'];
+    let size = bytes / 1024;
+    let unit = 0;
+
+    while (size >= 1024 && unit < units.length - 1) {
+        size /= 1024;
+        unit++;
     }
 
-    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    return `${size.toFixed(1)} ${units[unit]}`;
 }
 
 /**

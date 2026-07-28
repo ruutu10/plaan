@@ -1220,7 +1220,11 @@ class TechnicalPlanTest extends TestCase
 
         $handle = $this->uploadHandle('tehnikaplaan.pdf');
         $sound = $this->soundHandle('avamuusika.mp3');
-        $performance = Performance::factory()->for(Show::factory()->state(['name' => 'Festival 2026']))->create();
+        // The mail names the performance the plan is attached to, not the meta
+        // the wizard posted, so the duration it prints is this one.
+        $performance = Performance::factory()
+            ->for(Show::factory()->state(['name' => 'Festival 2026']))
+            ->create(['duration' => 25]);
 
         $this->postJson(route('technical-plan.store'), $this->validPayload([
             'submit' => true,
@@ -1249,6 +1253,16 @@ class TechnicalPlanTest extends TestCase
         $this->assertStringContainsString('Suitsumasin', $html);
         $this->assertStringContainsString('Palun jälgida ajakava.', $html);
         $this->assertStringContainsString('tehnikaplaan.pdf', $html);
+
+        // The values the mail shares with the wizard's review page and the
+        // printout are rendered by App\Http\Resources\PlanDocument, so the mail
+        // is asserted on the presented wording rather than the stored value —
+        // see tests/Feature/PlanDocumentTest.php for the rules themselves.
+        $this->assertStringContainsString('Jah — 2 käsimikrofoni', $html);
+        $this->assertStringContainsString('25 min', $html);
+        // Smoke is allowed and the musician question was answered "no".
+        $this->assertStringContainsString('>Jah</td>', $html);
+        $this->assertStringContainsString('>Ei</td>', $html);
     }
 
     /**
