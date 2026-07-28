@@ -115,6 +115,24 @@ export function statusLabel(status: string | null | undefined): string {
     return STATUS_LABELS[status ?? ''] ?? STATUS_LABELS.draft;
 }
 
+/**
+ * How much a status should stand out in a listing: a plan waiting to be picked
+ * up is the one worth noticing, a draft or an archived one is not. Keyed to
+ * {@see R10Pill}'s tones, so every screen shows a status the same way.
+ */
+export function statusTone(
+    status: string | null | undefined,
+): 'muted' | 'neutral' | 'accent' | 'navy' {
+    const tones = {
+        draft: 'neutral',
+        submitted: 'accent',
+        received: 'navy',
+        archived: 'muted',
+    } as const;
+
+    return tones[(status ?? '') as keyof typeof tones] ?? 'neutral';
+}
+
 /** A handle the wizard has finished uploading — the only kind worth showing. */
 function isReady(file: PlanFile | null | undefined): file is PlanFile {
     return (

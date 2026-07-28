@@ -1,3 +1,4 @@
+import { jsonHeaders } from '@/lib/http';
 import type { PlanFile, WizardConfig } from '@/types/technicalPlan';
 import { formatFileSize } from './plan';
 
@@ -8,18 +9,8 @@ import { formatFileSize } from './plan';
  * talks to the same endpoints in the same way.
  */
 
-function csrfToken(): string {
-    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-
-    return match ? decodeURIComponent(match[1]) : '';
-}
-
 function headers(): Record<string, string> {
-    return {
-        Accept: 'application/json',
-        'X-XSRF-TOKEN': csrfToken(),
-        'X-Requested-With': 'XMLHttpRequest',
-    };
+    return jsonHeaders(true);
 }
 
 /** The `accept` attribute for a file input limited to these extensions. */

@@ -5,6 +5,8 @@ withDefaults(
         hint?: string;
         placeholder?: string;
         minHeight?: string;
+        /** Validation message for this field, shown beneath it. */
+        error?: string;
         modelValue: string;
     }>(),
     {
@@ -38,5 +40,8 @@ defineEmits<{ 'update:modelValue': [value: string] }>();
                 )
             "
         ></textarea>
+        <span v-if="error" class="text-xs font-medium text-r10-orange-700">
+            {{ error }}
+        </span>
     </label>
 </template>

@@ -1,30 +1,21 @@
 <script setup lang="ts">
 import { useHttp } from '@inertiajs/vue3';
-import { computed, watch } from 'vue';
+import { computed } from 'vue';
 import { toast } from 'vue-sonner';
-import R10Button from '@/components/technical-plan/R10Button.vue';
+import R10FormDialog from '@/components/technical-plan/R10FormDialog.vue';
 import R10Input from '@/components/technical-plan/R10Input.vue';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { store, update } from '@/routes/api/shows/performances';
 import type { Performance } from '@/types';
 
 /**
- * Adds a performance to a show, or corrects one — the two differ only in where the
- * form is posted and what it starts from, so one dialog serves both.
+ * Adds a performance to a show, or corrects one — the two differ only in where
+ * the form is posted and what it starts from, so one dialog serves both.
  */
-type Props = {
+const props = defineProps<{
     showId: number;
     /** The performance being corrected, or null when a new one is being added. */
     performance: Performance | null;
-};
-
-const props = defineProps<Props>();
+}>();
 
 const emit = defineEmits<{ saved: [] }>();
 
@@ -44,20 +35,18 @@ const form = useHttp({
 
 const isEditing = computed(() => props.performance !== null);
 
-// Fill the form as the dialog opens, so it never shows the previous performance's
-// values for a beat before the right ones land.
-watch(open, (isOpen) => {
-    if (!isOpen) {
-        return;
-    }
-
+/**
+ * Fill the form as the dialog opens, so it never shows the previous
+ * performance's values for a beat before the right ones land.
+ */
+function fill(): void {
     form.clearErrors();
     form.date = props.performance?.date ?? '';
     form.duration = props.performance?.duration?.toString() ?? '';
     // A performance added here is vouched for by the adding; only an imported
     // one starts out waiting to be reviewed.
     form.is_draft = props.performance?.isDraft ?? false;
-});
+}
 
 async function save(): Promise<void> {
     const target = props.performance
@@ -84,102 +73,62 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-    <Dialog :open="open" @update:open="open = $event">
-        <DialogContent class="bg-r10-paper font-r10-body text-r10-grey-700">
-            <form class="flex flex-col gap-6" @submit.prevent="save">
-                <DialogHeader>
-                    <DialogTitle
-                        class="font-r10-display text-xl font-bold tracking-[0.02em] text-r10-ink uppercase"
-                    >
-                        {{ isEditing ? 'Muuda etendust' : 'Uus etendus' }}
-                    </DialogTitle>
-                    <DialogDescription class="text-[15px] text-r10-grey-500">
-                        Etendus on lavastuse üks kuupäevaga mängukord.
-                    </DialogDescription>
-                </DialogHeader>
+    <R10FormDialog
+        v-model:open="open"
+        :title="isEditing ? 'Muuda etendust' : 'Uus etendus'"
+        description="Etendus on lavastuse üks kuupäevaga mängukord."
+        submit-label="Salvesta"
+        :processing="form.processing"
+        test-id-prefix="performance"
+        @opened="fill"
+        @submit="save"
+    >
+        <R10Input
+            v-model="form.date"
+            type="date"
+            label="Kuupäev"
+            required
+            :error="form.errors.date"
+        />
 
-                <div class="flex flex-col gap-1.5">
-                    <R10Input
-                        v-model="form.date"
-                        type="date"
-                        label="Kuupäev"
-                        required
-                    />
+        <R10Input
+            v-model="form.duration"
+            type="number"
+            label="Kestus (min)"
+            hint="Vabatahtlik. Etenduse eeldatav pikkus minutites."
+            placeholder="90"
+            :error="form.errors.duration"
+        />
+
+        <div class="flex flex-col gap-1.5">
+            <label
+                class="flex cursor-pointer items-start gap-3 rounded-lg border-2 border-r10-grey-200 bg-white p-4"
+            >
+                <input
+                    v-model="form.is_draft"
+                    type="checkbox"
+                    data-test="performance-draft-toggle"
+                    class="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-r10-orange"
+                />
+                <span class="flex flex-col gap-0.5">
                     <span
-                        v-if="form.errors.date"
-                        class="text-xs font-medium text-r10-orange-700"
+                        class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-ink uppercase"
                     >
-                        {{ form.errors.date }}
+                        Ülevaatamata
                     </span>
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                    <R10Input
-                        v-model="form.duration"
-                        type="number"
-                        label="Kestus (min)"
-                        hint="Vabatahtlik. Etenduse eeldatav pikkus minutites."
-                        placeholder="90"
-                    />
-                    <span
-                        v-if="form.errors.duration"
-                        class="text-xs font-medium text-r10-orange-700"
-                    >
-                        {{ form.errors.duration }}
+                    <span class="text-xs text-r10-grey-500">
+                        Ülevaatamata etendust ei pakuta tehnikaplaani
+                        koostajale. Imporditud etendused ootavad siin
+                        ülevaatamist — eemalda linnuke, kui kuupäev on õige.
                     </span>
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                    <label
-                        class="flex cursor-pointer items-start gap-3 rounded-lg border-2 border-r10-grey-200 bg-white p-4"
-                    >
-                        <input
-                            v-model="form.is_draft"
-                            type="checkbox"
-                            data-test="performance-draft-toggle"
-                            class="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-r10-orange"
-                        />
-                        <span class="flex flex-col gap-0.5">
-                            <span
-                                class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-ink uppercase"
-                            >
-                                Ülevaatamata
-                            </span>
-                            <span class="text-xs text-r10-grey-500">
-                                Ülevaatamata etendust ei pakuta tehnikaplaani
-                                koostajale. Imporditud etendused ootavad siin
-                                ülevaatamist — eemalda linnuke, kui kuupäev on
-                                õige.
-                            </span>
-                        </span>
-                    </label>
-                    <span
-                        v-if="form.errors.is_draft"
-                        class="text-xs font-medium text-r10-orange-700"
-                    >
-                        {{ form.errors.is_draft }}
-                    </span>
-                </div>
-
-                <div class="flex items-center justify-end gap-3">
-                    <R10Button
-                        variant="outline"
-                        :disabled="form.processing"
-                        data-test="performance-cancel"
-                        @click="open = false"
-                    >
-                        Loobu
-                    </R10Button>
-
-                    <R10Button
-                        type="submit"
-                        :disabled="form.processing"
-                        data-test="performance-submit"
-                    >
-                        Salvesta
-                    </R10Button>
-                </div>
-            </form>
-        </DialogContent>
-    </Dialog>
+                </span>
+            </label>
+            <span
+                v-if="form.errors.is_draft"
+                class="text-xs font-medium text-r10-orange-700"
+            >
+                {{ form.errors.is_draft }}
+            </span>
+        </div>
+    </R10FormDialog>
 </template>

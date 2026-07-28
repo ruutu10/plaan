@@ -8,6 +8,7 @@ import PlanDocument from '../PlanDocument.vue';
 import { usePlan } from '../planKey';
 import { presentPlan } from '../presentPlan';
 import R10Button from '../R10Button.vue';
+import R10Notice from '../R10Notice.vue';
 import ScenePlayback from '../ScenePlayback.vue';
 import StepHeader from '../StepHeader.vue';
 
@@ -102,42 +103,17 @@ const playbackOpen = ref(false);
             </R10Button>
         </div>
 
-        <div
-            v-if="saveError"
-            role="alert"
-            class="r10-no-print mt-4 flex items-start gap-2.5 rounded-[14px] border border-r10-orange bg-r10-orange-100 px-[18px] py-3.5"
-        >
-            <span
-                class="mt-[5px] h-2.5 w-2.5 shrink-0 rotate-45 rounded-[1px] bg-r10-error"
-            />
-            <span class="text-sm leading-normal text-r10-navy">{{
-                saveError
-            }}</span>
-        </div>
+        <R10Notice v-if="saveError" class="r10-no-print mt-4">
+            {{ saveError }}
+        </R10Notice>
 
-        <div
-            v-if="aiLoading"
-            class="r10-no-print mt-4 flex items-center gap-3 rounded-[14px] border border-r10-grey-200 bg-r10-grey-100 px-5 py-4"
-        >
-            <span
-                class="h-2.5 w-2.5 shrink-0 rotate-45 animate-[r10spin_1s_linear_infinite] rounded-[1px] bg-r10-orange"
-            />
-            <span class="text-sm text-r10-grey-700"
-                >AI vaatab praegu plaani sisu üle, oota…</span
-            >
-        </div>
+        <R10Notice v-if="aiLoading" tone="busy" class="r10-no-print mt-4">
+            AI vaatab praegu plaani sisu üle, oota…
+        </R10Notice>
 
-        <div
-            v-if="aiError"
-            class="r10-no-print mt-4 flex items-start gap-2.5 rounded-[14px] border border-r10-orange bg-r10-orange-100 px-[18px] py-3.5"
-        >
-            <span
-                class="mt-[5px] h-2.5 w-2.5 shrink-0 rotate-45 rounded-[1px] bg-r10-error"
-            />
-            <span class="text-sm leading-normal text-r10-navy">{{
-                aiError
-            }}</span>
-        </div>
+        <R10Notice v-if="aiError" class="r10-no-print mt-4">
+            {{ aiError }}
+        </R10Notice>
 
         <div
             v-if="aiResult"
@@ -168,13 +144,11 @@ const playbackOpen = ref(false);
             </div>
         </div>
 
-        <div
+        <R10Notice
             v-if="justSubmitted"
-            class="r10-no-print mt-4 flex items-start gap-3 rounded-[14px] bg-r10-navy px-5 py-4"
+            tone="success"
+            class="r10-no-print mt-4"
         >
-            <span
-                class="mt-[5px] h-2.5 w-2.5 shrink-0 rotate-45 rounded-[1px] bg-r10-orange"
-            />
             <div>
                 <div class="mb-0.5 font-r10-body text-sm font-bold text-white">
                     Plaan on esitatud tehnikutiimile.
@@ -185,7 +159,7 @@ const playbackOpen = ref(false);
                     <strong class="text-white">Esitatud</strong>.
                 </div>
             </div>
-        </div>
+        </R10Notice>
 
         <div
             v-if="publicLink"

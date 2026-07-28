@@ -10,8 +10,10 @@ import {
     validationError,
 } from '../attachments';
 import Diamond from '../Diamond.vue';
-import { blankScene, formatFileSize, nextSceneId } from '../plan';
+import { blankScene, nextSceneId } from '../plan';
 import { usePlan, useWizardConfig } from '../planKey';
+import R10Dropzone from '../R10Dropzone.vue';
+import R10FileChip from '../R10FileChip.vue';
 import R10Input from '../R10Input.vue';
 import R10Textarea from '../R10Textarea.vue';
 import RadioPills from '../RadioPills.vue';
@@ -61,10 +63,8 @@ async function setSoundMode(scene: Scene, mode: SoundMode): Promise<void> {
     }
 }
 
-async function onSoundFile(scene: Scene, event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
+async function onSoundFile(scene: Scene, files: FileList): Promise<void> {
+    const file = files[0];
 
     if (!file) {
         return;
@@ -116,18 +116,20 @@ const SOUND_PRESETS = [
     'ruutu10 tunnus 3s',
     'ruutu10 tunnus 15s',
     'film noare (vabal valikul)',
-    'shakespeare (vabal valikul)'
+    'shakespeare (vabal valikul)',
 ];
 
-
 function appendLight(scene: Scene, text: string): void {
-    scene.light = scene.light.trim() ? `${scene.light.trimEnd()}\n${text}` : text;
+    scene.light = scene.light.trim()
+        ? `${scene.light.trimEnd()}\n${text}`
+        : text;
 }
 
 function appendSound(scene: Scene, text: string): void {
-    scene.sound = scene.sound.trim() ? `${scene.sound.trimEnd()}\n${text}` : text;
+    scene.sound = scene.sound.trim()
+        ? `${scene.sound.trimEnd()}\n${text}`
+        : text;
 }
-
 
 function addScene(): void {
     plan.scenes.forEach((s) => (s.collapsed = true));
@@ -306,7 +308,7 @@ function onDrop(targetId: string): void {
                                     :key="preset"
                                     type="button"
                                     :class="[
-                                        'rounded-full border border-r10-grey-200 bg-r10-grey-100 px-3 py-1 font-r10-body text-[11px] font-bold tracking-[0.03em] text-r10-navy transition cursor-pointer hover:border-r10-orange hover:text-r10-orange',
+                                        'cursor-pointer rounded-full border border-r10-grey-200 bg-r10-grey-100 px-3 py-1 font-r10-body text-[11px] font-bold tracking-[0.03em] text-r10-navy transition hover:border-r10-orange hover:text-r10-orange',
                                     ]"
                                     @click="appendLight(scene, preset)"
                                 >
@@ -328,7 +330,9 @@ function onDrop(targetId: string): void {
                                     <strong class="font-semibold"
                                         >konkreetne</strong
                                     >
-                                    (pealkiri + esitaja) või teadlikult "juhuslik" valik (nt "vabalt valitud kurb instrumentaalne klaveripala").
+                                    (pealkiri + esitaja) või teadlikult
+                                    "juhuslik" valik (nt "vabalt valitud kurb
+                                    instrumentaalne klaveripala").
                                 </li>
                                 <li>
                                     Kui alguskoht vajab täpsust, lisa juurde
@@ -357,116 +361,20 @@ function onDrop(targetId: string): void {
                                 class="w-full rounded-lg border-2 border-r10-grey-200 bg-white px-3.5 py-2.5 font-r10-body text-[13px] text-r10-ink outline-none focus:border-r10-orange"
                             />
                             <template v-else>
-                                <label
+                                <R10Dropzone
                                     v-if="!scene.soundFile"
-                                    class="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[14px] border-2 border-dashed border-r10-navy-300 bg-r10-grey-100 px-4 py-5 text-center transition hover:border-r10-orange hover:bg-r10-orange-100"
-                                >
-                                    <Diamond :size="12" />
-                                    <span
-                                        class="font-r10-body text-sm font-bold text-r10-navy"
-                                    >
-                                        Vali helifail
-                                    </span>
-                                    <span class="text-xs text-r10-grey-500">
-                                        Üks fail stseeni kohta · lubatud:
-                                        {{ soundExtensionHint }}
-                                    </span>
-                                    <input
-                                        type="file"
-                                        class="hidden"
-                                        :accept="soundAccept"
-                                        @change="onSoundFile(scene, $event)"
-                                    />
-                                </label>
-                                <div
+                                    compact
+                                    label="Vali helifail"
+                                    :hint="`Üks fail stseeni kohta · lubatud: ${soundExtensionHint}`"
+                                    :accept="soundAccept"
+                                    @files="onSoundFile(scene, $event)"
+                                />
+                                <R10FileChip
                                     v-else
-                                    class="flex items-center gap-3 rounded-[10px] border bg-white px-3.5 py-2.5"
-                                    :class="
-                                        scene.soundFile.status === 'error'
-                                            ? 'border-r10-error'
-                                            : 'border-r10-grey-200'
-                                    "
-                                >
-                                    <span
-                                        v-if="
-                                            scene.soundFile.status ===
-                                            'uploading'
-                                        "
-                                        class="h-2 w-2 shrink-0 rotate-45 animate-[r10spin_1s_linear_infinite] rounded-[1px] bg-r10-orange"
-                                    />
-                                    <Diamond v-else :size="8" />
-                                    <span class="flex min-w-0 flex-1 flex-col">
-                                        <span
-                                            class="overflow-hidden text-sm font-medium text-ellipsis whitespace-nowrap text-r10-ink"
-                                        >
-                                            {{ scene.soundFile.name }}
-                                        </span>
-                                        <span
-                                            v-if="
-                                                scene.soundFile.status ===
-                                                    'ready' &&
-                                                scene.soundFile.url
-                                            "
-                                            class="flex items-center gap-3 text-xs"
-                                        >
-                                            <a
-                                                :href="scene.soundFile.url"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                class="font-medium text-r10-navy underline decoration-r10-navy/30 transition hover:text-r10-orange hover:decoration-r10-orange"
-                                            >
-                                                Ava uues aknas
-                                            </a>
-                                            <a
-                                                v-if="
-                                                    scene.soundFile.downloadUrl
-                                                "
-                                                :href="
-                                                    scene.soundFile.downloadUrl
-                                                "
-                                                class="font-medium text-r10-navy underline decoration-r10-navy/30 transition hover:text-r10-orange hover:decoration-r10-orange"
-                                            >
-                                                Laadi alla
-                                            </a>
-                                        </span>
-                                        <span
-                                            v-else-if="
-                                                scene.soundFile.status ===
-                                                'error'
-                                            "
-                                            class="text-xs text-r10-error"
-                                        >
-                                            {{ scene.soundFile.error }}
-                                        </span>
-                                        <span
-                                            v-else-if="
-                                                scene.soundFile.status ===
-                                                'uploading'
-                                            "
-                                            class="text-xs text-r10-grey-500"
-                                        >
-                                            Laen üles…
-                                        </span>
-                                    </span>
-                                    <span
-                                        v-if="
-                                            scene.soundFile.status !== 'error'
-                                        "
-                                        class="shrink-0 text-xs text-r10-grey-500"
-                                    >
-                                        {{
-                                            formatFileSize(scene.soundFile.size)
-                                        }}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        title="Eemalda"
-                                        class="shrink-0 cursor-pointer border-none bg-transparent text-[15px] leading-none text-r10-grey-500 transition hover:text-r10-error"
-                                        @click="removeSoundFile(scene)"
-                                    >
-                                        ✕
-                                    </button>
-                                </div>
+                                    :file="scene.soundFile"
+                                    open-label="Ava uues aknas"
+                                    @remove="removeSoundFile(scene)"
+                                />
                             </template>
                             <textarea
                                 v-model="scene.sound"
@@ -479,7 +387,7 @@ function onDrop(targetId: string): void {
                                     :key="preset"
                                     type="button"
                                     :class="[
-                                        'rounded-full border border-r10-grey-200 bg-r10-grey-100 px-3 py-1 font-r10-body text-[11px] font-bold tracking-[0.03em] text-r10-navy transition cursor-pointer hover:border-r10-orange hover:text-r10-orange',
+                                        'cursor-pointer rounded-full border border-r10-grey-200 bg-r10-grey-100 px-3 py-1 font-r10-body text-[11px] font-bold tracking-[0.03em] text-r10-navy transition hover:border-r10-orange hover:text-r10-orange',
                                     ]"
                                     @click="appendSound(scene, preset)"
                                 >

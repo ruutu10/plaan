@@ -14,6 +14,7 @@ import ShowStep from '@/components/technical-plan/steps/ShowStep.vue';
 import SoundStep from '@/components/technical-plan/steps/SoundStep.vue';
 import StandardInfoStep from '@/components/technical-plan/steps/StandardInfoStep.vue';
 import R10Layout from '@/layouts/R10Layout.vue';
+import { failureMessage, requestJson } from '@/lib/http';
 import technicalPlan from '@/routes/technical-plan';
 import type { User } from '@/types';
 import type {
@@ -67,76 +68,6 @@ const stepComponents = [
 ];
 
 const nextLabel = computed(() => (step.value === 5 ? 'Vaata üle' : 'Edasi'));
-
-/* ---- CSRF-aware JSON helpers ---------------------------------------- */
-
-function csrfToken(): string {
-    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-
-    return match ? decodeURIComponent(match[1]) : '';
-}
-
-async function requestJson(
-    url: string,
-    method: 'GET' | 'POST',
-    body?: unknown,
-): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
-    let response: globalThis.Response;
-
-    try {
-        response = await fetch(url, {
-            method,
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-XSRF-TOKEN': csrfToken(),
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: body ? JSON.stringify(body) : undefined,
-        });
-    } catch {
-        // A dropped connection must not escape as a rejected promise: every
-        // caller flips a busy flag off after awaiting, and a throw would leave
-        // the wizard stuck mid-request. Status 0 stands for "never arrived".
-        return { ok: false, status: 0, data: {} };
-    }
-
-    let data: Record<string, unknown> = {};
-
-    try {
-        data = await response.json();
-    } catch {
-        data = {};
-    }
-
-    return { ok: response.ok, status: response.status, data };
-}
-
-/**
- * Turn a failed response into something the user can act on. A dropped
- * connection and an expired session each need their own fix, and a validation
- * failure carries the field errors that say what the server refused.
- */
-function failureMessage(
-    status: number,
-    data: Record<string, unknown>,
-    fallback: string,
-): string {
-    if (status === 0) {
-        return 'Ühendus serveriga katkes. Kontrolli internetiühendust ja proovi uuesti.';
-    }
-
-    if (status === 401 || status === 419) {
-        return 'Sessioon aegus. Laadi leht uuesti ja logi sisse — plaan on siin mustandina alles.';
-    }
-
-    const message = (data.message as string) ?? fallback;
-    const errors = Object.values(
-        (data.errors as Record<string, string[]>) ?? {},
-    ).flat();
-
-    return errors.length ? `${message} ${errors.join(' ')}` : message;
-}
 
 /* ---- Plan lifecycle -------------------------------------------------- */
 

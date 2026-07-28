@@ -6,6 +6,9 @@ withDefaults(
         required?: boolean;
         type?: string;
         placeholder?: string;
+        /** Validation message for this field, shown beneath it. */
+        error?: string;
+        errorTestId?: string;
         modelValue: string | number | null;
     }>(),
     {
@@ -41,5 +44,12 @@ defineEmits<{ 'update:modelValue': [value: string] }>();
                 )
             "
         />
+        <span
+            v-if="error"
+            :data-test="errorTestId"
+            class="text-xs font-medium text-r10-orange-700"
+        >
+            {{ error }}
+        </span>
     </label>
 </template>
