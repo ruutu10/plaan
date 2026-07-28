@@ -11,21 +11,28 @@ class CreateTeam
 {
     /**
      * Create a new team and add the user as owner.
+     *
+     * @param  bool  $switch  Whether to move the user into the new team. The
+     *                        management screens start teams the user is not
+     *                        necessarily going to work in, and leave them where
+     *                        they are.
      */
-    public function handle(User $user, string $name, bool $isPersonal = false): Team
+    public function handle(User $user, string $name, bool $isPersonal = false, bool $switch = true): Team
     {
-        return DB::transaction(function () use ($user, $name, $isPersonal) {
+        return DB::transaction(function () use ($user, $name, $isPersonal, $switch) {
             $team = Team::create([
                 'name' => $name,
                 'is_personal' => $isPersonal,
             ]);
 
-            $membership = $team->memberships()->create([
+            $team->memberships()->create([
                 'user_id' => $user->id,
                 'role' => TeamRole::Owner,
             ]);
 
-            $user->switchTeam($team);
+            if ($switch) {
+                $user->switchTeam($team);
+            }
 
             return $team;
         });

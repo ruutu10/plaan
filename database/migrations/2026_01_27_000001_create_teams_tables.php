@@ -4,6 +4,12 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * The groups people work in: the team itself, who belongs to it and as what,
+ * and the invitations still out. The users table gains the team its owner is
+ * currently working in here, which is the first point at which there is a
+ * team for it to point at.
+ */
 return new class extends Migration
 {
     /**
@@ -41,6 +47,14 @@ return new class extends Migration
             $table->timestamp('accepted_at')->nullable();
             $table->timestamps();
         });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreignId('current_team_id')
+                ->nullable()
+                ->after('password')
+                ->constrained('teams')
+                ->nullOnDelete();
+        });
     }
 
     /**
@@ -48,6 +62,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('current_team_id');
+        });
+
         Schema::dropIfExists('team_invitations');
         Schema::dropIfExists('team_members');
         Schema::dropIfExists('teams');

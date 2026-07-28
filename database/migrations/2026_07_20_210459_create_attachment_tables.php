@@ -4,8 +4,16 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Files staged against anything that takes them: the media library's own table,
+ * and the stand-in a file is hung off while its form is still being filled in
+ * (see App\Concerns\HasAttachments).
+ */
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('media', function (Blueprint $table) {
@@ -28,5 +36,19 @@ return new class extends Migration
 
             $table->nullableTimestamps();
         });
+
+        Schema::create('pending_uploads', function (Blueprint $table) {
+            $table->id();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('pending_uploads');
+        Schema::dropIfExists('media');
     }
 };

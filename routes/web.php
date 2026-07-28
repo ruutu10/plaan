@@ -6,6 +6,9 @@ use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\ShowController;
 use App\Http\Controllers\ShowPageController;
+use App\Http\Controllers\Teams\TeamAdminController;
+use App\Http\Controllers\Teams\TeamAdminMemberController;
+use App\Http\Controllers\Teams\TeamAdminPageController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Controllers\TechnicalPlanController;
 use App\Http\Middleware\EnsureTeamMembership;
@@ -93,6 +96,38 @@ Route::prefix('api/shows')
                 Route::post('/', [PerformanceController::class, 'store'])->name('store');
                 Route::patch('{performance}', [PerformanceController::class, 'update'])->name('update');
                 Route::delete('{performance}', [PerformanceController::class, 'destroy'])->name('destroy');
+            });
+    });
+
+// Inertia-rendered team-management pages, shells like the show ones above.
+// These are the admin's view of the groups themselves; a user's own team
+// settings live under /settings/teams (see routes/settings.php).
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('teams', [TeamAdminPageController::class, 'index'])->name('admin.teams.index');
+    Route::get('teams/{team:id}/edit', [TeamAdminPageController::class, 'edit'])->name('admin.teams.edit');
+});
+
+// JSON API for team management. A user reaches the teams they belong to and no
+// others; holders of App\Models\Team::EDIT_ALL_PERMISSION reach every team in
+// the house. The team is bound by id rather than its slug, which follows the
+// name and would go stale the moment a team is renamed here.
+Route::prefix('api/teams')
+    ->name('api.teams.')
+    ->middleware(['auth', 'verified', 'throttle:200,1'])
+    ->group(function () {
+        Route::get('/', [TeamAdminController::class, 'index'])->name('index');
+        Route::post('/', [TeamAdminController::class, 'store'])->name('store');
+        Route::get('{team:id}', [TeamAdminController::class, 'show'])->name('show');
+        Route::patch('{team:id}', [TeamAdminController::class, 'update'])->name('update');
+        Route::delete('{team:id}', [TeamAdminController::class, 'destroy'])->name('destroy');
+
+        // Who belongs to the team, and as what.
+        Route::prefix('{team:id}/members')
+            ->name('members.')
+            ->group(function () {
+                Route::post('/', [TeamAdminMemberController::class, 'store'])->name('store');
+                Route::patch('{user}', [TeamAdminMemberController::class, 'update'])->name('update');
+                Route::delete('{user}', [TeamAdminMemberController::class, 'destroy'])->name('destroy');
             });
     });
 

@@ -4,8 +4,11 @@ namespace App\Models;
 
 use App\Concerns\GeneratesUniqueTeamSlugs;
 use App\Enums\TeamRole;
+use App\Policies\TeamPolicy;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +28,9 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, TeamInvitation> $invitations
  * @property-read Collection<int, Membership> $memberships
  * @property-read Collection<int, User> $members
+ * @property-read Collection<int, Show> $shows
+ * @property-read int|null $members_count
+ * @property-read int|null $shows_count
  */
 #[Fillable(['name', 'slug', 'is_personal'])]
 class Team extends Model
@@ -50,6 +56,42 @@ class Team extends Model
                 $team->slug = static::generateUniqueTeamSlug($team->name, $team->id);
             }
         });
+    }
+
+    /**
+     * The permission — held by the "technician" role — that opens every team in
+     * the house to its holder, not just the ones they belong to themselves.
+     */
+    public const EDIT_ALL_PERMISSION = 'teams.edit_all';
+
+    /**
+     * Limit the query to the teams the given user may see and manage: the ones
+     * they belong to. Holders of {@see EDIT_ALL_PERMISSION} are not limited at
+     * all — every team in the house is theirs to keep straight.
+     *
+     * @param  Builder<Team>  $query
+     */
+    #[Scope]
+    protected function editableBy(Builder $query, User $user): void
+    {
+        if ($user->can(self::EDIT_ALL_PERMISSION)) {
+            return;
+        }
+
+        $query->whereIn('teams.id', $user->teams()->pluck('teams.id'));
+    }
+
+    /**
+     * Determine whether the user may reach this team — see {@see editableBy()}.
+     * Reaching a team is not the same as being allowed to change it; what a
+     * member may do once there is settled by {@see TeamPolicy}.
+     */
+    public function isEditableBy(User $user): bool
+    {
+        return static::query()
+            ->whereKey($this->getKey())
+            ->editableBy($user)
+            ->exists();
     }
 
     /**
@@ -83,6 +125,16 @@ class Team extends Model
     public function memberships(): HasMany
     {
         return $this->hasMany(Membership::class);
+    }
+
+    /**
+     * The shows this team has staged.
+     *
+     * @return HasMany<Show, $this>
+     */
+    public function shows(): HasMany
+    {
+        return $this->hasMany(Show::class);
     }
 
     /**
