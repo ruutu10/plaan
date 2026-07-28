@@ -75,11 +75,11 @@ class PerformanceManagementTest extends TestCase
             ->assertJsonPath('data.duration', 90)
             ->assertJsonPath('data.technicalPlanCount', 0);
 
-        $this->assertDatabaseHas('performances', [
-            'show_id' => $show->id,
-            'date' => '2026-08-14',
-            'duration' => 90,
-        ]);
+        $performance = Performance::sole();
+
+        $this->assertSame($show->id, $performance->show_id);
+        $this->assertSame('2026-08-14', $performance->date->toDateString());
+        $this->assertSame(90, $performance->duration);
     }
 
     public function test_a_performance_may_be_added_without_a_duration(): void
@@ -148,11 +148,10 @@ class PerformanceManagementTest extends TestCase
             ->assertJsonPath('data.date', '2026-08-02')
             ->assertJsonPath('data.duration', 120);
 
-        $this->assertDatabaseHas('performances', [
-            'id' => $performance->id,
-            'date' => '2026-08-02',
-            'duration' => 120,
-        ]);
+        $performance->refresh();
+
+        $this->assertSame('2026-08-02', $performance->date->toDateString());
+        $this->assertSame(120, $performance->duration);
     }
 
     public function test_updating_another_teams_performance_is_forbidden(): void
