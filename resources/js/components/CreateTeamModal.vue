@@ -1,26 +1,23 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
+import R10Button from '@/components/technical-plan/R10Button.vue';
+import R10Input from '@/components/technical-plan/R10Input.vue';
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { store } from '@/routes/teams';
 
 const open = ref(false);
+/** Bumped to remount the form, which is how a closed dialog forgets what was typed. */
 const formKey = ref(0);
 
-function handleOpenChange(value: boolean) {
+function change(value: boolean): void {
     open.value = value;
 
     if (!value) {
@@ -30,50 +27,52 @@ function handleOpenChange(value: boolean) {
 </script>
 
 <template>
-    <Dialog :open="open" @update:open="handleOpenChange">
+    <Dialog :open="open" @update:open="change">
         <DialogTrigger as-child>
             <slot />
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent class="bg-r10-paper font-r10-body text-r10-grey-700">
             <Form
                 :key="formKey"
                 v-bind="store.form()"
-                class="space-y-6"
                 v-slot="{ errors, processing }"
+                class="flex flex-col gap-6"
                 @success="open = false"
             >
                 <DialogHeader>
-                    <DialogTitle>Create a new team</DialogTitle>
-                    <DialogDescription>
-                        Create a new team to collaborate with others.
+                    <DialogTitle
+                        class="font-r10-display text-xl font-bold tracking-[0.02em] text-r10-ink uppercase"
+                    >
+                        Uus tiim
+                    </DialogTitle>
+                    <DialogDescription class="text-[15px] text-r10-grey-500">
+                        Loo tiim, millega koos lavastusi hallata. Tiimi omanik
+                        oled sina.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div class="grid gap-2">
-                    <Label for="name">Team name</Label>
-                    <Input
-                        id="name"
-                        name="name"
-                        data-test="create-team-name"
-                        placeholder="My team"
-                        required
-                    />
-                    <InputError :message="errors.name" />
-                </div>
+                <R10Input
+                    name="name"
+                    label="Tiimi nimi"
+                    required
+                    placeholder="Minu tiim"
+                    data-test="create-team-name"
+                    :error="errors.name"
+                />
 
-                <DialogFooter class="gap-2">
-                    <DialogClose as-child>
-                        <Button variant="secondary"> Cancel </Button>
-                    </DialogClose>
+                <div class="flex items-center justify-end gap-3">
+                    <R10Button variant="outline" @click="change(false)">
+                        Loobu
+                    </R10Button>
 
-                    <Button
+                    <R10Button
                         type="submit"
                         data-test="create-team-submit"
                         :disabled="processing"
                     >
-                        Create team
-                    </Button>
-                </DialogFooter>
+                        Loo tiim
+                    </R10Button>
+                </div>
             </Form>
         </DialogContent>
     </Dialog>

@@ -1,5 +1,13 @@
 <script setup lang="ts">
-withDefaults(
+import { computed, ref } from 'vue';
+
+/**
+ * A text field wearing the R10 styling, in either of the two ways this app
+ * submits forms: bound with `v-model` for the JSON screens, or left
+ * uncontrolled with a `name` for the Inertia `<Form>` screens, which read the
+ * value off the form element itself.
+ */
+const props = withDefaults(
     defineProps<{
         label?: string;
         hint?: string;
@@ -9,7 +17,11 @@ withDefaults(
         /** Validation message for this field, shown beneath it. */
         error?: string;
         errorTestId?: string;
-        modelValue: string | number | null;
+        /** Field name, for a form submitted natively rather than bound. */
+        name?: string;
+        defaultValue?: string | number;
+        autocomplete?: string;
+        modelValue?: string | number | null;
     }>(),
     {
         type: 'text',
@@ -17,7 +29,21 @@ withDefaults(
     },
 );
 
-defineEmits<{ 'update:modelValue': [value: string] }>();
+const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
+
+/** Holds the value when nothing is bound, so typing is not undone by a render. */
+const uncontrolled = ref(props.defaultValue ?? '');
+
+const value = computed(() =>
+    props.modelValue !== undefined ? props.modelValue : uncontrolled.value,
+);
+
+function write(event: Event): void {
+    const next = (event.target as HTMLInputElement).value;
+
+    uncontrolled.value = next;
+    emit('update:modelValue', next);
+}
 </script>
 
 <template>
@@ -34,15 +60,13 @@ defineEmits<{ 'update:modelValue': [value: string] }>();
         }}</span>
         <input
             :type="type"
-            :value="modelValue"
+            :name="name"
+            :value="value"
+            :required="required"
+            :autocomplete="autocomplete"
             :placeholder="placeholder"
             class="w-full rounded-lg border-2 border-r10-grey-200 bg-white px-4 py-3 font-r10-body text-[15px] text-r10-ink outline-none focus:border-r10-orange"
-            @input="
-                $emit(
-                    'update:modelValue',
-                    ($event.target as HTMLInputElement).value,
-                )
-            "
+            @input="write"
         />
         <span
             v-if="error"

@@ -15,6 +15,8 @@ const props = withDefaults(
         options: { value: string | number; label: string }[];
         /** Shown first and unselectable, for a field with nothing chosen yet. */
         placeholder?: string;
+        /** Field name, for a form submitted natively rather than bound. */
+        name?: string;
         modelValue: string | number | null;
     }>(),
     { required: false, disabled: false },
@@ -50,6 +52,7 @@ function choose(event: Event): void {
         }}</span>
         <select
             v-bind="$attrs"
+            :name="name"
             :value="modelValue"
             :disabled="disabled"
             class="w-full rounded-lg border-2 border-r10-grey-200 bg-white px-4 py-3 font-r10-body text-[15px] text-r10-ink outline-none focus:border-r10-orange disabled:opacity-50"

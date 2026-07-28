@@ -1,45 +1,36 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
-import { ref } from 'vue';
-import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
+import { computed, ref } from 'vue';
+import R10Button from '@/components/technical-plan/R10Button.vue';
+import R10Input from '@/components/technical-plan/R10Input.vue';
+import R10Select from '@/components/technical-plan/R10Select.vue';
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { store as storeInvitation } from '@/routes/teams/invitations';
 import type { RoleOption, Team } from '@/types';
 
-type Props = {
-    team: Team;
-    availableRoles: RoleOption[];
-    open: boolean;
-};
+const props = defineProps<{ team: Team; availableRoles: RoleOption[] }>();
 
-const props = defineProps<Props>();
-const emit = defineEmits<{
-    'update:open': [value: boolean];
-}>();
+const open = defineModel<boolean>('open', { required: true });
 
-const inviteRole = ref('member');
+const inviteRole = ref<string | number>('member');
+/** Bumped to remount the form, which is how a closed dialog forgets what was typed. */
 const formKey = ref(0);
 
-function handleOpenChange(value: boolean) {
-    emit('update:open', value);
+const roleOptions = computed(() =>
+    props.availableRoles.map((role) => ({
+        value: role.value,
+        label: role.label,
+    })),
+);
+
+function change(value: boolean): void {
+    open.value = value;
 
     if (!value) {
         inviteRole.value = 'member';
@@ -49,73 +40,60 @@ function handleOpenChange(value: boolean) {
 </script>
 
 <template>
-    <Dialog :open="props.open" @update:open="handleOpenChange">
-        <DialogContent>
+    <Dialog :open="open" @update:open="change">
+        <DialogContent class="bg-r10-paper font-r10-body text-r10-grey-700">
             <Form
                 :key="formKey"
-                v-bind="storeInvitation.form(props.team.slug)"
-                class="space-y-6"
+                v-bind="storeInvitation.form(team.slug)"
                 v-slot="{ errors, processing }"
-                @success="emit('update:open', false)"
+                class="flex flex-col gap-6"
+                @success="open = false"
             >
                 <DialogHeader>
-                    <DialogTitle>Invite a team member</DialogTitle>
-                    <DialogDescription>
-                        Send an invitation to join this team.
+                    <DialogTitle
+                        class="font-r10-display text-xl font-bold tracking-[0.02em] text-r10-ink uppercase"
+                    >
+                        Kutsu liige
+                    </DialogTitle>
+                    <DialogDescription class="text-[15px] text-r10-grey-500">
+                        Saada kutse tiimiga liitumiseks. Kutse kehtib
+                        tähtajaliselt.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div class="grid gap-4">
-                    <div class="grid gap-2">
-                        <Label for="email">Email address</Label>
-                        <Input
-                            id="email"
-                            name="email"
-                            data-test="invite-email"
-                            type="email"
-                            placeholder="colleague@example.com"
-                            required
-                        />
-                        <InputError :message="errors.email" />
-                    </div>
+                <R10Input
+                    name="email"
+                    type="email"
+                    label="E-post"
+                    required
+                    placeholder="nimi@näide.ee"
+                    data-test="invite-email"
+                    :error="errors.email"
+                />
 
-                    <div class="grid gap-2">
-                        <Label for="role">Role</Label>
-                        <Select
-                            v-model="inviteRole"
-                            name="role"
-                            data-test="invite-role"
-                        >
-                            <SelectTrigger class="w-full">
-                                <SelectValue placeholder="Select a role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="role in props.availableRoles"
-                                    :key="role.value"
-                                    :value="role.value"
-                                >
-                                    {{ role.label }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <InputError :message="errors.role" />
-                    </div>
-                </div>
+                <R10Select
+                    v-model="inviteRole"
+                    name="role"
+                    label="Roll"
+                    required
+                    :options="roleOptions"
+                    :error="errors.role"
+                    data-test="invite-role"
+                />
 
-                <DialogFooter class="gap-2">
-                    <DialogClose as-child>
-                        <Button variant="secondary"> Cancel </Button>
-                    </DialogClose>
+                <div class="flex items-center justify-end gap-3">
+                    <R10Button variant="outline" @click="change(false)">
+                        Loobu
+                    </R10Button>
 
-                    <Button
+                    <R10Button
                         type="submit"
                         data-test="invite-submit"
                         :disabled="processing"
                     >
-                        Send invitation
-                    </Button>
-                </DialogFooter>
+                        Saada kutse
+                    </R10Button>
+                </div>
             </Form>
         </DialogContent>
     </Dialog>
