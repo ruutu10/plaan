@@ -43,11 +43,12 @@ class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
     use HasRoles, HasTeams {
         HasTeams::teams insteadof HasRoles;
         HasRoles::teams as spatieTeams;
     }
-    
+
     /**
      * Get the attributes that should be cast.
      *
