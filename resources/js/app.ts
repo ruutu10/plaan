@@ -4,10 +4,17 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
+import { attachSentryToVueApp, initializeSentry } from '@/lib/sentry';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
+// This must run before the app boots so early errors are captured...
+initializeSentry();
+
 createInertiaApp({
+    withApp: (app) => {
+        attachSentryToVueApp(app);
+    },
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {
