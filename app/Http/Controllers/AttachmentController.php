@@ -53,6 +53,18 @@ class AttachmentController extends Controller
         $file = $request->file('file');
 
         if ($validator->fails() || ! $file) {
+            // A rejected upload is what a user experiences as "it won't take my
+            // file"; without this the refusal leaves no trace at all.
+            Log::warning('Upload rejected', [
+                'collection' => $collection,
+                'file_name' => $file?->getClientOriginalName(),
+                'size' => $file?->getSize(),
+                'mime_type' => $file?->getClientMimeType(),
+                'errors' => $validator->errors()->messages(),
+                'user_id' => $request->user()?->id,
+                'ip' => $request->ip(),
+            ]);
+
             return response()->json([
                 'message' => 'Faili üleslaadimine ebaõnnestus.',
                 'errors' => $validator->errors(),
@@ -64,6 +76,16 @@ class AttachmentController extends Controller
         $media = $pending
             ->addMedia($file)
             ->toMediaCollection($pending->attachmentsCollection());
+
+        Log::info('Attachment staged', [
+            'uuid' => $media->uuid,
+            'media_id' => $media->id,
+            'file_name' => $media->file_name,
+            'size' => $media->size,
+            'collection' => $collection,
+            'pending_upload_id' => $pending->id,
+            'user_id' => $request->user()?->id,
+        ]);
 
         return AttachmentResource::make($media);
     }
@@ -84,7 +106,18 @@ class AttachmentController extends Controller
         $disk = Storage::disk($media->disk);
         $path = $media->getPathRelativeToRoot();
 
-        abort_unless($disk->exists($path), 404);
+        if (! $disk->exists($path)) {
+            // The row says the file is there and the disk disagrees: storage
+            // has drifted from the database, which no user action explains.
+            Log::error('Attachment is recorded but missing from disk', [
+                'uuid' => $media->uuid,
+                'media_id' => $media->id,
+                'disk' => $media->disk,
+                'path' => $path,
+            ]);
+
+            abort(404);
+        }
 
         $forceDownload = $request->boolean('download');
 
@@ -117,13 +150,32 @@ class AttachmentController extends Controller
     /**
      * Discard a staged upload that has not yet been attached to a saved model.
      */
-    public function destroy(string $uuid): JsonResponse
+    public function destroy(Request $request, string $uuid): JsonResponse
     {
         $media = Media::query()->where('uuid', $uuid)->first();
 
         if ($media && $media->model instanceof PendingUpload) {
+            Log::info('Staged attachment discarded', [
+                'uuid' => $uuid,
+                'media_id' => $media->id,
+                'file_name' => $media->file_name,
+                'user_id' => $request->user()?->id,
+            ]);
+
             $media->model->delete();
+
+            return response()->json(['ok' => true]);
         }
+
+        // The endpoint answers OK either way, so the client cannot tell a
+        // stale handle from an attempt to reach somebody else's stored file.
+        Log::warning('Discard asked for a handle that is not a staged upload', [
+            'uuid' => $uuid,
+            'found' => $media !== null,
+            'model_type' => $media?->model_type,
+            'user_id' => $request->user()?->id,
+            'ip' => $request->ip(),
+        ]);
 
         return response()->json(['ok' => true]);
     }

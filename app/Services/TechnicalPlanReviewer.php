@@ -24,6 +24,13 @@ class TechnicalPlanReviewer
     {
         $userPrompt = $this->buildUserPrompt($plan);
 
+        $startedAt = microtime(true);
+
+        Log::info('Requesting an AI review of a plan', [
+            'plan_id' => $plan->id,
+            'model' => config('services.anthropic.model'),
+        ]);
+
         $message = $this->client->messages->create(
             maxTokens: config('services.anthropic.max_tokens'),
             messages: [
@@ -45,6 +52,18 @@ class TechnicalPlanReviewer
             'userPrompt' => $userPrompt,
             'aiOutput' => $aiResponse,
         ]);
+
+        // The call is the slow, paid-for part of the request; its duration is
+        // what a report of "the review hangs" is checked against.
+        Log::info('AI review returned', [
+            'plan_id' => $plan->id,
+            'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+            'response_length' => mb_strlen($aiResponse),
+        ]);
+
+        if ($aiResponse === '') {
+            Log::warning('AI review came back empty', ['plan_id' => $plan->id]);
+        }
 
         return app(MarkdownRenderer::class)->toHtml($aiResponse);
     }

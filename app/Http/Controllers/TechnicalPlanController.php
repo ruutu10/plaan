@@ -19,6 +19,7 @@ use App\Rules\AllowedAttachment;
 use App\Services\TechnicalPlanReviewer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -86,7 +87,20 @@ class TechnicalPlanController extends Controller
      */
     public function copy(TechnicalPlan $plan, Request $request): TechnicalPlanResource
     {
-        abort_unless($plan->isVisibleTo($request->user()), 403);
+        if (! $plan->isVisibleTo($request->user())) {
+            Log::warning('Refused to copy a plan the user may not open', [
+                'plan_id' => $plan->id,
+                'user_id' => $request->user()->id,
+                'ip' => $request->ip(),
+            ]);
+
+            abort(403);
+        }
+
+        Log::info('Plan copied as the basis for a new one', [
+            'plan_id' => $plan->id,
+            'user_id' => $request->user()->id,
+        ]);
 
         return TechnicalPlanResource::make($plan)->withDuplicatedAttachments();
     }
@@ -118,7 +132,18 @@ class TechnicalPlanController extends Controller
         // that already exists is held to the same rule as opening it, and its
         // owner is settled at creation — a later save never reassigns it.
         if ($plan->exists) {
-            abort_unless($plan->isVisibleTo($user), 403);
+            if (! $plan->isVisibleTo($user)) {
+                // The token travels in a public share link, so a refusal here
+                // is somebody writing to a plan they only ever received a link
+                // to. Worth seeing.
+                Log::warning('Refused a write to a plan the user may not open', [
+                    'plan_id' => $plan->id,
+                    'user_id' => $user->id,
+                    'ip' => $request->ip(),
+                ]);
+
+                abort(403);
+            }
 
             unset($attributes['user_id']);
         }
@@ -130,10 +155,22 @@ class TechnicalPlanController extends Controller
             $attributes['status'] = TechnicalPlanStatus::Draft;
         }
 
+        $wasNew = ! $plan->exists;
+
         $plan->fill($attributes)->save();
 
         $plan->syncAttachments($data['extra']['files'] ?? []);
         $plan->syncSceneSoundFiles();
+
+        Log::info($submitting ? 'Technical plan submitted' : 'Technical plan saved as a draft', [
+            'plan_id' => $plan->id,
+            'user_id' => $user->id,
+            'performance_id' => $plan->performance_id,
+            'status' => $plan->status->value,
+            'created' => $wasNew,
+            'scenes' => count($plan->scenes),
+            'attachments' => count($data['extra']['files'] ?? []),
+        ]);
 
         // Only once the files are in place does the plan mail out complete —
         // the notification links to the plan's stored attachments.
@@ -202,6 +239,10 @@ class TechnicalPlanController extends Controller
     public function aiReview(StoreTechnicalPlanRequest $request): JsonResponse
     {
         if (blank(config('services.anthropic.key'))) {
+            Log::warning('AI review asked for while the integration is unconfigured', [
+                'user_id' => $request->user()->id,
+            ]);
+
             return response()->json([
                 'message' => 'AI ülevaatus pole seadistatud.',
             ], 422);
@@ -212,6 +253,11 @@ class TechnicalPlanController extends Controller
                 ->review($this->planFromRequest($request->validated(), $request->user()));
         } catch (\Throwable $exception) {
             report($exception);
+
+            Log::error('AI review failed', [
+                'user_id' => $request->user()->id,
+                'exception' => $exception->getMessage(),
+            ]);
 
             return response()->json([
                 'message' => 'AI ülevaatus ebaõnnestus. Proovi hetke pärast uuesti.',
@@ -236,9 +282,24 @@ class TechnicalPlanController extends Controller
         $plan->user?->notify($notification);
 
         $techEmail = (string) config('technical_plan.tech_email');
+        $notifiedTech = $techEmail !== '' && $techEmail !== $plan->user?->email;
 
-        if ($techEmail !== '' && $techEmail !== $plan->user?->email) {
+        if ($notifiedTech) {
             Notification::route('mail', $techEmail)->notify($notification);
+        }
+
+        // A submitted plan the technical team never received is the failure
+        // that costs a show, so who was mailed is recorded either way.
+        Log::info('Mailed out a submitted plan', [
+            'plan_id' => $plan->id,
+            'notified_owner' => $plan->user !== null,
+            'notified_tech' => $notifiedTech,
+        ]);
+
+        if ($techEmail === '') {
+            Log::warning('No technical contact configured; a submitted plan reached nobody but its author', [
+                'plan_id' => $plan->id,
+            ]);
         }
     }
 

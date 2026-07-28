@@ -33,10 +33,14 @@ class MagicLoginController extends Controller
 
         $magicLink = MagicLink::create($action, lifetime: 30, numMaxVisits: 4);
 
-        Log::info(
-            'Sending magic login link to user',
-            ['user' => $user->id]
-        );
+        // An unauthenticated endpoint that mails anybody who asks: the caller's
+        // origin is the part that matters when it is being leant on.
+        Log::info('Sending magic login link to user', [
+            'user' => $user->id,
+            'new_account' => $user->wasRecentlyCreated,
+            'ip' => $request->ip(),
+        ]);
+
         $user->notify(new MagicLoginLink($magicLink->url));
 
         return response()->json(['sent' => true]);

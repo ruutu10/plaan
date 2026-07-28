@@ -630,9 +630,12 @@ class TechnicalPlanTest extends TestCase
     public function test_an_attachment_can_be_streamed_by_uuid_and_is_logged(): void
     {
         Storage::fake('local');
-        Log::spy();
 
         $handle = $this->uploadHandle();
+
+        // Spying only from here: staging the file logs an entry of its own, and
+        // this test is about what streaming it records.
+        Log::spy();
 
         $response = $this->get(route('attachments.show', $handle));
 

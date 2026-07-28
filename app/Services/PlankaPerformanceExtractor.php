@@ -40,6 +40,8 @@ class PlankaPerformanceExtractor
     {
         $userPrompt = $this->buildUserPrompt($cardName, $cardDescription, $dueDate);
 
+        $startedAt = microtime(true);
+
         $message = $this->client()->messages->create(
             maxTokens: config('services.anthropic.max_tokens'),
             messages: [
@@ -67,7 +69,17 @@ class PlankaPerformanceExtractor
             'aiOutput' => $aiResponse,
         ]);
 
-        return $this->parse($aiResponse);
+        $performances = $this->parse($aiResponse);
+
+        // One line per card, so a run that reads 40 cards can be told apart
+        // from one that read 40 and understood none of them.
+        Log::info('Read a Planka card', [
+            'card' => $cardName,
+            'performances' => count($performances),
+            'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+        ]);
+
+        return $performances;
     }
 
     /**
