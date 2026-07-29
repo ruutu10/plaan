@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import R10Button from '@/components/technical-plan/R10Button.vue';
+import R10Notice from '@/components/technical-plan/R10Notice.vue';
 import TextLink from '@/components/TextLink.vue';
-import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { logout } from '@/routes';
 import { send } from '@/routes/verification';
@@ -22,23 +23,24 @@ defineProps<{
 <template>
     <Head title="Email verification" />
 
-    <div
+    <R10Notice
         v-if="status === 'verification-link-sent'"
-        class="mb-4 text-center text-sm font-medium text-green-600"
+        tone="success"
+        class="mb-4"
     >
         A new verification link has been sent to the email address you provided
         during registration.
-    </div>
+    </R10Notice>
 
     <Form
         v-bind="send.form()"
         class="space-y-6 text-center"
         v-slot="{ processing }"
     >
-        <Button :disabled="processing" variant="secondary">
+        <R10Button type="submit" variant="outline" :disabled="processing">
             <Spinner v-if="processing" />
             Resend verification email
-        </Button>
+        </R10Button>
 
         <TextLink :href="logout()" as="button" class="mx-auto block text-sm">
             Log out

@@ -2,14 +2,12 @@
 import { Form, Head } from '@inertiajs/vue3';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import Heading from '@/components/Heading.vue';
-import InputError from '@/components/InputError.vue';
 import type { Props as ManagePasskeysProps } from '@/components/ManagePasskeys.vue';
 import ManagePasskeys from '@/components/ManagePasskeys.vue';
 import type { Props as ManageTwoFactorProps } from '@/components/ManageTwoFactor.vue';
 import ManageTwoFactor from '@/components/ManageTwoFactor.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import R10Button from '@/components/technical-plan/R10Button.vue';
 import { edit } from '@/routes/security';
 
 type Props = {
@@ -57,51 +55,43 @@ defineOptions({
             class="space-y-6"
             v-slot="{ errors, processing }"
         >
-            <div class="grid gap-2">
-                <Label for="current_password">Current password</Label>
-                <PasswordInput
-                    id="current_password"
-                    name="current_password"
-                    class="mt-1 block w-full"
-                    autocomplete="current-password"
-                    placeholder="Current password"
-                />
-                <InputError :message="errors.current_password" />
-            </div>
+            <PasswordInput
+                id="current_password"
+                name="current_password"
+                label="Current password"
+                autocomplete="current-password"
+                placeholder="Current password"
+                :error="errors.current_password"
+            />
 
-            <div class="grid gap-2">
-                <Label for="password">New password</Label>
-                <PasswordInput
-                    id="password"
-                    name="password"
-                    class="mt-1 block w-full"
-                    autocomplete="new-password"
-                    placeholder="New password"
-                    :passwordrules="props.passwordRules"
-                />
-                <InputError :message="errors.password" />
-            </div>
+            <PasswordInput
+                id="password"
+                name="password"
+                label="New password"
+                autocomplete="new-password"
+                placeholder="New password"
+                :passwordrules="props.passwordRules"
+                :error="errors.password"
+            />
 
-            <div class="grid gap-2">
-                <Label for="password_confirmation">Confirm password</Label>
-                <PasswordInput
-                    id="password_confirmation"
-                    name="password_confirmation"
-                    class="mt-1 block w-full"
-                    autocomplete="new-password"
-                    placeholder="Confirm password"
-                    :passwordrules="props.passwordRules"
-                />
-                <InputError :message="errors.password_confirmation" />
-            </div>
+            <PasswordInput
+                id="password_confirmation"
+                name="password_confirmation"
+                label="Confirm password"
+                autocomplete="new-password"
+                placeholder="Confirm password"
+                :passwordrules="props.passwordRules"
+                :error="errors.password_confirmation"
+            />
 
             <div class="flex items-center gap-4">
-                <Button
+                <R10Button
+                    type="submit"
                     :disabled="processing"
                     data-test="update-password-button"
                 >
                     Save
-                </Button>
+                </R10Button>
             </div>
         </Form>
     </div>

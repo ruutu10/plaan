@@ -3,7 +3,7 @@ import { Form } from '@inertiajs/vue3';
 import { Eye, EyeOff, LockKeyhole, RefreshCw } from '@lucide/vue';
 import { nextTick, onMounted, ref, useTemplateRef } from 'vue';
 import AlertError from '@/components/AlertError.vue';
-import { Button } from '@/components/ui/button';
+import R10Button from '@/components/technical-plan/R10Button.vue';
 import {
     Card,
     CardContent,
@@ -53,14 +53,14 @@ onMounted(async () => {
             <div
                 class="flex flex-col gap-3 select-none sm:flex-row sm:items-center sm:justify-between"
             >
-                <Button @click="toggleRecoveryCodesVisibility" class="w-fit">
+                <R10Button @click="toggleRecoveryCodesVisibility" class="w-fit">
                     <component
                         :is="isRecoveryCodesVisible ? EyeOff : Eye"
                         class="size-4"
                     />
                     {{ isRecoveryCodesVisible ? 'Hide' : 'View' }} recovery
                     codes
-                </Button>
+                </R10Button>
 
                 <Form
                     v-if="isRecoveryCodesVisible && recoveryCodesList.length"
@@ -70,13 +70,13 @@ onMounted(async () => {
                     @success="fetchRecoveryCodes"
                     #default="{ processing }"
                 >
-                    <Button
-                        variant="secondary"
+                    <R10Button
+                        variant="outline"
                         type="submit"
                         :disabled="processing"
                     >
-                        <RefreshCw /> Regenerate codes
-                    </Button>
+                        <RefreshCw class="size-4" /> Regenerate codes
+                    </R10Button>
                 </Form>
             </div>
             <div

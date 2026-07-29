@@ -3,9 +3,9 @@ import { Form } from '@inertiajs/vue3';
 import { ShieldCheck } from '@lucide/vue';
 import { onUnmounted, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
+import R10Button from '@/components/technical-plan/R10Button.vue';
 import TwoFactorRecoveryCodes from '@/components/TwoFactorRecoveryCodes.vue';
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal.vue';
-import { Button } from '@/components/ui/button';
 import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
 import { disable, enable } from '@/routes/two-factor';
 
@@ -46,18 +46,18 @@ onUnmounted(() => clearTwoFactorAuthData());
             </p>
 
             <div>
-                <Button v-if="hasSetupData" @click="showSetupModal = true">
-                    <ShieldCheck />Continue setup
-                </Button>
+                <R10Button v-if="hasSetupData" @click="showSetupModal = true">
+                    <ShieldCheck class="h-4 w-4" />Continue setup
+                </R10Button>
                 <Form
                     v-else
                     v-bind="enable.form()"
                     @success="showSetupModal = true"
                     #default="{ processing }"
                 >
-                    <Button type="submit" :disabled="processing">
+                    <R10Button type="submit" :disabled="processing">
                         Enable 2FA
-                    </Button>
+                    </R10Button>
                 </Form>
             </div>
         </div>
@@ -71,13 +71,13 @@ onUnmounted(() => clearTwoFactorAuthData());
 
             <div class="relative inline">
                 <Form v-bind="disable.form()" #default="{ processing }">
-                    <Button
-                        variant="destructive"
+                    <R10Button
+                        variant="danger"
                         type="submit"
                         :disabled="processing"
                     >
                         Disable 2FA
-                    </Button>
+                    </R10Button>
                 </Form>
             </div>
 

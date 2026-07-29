@@ -2,8 +2,8 @@
 import { Form, Head, setLayoutProps } from '@inertiajs/vue3';
 import { computed, ref, watchEffect } from 'vue';
 import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import R10Button from '@/components/technical-plan/R10Button.vue';
+import R10Input from '@/components/technical-plan/R10Input.vue';
 import {
     InputOTP,
     InputOTPGroup,
@@ -82,14 +82,19 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
                     </div>
                     <InputError :message="errors.code" />
                 </div>
-                <Button type="submit" class="w-full" :disabled="processing"
-                    >Continue</Button
+                <R10Button
+                    type="submit"
+                    size="lg"
+                    class="w-full"
+                    :disabled="processing"
                 >
-                <div class="text-center text-sm text-muted-foreground">
+                    Continue
+                </R10Button>
+                <div class="text-center text-sm text-r10-grey-500">
                     <span>or you can </span>
                     <button
                         type="button"
-                        class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                        class="cursor-pointer font-medium text-r10-orange underline underline-offset-4 transition-colors hover:text-r10-orange-700"
                         @click="() => toggleRecoveryMode(clearErrors)"
                     >
                         {{ authConfigContent.buttonText }}
@@ -105,23 +110,29 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
                 reset-on-error
                 #default="{ errors, processing, clearErrors }"
             >
-                <Input
+                <R10Input
                     name="recovery_code"
                     type="text"
+                    label="Recovery code"
                     placeholder="Enter recovery code"
                     :autofocus="showRecoveryInput"
                     required
+                    :error="errors.recovery_code"
                 />
-                <InputError :message="errors.recovery_code" />
-                <Button type="submit" class="w-full" :disabled="processing"
-                    >Continue</Button
+                <R10Button
+                    type="submit"
+                    size="lg"
+                    class="w-full"
+                    :disabled="processing"
                 >
+                    Continue
+                </R10Button>
 
-                <div class="text-center text-sm text-muted-foreground">
+                <div class="text-center text-sm text-r10-grey-500">
                     <span>or you can </span>
                     <button
                         type="button"
-                        class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                        class="cursor-pointer font-medium text-r10-orange underline underline-offset-4 transition-colors hover:text-r10-orange-700"
                         @click="() => toggleRecoveryMode(clearErrors)"
                     >
                         {{ authConfigContent.buttonText }}

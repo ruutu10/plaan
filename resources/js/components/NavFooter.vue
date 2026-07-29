@@ -24,10 +24,10 @@ defineProps<Props>();
         <SidebarGroupContent>
             <SidebarMenu>
                 <SidebarMenuItem v-for="item in items" :key="item.title">
-                    <SidebarMenuButton
-                        class="text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-neutral-100"
-                        as-child
-                    >
+                    <!-- The sidebar is navy in both themes, so these secondary
+                         links dim with opacity rather than a `dark:` variant.
+                         Hover back to full white comes from the button itself. -->
+                    <SidebarMenuButton class="text-white/70" as-child>
                         <a
                             :href="toUrl(item.href)"
                             target="_blank"

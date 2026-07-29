@@ -8,14 +8,10 @@ import {
 } from '@lucide/vue';
 import { computed } from 'vue';
 import PendingInvitationsModal from '@/components/PendingInvitationsModal.vue';
-import { Badge } from '@/components/ui/badge';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { statusTone } from '@/components/technical-plan/presentPlan';
+import R10Button from '@/components/technical-plan/R10Button.vue';
+import R10Page from '@/components/technical-plan/R10Page.vue';
+import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import { formatEstonianDate } from '@/lib/date';
 import { dashboard } from '@/routes';
 import type { DashboardInvitation, Team } from '@/types';
@@ -35,16 +31,6 @@ const page = usePage();
 const canViewAllPlans = computed(
     () => page.props.auth?.can?.viewAllTechnicalPlans === true,
 );
-
-/** The badge each plan status is shown as, keyed by its backing value. */
-const statusVariants: Record<string, 'default' | 'secondary' | 'outline'> = {
-    submitted: 'default',
-    received: 'secondary',
-};
-
-function statusVariant(status: string): 'default' | 'secondary' | 'outline' {
-    return statusVariants[status] ?? 'outline';
-}
 
 defineOptions({
     layout: (layoutProps: { currentTeam?: Team | null }) => ({
@@ -68,42 +54,46 @@ defineOptions({
         :invitations="pendingInvitations"
     />
 
-    <div
-        class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-    >
+    <R10Page>
         <div class="grid auto-rows-min gap-4 md:grid-cols-3">
-            <Card data-test="widget-upcoming-performances">
-                <CardHeader>
-                    <CardDescription
-                        class="flex items-center gap-2 text-xs font-medium tracking-wide uppercase"
-                    >
-                        <CalendarDays class="h-4 w-4" />
-                        Tulevased etendused
-                    </CardDescription>
-                    <CardTitle class="text-4xl tabular-nums">
-                        {{ upcoming.performances }}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent class="text-sm text-muted-foreground">
+            <div
+                data-test="widget-upcoming-performances"
+                class="rounded-[22px] border border-r10-grey-200 bg-white p-[26px]"
+            >
+                <div
+                    class="flex items-center gap-2 font-r10-body text-xs font-bold tracking-[0.12em] text-r10-grey-500 uppercase"
+                >
+                    <CalendarDays class="h-4 w-4" />
+                    Tulevased etendused
+                </div>
+                <div
+                    class="mt-2 font-r10-display text-4xl font-bold text-r10-ink tabular-nums"
+                >
+                    {{ upcoming.performances }}
+                </div>
+                <p class="mt-3 text-sm text-r10-grey-500">
                     Etendused, mis on veel ees.
-                </CardContent>
-            </Card>
+                </p>
+            </div>
 
-            <Card data-test="widget-next-performance">
-                <CardHeader>
-                    <CardDescription
-                        class="flex items-center gap-2 text-xs font-medium tracking-wide uppercase"
-                    >
-                        <CalendarClock class="h-4 w-4" />
-                        Järgmine etendus
-                    </CardDescription>
-                    <CardTitle class="text-4xl tabular-nums">
-                        {{ formatEstonianDate(upcoming.next?.date) }}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent class="text-sm text-muted-foreground">
+            <div
+                data-test="widget-next-performance"
+                class="rounded-[22px] border border-r10-grey-200 bg-white p-[26px]"
+            >
+                <div
+                    class="flex items-center gap-2 font-r10-body text-xs font-bold tracking-[0.12em] text-r10-grey-500 uppercase"
+                >
+                    <CalendarClock class="h-4 w-4" />
+                    Järgmine etendus
+                </div>
+                <div
+                    class="mt-2 font-r10-display text-4xl font-bold text-r10-ink tabular-nums"
+                >
+                    {{ formatEstonianDate(upcoming.next?.date) }}
+                </div>
+                <div class="mt-3 text-sm text-r10-grey-500">
                     <template v-if="upcoming.next">
-                        <span class="block font-medium text-foreground">
+                        <span class="block font-bold text-r10-ink">
                             {{ upcoming.next.showName }}
                         </span>
                         <span v-if="upcoming.next.teamName" class="block">
@@ -111,95 +101,108 @@ defineOptions({
                         </span>
                     </template>
                     <template v-else> Ühtegi etendust pole plaanis. </template>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
 
-            <Card data-test="widget-missing-plans">
-                <CardHeader>
-                    <CardDescription
-                        class="flex items-center gap-2 text-xs font-medium tracking-wide uppercase"
-                    >
-                        <FileWarning class="h-4 w-4" />
-                        Puuduvad tehnikaplaanid
-                    </CardDescription>
-                    <CardTitle
-                        :class="[
-                            'text-4xl tabular-nums',
-                            upcoming.missingPlans > 0 ? 'text-destructive' : '',
-                        ]"
-                    >
-                        {{ upcoming.missingPlans }}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent class="text-sm text-muted-foreground">
+            <div
+                data-test="widget-missing-plans"
+                class="rounded-[22px] border border-r10-grey-200 bg-white p-[26px]"
+            >
+                <div
+                    class="flex items-center gap-2 font-r10-body text-xs font-bold tracking-[0.12em] text-r10-grey-500 uppercase"
+                >
+                    <FileWarning class="h-4 w-4" />
+                    Puuduvad tehnikaplaanid
+                </div>
+                <div
+                    :class="[
+                        'mt-2 font-r10-display text-4xl font-bold tabular-nums',
+                        upcoming.missingPlans > 0
+                            ? 'text-r10-error'
+                            : 'text-r10-ink',
+                    ]"
+                >
+                    {{ upcoming.missingPlans }}
+                </div>
+                <p class="mt-3 text-sm text-r10-grey-500">
                     Tulevased etendused, millele pole plaani esitatud.
-                </CardContent>
-            </Card>
+                </p>
+            </div>
         </div>
 
-        <Card v-if="canViewAllPlans" data-test="widget-latest-plans">
-            <CardHeader>
-                <CardTitle>Viimati esitatud tehnikaplaanid</CardTitle>
-                <CardDescription>
-                    Uuemad ees — ava plaan uues aknas.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <ol
-                    v-if="latestPlans.length > 0"
-                    class="relative space-y-6 border-l border-border pl-6"
-                >
-                    <li
-                        v-for="plan in latestPlans"
-                        :key="plan.token"
-                        data-test="latest-plan"
-                        class="relative"
-                    >
-                        <span
-                            class="absolute top-1.5 -left-[1.8125rem] h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-background"
-                        />
-                        <div
-                            class="flex flex-wrap items-start justify-between gap-2"
-                        >
-                            <div>
-                                <span
-                                    class="text-xs text-muted-foreground tabular-nums"
-                                >
-                                    {{ formatEstonianDate(plan.submittedAt) }}
-                                </span>
-                                <span class="block font-medium">
-                                    {{ plan.showName ?? 'Nimeta plaan' }}
-                                </span>
-                                <span class="text-sm text-muted-foreground">
-                                    {{ plan.teamName ?? '—' }}
-                                    <template v-if="plan.submittedBy">
-                                        · {{ plan.submittedBy }}
-                                    </template>
-                                </span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <Badge :variant="statusVariant(plan.status)">
-                                    {{ plan.statusLabel }}
-                                </Badge>
-                                <a
-                                    :href="plan.url"
-                                    target="_blank"
-                                    rel="noopener"
-                                    data-test="latest-plan-link"
-                                    class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition hover:bg-accent hover:text-accent-foreground"
-                                >
-                                    Ava
-                                    <ExternalLink class="h-3.5 w-3.5" />
-                                </a>
-                            </div>
-                        </div>
-                    </li>
-                </ol>
+        <div
+            v-if="canViewAllPlans"
+            data-test="widget-latest-plans"
+            class="mt-4 rounded-[22px] border border-r10-grey-200 bg-white p-[26px]"
+        >
+            <h2
+                class="font-r10-display text-lg font-bold tracking-[0.03em] text-r10-navy uppercase"
+            >
+                Viimati esitatud tehnikaplaanid
+            </h2>
+            <p class="mt-1 text-sm text-r10-grey-500">
+                Uuemad ees — ava plaan uues aknas.
+            </p>
 
-                <p v-else class="text-sm text-muted-foreground">
-                    Ühtegi tehnilist plaani pole veel esitatud.
-                </p>
-            </CardContent>
-        </Card>
-    </div>
+            <ol
+                v-if="latestPlans.length > 0"
+                class="relative mt-6 space-y-6 border-l border-r10-grey-200 pl-6"
+            >
+                <li
+                    v-for="plan in latestPlans"
+                    :key="plan.token"
+                    data-test="latest-plan"
+                    class="relative"
+                >
+                    <span
+                        class="absolute top-1.5 -left-[1.8125rem] h-2.5 w-2.5 rotate-45 rounded-[1px] bg-r10-orange ring-4 ring-white"
+                    />
+                    <div
+                        class="flex flex-wrap items-start justify-between gap-2"
+                    >
+                        <div>
+                            <span
+                                class="text-xs text-r10-grey-500 tabular-nums"
+                            >
+                                {{ formatEstonianDate(plan.submittedAt) }}
+                            </span>
+                            <span
+                                class="block font-r10-display text-base font-semibold text-r10-ink"
+                            >
+                                {{ plan.showName ?? 'Nimeta plaan' }}
+                            </span>
+                            <span class="text-sm text-r10-grey-500">
+                                {{ plan.teamName ?? '—' }}
+                                <template v-if="plan.submittedBy">
+                                    · {{ plan.submittedBy }}
+                                </template>
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <R10Pill :tone="statusTone(plan.status)" size="md">
+                                {{ plan.statusLabel }}
+                            </R10Pill>
+                            <R10Button
+                                variant="outline"
+                                size="sm"
+                                external
+                                :href="plan.url"
+                                target="_blank"
+                                rel="noopener"
+                                data-test="latest-plan-link"
+                                class="px-4 py-2"
+                            >
+                                Ava
+                                <ExternalLink class="h-3.5 w-3.5" />
+                            </R10Button>
+                        </div>
+                    </div>
+                </li>
+            </ol>
+
+            <p v-else class="mt-6 text-sm text-r10-grey-500">
+                Ühtegi tehnilist plaani pole veel esitatud.
+            </p>
+        </div>
+    </R10Page>
 </template>

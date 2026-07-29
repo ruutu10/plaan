@@ -1,16 +1,8 @@
 <script setup lang="ts">
 import { KeyRound, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
+import R10Button from '@/components/technical-plan/R10Button.vue';
+import R10Dialog from '@/components/technical-plan/R10Dialog.vue';
 import type { Passkey } from '@/types/auth';
 
 const props = defineProps<{
@@ -22,6 +14,7 @@ const emit = defineEmits<{
 }>();
 
 const isDeleting = ref(false);
+const confirmOpen = ref(false);
 
 const handleDelete = () => {
     isDeleting.value = true;
@@ -59,37 +52,34 @@ const handleDelete = () => {
             </div>
         </div>
 
-        <Dialog>
-            <DialogTrigger as-child>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    class="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                >
-                    <Trash2 class="h-4 w-4" />
-                    <span class="sr-only">Remove</span>
-                </Button>
-            </DialogTrigger>
+        <button
+            type="button"
+            title="Remove passkey"
+            class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-grey-200 bg-white p-2 text-r10-grey-500 transition hover:border-r10-error hover:text-r10-error"
+            @click="confirmOpen = true"
+        >
+            <Trash2 class="h-3.5 w-3.5" />
+            <span class="sr-only">Remove</span>
+        </button>
 
-            <DialogContent>
-                <DialogTitle>Remove passkey</DialogTitle>
-                <DialogDescription>
-                    Are you sure you want to remove the "{{ passkey.name }}"
-                    passkey? You will no longer be able to use it to sign in.
-                </DialogDescription>
-                <DialogFooter class="gap-2">
-                    <DialogClose as-child>
-                        <Button variant="secondary">Cancel</Button>
-                    </DialogClose>
-                    <Button
-                        variant="destructive"
-                        :disabled="isDeleting"
-                        @click="handleDelete"
-                    >
-                        {{ isDeleting ? 'Removing...' : 'Remove passkey' }}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <R10Dialog v-model:open="confirmOpen" title="Remove passkey">
+            <template #description>
+                Are you sure you want to remove the "{{ passkey.name }}"
+                passkey? You will no longer be able to use it to sign in.
+            </template>
+
+            <template #actions>
+                <R10Button variant="outline" @click="confirmOpen = false">
+                    Cancel
+                </R10Button>
+                <R10Button
+                    variant="danger"
+                    :disabled="isDeleting"
+                    @click="handleDelete"
+                >
+                    {{ isDeleting ? 'Removing...' : 'Remove passkey' }}
+                </R10Button>
+            </template>
+        </R10Dialog>
     </div>
 </template>

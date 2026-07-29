@@ -7,6 +7,9 @@ import { computed, ref } from 'vue';
  * uncontrolled with a `name` for the Inertia `<Form>` screens, which read the
  * value off the form element itself.
  */
+/** Extra attributes belong on the field itself, not on the wrapping label. */
+defineOptions({ inheritAttrs: false });
+
 const props = withDefaults(
     defineProps<{
         label?: string;
@@ -59,6 +62,7 @@ function write(event: Event): void {
             hint
         }}</span>
         <input
+            v-bind="$attrs"
             :type="type"
             :name="name"
             :value="value"

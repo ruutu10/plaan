@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { Info } from '@lucide/vue';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import R10Notice from '@/components/technical-plan/R10Notice.vue';
 import type { TeamInvitationContext } from '@/types';
 
 type Props = {
@@ -13,13 +12,9 @@ defineProps<Props>();
 
 <template>
     <div data-test="team-invitation-alert">
-        <Alert
-            class="border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-100 [&>svg]:text-blue-600 dark:[&>svg]:text-blue-400"
-        >
-            <Info class="size-4" />
-            <AlertDescription class="text-blue-900 dark:text-blue-100">
-                {{ action }} to join the "{{ invitation.teamName }}" team.
-            </AlertDescription>
-        </Alert>
+        <!-- `busy` spins its marker, so the still navy panel reads better here. -->
+        <R10Notice tone="success">
+            {{ action }} to join the "{{ invitation.teamName }}" team.
+        </R10Notice>
     </div>
 </template>

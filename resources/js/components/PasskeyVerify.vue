@@ -4,7 +4,7 @@ import { router } from '@inertiajs/vue3';
 import { usePasskeyVerify } from '@laravel/passkeys/vue';
 import { KeyRound } from '@lucide/vue';
 import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
+import R10Button from '@/components/technical-plan/R10Button.vue';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 
@@ -38,7 +38,7 @@ const { verify, isLoading, error, isSupported } = usePasskeyVerify({
 <template>
     <div v-if="isSupported">
         <div class="grid gap-2">
-            <Button
+            <R10Button
                 type="button"
                 variant="outline"
                 class="w-full"
@@ -52,7 +52,7 @@ const { verify, isLoading, error, isSupported } = usePasskeyVerify({
                         ? (props.loadingLabel ?? 'Authenticating...')
                         : (props.label ?? 'Sign in with a passkey')
                 }}
-            </Button>
+            </R10Button>
 
             <div v-if="error" class="text-center">
                 <InputError :message="error" />
@@ -63,8 +63,10 @@ const { verify, isLoading, error, isSupported } = usePasskeyVerify({
             <div class="absolute inset-0 flex items-center">
                 <Separator class="w-full" />
             </div>
-            <div class="relative flex justify-center text-xs uppercase">
-                <span class="bg-background px-2 text-muted-foreground">
+            <div
+                class="relative flex justify-center font-r10-body text-xs font-bold tracking-[0.08em] uppercase"
+            >
+                <span class="bg-white px-2 text-r10-grey-500">
                     {{ props.separator ?? 'Or continue with email' }}
                 </span>
             </div>

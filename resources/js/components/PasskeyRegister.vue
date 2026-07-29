@@ -2,9 +2,8 @@
 import { usePasskeyRegister } from '@laravel/passkeys/vue';
 import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import R10Button from '@/components/technical-plan/R10Button.vue';
+import R10Input from '@/components/technical-plan/R10Input.vue';
 
 const emit = defineEmits<{
     success: [];
@@ -56,39 +55,33 @@ const handleCancel = () => {
         Passkeys are not supported in this browser.
     </div>
 
-    <Button v-else-if="!showForm" variant="outline" @click="showForm = true">
+    <R10Button v-else-if="!showForm" variant="outline" @click="showForm = true">
         Add passkey
-    </Button>
+    </R10Button>
 
     <form
         v-else
         @submit="handleSubmit"
         class="space-y-4 rounded-lg border border-border bg-muted/50 p-4"
     >
-        <div class="grid gap-2">
-            <Label for="passkey-name">Passkey name</Label>
-            <Input
-                id="passkey-name"
-                type="text"
-                v-model="name"
-                placeholder="e.g., MacBook Pro, iPhone"
-                class="mt-1 block w-full border-foreground/20"
-                autofocus
-            />
-            <p class="text-xs text-muted-foreground">
-                A name helps you identify this passkey later.
-            </p>
-        </div>
+        <R10Input
+            id="passkey-name"
+            v-model="name"
+            label="Passkey name"
+            hint="A name helps you identify this passkey later."
+            placeholder="e.g., MacBook Pro, iPhone"
+            autofocus
+        />
 
         <InputError v-if="error" :message="error" />
 
         <div class="flex gap-2">
-            <Button type="submit" :disabled="isLoading || !name.trim()">
+            <R10Button type="submit" :disabled="isLoading || !name.trim()">
                 {{ isLoading ? 'Registering...' : 'Register passkey' }}
-            </Button>
-            <Button type="button" variant="ghost" @click="handleCancel">
+            </R10Button>
+            <R10Button type="button" variant="outline" @click="handleCancel">
                 Cancel
-            </Button>
+            </R10Button>
         </div>
     </form>
 </template>

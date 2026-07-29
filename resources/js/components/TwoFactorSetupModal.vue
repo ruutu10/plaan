@@ -5,7 +5,7 @@ import { useClipboard } from '@vueuse/core';
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
 import AlertError from '@/components/AlertError.vue';
 import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
+import R10Button from '@/components/technical-plan/R10Button.vue';
 import {
     Dialog,
     DialogContent,
@@ -111,7 +111,11 @@ watch(
 
 <template>
     <Dialog :open="isOpen" @update:open="isOpen = $event">
-        <DialogContent class="sm:max-w-md">
+        <!-- Kept on the dialog primitives rather than `R10Dialog`: the header
+             here is centred and carries the scanner ornament. -->
+        <DialogContent
+            class="bg-r10-paper font-r10-body text-r10-grey-700 sm:max-w-md"
+        >
             <DialogHeader class="flex items-center justify-center">
                 <div
                     class="mb-3 w-auto rounded-full border border-border bg-card p-0.5 shadow-sm"
@@ -142,8 +146,14 @@ watch(
                         />
                     </div>
                 </div>
-                <DialogTitle>{{ modalConfig.title }}</DialogTitle>
-                <DialogDescription class="text-center">
+                <DialogTitle
+                    class="text-center font-r10-display text-xl font-bold tracking-[0.02em] text-r10-ink uppercase"
+                >
+                    {{ modalConfig.title }}
+                </DialogTitle>
+                <DialogDescription
+                    class="text-center text-[15px] text-r10-grey-500"
+                >
                     {{ modalConfig.description }}
                 </DialogDescription>
             </DialogHeader>
@@ -185,9 +195,12 @@ watch(
                         </div>
 
                         <div class="flex w-full items-center space-x-5">
-                            <Button class="w-full" @click="handleModalNextStep">
+                            <R10Button
+                                class="w-full"
+                                @click="handleModalNextStep"
+                            >
                                 {{ modalConfig.buttonText }}
-                            </Button>
+                            </R10Button>
                         </div>
 
                         <div
@@ -196,7 +209,8 @@ watch(
                             <div
                                 class="absolute inset-0 top-1/2 h-px w-full bg-border"
                             />
-                            <span class="relative bg-card px-2 py-1"
+                            <span
+                                class="relative bg-r10-paper px-2 py-1 text-sm text-r10-grey-500"
                                 >or, enter the code manually</span
                             >
                         </div>
@@ -272,7 +286,7 @@ watch(
                             </div>
 
                             <div class="flex w-full items-center space-x-5">
-                                <Button
+                                <R10Button
                                     type="button"
                                     variant="outline"
                                     class="w-auto flex-1"
@@ -280,14 +294,14 @@ watch(
                                     :disabled="processing"
                                 >
                                     Back
-                                </Button>
-                                <Button
+                                </R10Button>
+                                <R10Button
                                     type="submit"
                                     class="w-auto flex-1"
                                     :disabled="processing || code.length < 6"
                                 >
                                     Confirm
-                                </Button>
+                                </R10Button>
                             </div>
                         </div>
                     </Form>
