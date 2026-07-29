@@ -5,6 +5,7 @@ namespace App\Actions\Teams;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Putting a team away. The team itself is only soft-deleted — what it staged
@@ -22,31 +23,32 @@ class DeleteTeam
     public function handle(Team $team, ?User $except = null): void
     {
         DB::transaction(function () use ($team, $except): void {
+            $moved = 0;
+
             User::where('current_team_id', $team->id)
                 ->when($except, fn ($query) => $query->where('id', '!=', $except->id))
-                ->each(fn (User $member) => $this->moveElsewhere($member, $team));
+                ->each(function (User $member) use ($team, &$moved): void {
+                    $member->sendHomeFrom($team);
+                    $moved++;
+                });
 
-            $team->invitations()->delete();
-            $team->memberships()->delete();
+            $invitationsCancelled = $team->invitations()->delete();
+            $membershipsCleared = $team->memberships()->delete();
+
             $team->delete();
+
+            // Deleting a team takes people's memberships and open invitations
+            // with it, so the counts are what makes the fallout readable after
+            // the fact.
+            Log::notice('Team deleted', [
+                'team_id' => $team->id,
+                'slug' => $team->slug,
+                'is_personal' => $team->is_personal,
+                'members_moved' => $moved,
+                'memberships_cleared' => $membershipsCleared,
+                'invitations_cancelled' => $invitationsCancelled,
+                'left_standing_user_id' => $except?->id,
+            ]);
         });
-    }
-
-    /**
-     * Move a user out of the team being deleted: home to their personal team,
-     * or to any other team they belong to. A user with nowhere left to go is
-     * left without a current team rather than pointed at a deleted one.
-     */
-    private function moveElsewhere(User $member, Team $team): void
-    {
-        $fallback = $member->personalTeam() ?? $member->fallbackTeam($team);
-
-        if ($fallback) {
-            $member->switchTeam($fallback);
-
-            return;
-        }
-
-        $member->update(['current_team_id' => null]);
     }
 }

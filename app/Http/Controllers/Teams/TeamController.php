@@ -15,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -96,7 +97,18 @@ class TeamController extends Controller
         $team = DB::transaction(function () use ($request, $team) {
             $team = Team::whereKey($team->id)->lockForUpdate()->firstOrFail();
 
+            $previousSlug = $team->slug;
+
             $team->update(['name' => $request->validated('name')]);
+
+            // The slug follows the name, so renaming a team changes every URL
+            // that names it — worth being able to trace a 404 back to.
+            Log::info('Team renamed', [
+                'team_id' => $team->id,
+                'slug' => $team->slug,
+                'previous_slug' => $previousSlug,
+                'user_id' => $request->user()->id,
+            ]);
 
             return $team;
         });
@@ -111,9 +123,25 @@ class TeamController extends Controller
      */
     public function switch(Request $request, Team $team): RedirectResponse
     {
-        abort_unless($request->user()->belongsToTeam($team), 403);
+        $user = $request->user();
 
-        $request->user()->switchTeam($team);
+        if (! $user->belongsToTeam($team)) {
+            Log::warning('Refused a team switch for a non-member', [
+                'user_id' => $user->id,
+                'team_id' => $team->id,
+                'ip' => $request->ip(),
+            ]);
+
+            abort(403);
+        }
+
+        Log::debug('User switched team', [
+            'user_id' => $user->id,
+            'from_team_id' => $user->current_team_id,
+            'to_team_id' => $team->id,
+        ]);
+
+        $user->switchTeam($team);
 
         return back();
     }
@@ -127,17 +155,19 @@ class TeamController extends Controller
 
         $user = $request->user();
 
-        $fallbackTeam = $user->isCurrentTeam($team)
-            ? $user->fallbackTeam($team)
-            : null;
-
         $team->memberships()
             ->where('user_id', $user->id)
             ->delete();
 
-        if ($fallbackTeam) {
-            $user->switchTeam($fallbackTeam);
-        }
+        // Only once the membership is gone, so the team they are leaving is not
+        // itself a candidate to be moved into.
+        $home = $user->relocateFrom($team);
+
+        Log::info('User left a team', [
+            'user_id' => $user->id,
+            'team_id' => $team->id,
+            'moved_to_team_id' => $home?->id,
+        ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('You left the team ":name"', ['name' => $team->name])]);
 
@@ -150,15 +180,18 @@ class TeamController extends Controller
     public function destroy(DeleteTeamRequest $request, Team $team, DeleteTeam $deleteTeam): RedirectResponse
     {
         $user = $request->user();
-        $fallbackTeam = $user->isCurrentTeam($team)
-            ? $user->fallbackTeam($team)
-            : null;
+
+        Log::notice('Team deletion requested by its owner', [
+            'team_id' => $team->id,
+            'slug' => $team->slug,
+            'user_id' => $user->id,
+        ]);
 
         $deleteTeam->handle($team, except: $user);
 
-        if ($fallbackTeam) {
-            $user->switchTeam($fallbackTeam);
-        }
+        // After the deletion, so their membership of the team being deleted has
+        // already been cleared and cannot be picked as the team to move into.
+        $user->relocateFrom($team);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Team deleted.')]);
 

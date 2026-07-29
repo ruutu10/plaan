@@ -2,9 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Actions\StagePlanCopy;
 use App\Models\TechnicalPlan as TechnicalPlanModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
@@ -31,25 +33,25 @@ class PlanScene extends JsonResource
     /**
      * Serialise all of a plan's scenes, resolving each scene's sound file.
      *
-     * With `$duplicateSoundFiles` the resolved files are duplicated into fresh
-     * staged uploads instead — used when the plan is opened as the basis for a
-     * new one, so the copy carries its own files.
+     * `$soundFiles` may instead be the staged copies made by
+     * {@see StagePlanCopy}, keyed by the handle the scene still
+     * names — used when the plan is opened as the basis for a new one, so the
+     * copy carries its own files.
      *
+     * @param  Collection<string, Media>|null  $soundFiles
      * @return array<int, array<string, mixed>>
      */
-    public static function forPlan(TechnicalPlanModel $plan, Request $request, bool $duplicateSoundFiles = false): array
+    public static function forPlan(TechnicalPlanModel $plan, Request $request, ?Collection $soundFiles = null): array
     {
-        $soundFiles = $plan->sceneSoundFiles();
+        $soundFiles ??= $plan->sceneSoundFiles();
 
-        return array_map(function (array $scene) use ($plan, $soundFiles, $duplicateSoundFiles, $request): array {
-            $media = $soundFiles->get($scene['soundFile']['id'] ?? '');
-
-            if ($media && $duplicateSoundFiles) {
-                $media = $plan->duplicateMediaToStaging($media);
-            }
-
-            return (new self($scene, $media))->resolve($request);
-        }, $plan->scenes);
+        return array_map(
+            fn (array $scene): array => (new self(
+                $scene,
+                $soundFiles->get($scene['soundFile']['id'] ?? ''),
+            ))->resolve($request),
+            $plan->scenes,
+        );
     }
 
     /**

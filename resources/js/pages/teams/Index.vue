@@ -1,42 +1,36 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import { Eye, LogOut, Pencil, Plus } from '@lucide/vue';
 import { ref } from 'vue';
 import CreateTeamModal from '@/components/CreateTeamModal.vue';
-import Heading from '@/components/Heading.vue';
 import LeaveTeamModal from '@/components/LeaveTeamModal.vue';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
+import R10Button from '@/components/technical-plan/R10Button.vue';
+import R10Page from '@/components/technical-plan/R10Page.vue';
+import R10Pill from '@/components/technical-plan/R10Pill.vue';
+import R10Table from '@/components/technical-plan/R10Table.vue';
+import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { edit, index } from '@/routes/teams';
 import type { Team } from '@/types';
 
-type Props = {
-    teams: Team[];
-};
-
-defineProps<Props>();
+defineProps<{ teams: Team[] }>();
 
 const leaveTeamDialogOpen = ref(false);
 const teamLeaving = ref<Team | null>(null);
 
-const canLeaveTeam = (team: Team) => !team.isPersonal && team.role !== 'owner';
+/** An owner cannot walk out on their own team, and nobody leaves their personal one. */
+const canLeaveTeam = (team: Team): boolean =>
+    !team.isPersonal && team.role !== 'owner';
 
-const openLeaveTeamDialog = (team: Team) => {
+function openLeaveTeamDialog(team: Team): void {
     teamLeaving.value = team;
     leaveTeamDialogOpen.value = true;
-};
+}
 
 defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Teams',
+                title: 'Tiimid',
                 href: index(),
             },
         ],
@@ -45,111 +39,89 @@ defineOptions({
 </script>
 
 <template>
-    <Head title="Teams" />
+    <Head title="Tiimid" />
 
-    <h1 class="sr-only">Teams</h1>
-
-    <div class="flex flex-col space-y-6">
-        <div class="flex items-center justify-between">
-            <Heading
-                variant="small"
-                title="Teams"
-                description="Manage your teams and team memberships"
+    <R10Page>
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <StepHeader
+                eyebrow="Tiimid"
+                title="Minu tiimid"
+                lead="Tiimid, kuhu sa kuulud. Ava tiim, et näha selle liikmeid."
             />
 
             <CreateTeamModal>
-                <Button data-test="teams-new-team-button">
-                    <Plus /> New team
-                </Button>
+                <R10Button data-test="teams-new-team-button">
+                    <Plus class="h-4 w-4" />
+                    Uus tiim
+                </R10Button>
             </CreateTeamModal>
         </div>
 
-        <div class="space-y-3">
-            <div
-                v-for="team in teams"
-                :key="team.id"
-                data-test="team-row"
-                class="flex items-center justify-between gap-4 rounded-lg border p-4"
-            >
-                <div class="flex items-center gap-4">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="font-medium">{{ team.name }}</span>
-                            <Badge v-if="team.isPersonal" variant="secondary">
-                                Personal
-                            </Badge>
-                        </div>
-                        <span class="text-sm text-muted-foreground">
-                            {{ team.roleLabel }}
-                        </span>
+        <R10Table
+            :columns="[
+                { label: 'Tiim' },
+                { label: 'Roll' },
+                { label: 'Tegevused', align: 'right', srOnly: true },
+            ]"
+            :rows="teams"
+            row-test-id="team-row"
+            empty-text="Sa ei kuulu veel ühtegi tiimi."
+            error-text="Tiimide laadimine ebaõnnestus. Proovi lehte värskendada."
+        >
+            <template #row="{ row: team }">
+                <td class="px-5 py-4 align-top">
+                    <span
+                        class="font-r10-display text-base font-semibold text-r10-ink"
+                    >
+                        {{ team.name }}
+                    </span>
+                    <R10Pill v-if="team.isPersonal" class="ml-2 align-middle">
+                        Isiklik
+                    </R10Pill>
+                </td>
+                <td class="px-5 py-4 align-top text-r10-grey-500">
+                    {{ team.roleLabel }}
+                </td>
+                <td class="px-5 py-4 text-right align-top">
+                    <div class="inline-flex items-center justify-end gap-2">
+                        <R10Button
+                            variant="outline"
+                            size="sm"
+                            :href="edit(team.slug).url"
+                            :data-test="
+                                team.role === 'member'
+                                    ? 'team-view-button'
+                                    : 'team-edit-button'
+                            "
+                            class="px-4 py-2"
+                        >
+                            {{ team.role === 'member' ? 'Vaata' : 'Muuda' }}
+                            <Eye
+                                v-if="team.role === 'member'"
+                                class="h-3.5 w-3.5"
+                            />
+                            <Pencil v-else class="h-3.5 w-3.5" />
+                        </R10Button>
+
+                        <button
+                            v-if="canLeaveTeam(team)"
+                            type="button"
+                            title="Lahku tiimist"
+                            data-test="team-leave-button"
+                            class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-grey-200 bg-white p-2 text-r10-grey-500 transition hover:border-r10-error hover:text-r10-error"
+                            @click="openLeaveTeamDialog(team)"
+                        >
+                            <LogOut class="h-3.5 w-3.5" />
+                            <span class="sr-only">Lahku</span>
+                        </button>
                     </div>
-                </div>
+                </td>
+            </template>
+        </R10Table>
 
-                <TooltipProvider>
-                    <div class="flex items-center gap-2">
-                        <Tooltip v-if="canLeaveTeam(team)">
-                            <TooltipTrigger as-child>
-                                <Button
-                                    data-test="team-leave-button"
-                                    variant="ghost"
-                                    size="sm"
-                                    @click="openLeaveTeamDialog(team)"
-                                >
-                                    <LogOut class="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Leave team</p>
-                            </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip v-if="team.role === 'member'">
-                            <TooltipTrigger as-child>
-                                <Button
-                                    data-test="team-view-button"
-                                    variant="ghost"
-                                    size="sm"
-                                    as-child
-                                >
-                                    <Link :href="edit(team.slug)">
-                                        <Eye class="h-4 w-4" />
-                                    </Link>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>View team</p>
-                            </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip v-else>
-                            <TooltipTrigger as-child>
-                                <Button
-                                    data-test="team-edit-button"
-                                    variant="ghost"
-                                    size="sm"
-                                    as-child
-                                >
-                                    <Link :href="edit(team.slug)">
-                                        <Pencil class="h-4 w-4" />
-                                    </Link>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Edit team</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </div>
-                </TooltipProvider>
-            </div>
-
-            <p
-                v-if="teams.length === 0"
-                class="py-8 text-center text-muted-foreground"
-            >
-                You don't belong to any teams yet.
-            </p>
-        </div>
-    </div>
-
-    <LeaveTeamModal v-model:open="leaveTeamDialogOpen" :team="teamLeaving" />
+        <LeaveTeamModal
+            v-model:open="leaveTeamDialogOpen"
+            :team="teamLeaving"
+        />
+    </R10Page>
 </template>

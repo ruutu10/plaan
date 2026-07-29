@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\ScopedByTeamAccess;
 use Database\Factories\PerformanceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -23,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property int $show_id
  * @property Carbon $date
  * @property int|null $duration
+ * @property bool $is_draft
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -34,17 +36,30 @@ use Illuminate\Support\Carbon;
     'show_id',
     'date',
     'duration',
+    'is_draft',
 ])]
 class Performance extends Model
 {
     /** @use HasFactory<PerformanceFactory> */
-    use HasFactory, SoftDeletes;
+    use HasFactory, ScopedByTeamAccess, SoftDeletes;
 
     /**
      * The permission — held by the "technician" role — that opens the performances
      * of every show in the house, not just those of the holder's own groups.
      */
     public const EDIT_ALL_PERMISSION = 'performances.edit_all';
+
+    /**
+     * A performance nobody said anything about is one the house stands behind:
+     * only the Planka import asks for a draft. Spelt out here as well as in the
+     * column default so a performance just created reads as false rather than as
+     * an attribute that has not come back from the database yet.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_draft' => false,
+    ];
 
     /**
      * Limit the query to the performances the given user may manage: those of the
@@ -56,26 +71,28 @@ class Performance extends Model
     #[Scope]
     protected function editableBy(Builder $query, User $user): void
     {
-        if ($user->can(self::EDIT_ALL_PERMISSION)) {
+        if (self::seesEverything($user)) {
             return;
         }
 
-        $teamIds = $user->teams()->pluck('teams.id');
+        $teamIds = $user->teamIds();
 
         // A performance is the group's through the show it belongs to.
         $query->whereHas('show', fn (Builder $show) => $show->whereIn('team_id', $teamIds));
     }
 
     /**
-     * Determine whether the user may manage this performance — see
-     * {@see editableBy()}.
+     * Limit the query to the performances the house has vouched for. A draft is
+     * one the Planka import registered and nobody has reviewed yet: its date may
+     * be wrong or the night may not be happening at all, so it is kept out of
+     * every listing a plan is written from until an admin clears it.
+     *
+     * @param  Builder<Performance>  $query
      */
-    public function isEditableBy(User $user): bool
+    #[Scope]
+    protected function vouchedFor(Builder $query): void
     {
-        return static::query()
-            ->whereKey($this->getKey())
-            ->editableBy($user)
-            ->exists();
+        $query->where('is_draft', false);
     }
 
     /**
@@ -122,6 +139,7 @@ class Performance extends Model
         return [
             'date' => 'date',
             'duration' => 'integer',
+            'is_draft' => 'boolean',
         ];
     }
 }

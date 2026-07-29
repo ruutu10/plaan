@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Enums\SignupSource;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class FindOrCreateUserByEmail
@@ -18,7 +19,7 @@ class FindOrCreateUserByEmail
     {
         $email = strtolower(trim($email));
 
-        return User::firstOrCreate(
+        $user = User::firstOrCreate(
             ['email' => $email],
             [
                 'name' => Str::of($email)->before('@')->trim()->value() ?: 'Esineja',
@@ -26,5 +27,16 @@ class FindOrCreateUserByEmail
                 'signup_source' => SignupSource::AnonymousPlan->value,
             ],
         );
+
+        if ($user->wasRecentlyCreated) {
+            // Accounts born here were never registered by hand, so this is the
+            // only trail of where an unfamiliar user came from.
+            Log::info('Provisioned a lightweight account for an unknown e-mail', [
+                'user_id' => $user->id,
+                'signup_source' => SignupSource::AnonymousPlan->value,
+            ]);
+        }
+
+        return $user;
     }
 }

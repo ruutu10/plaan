@@ -1,70 +1,29 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
-import { ref } from 'vue';
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { computed } from 'vue';
+import R10ConfirmVisit from '@/components/technical-plan/R10ConfirmVisit.vue';
 import { destroy as destroyMember } from '@/routes/teams/members';
 import type { Team, TeamMember } from '@/types';
 
-type Props = {
-    team: Team;
-    member: TeamMember | null;
-    open: boolean;
-};
+const props = defineProps<{ team: Team; member: TeamMember | null }>();
 
-const props = defineProps<Props>();
-const emit = defineEmits<{
-    'update:open': [value: boolean];
-}>();
+const open = defineModel<boolean>('open', { required: true });
 
-const processing = ref(false);
-
-const removeMember = () => {
-    if (!props.member) {
-        return;
-    }
-
-    router.visit(destroyMember([props.team.slug, props.member.id]), {
-        onStart: () => (processing.value = true),
-        onFinish: () => (processing.value = false),
-        onSuccess: () => emit('update:open', false),
-    });
-};
+const action = computed(() =>
+    props.member ? destroyMember([props.team.slug, props.member.id]) : null,
+);
 </script>
 
 <template>
-    <Dialog :open="props.open" @update:open="emit('update:open', $event)">
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Remove team member</DialogTitle>
-                <DialogDescription>
-                    Are you sure you want to remove
-                    <strong>{{ props.member?.name }}</strong> from this team?
-                </DialogDescription>
-            </DialogHeader>
-
-            <DialogFooter class="gap-2">
-                <DialogClose as-child>
-                    <Button variant="secondary"> Cancel </Button>
-                </DialogClose>
-
-                <Button
-                    data-test="remove-member-confirm"
-                    variant="destructive"
-                    :disabled="processing"
-                    @click="removeMember"
-                >
-                    Remove member
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+    <R10ConfirmVisit
+        v-model:open="open"
+        title="Eemalda liige"
+        confirm-label="Eemalda"
+        :action="action"
+        test-id="remove-member-confirm"
+    >
+        <template #description>
+            Kas eemaldada <strong>{{ member?.name }}</strong> tiimist? Konto ise
+            jääb alles ja ta saab tiimi hiljem tagasi lisada.
+        </template>
+    </R10ConfirmVisit>
 </template>

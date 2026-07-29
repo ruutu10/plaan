@@ -13,6 +13,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
@@ -68,6 +69,12 @@ class ShowController extends Controller
     {
         $show = Show::create($request->validated());
 
+        Log::info('Show created', [
+            'show_id' => $show->id,
+            'team_id' => $show->team_id,
+            'user_id' => $request->user()->id,
+        ]);
+
         return ShowResource::make($show->load('team'))
             ->response()
             ->setStatusCode(SymfonyResponse::HTTP_CREATED);
@@ -78,7 +85,20 @@ class ShowController extends Controller
      */
     public function update(SaveShowRequest $request, Show $show): ShowResource
     {
-        $show->update($request->validated());
+        $show->fill($request->validated());
+
+        // Which fields moved, not what they moved to: a show handed to another
+        // group is the change that decides who may still reach it.
+        $changed = array_keys($show->getDirty());
+
+        $show->save();
+
+        Log::info('Show updated', [
+            'show_id' => $show->id,
+            'team_id' => $show->team_id,
+            'user_id' => $request->user()->id,
+            'changed' => $changed,
+        ]);
 
         return ShowResource::make($show->load('team'));
     }
@@ -87,11 +107,22 @@ class ShowController extends Controller
      * Put the show aside. It is soft-deleted, taking its performances with it (see
      * {@see Show::booted()}), so the plans written for them keep their trail.
      */
-    public function destroy(Show $show): Response
+    public function destroy(Request $request, Show $show): Response
     {
         Gate::authorize('delete', $show);
 
+        // Counted before the delete: putting a show aside takes its
+        // performances with it, and that reach is the point of the record.
+        $performances = $show->performances()->count();
+
         $show->delete();
+
+        Log::notice('Show deleted', [
+            'show_id' => $show->id,
+            'team_id' => $show->team_id,
+            'user_id' => $request->user()->id,
+            'performances_deleted' => $performances,
+        ]);
 
         return response()->noContent();
     }

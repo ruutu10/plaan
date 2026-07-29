@@ -145,6 +145,39 @@ class TeamInvitationTest extends TestCase
         $response->assertSessionHasErrors('email');
     }
 
+    /**
+     * The three places that asked "is this invitation still open?" used to
+     * spell the rule out themselves, and one of them treated an invitation
+     * expiring at this very second as already gone while the others still
+     * honoured it — so the same invitation could be both live enough to accept
+     * and dead enough to be invited over.
+     */
+    public function test_an_invitation_expiring_this_very_second_still_counts_as_pending(): void
+    {
+        Notification::fake();
+        $this->freezeTime();
+
+        $owner = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+
+        TeamInvitation::factory()->create([
+            'team_id' => $team->id,
+            'email' => 'invited@example.com',
+            'invited_by' => $owner->id,
+            'expires_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($owner)
+            ->post(route('teams.invitations.store', $team), [
+                'email' => 'invited@example.com',
+                'role' => TeamRole::Member->value,
+            ]);
+
+        $response->assertSessionHasErrors('email');
+    }
+
     public function test_team_invitations_cannot_be_created_by_members()
     {
         $owner = User::factory()->create();

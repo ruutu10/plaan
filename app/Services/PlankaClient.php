@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * A thin reader for the Planka REST API — enough of it to fetch the cards of
@@ -84,6 +85,8 @@ class PlankaClient
      */
     public function cardsInList(string $listId): array
     {
+        $startedAt = microtime(true);
+
         $response = $this->request()->get("/api/lists/{$listId}")->throw();
 
         /** @var array<int, array<string, mixed>> $items */
@@ -119,6 +122,18 @@ class PlankaClient
                 'dueDate' => isset($item['dueDate']) ? (string) $item['dueDate'] : null,
                 'labels' => $labelsByCard[$id] ?? [],
             ];
+        }
+
+        Log::debug('Fetched a Planka list', [
+            'list_id' => $listId,
+            'cards' => count($cards),
+            'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+        ]);
+
+        // An empty list is not an error, but it is the shape a mis-set list id
+        // takes — a run that imports nothing starts here.
+        if ($cards === []) {
+            Log::warning('A watched Planka list holds no cards', ['list_id' => $listId]);
         }
 
         return $cards;

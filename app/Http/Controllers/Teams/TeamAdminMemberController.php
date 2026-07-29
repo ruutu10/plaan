@@ -10,8 +10,10 @@ use App\Http\Resources\TeamMember as TeamMemberResource;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
@@ -33,9 +35,20 @@ class TeamAdminMemberController extends Controller
         /** @var User $member */
         $member = $request->member();
 
+        $role = TeamRole::from($request->validated('role'));
+
         $team->memberships()->create([
             'user_id' => $member->id,
-            'role' => TeamRole::from($request->validated('role')),
+            'role' => $role,
+        ]);
+
+        // This is the shortcut past the invitation flow — nobody accepted
+        // anything, so the log is the only record the member was put here.
+        Log::notice('Member added to a team without an invitation', [
+            'team_id' => $team->id,
+            'member_id' => $member->id,
+            'role' => $role->value,
+            'added_by' => $request->user()->id,
         ]);
 
         return TeamMemberResource::make($this->reread($team, $member))
@@ -56,7 +69,18 @@ class TeamAdminMemberController extends Controller
 
         abort_if($membership->role === TeamRole::Owner, SymfonyResponse::HTTP_FORBIDDEN, __('Tiimi omaniku rolli ei saa muuta.'));
 
-        $membership->update(['role' => TeamRole::from($request->validated('role'))]);
+        $previousRole = $membership->role;
+        $newRole = TeamRole::from($request->validated('role'));
+
+        $membership->update(['role' => $newRole]);
+
+        Log::notice('Team member role changed from the management screen', [
+            'team_id' => $team->id,
+            'member_id' => $user->id,
+            'from_role' => $previousRole->value,
+            'to_role' => $newRole->value,
+            'changed_by' => $request->user()->id,
+        ]);
 
         return TeamMemberResource::make($this->reread($team, $user));
     }
@@ -65,7 +89,7 @@ class TeamAdminMemberController extends Controller
      * Take a member out of the team, moving them home if it was the team they
      * were working in.
      */
-    public function destroy(Team $team, User $user): Response
+    public function destroy(Request $request, Team $team, User $user): Response
     {
         Gate::authorize('removeMember', $team);
 
@@ -76,13 +100,14 @@ class TeamAdminMemberController extends Controller
             ->firstOrFail()
             ->delete();
 
-        if ($user->isCurrentTeam($team)) {
-            $home = $user->personalTeam() ?? $user->fallbackTeam($team);
+        $home = $user->sendHomeFrom($team);
 
-            $home
-                ? $user->switchTeam($home)
-                : $user->update(['current_team_id' => null]);
-        }
+        Log::notice('Team member removed from the management screen', [
+            'team_id' => $team->id,
+            'member_id' => $user->id,
+            'removed_by' => $request->user()->id,
+            'moved_to_team_id' => $home?->id,
+        ]);
 
         return response()->noContent();
     }

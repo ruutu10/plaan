@@ -373,6 +373,19 @@ class TechnicalPlanTest extends TestCase
         $response->assertJsonMissing(['showName' => 'Möödunud etendus']);
     }
 
+    public function test_the_performances_endpoint_leaves_out_the_ones_waiting_to_be_reviewed(): void
+    {
+        $reviewed = Performance::factory()->for(Show::factory()->state(['name' => 'Üle vaadatud']))->create();
+        Performance::factory()->draft()->for(Show::factory()->state(['name' => 'Ülevaatamata']))->create();
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'results');
+        $response->assertJsonPath('results.0.id', $reviewed->id);
+        $response->assertJsonMissing(['showName' => 'Ülevaatamata']);
+    }
+
     public function test_every_upcoming_performance_of_a_show_is_listed_separately(): void
     {
         // The picker lists performances, not shows: a show staged twice is two
@@ -428,6 +441,47 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame($past->date->format('d.m.Y'), $priorPlans[0]['label']);
         // A plan of the user's own does not need to say who wrote it.
         $this->assertNull($priorPlans[0]['author']);
+    }
+
+    public function test_a_busy_show_does_not_starve_the_other_shows_of_prior_plans(): void
+    {
+        // One show with a long history, and one with a single past plan. The
+        // prior plans used to be taken from one shared list of the most recent
+        // 25, so a show like the first could fill it and leave the second
+        // offering nothing to start from.
+        $busy = Show::factory()->create(['name' => 'Igaõhtune']);
+        $quiet = Show::factory()->create(['name' => 'Harv']);
+
+        Performance::factory()->for($busy)->create(['date' => now()->addWeek()->toDateString()]);
+        Performance::factory()->for($quiet)->create(['date' => now()->addWeeks(2)->toDateString()]);
+
+        foreach (range(1, 30) as $index) {
+            TechnicalPlan::factory()
+                ->for($this->user)
+                ->for(Performance::factory()->for($busy)->past()->create())
+                ->submitted()
+                ->create(['submitted_at' => now()->subDays($index)]);
+        }
+
+        $quietPlan = TechnicalPlan::factory()
+            ->for($this->user)
+            ->for(Performance::factory()->for($quiet)->past()->create())
+            ->submitted()
+            ->create(['submitted_at' => now()->subYear()]);
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+
+        $results = collect($response->json('results'))->keyBy('showName');
+
+        $this->assertSame(
+            [$quietPlan->token],
+            array_column($results['Harv']['priorPlans'], 'token'),
+        );
+
+        // The busy show is capped rather than listing its whole history.
+        $this->assertCount(5, $results['Igaõhtune']['priorPlans']);
     }
 
     public function test_performances_do_not_surface_plans_of_a_different_show_of_the_same_name(): void
@@ -630,9 +684,12 @@ class TechnicalPlanTest extends TestCase
     public function test_an_attachment_can_be_streamed_by_uuid_and_is_logged(): void
     {
         Storage::fake('local');
-        Log::spy();
 
         $handle = $this->uploadHandle();
+
+        // Spying only from here: staging the file logs an entry of its own, and
+        // this test is about what streaming it records.
+        Log::spy();
 
         $response = $this->get(route('attachments.show', $handle));
 
@@ -1204,7 +1261,11 @@ class TechnicalPlanTest extends TestCase
 
         $handle = $this->uploadHandle('tehnikaplaan.pdf');
         $sound = $this->soundHandle('avamuusika.mp3');
-        $performance = Performance::factory()->for(Show::factory()->state(['name' => 'Festival 2026']))->create();
+        // The mail names the performance the plan is attached to, not the meta
+        // the wizard posted, so the duration it prints is this one.
+        $performance = Performance::factory()
+            ->for(Show::factory()->state(['name' => 'Festival 2026']))
+            ->create(['duration' => 25]);
 
         $this->postJson(route('technical-plan.store'), $this->validPayload([
             'submit' => true,
@@ -1233,6 +1294,16 @@ class TechnicalPlanTest extends TestCase
         $this->assertStringContainsString('Suitsumasin', $html);
         $this->assertStringContainsString('Palun jälgida ajakava.', $html);
         $this->assertStringContainsString('tehnikaplaan.pdf', $html);
+
+        // The values the mail shares with the wizard's review page and the
+        // printout are rendered by App\Http\Resources\PlanDocument, so the mail
+        // is asserted on the presented wording rather than the stored value —
+        // see tests/Feature/PlanDocumentTest.php for the rules themselves.
+        $this->assertStringContainsString('Jah — 2 käsimikrofoni', $html);
+        $this->assertStringContainsString('25 min', $html);
+        // Smoke is allowed and the musician question was answered "no".
+        $this->assertStringContainsString('>Jah</td>', $html);
+        $this->assertStringContainsString('>Ei</td>', $html);
     }
 
     /**

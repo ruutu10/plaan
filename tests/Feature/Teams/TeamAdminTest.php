@@ -540,24 +540,4 @@ class TeamAdminTest extends TestCase
             'user_id' => $member->id,
         ]);
     }
-
-    /**
-     * A user holding the technician role, which carries the edit-all permission.
-     */
-    private function technician(): User
-    {
-        return User::factory()->create()->assignRole('technician');
-    }
-
-    /**
-     * Attach the user to a (new) team, owning it unless told otherwise.
-     */
-    private function teamOf(User $user, ?string $name = null, TeamRole $role = TeamRole::Owner): Team
-    {
-        $team = Team::factory()->create($name ? ['name' => $name] : []);
-
-        $team->members()->attach($user, ['role' => $role->value]);
-
-        return $team;
-    }
 }

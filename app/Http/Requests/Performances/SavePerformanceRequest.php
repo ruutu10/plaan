@@ -49,6 +49,10 @@ class SavePerformanceRequest extends FormRequest
             // Minutes. A performance may be timed loosely or not at all, but a full
             // day of it is a typo rather than a plan.
             'duration' => ['nullable', 'integer', 'min:1', 'max:1440'],
+            // Whether the performance is still waiting to be reviewed. Sent only
+            // by the screens that offer the toggle; left out, the performance
+            // keeps the standing it had — a new one is vouched for by the adding.
+            'is_draft' => ['sometimes', 'boolean'],
         ];
     }
 

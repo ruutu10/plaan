@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\ScopedByTeamAccess;
 use Database\Factories\ShowFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -39,7 +40,7 @@ use Illuminate\Support\Carbon;
 class Show extends Model
 {
     /** @use HasFactory<ShowFactory> */
-    use HasFactory, SoftDeletes;
+    use HasFactory, ScopedByTeamAccess, SoftDeletes;
 
     /**
      * Bootstrap the model and its traits.
@@ -73,22 +74,11 @@ class Show extends Model
     #[Scope]
     protected function editableBy(Builder $query, User $user): void
     {
-        if ($user->can(self::EDIT_ALL_PERMISSION)) {
+        if (self::seesEverything($user)) {
             return;
         }
 
-        $query->whereIn('team_id', $user->teams()->pluck('teams.id'));
-    }
-
-    /**
-     * Determine whether the user may edit this show — see {@see editableBy()}.
-     */
-    public function isEditableBy(User $user): bool
-    {
-        return static::query()
-            ->whereKey($this->getKey())
-            ->editableBy($user)
-            ->exists();
+        $query->whereIn('team_id', $user->teamIds());
     }
 
     /**

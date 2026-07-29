@@ -6,6 +6,7 @@ use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CreateTeam
 {
@@ -33,6 +34,14 @@ class CreateTeam
             if ($switch) {
                 $user->switchTeam($team);
             }
+
+            Log::info('Team created', [
+                'team_id' => $team->id,
+                'slug' => $team->slug,
+                'is_personal' => $isPersonal,
+                'owner_id' => $user->id,
+                'switched' => $switch,
+            ]);
 
             return $team;
         });

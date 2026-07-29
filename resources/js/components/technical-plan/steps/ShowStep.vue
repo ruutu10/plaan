@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import { formatEstonianDate } from '@/lib/date';
+import { requestJson } from '@/lib/http';
 import type { UpcomingPerformance } from '@/types/technicalPlan';
 import { applyPlanContent, resetPlanContent } from '../plan';
 import { usePlan } from '../planKey';
@@ -15,38 +17,21 @@ const loadError = ref('');
 const sourceToken = ref<string | null>(null);
 const applyingSource = ref(false);
 
-function formatDate(iso: string): string {
-    const parts = iso.split('-');
-
-    return parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0]}` : iso;
-}
-
-function csrfToken(): string {
-    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-
-    return match ? decodeURIComponent(match[1]) : '';
-}
-
 async function loadPerformances(): Promise<void> {
     loading.value = true;
     loadError.value = '';
 
-    try {
-        const response = await fetch('/api/tehnikaplaan/performances', {
-            headers: {
-                Accept: 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-        });
-        const data = await response.json();
+    const { ok, data } = await requestJson('/api/tehnikaplaan/performances');
+
+    if (ok) {
         performances.value =
             (data.results as UpcomingPerformance[] | undefined) ?? [];
-    } catch {
+    } else {
         loadError.value = 'Etenduste laadimine ebaõnnestus.';
         performances.value = [];
-    } finally {
-        loading.value = false;
     }
+
+    loading.value = false;
 }
 
 function isSelected(performance: UpcomingPerformance): boolean {
@@ -109,21 +94,13 @@ async function chooseSource(token: string | null): Promise<void> {
     applyingSource.value = true;
 
     try {
-        const response = await fetch(
+        const { ok, data } = await requestJson(
             `/api/tehnikaplaan/plans/${encodeURIComponent(token)}/copy`,
-            {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': csrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            },
+            'POST',
         );
 
-        if (response.ok) {
-            applyPlanContent(plan, await response.json());
+        if (ok) {
+            applyPlanContent(plan, data);
         }
     } finally {
         applyingSource.value = false;
@@ -193,7 +170,7 @@ onMounted(loadPerformances);
                         <span
                             class="mt-0.5 block text-[13px] text-r10-grey-500"
                         >
-                            {{ formatDate(performance.showDate) }}
+                            {{ formatEstonianDate(performance.showDate) }}
                             <template v-if="performance.performer">
                                 · {{ performance.performer }}
                             </template>
@@ -205,7 +182,9 @@ onMounted(loadPerformances);
                 </button>
 
                 <div
-                    v-if="isSelected(performance) && performance.priorPlans.length"
+                    v-if="
+                        isSelected(performance) && performance.priorPlans.length
+                    "
                     class="border-t border-r10-orange/30 px-4 pt-3 pb-3.5"
                 >
                     <span

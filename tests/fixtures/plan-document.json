@@ -1,0 +1,293 @@
+{
+    "_comment": "The contract between App\\Http\\Resources\\PlanDocument (the mail) and resources/js/components/technical-plan/presentPlan.ts (the wizard's review page, the printout and the technician's playback view). Both are asserted against this file, so a display rule changed on one side alone fails a test. See tests/Feature/PlanDocumentTest.php and resources/js/components/technical-plan/presentPlan.test.ts.",
+
+    "fileSizes": {
+        "0": "0 B",
+        "512": "512 B",
+        "1023": "1023 B",
+        "1024": "1.0 KB",
+        "123456": "120.6 KB",
+        "1048576": "1.0 MB",
+        "3623878": "3.5 MB",
+        "5368709120": "5.0 GB"
+    },
+
+    "statusLabels": {
+        "draft": "Mustand",
+        "submitted": "Esitatud",
+        "received": "Tehnik kätte saanud",
+        "archived": "Arhiveeritud",
+        "": "Mustand",
+        "something-else": "Mustand"
+    },
+
+    "cases": [
+        {
+            "name": "a filled-in plan covering every kind of scene sound",
+            "contact": "esineja@example.com",
+            "plan": {
+                "token": "R10-2026-abc123def456",
+                "status": "submitted",
+                "submittedAt": "2026-07-20T10:00:00+00:00",
+                "meta": {
+                    "performanceId": 7,
+                    "performer": "Teater Kuu",
+                    "showName": "Öölaul",
+                    "showDate": "2026-08-14",
+                    "duration": 90,
+                    "description": "Kahevaatuseline  "
+                },
+                "sound": {
+                    "micsMode": "yes",
+                    "micsDetail": "  Kaks peamikrofoni  ",
+                    "musicianMode": "no",
+                    "musicianDetail": "seda ei tohiks kuvada"
+                },
+                "scenes": [
+                    {
+                        "id": "stseen-1",
+                        "name": "  Avastseen  ",
+                        "light": "Soe täisvalgus\nAeglane tõus",
+                        "soundUrl": "https://example.com/cue.mp3",
+                        "soundFile": {
+                            "id": "media-1",
+                            "name": "avamäng.mp3",
+                            "size": 3623878,
+                            "url": "https://plaan.test/attachments/media-1"
+                        },
+                        "sound": "Alusta kohe pärast pimendust",
+                        "notes": "Eesriie jääb lahti"
+                    },
+                    {
+                        "id": "stseen-2",
+                        "name": "Ainult link",
+                        "light": "",
+                        "soundUrl": "  https://example.com/teine.mp3  ",
+                        "soundFile": null,
+                        "sound": "",
+                        "notes": ""
+                    },
+                    {
+                        "id": "stseen-3",
+                        "name": "Ainult fail",
+                        "light": "Punane",
+                        "soundUrl": "",
+                        "soundFile": {
+                            "id": "media-2",
+                            "name": "lõpp.wav",
+                            "size": 512,
+                            "url": "https://plaan.test/attachments/media-2"
+                        },
+                        "sound": "   ",
+                        "notes": ""
+                    },
+                    {
+                        "id": "stseen-4",
+                        "name": "",
+                        "light": "",
+                        "soundUrl": "",
+                        "soundFile": null,
+                        "sound": "",
+                        "notes": ""
+                    }
+                ],
+                "equipment": {
+                    "items": [
+                        { "id": "seade-1", "name": "  Redel  ", "use": "Valguse riputamiseks" },
+                        { "id": "seade-2", "name": "", "use": "" },
+                        { "id": "seade-3", "name": "   ", "use": "  " },
+                        { "id": "seade-4", "name": "Suitsumasin", "use": "" }
+                    ],
+                    "smoke": "no",
+                    "suggestions": "no",
+                    "suggestNote": "  Oleme plaani juba tehnikuga läbi rääkinud  "
+                },
+                "extra": {
+                    "notes": "  Palume varajast sissepääsu  ",
+                    "files": [
+                        {
+                            "id": "media-3",
+                            "name": "lavaplaan.pdf",
+                            "size": 123456,
+                            "url": "https://plaan.test/attachments/media-3",
+                            "downloadUrl": "https://plaan.test/attachments/media-3/download"
+                        }
+                    ]
+                }
+            },
+            "expected": {
+                "token": "R10-2026-abc123def456",
+                "statusLabel": "Esitatud",
+                "showName": "Öölaul",
+                "performer": "Teater Kuu",
+                "contact": "esineja@example.com",
+                "showDate": "2026-08-14",
+                "durationLabel": "90 min",
+                "description": "Kahevaatuseline",
+                "micsSummary": "Jah — Kaks peamikrofoni",
+                "musicianSummary": "Ei",
+                "scenes": [
+                    {
+                        "num": 1,
+                        "name": "Avastseen",
+                        "light": "Soe täisvalgus\nAeglane tõus",
+                        "soundFile": {
+                            "name": "avamäng.mp3",
+                            "sizeLabel": "3.5 MB",
+                            "url": "https://plaan.test/attachments/media-1",
+                            "downloadUrl": null
+                        },
+                        "soundUrl": "https://example.com/cue.mp3",
+                        "soundText": "Alusta kohe pärast pimendust",
+                        "notes": "Eesriie jääb lahti"
+                    },
+                    {
+                        "num": 2,
+                        "name": "Ainult link",
+                        "light": "—",
+                        "soundFile": null,
+                        "soundUrl": "https://example.com/teine.mp3",
+                        "soundText": "",
+                        "notes": "—"
+                    },
+                    {
+                        "num": 3,
+                        "name": "Ainult fail",
+                        "light": "Punane",
+                        "soundFile": {
+                            "name": "lõpp.wav",
+                            "sizeLabel": "512 B",
+                            "url": "https://plaan.test/attachments/media-2",
+                            "downloadUrl": null
+                        },
+                        "soundUrl": "",
+                        "soundText": "",
+                        "notes": "—"
+                    },
+                    {
+                        "num": 4,
+                        "name": "—",
+                        "light": "—",
+                        "soundFile": null,
+                        "soundUrl": "",
+                        "soundText": "—",
+                        "notes": "—"
+                    }
+                ],
+                "equipmentItems": [
+                    { "name": "Redel", "use": "Valguse riputamiseks" },
+                    { "name": "Suitsumasin", "use": "—" }
+                ],
+                "smokeSummary": "Ei tohi",
+                "suggestionsLine": "Ei — Oleme plaani juba tehnikuga läbi rääkinud",
+                "notes": "Palume varajast sissepääsu",
+                "files": [
+                    {
+                        "name": "lavaplaan.pdf",
+                        "sizeLabel": "120.6 KB",
+                        "url": "https://plaan.test/attachments/media-3",
+                        "downloadUrl": "https://plaan.test/attachments/media-3/download"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "an empty draft, where every field stands in as an em dash",
+            "contact": "",
+            "plan": {
+                "token": null,
+                "status": "draft",
+                "submittedAt": null,
+                "meta": {
+                    "performanceId": null,
+                    "performer": "",
+                    "showName": "",
+                    "showDate": "",
+                    "duration": null,
+                    "description": ""
+                },
+                "sound": {
+                    "micsMode": "no",
+                    "micsDetail": "",
+                    "musicianMode": "yes",
+                    "musicianDetail": "   "
+                },
+                "scenes": [],
+                "equipment": {
+                    "items": [],
+                    "smoke": "yes",
+                    "suggestions": "yes",
+                    "suggestNote": ""
+                },
+                "extra": { "notes": "", "files": [] }
+            },
+            "expected": {
+                "token": null,
+                "statusLabel": "Mustand",
+                "showName": "—",
+                "performer": "—",
+                "contact": "—",
+                "showDate": "—",
+                "durationLabel": "—",
+                "description": "—",
+                "micsSummary": "Ei",
+                "musicianSummary": "Jah",
+                "scenes": [],
+                "equipmentItems": [],
+                "smokeSummary": "Jah",
+                "suggestionsLine": "Jah",
+                "notes": "—",
+                "files": []
+            }
+        },
+        {
+            "name": "smoke left at the minimal-use default",
+            "contact": "tehnik@example.com",
+            "plan": {
+                "token": "R10-2026-000000000000",
+                "status": "received",
+                "submittedAt": null,
+                "meta": {
+                    "performanceId": null,
+                    "performer": "Trupp",
+                    "showName": "Proov",
+                    "showDate": "2026-09-01",
+                    "duration": 0,
+                    "description": ""
+                },
+                "sound": {
+                    "micsMode": "yes",
+                    "micsDetail": "",
+                    "musicianMode": "no",
+                    "musicianDetail": ""
+                },
+                "scenes": [],
+                "equipment": {
+                    "items": [],
+                    "smoke": "minimal",
+                    "suggestions": "no",
+                    "suggestNote": ""
+                },
+                "extra": { "notes": "", "files": [] }
+            },
+            "expected": {
+                "token": "R10-2026-000000000000",
+                "statusLabel": "Tehnik kätte saanud",
+                "showName": "Proov",
+                "performer": "Trupp",
+                "contact": "tehnik@example.com",
+                "showDate": "2026-09-01",
+                "durationLabel": "—",
+                "description": "—",
+                "micsSummary": "Jah",
+                "musicianSummary": "Ei",
+                "scenes": [],
+                "equipmentItems": [],
+                "smokeSummary": "Jah, kuid minimaalselt",
+                "suggestionsLine": "Ei",
+                "notes": "—",
+                "files": []
+            }
+        }
+    ]
+}

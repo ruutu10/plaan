@@ -154,6 +154,95 @@ class PerformanceManagementTest extends TestCase
         $this->assertSame(120, $performance->duration);
     }
 
+    public function test_the_listing_says_which_performances_wait_to_be_reviewed(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+
+        Performance::factory()->draft()->create(['show_id' => $show->id, 'date' => '2026-08-01']);
+        Performance::factory()->create(['show_id' => $show->id, 'date' => '2026-08-02']);
+
+        $this->actingAs($user)
+            ->getJson(route('api.shows.performances.index', $show))
+            ->assertOk()
+            ->assertJsonPath('data.0.isDraft', true)
+            ->assertJsonPath('data.1.isDraft', false);
+    }
+
+    public function test_a_performance_added_by_hand_is_not_a_draft(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+
+        // Adding it here is the review, so there is nothing left to vouch for.
+        $this->actingAs($user)
+            ->postJson(route('api.shows.performances.store', $show), ['date' => '2026-08-14'])
+            ->assertCreated()
+            ->assertJsonPath('data.isDraft', false);
+
+        $this->assertFalse(Performance::sole()->is_draft);
+    }
+
+    public function test_a_member_can_clear_a_performance_that_waited_to_be_reviewed(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+        $performance = Performance::factory()->draft()->create(['show_id' => $show->id, 'date' => '2026-08-01']);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.shows.performances.update', [$show, $performance]), [
+                'date' => '2026-08-01',
+                'is_draft' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.isDraft', false);
+
+        $this->assertFalse($performance->fresh()->is_draft);
+    }
+
+    public function test_a_member_can_put_a_performance_back_to_waiting(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+        $performance = Performance::factory()->create(['show_id' => $show->id, 'date' => '2026-08-01']);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.shows.performances.update', [$show, $performance]), [
+                'date' => '2026-08-01',
+                'is_draft' => true,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.isDraft', true);
+
+        $this->assertTrue($performance->fresh()->is_draft);
+    }
+
+    public function test_a_saved_performance_keeps_its_standing_when_the_field_is_left_out(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+        $performance = Performance::factory()->draft()->create(['show_id' => $show->id, 'date' => '2026-08-01']);
+
+        // A client that does not offer the toggle must not clear the flag by
+        // saving the date alone.
+        $this->actingAs($user)
+            ->patchJson(route('api.shows.performances.update', [$show, $performance]), [
+                'date' => '2026-08-02',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.isDraft', true);
+
+        $this->assertTrue($performance->fresh()->is_draft);
+    }
+
+    public function test_the_draft_flag_must_be_a_boolean(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+
+        $this->actingAs($user)
+            ->postJson(route('api.shows.performances.store', $show), [
+                'date' => '2026-08-14',
+                'is_draft' => 'vahest',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('is_draft');
+    }
+
     public function test_updating_another_teams_performance_is_forbidden(): void
     {
         $performance = Performance::factory()->create(['date' => '2026-08-01']);

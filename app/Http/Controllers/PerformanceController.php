@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
@@ -47,6 +48,13 @@ class PerformanceController extends Controller
     {
         $performance = $show->performances()->create($request->validated());
 
+        Log::info('Performance added to a show', [
+            'performance_id' => $performance->id,
+            'show_id' => $show->id,
+            'date' => $performance->date->toDateString(),
+            'user_id' => $request->user()->id,
+        ]);
+
         return PerformanceResource::make($performance->loadCount('technicalPlans'))
             ->response()
             ->setStatusCode(SymfonyResponse::HTTP_CREATED);
@@ -57,7 +65,19 @@ class PerformanceController extends Controller
      */
     public function update(SavePerformanceRequest $request, Show $show, Performance $performance): PerformanceResource
     {
-        $performance->update($request->validated());
+        $performance->fill($request->validated());
+
+        $changed = array_keys($performance->getDirty());
+
+        $performance->save();
+
+        Log::info('Performance updated', [
+            'performance_id' => $performance->id,
+            'show_id' => $show->id,
+            'date' => $performance->date->toDateString(),
+            'user_id' => $request->user()->id,
+            'changed' => $changed,
+        ]);
 
         return PerformanceResource::make($performance->loadCount('technicalPlans'));
     }
@@ -67,11 +87,23 @@ class PerformanceController extends Controller
      * not deleted with it — they are left without a performance, the column being
      * nulled, which is why the screen warns when there are any.
      */
-    public function destroy(Show $show, Performance $performance): Response
+    public function destroy(Request $request, Show $show, Performance $performance): Response
     {
         Gate::authorize('delete', $performance);
 
+        // The plans written for it survive without a performance, so the count
+        // says how many are about to be left dangling.
+        $orphanedPlans = $performance->technicalPlans()->count();
+
         $performance->delete();
+
+        Log::notice('Performance deleted', [
+            'performance_id' => $performance->id,
+            'show_id' => $show->id,
+            'date' => $performance->date->toDateString(),
+            'user_id' => $request->user()->id,
+            'orphaned_plans' => $orphanedPlans,
+        ]);
 
         return response()->noContent();
     }

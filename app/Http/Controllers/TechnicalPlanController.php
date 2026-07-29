@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\NotifyPlanSubmitted;
+use App\Actions\SaveTechnicalPlan;
+use App\Actions\StagePlanCopy;
+use App\Data\PlanContent;
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Requests\StoreTechnicalPlanRequest;
 use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
@@ -14,17 +18,24 @@ use App\Models\Show;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
-use App\Notifications\TechnicalPlanSubmitted;
 use App\Rules\AllowedAttachment;
 use App\Services\TechnicalPlanReviewer;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class TechnicalPlanController extends Controller
 {
+    /**
+     * How many past plans a show offers as a starting point. More than a
+     * handful is not a choice, it is a list to read through.
+     */
+    private const PRIOR_PLANS_PER_SHOW = 5;
+
     /**
      * Show the landing page (gate) of the technical-plan wizard.
      */
@@ -84,61 +95,62 @@ class TechnicalPlanController extends Controller
      * duplicated on disk), so submitting the new plan carries the files over
      * without affecting the source.
      */
-    public function copy(TechnicalPlan $plan, Request $request): TechnicalPlanResource
+    public function copy(TechnicalPlan $plan, Request $request, StagePlanCopy $stageCopy): TechnicalPlanResource
     {
-        abort_unless($plan->isVisibleTo($request->user()), 403);
+        if (! $plan->isVisibleTo($request->user())) {
+            Log::warning('Refused to copy a plan the user may not open', [
+                'plan_id' => $plan->id,
+                'user_id' => $request->user()->id,
+                'ip' => $request->ip(),
+            ]);
 
-        return TechnicalPlanResource::make($plan)->withDuplicatedAttachments();
+            abort(403);
+        }
+
+        Log::info('Plan copied as the basis for a new one', [
+            'plan_id' => $plan->id,
+            'user_id' => $request->user()->id,
+        ]);
+
+        return TechnicalPlanResource::make($plan)->withStagedCopy($stageCopy->handle($plan));
     }
 
     /**
      * Store (or update) a plan and return its shareable token & public link.
      */
-    public function store(StoreTechnicalPlanRequest $request): SavedTechnicalPlanResource
-    {
+    public function store(
+        StoreTechnicalPlanRequest $request,
+        SaveTechnicalPlan $save,
+        NotifyPlanSubmitted $notify,
+    ): SavedTechnicalPlanResource {
         $data = $request->validated();
         $submitting = (bool) ($data['submit'] ?? false);
-
         $user = $request->user();
-
-        $attributes = [
-            'user_id' => $user->id,
-            'performance_id' => $data['meta']['performanceId'] ?? null,
-            'sound' => $data['sound'],
-            'scenes' => array_values($data['scenes']),
-            'equipment' => array_merge($data['equipment'], ['items' => array_values($data['equipment']['items'] ?? [])]),
-            'extra' => ['notes' => $data['extra']['notes'] ?? ''],
-        ];
 
         $plan = TechnicalPlan::query()
             ->firstOrNew(['token' => $data['token'] ?? null]);
 
         // The token is handed out by the public share link, so anyone holding
         // it could otherwise post over the plan behind it. Writing to a plan
-        // that already exists is held to the same rule as opening it, and its
-        // owner is settled at creation — a later save never reassigns it.
-        if ($plan->exists) {
-            abort_unless($plan->isVisibleTo($user), 403);
+        // that already exists is held to the same rule as opening it.
+        if ($plan->exists && ! $plan->isVisibleTo($user)) {
+            // A refusal here is somebody writing to a plan they only ever
+            // received a link to. Worth seeing.
+            Log::warning('Refused a write to a plan the user may not open', [
+                'plan_id' => $plan->id,
+                'user_id' => $user->id,
+                'ip' => $request->ip(),
+            ]);
 
-            unset($attributes['user_id']);
+            abort(403);
         }
 
-        if ($submitting) {
-            $attributes['status'] = TechnicalPlanStatus::Submitted;
-            $attributes['submitted_at'] = now();
-        } elseif (! $plan->exists) {
-            $attributes['status'] = TechnicalPlanStatus::Draft;
-        }
-
-        $plan->fill($attributes)->save();
-
-        $plan->syncAttachments($data['extra']['files'] ?? []);
-        $plan->syncSceneSoundFiles();
+        $plan = $save->handle($plan, $data, $user, $submitting);
 
         // Only once the files are in place does the plan mail out complete —
         // the notification links to the plan's stored attachments.
         if ($submitting) {
-            $this->notifySubmission($plan);
+            $notify->handle($plan);
         }
 
         return SavedTechnicalPlanResource::make($plan);
@@ -170,24 +182,33 @@ class TechnicalPlanController extends Controller
      * a plan for a performance of one of their teams counts too, which is how
      * the next plan for a show can be written by someone else in the group than
      * the one who sent the last.
+     *
+     * Drafts are left out: a performance the import guessed at is not one to
+     * write a plan for until an admin has vouched for it.
      */
     public function performances(Request $request): JsonResponse
     {
         $upcoming = Performance::query()
             ->with('show.team')
+            ->vouchedFor()
             ->whereDate('date', '>=', now()->toDateString())
             ->orderBy('date')
             ->limit(100)
             ->get();
 
+        // Kept per show rather than as one global list: a single busy show would
+        // otherwise fill a shared limit and leave every other row offering no
+        // prior plan at all. The set is bounded by the upcoming performances
+        // above, so it stays small without a limit of its own.
         $priorPlans = TechnicalPlan::query()
             ->with(['performance', 'user'])
             ->visibleTo($request->user())
-            ->whereIn('status', [TechnicalPlanStatus::Submitted, TechnicalPlanStatus::Received])
+            ->whereIn('status', TechnicalPlanStatus::delivered())
             ->whereHas('performance', fn ($query) => $query->whereIn('show_id', $upcoming->pluck('show_id')->all()))
             ->latest('submitted_at')
-            ->limit(25)
-            ->get();
+            ->get()
+            ->groupBy(fn (TechnicalPlan $plan): int => $plan->performance->show_id)
+            ->flatMap(fn (Collection $plans): Collection => $plans->take(self::PRIOR_PLANS_PER_SHOW));
 
         $results = $upcoming->map(
             fn (Performance $performance): array => UpcomingPerformanceResource::make($performance, $priorPlans)->resolve($request),
@@ -202,6 +223,10 @@ class TechnicalPlanController extends Controller
     public function aiReview(StoreTechnicalPlanRequest $request): JsonResponse
     {
         if (blank(config('services.anthropic.key'))) {
+            Log::warning('AI review asked for while the integration is unconfigured', [
+                'user_id' => $request->user()->id,
+            ]);
+
             return response()->json([
                 'message' => 'AI ülevaatus pole seadistatud.',
             ], 422);
@@ -213,6 +238,11 @@ class TechnicalPlanController extends Controller
         } catch (\Throwable $exception) {
             report($exception);
 
+            Log::error('AI review failed', [
+                'user_id' => $request->user()->id,
+                'exception' => $exception->getMessage(),
+            ]);
+
             return response()->json([
                 'message' => 'AI ülevaatus ebaõnnestus. Proovi hetke pärast uuesti.',
             ], 422);
@@ -221,25 +251,6 @@ class TechnicalPlanController extends Controller
         return response()->json([
             'review' => $review ?: 'Tagasisidet ei saadud. Proovi uuesti.',
         ]);
-    }
-
-    /**
-     * Mail the submitted plan out: the performer keeps a copy of what they
-     * sent, and the technical team gets the plan they will run the show from.
-     * Resubmitting notifies again — the plan the team holds has to be the
-     * current one.
-     */
-    private function notifySubmission(TechnicalPlan $plan): void
-    {
-        $notification = new TechnicalPlanSubmitted($plan);
-
-        $plan->user?->notify($notification);
-
-        $techEmail = (string) config('technical_plan.tech_email');
-
-        if ($techEmail !== '' && $techEmail !== $plan->user?->email) {
-            Notification::route('mail', $techEmail)->notify($notification);
-        }
     }
 
     /**
@@ -269,12 +280,8 @@ class TechnicalPlanController extends Controller
     {
         $meta = $data['meta'];
 
-        $plan = new TechnicalPlan([
+        $plan = new TechnicalPlan(PlanContent::fromValidated($data) + [
             'status' => TechnicalPlanStatus::Draft,
-            'sound' => $data['sound'],
-            'scenes' => array_values($data['scenes']),
-            'equipment' => array_merge($data['equipment'], ['items' => array_values($data['equipment']['items'] ?? [])]),
-            'extra' => ['notes' => $data['extra']['notes'] ?? ''],
         ]);
 
         $show = new Show([

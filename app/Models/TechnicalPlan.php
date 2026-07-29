@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -134,12 +135,18 @@ class TechnicalPlan extends Model implements HasMedia
 
         $stored = $this->sceneSoundFiles();
 
-        $this->scenes = array_map(function (array $scene) use ($moved, $stored): array {
+        $lost = 0;
+
+        $this->scenes = array_map(function (array $scene) use ($moved, $stored, &$lost): array {
             $handle = $scene['soundFile']['id'] ?? null;
             $media = $handle ? $stored->get($moved[$handle] ?? '') : null;
 
             // A handle that resolved to nothing (unknown or already gone)
             // leaves the scene without a sound file.
+            if ($handle && ! $media) {
+                $lost++;
+            }
+
             $scene['soundFile'] = $media ? [
                 'id' => (string) $media->uuid,
                 'name' => $media->file_name,
@@ -148,6 +155,22 @@ class TechnicalPlan extends Model implements HasMedia
 
             return $scene;
         }, $this->scenes);
+
+        // Sound cues going missing between the wizard and the plan is the kind
+        // of thing that is only discovered at the desk on the night.
+        if ($lost > 0) {
+            Log::warning('Scenes lost their sound file while saving a plan', [
+                'plan_id' => $this->id,
+                'scenes_affected' => $lost,
+                'scenes' => count($this->scenes),
+            ]);
+        }
+
+        Log::debug('Reconciled scene sound files', [
+            'plan_id' => $this->id,
+            'submitted' => count($handles),
+            'stored' => $stored->count(),
+        ]);
 
         $this->save();
     }
@@ -163,12 +186,12 @@ class TechnicalPlan extends Model implements HasMedia
     #[Scope]
     protected function visibleTo(Builder $query, User $user): void
     {
-        $teamIds = $user->teams()->pluck('teams.id');
+        $teamIds = $user->teamIds();
 
         $query->where(fn (Builder $query) => $query
             ->where('user_id', $user->id)
             ->orWhere(fn (Builder $query) => $query
-                ->whereIn('status', [TechnicalPlanStatus::Submitted, TechnicalPlanStatus::Received])
+                ->whereIn('status', TechnicalPlanStatus::delivered())
                 // A performance is the team's through the show it stages.
                 ->whereHas('performance.show', fn (Builder $show) => $show->whereIn('team_id', $teamIds))));
     }

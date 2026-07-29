@@ -27,7 +27,7 @@ const yesNo = [
                 >
                     Kas kasutad mikrofone?
                 </div>
-                <p class="mb-2.5 -mt-1 text-xs text-r10-grey-500">
+                <p class="-mt-1 mb-2.5 text-xs text-r10-grey-500">
                     Kui jah — kogus, paigutus ja kas töötav mikrofon või
                     rekvisiit.
                 </p>
@@ -48,7 +48,7 @@ const yesNo = [
                 >
                     Kasutad oma muusikut?
                 </div>
-                <p class="mb-2.5 -mt-1 text-xs text-r10-grey-500">
+                <p class="-mt-1 mb-2.5 text-xs text-r10-grey-500">
                     Instrument, PA vs akustiline, voolu- ja kaablivajadus, kes
                     toob.
                 </p>

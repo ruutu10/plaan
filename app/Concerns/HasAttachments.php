@@ -5,6 +5,7 @@ namespace App\Concerns;
 use App\Http\Resources\Attachment;
 use App\Models\PendingUpload;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -135,6 +136,7 @@ trait HasAttachments
 
         $existing = $this->getMedia($collection)->keyBy('uuid');
         $resolved = [];
+        $unresolved = [];
 
         foreach ($files as $file) {
             $handle = $file['id'] ?? null;
@@ -155,14 +157,39 @@ trait HasAttachments
                 $moved = $staged->move($this, $collection);
                 $staged->model->delete();
                 $resolved[$handle] = (string) $moved->uuid;
+
+                continue;
             }
+
+            $unresolved[] = $handle;
         }
 
         $kept = array_flip($resolved);
 
-        $existing
+        $dropped = $existing
             ->reject(fn (Media $media): bool => isset($kept[$media->uuid]))
             ->each->delete();
+
+        // A handle the client sent that resolved to nothing is a file the user
+        // believes they attached and we silently did not — the one failure in
+        // this flow that never surfaces in the response.
+        if ($unresolved !== []) {
+            Log::warning('Submitted attachment handles resolved to nothing', [
+                'model_type' => $this::class,
+                'model_id' => $this->getKey(),
+                'collection' => $collection,
+                'handles' => $unresolved,
+            ]);
+        }
+
+        Log::debug('Reconciled attachments', [
+            'model_type' => $this::class,
+            'model_id' => $this->getKey(),
+            'collection' => $collection,
+            'submitted' => count($files),
+            'kept' => count($resolved),
+            'deleted' => $dropped->count(),
+        ]);
 
         // The sync mutated media directly, so refresh the cached relation for
         // any follow-up read (e.g. serialising the canonical attachment list).

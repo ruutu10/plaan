@@ -2,8 +2,12 @@
 
 namespace App\Enums;
 
+use App\Concerns\HasValues;
+
 enum TechnicalPlanStatus: string
 {
+    use HasValues;
+
     case Draft = 'draft';
     case Submitted = 'submitted';
     case Received = 'received';
@@ -23,12 +27,15 @@ enum TechnicalPlanStatus: string
     }
 
     /**
-     * Get the list of backing values for the database enum column.
+     * The statuses of a plan that has reached the technical team. A draft is
+     * still the performer's own; an archived plan is done with. Everything in
+     * between is a plan the crew holds, and is what the dashboard counts and
+     * what a new plan may be filled in from.
      *
-     * @return array<int, string>
+     * @return array<int, self>
      */
-    public static function values(): array
+    public static function delivered(): array
     {
-        return array_column(self::cases(), 'value');
+        return [self::Submitted, self::Received];
     }
 }

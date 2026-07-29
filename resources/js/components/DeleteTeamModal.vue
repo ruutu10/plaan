@@ -1,100 +1,97 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
+import { TriangleAlert } from '@lucide/vue';
 import { computed, ref } from 'vue';
-import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
+import R10Button from '@/components/technical-plan/R10Button.vue';
+import R10Input from '@/components/technical-plan/R10Input.vue';
 import {
     Dialog,
-    DialogClose,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { destroy } from '@/routes/teams';
 import type { Team } from '@/types';
 
-type Props = {
-    team: Team;
-    open: boolean;
-};
+const props = defineProps<{ team: Team }>();
 
-const props = defineProps<Props>();
-const emit = defineEmits<{
-    'update:open': [value: boolean];
-}>();
+const open = defineModel<boolean>('open', { required: true });
 
+/** Deleting is held behind typing the team's name, so it cannot be a slip. */
 const confirmationName = ref('');
+/** Bumped to remount the form, which is how a closed dialog forgets what was typed. */
 const formKey = ref(0);
 
-const canDeleteTeam = computed(() => {
-    return confirmationName.value === props.team.name;
-});
+const canDelete = computed(() => confirmationName.value === props.team.name);
 
-const handleOpenChange = (nextOpen: boolean) => {
-    emit('update:open', nextOpen);
+function change(value: boolean): void {
+    open.value = value;
 
-    if (!nextOpen) {
+    if (!value) {
         confirmationName.value = '';
         formKey.value++;
     }
-};
+}
 </script>
 
 <template>
-    <Dialog :open="props.open" @update:open="handleOpenChange">
-        <DialogContent>
+    <Dialog :open="open" @update:open="change">
+        <DialogContent class="bg-r10-paper font-r10-body text-r10-grey-700">
             <Form
                 :key="formKey"
-                v-bind="destroy.form(props.team.slug)"
-                class="space-y-6"
+                v-bind="destroy.form(team.slug)"
                 v-slot="{ errors, processing }"
-                @success="handleOpenChange(false)"
+                class="flex flex-col gap-6"
+                @success="change(false)"
             >
                 <DialogHeader>
-                    <DialogTitle>Are you sure?</DialogTitle>
-                    <DialogDescription>
-                        This action cannot be undone. This will permanently
-                        delete the team
-                        <strong>"{{ props.team.name }}"</strong>.
+                    <DialogTitle
+                        class="font-r10-display text-xl font-bold tracking-[0.02em] text-r10-ink uppercase"
+                    >
+                        Kustuta tiim
+                    </DialogTitle>
+                    <DialogDescription class="text-[15px] text-r10-grey-500">
+                        Kas kustutada tiim „{{ team.name }}“?
                     </DialogDescription>
                 </DialogHeader>
 
-                <div class="space-y-4 py-4">
-                    <div class="grid gap-2">
-                        <Label for="confirmation-name">
-                            Type
-                            <strong>"{{ props.team.name }}"</strong> to confirm
-                        </Label>
-                        <Input
-                            id="confirmation-name"
-                            name="name"
-                            data-test="delete-team-name"
-                            v-model="confirmationName"
-                            placeholder="Enter team name"
-                            autocomplete="off"
-                        />
-                        <InputError :message="errors.name" />
-                    </div>
-                </div>
+                <p
+                    class="flex gap-3 rounded-lg border-2 border-r10-orange bg-r10-orange-100 p-4 text-[14px] text-r10-grey-700"
+                >
+                    <TriangleAlert
+                        class="mt-0.5 h-5 w-5 shrink-0 text-r10-orange-700"
+                    />
+                    <span>
+                        Liikmed kaotavad tiimile ligipääsu ja viiakse üle oma
+                        isiklikku tiimi. Seda ei saa tagasi võtta.
+                    </span>
+                </p>
 
-                <DialogFooter class="gap-2">
-                    <DialogClose as-child>
-                        <Button variant="secondary"> Cancel </Button>
-                    </DialogClose>
+                <R10Input
+                    v-model="confirmationName"
+                    name="name"
+                    :label="`Kinnituseks kirjuta „${team.name}“`"
+                    placeholder="Tiimi nimi"
+                    autocomplete="off"
+                    data-test="delete-team-name"
+                    :error="errors.name"
+                />
 
-                    <Button
-                        data-test="delete-team-confirm"
-                        variant="destructive"
+                <div class="flex items-center justify-end gap-3">
+                    <R10Button variant="outline" @click="change(false)">
+                        Loobu
+                    </R10Button>
+
+                    <R10Button
                         type="submit"
-                        :disabled="!canDeleteTeam || processing"
+                        variant="danger"
+                        data-test="delete-team-confirm"
+                        :disabled="!canDelete || processing"
                     >
-                        Delete team
-                    </Button>
-                </DialogFooter>
+                        Kustuta tiim
+                    </R10Button>
+                </div>
             </Form>
         </DialogContent>
     </Dialog>

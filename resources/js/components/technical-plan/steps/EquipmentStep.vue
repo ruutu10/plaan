@@ -95,7 +95,9 @@ const suggestOptions = [
                     Kas tehnik tohib kasutada suitsuefekte?
                 </div>
                 <p class="mt-0 mb-3 text-[13px] text-r10-grey-500">
-                    N.B! Improkeskuse ruumides suitsuefekte kasutada ei saa, see valik kehtib ainult etendustel, mis toimuvad väljaspool improkeskust.
+                    N.B! Improkeskuse ruumides suitsuefekte kasutada ei saa, see
+                    valik kehtib ainult etendustel, mis toimuvad väljaspool
+                    improkeskust.
                 </p>
                 <RadioPills
                     v-model="plan.equipment.smoke"

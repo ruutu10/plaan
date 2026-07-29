@@ -7,6 +7,7 @@ use App\Models\Team;
 use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureTeamMembership
@@ -20,7 +21,24 @@ class EnsureTeamMembership
     {
         [$user, $team] = [$request->user(), $this->team($request)];
 
-        abort_if(! $user || ! $team || ! $user->belongsToTeam($team), 403);
+        if (! $user || ! $team || ! $user->belongsToTeam($team)) {
+            // The gate every team-scoped route sits behind. A refusal here is
+            // either a stale link or somebody trying team slugs by hand, and
+            // the two are only told apart by how often it happens.
+            Log::warning('Refused access to a team route', [
+                'user_id' => $user?->id,
+                'team_id' => $team?->id,
+                'reason' => match (true) {
+                    ! $user => 'unauthenticated',
+                    ! $team => 'unknown_team',
+                    default => 'not_a_member',
+                },
+                'path' => $request->path(),
+                'ip' => $request->ip(),
+            ]);
+
+            abort(403);
+        }
 
         $this->ensureTeamMemberHasRequiredRole($user, $team, $minimumRole);
 
@@ -44,12 +62,27 @@ class EnsureTeamMembership
 
         $requiredRole = TeamRole::tryFrom($minimumRole);
 
-        abort_if(
-            $requiredRole === null ||
-            $role === null ||
-            ! $role->isAtLeast($requiredRole),
-            403,
-        );
+        if ($requiredRole === null) {
+            // A route declared with a role the enum does not know is a wiring
+            // mistake, and it locks everybody out rather than letting them in.
+            Log::error('Team route requires a role that does not exist', [
+                'required_role' => $minimumRole,
+                'team_id' => $team->id,
+            ]);
+
+            abort(403);
+        }
+
+        if ($role === null || ! $role->isAtLeast($requiredRole)) {
+            Log::warning('Refused a team route to a member below the required role', [
+                'user_id' => $user->id,
+                'team_id' => $team->id,
+                'role' => $role?->value,
+                'required_role' => $requiredRole->value,
+            ]);
+
+            abort(403);
+        }
     }
 
     /**

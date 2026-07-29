@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Data\ImportedPerformance;
+use App\Data\ImportSummary;
+use App\Enums\ImportedShowStatus;
 use App\Models\Performance;
 use App\Models\Show;
 use App\Models\Team;
@@ -62,130 +64,173 @@ class ImportPlankaPerformances extends Command
         if (! PlankaClient::isConfigured()) {
             $this->error('Planka is not configured. Set PLANKA_URL, PLANKA_LIST_IDS and PLANKA_ACCESS_TOKEN.');
 
+            // A scheduled run that silently does nothing is worse than one that
+            // fails loudly, so a missing configuration is logged, not just told
+            // to whoever happens to be at the terminal.
+            Log::error('Planka import aborted: the integration is not configured');
+
             return self::FAILURE;
         }
 
         $dryRun = (bool) $this->option('dry-run');
         $listIds = PlankaClient::listIds();
 
+        Log::info('Planka import started', [
+            'dry_run' => $dryRun,
+            'lists' => count($listIds),
+        ]);
+
         try {
             $cards = $this->planka->cardsInLists($listIds);
         } catch (Throwable $e) {
             $this->error("Could not read the Planka lists: {$e->getMessage()}");
+
+            Log::error('Planka import aborted: the lists could not be read', [
+                'lists' => count($listIds),
+                'exception' => $e->getMessage(),
+            ]);
 
             return self::FAILURE;
         }
 
         $this->info(sprintf('Read %d card(s) from %d Planka list(s).', count($cards), count($listIds)));
 
+        Log::info('Read the Planka cards', [
+            'cards' => count($cards),
+            'lists' => count($listIds),
+        ]);
+
         $this->primeShows();
 
-        $showsCreated = 0;
-        $showsAdopted = 0;
-        $performancesCreated = 0;
-        $skipped = 0;
-        $passedOver = 0;
-        $seen = [];
+        $summary = new ImportSummary;
 
         foreach ($cards as $card) {
-            if (blank($card['description'])) {
-                continue;
-            }
-
-            if ($label = $this->excludedLabelOn($card['labels'])) {
-                $this->line("  Passing over \"{$card['name']}\": labelled {$label}.");
-                $passedOver++;
-
-                continue;
-            }
-
-            try {
-                $performances = $this->extractor->extract($card['name'], $card['description'], $card['dueDate']);
-            } catch (Throwable $e) {
-                // One unreadable card must not cost us the rest of the season.
-                $this->warn("Could not read the card \"{$card['name']}\": {$e->getMessage()}");
-                Log::warning('Planka card extraction failed', [
-                    'card' => $card['id'],
-                    'exception' => $e->getMessage(),
-                ]);
-
-                continue;
-            }
-
-            foreach ($performances as $performance) {
-                // The same act can be named twice on one card, or spread over
-                // two cards for the same night; either way it is one performance.
-                if (isset($seen[$performance->fingerprint()])) {
-                    continue;
-                }
-
-                $seen[$performance->fingerprint()] = true;
-
-                $status = $this->resolveShow($performance->showName, $performance->teamId, $dryRun);
-
-                if ($status === 'deleted') {
-                    $this->line("  Skipping {$performance->showName}: the show was deleted here.");
-                    $skipped++;
-
-                    continue;
-                }
-
-                if ($status === 'created') {
-                    $this->line(sprintf(
-                        '  %s show: %s%s',
-                        $dryRun ? 'Would create' : 'Creating',
-                        $performance->showName,
-                        $this->teamNote($performance->teamId),
-                    ));
-                    $showsCreated++;
-                }
-
-                $show = $this->shows[$this->showKey($performance->showName)] ?? null;
-
-                if ($this->adoptShow($show, $performance->teamId, $dryRun)) {
-                    $this->line(sprintf(
-                        '  %s show: %s%s',
-                        $dryRun ? 'Would hand over' : 'Handing over',
-                        $performance->showName,
-                        $this->teamNote($performance->teamId),
-                    ));
-                    $showsAdopted++;
-                }
-
-                if ($this->performanceExists($show, $performance)) {
-                    $skipped++;
-
-                    continue;
-                }
-
-                $this->line(sprintf(
-                    '  %s performance: %s on %s',
-                    $dryRun ? 'Would create' : 'Creating',
-                    $performance->showName,
-                    $performance->date->toDateString(),
-                ));
-                $performancesCreated++;
-
-                if (! $dryRun && $show !== null) {
-                    $show->performances()->create([
-                        'date' => $performance->date,
-                        'duration' => $performance->duration,
-                    ]);
-                }
-            }
+            $this->importCard($card, $summary, $dryRun);
         }
 
-        $this->info(sprintf(
-            '%s %d show(s) and %d performance(s); %d show(s) handed to a group, %d already known, %d card(s) passed over by label.',
-            $dryRun ? 'Would import' : 'Imported',
-            $showsCreated,
-            $performancesCreated,
-            $showsAdopted,
-            $skipped,
-            $passedOver,
-        ));
+        $this->info($summary->sentence($dryRun));
+
+        // The one line a weekly run is read by: what it did, in full.
+        Log::info('Planka import finished', [
+            'dry_run' => $dryRun,
+            'cards' => count($cards),
+            ...$summary->context(),
+        ]);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Read one card and register whatever it announces.
+     *
+     * @param  array{id: string, name: string, description: string|null, dueDate: string|null, labels: list<string>}  $card
+     */
+    protected function importCard(array $card, ImportSummary $summary, bool $dryRun): void
+    {
+        if (blank($card['description'])) {
+            return;
+        }
+
+        if ($label = $this->excludedLabelOn($card['labels'])) {
+            $this->line("  Passing over \"{$card['name']}\": labelled {$label}.");
+            Log::debug('Passing over a Planka card by label', [
+                'card' => $card['id'],
+                'label' => $label,
+            ]);
+            $summary->passedOver++;
+
+            return;
+        }
+
+        try {
+            $performances = $this->extractor->extract($card['name'], $card['description'], $card['dueDate']);
+        } catch (Throwable $e) {
+            // One unreadable card must not cost us the rest of the season.
+            $this->warn("Could not read the card \"{$card['name']}\": {$e->getMessage()}");
+            Log::warning('Planka card extraction failed', [
+                'card' => $card['id'],
+                'exception' => $e->getMessage(),
+            ]);
+
+            return;
+        }
+
+        foreach ($performances as $performance) {
+            if ($summary->isNew($performance)) {
+                $this->importPerformance($performance, $summary, $dryRun);
+            }
+        }
+    }
+
+    /**
+     * Register one performance the card announced, settling its show first.
+     */
+    protected function importPerformance(ImportedPerformance $performance, ImportSummary $summary, bool $dryRun): void
+    {
+        $status = $this->resolveShow($performance->showName, $performance->teamId, $dryRun);
+
+        if ($status === ImportedShowStatus::Deleted) {
+            $this->line("  Skipping {$performance->showName}: the show was deleted here.");
+            $summary->skipped++;
+
+            return;
+        }
+
+        if ($status === ImportedShowStatus::Created) {
+            $this->line(sprintf(
+                '  %s show: %s%s',
+                $dryRun ? 'Would create' : 'Creating',
+                $performance->showName,
+                $this->teamNote($performance->teamId),
+            ));
+            $summary->showsCreated++;
+        }
+
+        $show = $this->shows[$this->showKey($performance->showName)] ?? null;
+
+        if ($this->adoptShow($show, $performance->teamId, $dryRun)) {
+            $this->line(sprintf(
+                '  %s show: %s%s',
+                $dryRun ? 'Would hand over' : 'Handing over',
+                $performance->showName,
+                $this->teamNote($performance->teamId),
+            ));
+            $summary->showsAdopted++;
+        }
+
+        if ($this->performanceExists($show, $performance)) {
+            $summary->skipped++;
+
+            return;
+        }
+
+        $this->line(sprintf(
+            '  %s performance: %s on %s',
+            $dryRun ? 'Would create' : 'Creating',
+            $performance->showName,
+            $performance->date->toDateString(),
+        ));
+        $summary->performancesCreated++;
+
+        if ($dryRun || $show === null) {
+            return;
+        }
+
+        $created = $show->performances()->create([
+            'date' => $performance->date,
+            'duration' => $performance->duration,
+            // What a card announces is a claim, not a booking: it waits as a
+            // draft until an admin has looked it over.
+            'is_draft' => true,
+        ]);
+
+        Log::info('Registered a performance from a Planka card', [
+            'performance_id' => $created->id,
+            'show_id' => $show->id,
+            'date' => $performance->date->toDateString(),
+            'duration' => $performance->duration,
+            'is_draft' => true,
+        ]);
     }
 
     /**
@@ -205,6 +250,11 @@ class ImportPlankaPerformances extends Command
 
         if (! $dryRun) {
             $show->save();
+
+            Log::info('Handed an ownerless show to a group', [
+                'show_id' => $show->id,
+                'team_id' => $teamId,
+            ]);
         }
 
         return true;
@@ -252,29 +302,35 @@ class ImportPlankaPerformances extends Command
      * never had. The answer is remembered for the rest of the run, so a name
      * that turns up on a second card — or a second night on the same card —
      * lands on the show settled the first time rather than making another.
-     *
-     * @return 'existing'|'created'|'deleted'
      */
-    protected function resolveShow(string $name, ?int $teamId, bool $dryRun): string
+    protected function resolveShow(string $name, ?int $teamId, bool $dryRun): ImportedShowStatus
     {
         $key = $this->showKey($name);
 
         if (isset($this->deletedShows[$key])) {
-            return 'deleted';
+            return ImportedShowStatus::Deleted;
         }
 
         if (isset($this->shows[$key]) || isset($this->plannedShows[$key])) {
-            return 'existing';
+            return ImportedShowStatus::Existing;
         }
 
         if ($dryRun) {
             // Nothing is written, so there would be no row to find next time.
             $this->plannedShows[$key] = true;
         } else {
-            $this->shows[$key] = Show::create(['name' => $name, 'team_id' => $teamId]);
+            $show = Show::create(['name' => $name, 'team_id' => $teamId]);
+
+            $this->shows[$key] = $show;
+
+            Log::info('Created a show from a Planka card', [
+                'show_id' => $show->id,
+                'name' => $name,
+                'team_id' => $teamId,
+            ]);
         }
 
-        return 'created';
+        return ImportedShowStatus::Created;
     }
 
     /**

@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
@@ -95,7 +96,16 @@ class TeamAdminController extends Controller
      */
     public function update(SaveTeamRequest $request, Team $team): TeamResource
     {
+        $previousSlug = $team->slug;
+
         $team->update(['name' => $request->validated('name')]);
+
+        Log::info('Team renamed from the management screen', [
+            'team_id' => $team->id,
+            'slug' => $team->slug,
+            'previous_slug' => $previousSlug,
+            'user_id' => $request->user()->id,
+        ]);
 
         return TeamResource::make($team->loadCount(['members', 'shows']));
     }
@@ -104,9 +114,17 @@ class TeamAdminController extends Controller
      * Put the team aside. It is soft-deleted, so what it staged keeps its
      * trail, but the memberships go and everyone standing in it is moved on.
      */
-    public function destroy(Team $team, DeleteTeam $deleteTeam): Response
+    public function destroy(Request $request, Team $team, DeleteTeam $deleteTeam): Response
     {
         Gate::authorize('delete', $team);
+
+        // Unlike an owner leaving their own team, this deletes somebody else's
+        // group, so who asked for it is the part worth keeping.
+        Log::notice('Team deletion requested from the management screen', [
+            'team_id' => $team->id,
+            'slug' => $team->slug,
+            'user_id' => $request->user()->id,
+        ]);
 
         $deleteTeam->handle($team);
 
