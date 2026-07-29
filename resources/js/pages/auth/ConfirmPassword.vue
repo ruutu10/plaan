@@ -12,24 +12,24 @@ import { store } from '@/routes/password/confirm';
 
 defineOptions({
     layout: {
-        title: 'Confirm password',
+        title: 'Kinnita parool',
         description:
-            'This is a secure area of the application. Please confirm your password before continuing.',
+            'See on rakenduse turvaline ala. Enne jätkamist kinnita oma parool.',
     },
 });
 </script>
 
 <template>
-    <Head title="Confirm password" />
+    <Head title="Kinnita parool" />
 
     <PasskeyVerify
         :routes="{
             options: confirmOptions(),
             submit: confirmStore(),
         }"
-        label="Confirm with passkey"
-        loading-label="Confirming..."
-        separator="Or confirm with password"
+        label="Kinnita pääsuvõtmega"
+        loading-label="Kinnitan..."
+        separator="Või kinnita parooliga"
     />
 
     <Form
@@ -41,7 +41,7 @@ defineOptions({
             <PasswordInput
                 id="password"
                 name="password"
-                label="Password"
+                label="Parool"
                 required
                 autocomplete="current-password"
                 autofocus
@@ -57,7 +57,7 @@ defineOptions({
                     data-test="confirm-password-button"
                 >
                     <Spinner v-if="processing" />
-                    Confirm password
+                    Kinnita parool
                 </R10Button>
             </div>
         </div>

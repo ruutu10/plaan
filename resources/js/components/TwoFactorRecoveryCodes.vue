@@ -42,11 +42,11 @@ onMounted(async () => {
     <Card class="w-full">
         <CardHeader>
             <CardTitle class="flex gap-3">
-                <LockKeyhole class="size-4" />2FA recovery codes
+                <LockKeyhole class="size-4" />2FA taastekoodid
             </CardTitle>
             <CardDescription>
-                Recovery codes let you regain access if you lose your 2FA
-                device. Store them in a secure password manager.
+                Taastekoodid võimaldavad taastada ligipääsu, kui kaotad oma
+                2FA seadme. Hoia neid turvalises paroolihaldusrakenduses.
             </CardDescription>
         </CardHeader>
         <CardContent>
@@ -58,8 +58,7 @@ onMounted(async () => {
                         :is="isRecoveryCodesVisible ? EyeOff : Eye"
                         class="size-4"
                     />
-                    {{ isRecoveryCodesVisible ? 'Hide' : 'View' }} recovery
-                    codes
+                    {{ isRecoveryCodesVisible ? 'Peida' : 'Näita' }} taastekoode
                 </R10Button>
 
                 <Form
@@ -75,7 +74,7 @@ onMounted(async () => {
                         type="submit"
                         :disabled="processing"
                     >
-                        <RefreshCw class="size-4" /> Regenerate codes
+                        <RefreshCw class="size-4" /> Genereeri koodid uuesti
                     </R10Button>
                 </Form>
             </div>
@@ -111,10 +110,10 @@ onMounted(async () => {
                         </div>
                     </div>
                     <p class="text-xs text-muted-foreground select-none">
-                        Each recovery code can be used once to access your
-                        account and will be removed after use. If you need more,
-                        click
-                        <span class="font-bold">Regenerate codes</span> above.
+                        Iga taastekoodi saab kasutada üks kord ligipääsuks
+                        oma kontole ning see eemaldatakse pärast kasutamist.
+                        Kui vajad rohkem koode, klõpsa ülal nupul
+                        <span class="font-bold">Genereeri koodid uuesti</span>.
                     </p>
                 </div>
             </div>

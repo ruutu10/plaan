@@ -43,10 +43,10 @@ const handleDelete = () => {
                     </span>
                 </div>
                 <p class="text-sm text-muted-foreground">
-                    Added {{ passkey.created_at_diff }}
+                    Lisatud {{ passkey.created_at_diff }}
                     <template v-if="passkey.last_used_at_diff">
                         <span class="mx-1 text-muted-foreground/50">/</span>
-                        Last used {{ passkey.last_used_at_diff }}
+                        Viimati kasutatud {{ passkey.last_used_at_diff }}
                     </template>
                 </p>
             </div>
@@ -54,30 +54,30 @@ const handleDelete = () => {
 
         <button
             type="button"
-            title="Remove passkey"
+            title="Eemalda pääsuvõti"
             class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-grey-200 bg-white p-2 text-r10-grey-500 transition hover:border-r10-error hover:text-r10-error"
             @click="confirmOpen = true"
         >
             <Trash2 class="h-3.5 w-3.5" />
-            <span class="sr-only">Remove</span>
+            <span class="sr-only">Eemalda</span>
         </button>
 
-        <R10Dialog v-model:open="confirmOpen" title="Remove passkey">
+        <R10Dialog v-model:open="confirmOpen" title="Eemalda pääsuvõti">
             <template #description>
-                Are you sure you want to remove the "{{ passkey.name }}"
-                passkey? You will no longer be able to use it to sign in.
+                Kas soovid kindlasti eemaldada pääsuvõtme „{{ passkey.name }}“?
+                Sa ei saa seda enam sisselogimiseks kasutada.
             </template>
 
             <template #actions>
                 <R10Button variant="outline" @click="confirmOpen = false">
-                    Cancel
+                    Loobu
                 </R10Button>
                 <R10Button
                     variant="danger"
                     :disabled="isDeleting"
                     @click="handleDelete"
                 >
-                    {{ isDeleting ? 'Removing...' : 'Remove passkey' }}
+                    {{ isDeleting ? 'Eemaldan...' : 'Eemalda pääsuvõti' }}
                 </R10Button>
             </template>
         </R10Dialog>

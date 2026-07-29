@@ -10,8 +10,8 @@ import { email } from '@/routes/password';
 
 defineOptions({
     layout: {
-        title: 'Forgot password',
-        description: 'Enter your email to receive a password reset link',
+        title: 'Unustasid parooli?',
+        description: 'Sisesta oma e-post, et saada parooli lähtestamise link',
     },
 });
 
@@ -21,7 +21,7 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Forgot password" />
+    <Head title="Unustasid parooli?" />
 
     <R10Notice v-if="status" tone="success" class="mb-4">
         {{ status }}
@@ -33,7 +33,7 @@ defineProps<{
                 id="email"
                 type="email"
                 name="email"
-                label="Email address"
+                label="E-post"
                 autocomplete="off"
                 autofocus
                 placeholder="email@example.com"
@@ -49,14 +49,14 @@ defineProps<{
                     data-test="email-password-reset-link-button"
                 >
                     <Spinner v-if="processing" />
-                    Email password reset link
+                    Saada parooli lähtestamise link
                 </R10Button>
             </div>
         </Form>
 
         <div class="space-x-1 text-center text-sm text-r10-grey-500">
-            <span>Or, return to</span>
-            <TextLink :href="login()">log in</TextLink>
+            <span>Või mine tagasi</span>
+            <TextLink :href="login()">sisselogimise juurde</TextLink>
         </div>
     </div>
 </template>

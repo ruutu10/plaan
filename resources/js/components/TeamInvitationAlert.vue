@@ -4,7 +4,7 @@ import type { TeamInvitationContext } from '@/types';
 
 type Props = {
     invitation: TeamInvitationContext;
-    action: 'Log in' | 'Register';
+    action: 'login' | 'register';
 };
 
 defineProps<Props>();
@@ -14,7 +14,12 @@ defineProps<Props>();
     <div data-test="team-invitation-alert">
         <!-- `busy` spins its marker, so the still navy panel reads better here. -->
         <R10Notice tone="success">
-            {{ action }} to join the "{{ invitation.teamName }}" team.
+            <template v-if="action === 'login'">
+                Tiimiga „{{ invitation.teamName }}“ liitumiseks logi sisse.
+            </template>
+            <template v-else>
+                Tiimiga „{{ invitation.teamName }}“ liitumiseks registreeru.
+            </template>
         </R10Notice>
     </div>
 </template>

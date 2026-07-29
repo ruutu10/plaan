@@ -49,8 +49,8 @@ const { verify, isLoading, error, isSupported } = usePasskeyVerify({
                 <KeyRound v-else class="h-4 w-4" />
                 {{
                     isLoading
-                        ? (props.loadingLabel ?? 'Authenticating...')
-                        : (props.label ?? 'Sign in with a passkey')
+                        ? (props.loadingLabel ?? 'Autendin...')
+                        : (props.label ?? 'Logi sisse pääsuvõtmega')
                 }}
             </R10Button>
 
@@ -67,7 +67,7 @@ const { verify, isLoading, error, isSupported } = usePasskeyVerify({
                 class="relative flex justify-center font-r10-body text-xs font-bold tracking-[0.08em] uppercase"
             >
                 <span class="bg-white px-2 text-r10-grey-500">
-                    {{ props.separator ?? 'Or continue with email' }}
+                    {{ props.separator ?? 'Või jätka e-postiga' }}
                 </span>
             </div>
         </div>

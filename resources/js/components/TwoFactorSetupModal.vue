@@ -46,26 +46,26 @@ const pinInputContainerRef = useTemplateRef('pinInputContainerRef');
 const modalConfig = computed<TwoFactorConfigContent>(() => {
     if (props.twoFactorEnabled) {
         return {
-            title: 'Two-factor authentication enabled',
+            title: 'Kaheastmeline autentimine on lubatud',
             description:
-                'Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.',
-            buttonText: 'Close',
+                'Kaheastmeline autentimine on nüüd lubatud. Skaneeri QR-kood või sisesta seadistusvõti oma autentimisrakendusse.',
+            buttonText: 'Sulge',
         };
     }
 
     if (showVerificationStep.value) {
         return {
-            title: 'Verify authentication code',
-            description: 'Enter the 6-digit code from your authenticator app',
-            buttonText: 'Continue',
+            title: 'Kinnita autentimiskood',
+            description: 'Sisesta 6-kohaline kood oma autentimisrakendusest',
+            buttonText: 'Jätka',
         };
     }
 
     return {
-        title: 'Enable two-factor authentication',
+        title: 'Luba kaheastmeline autentimine',
         description:
-            'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app',
-        buttonText: 'Continue',
+            'Kaheastmelise autentimise lubamise lõpetamiseks skaneeri QR-kood või sisesta seadistusvõti oma autentimisrakendusse',
+        buttonText: 'Jätka',
     };
 });
 
@@ -211,7 +211,7 @@ watch(
                             />
                             <span
                                 class="relative bg-r10-paper px-2 py-1 text-sm text-r10-grey-500"
-                                >or, enter the code manually</span
+                                >või sisesta kood käsitsi</span
                             >
                         </div>
 
@@ -293,14 +293,14 @@ watch(
                                     @click="showVerificationStep = false"
                                     :disabled="processing"
                                 >
-                                    Back
+                                    Tagasi
                                 </R10Button>
                                 <R10Button
                                     type="submit"
                                     class="w-auto flex-1"
                                     :disabled="processing || code.length < 6"
                                 >
-                                    Confirm
+                                    Kinnita
                                 </R10Button>
                             </div>
                         </div>

@@ -9,8 +9,8 @@ import { update } from '@/routes/password';
 
 defineOptions({
     layout: {
-        title: 'Reset password',
-        description: 'Please enter your new password below',
+        title: 'Lähtesta parool',
+        description: 'Sisesta oma uus parool',
     },
 });
 
@@ -24,7 +24,7 @@ const inputEmail = ref(props.email);
 </script>
 
 <template>
-    <Head title="Reset password" />
+    <Head title="Lähtesta parool" />
 
     <Form
         v-bind="update.form()"
@@ -37,7 +37,7 @@ const inputEmail = ref(props.email);
                 id="email"
                 type="email"
                 name="email"
-                label="Email"
+                label="E-post"
                 autocomplete="email"
                 v-model="inputEmail"
                 readonly
@@ -47,10 +47,10 @@ const inputEmail = ref(props.email);
             <PasswordInput
                 id="password"
                 name="password"
-                label="Password"
+                label="Parool"
                 autocomplete="new-password"
                 autofocus
-                placeholder="Password"
+                placeholder="Parool"
                 :passwordrules="passwordRules"
                 :error="errors.password"
             />
@@ -58,9 +58,9 @@ const inputEmail = ref(props.email);
             <PasswordInput
                 id="password_confirmation"
                 name="password_confirmation"
-                label="Confirm password"
+                label="Kinnita parool"
                 autocomplete="new-password"
-                placeholder="Confirm password"
+                placeholder="Kinnita parool"
                 :passwordrules="passwordRules"
                 :error="errors.password_confirmation"
             />
@@ -73,7 +73,7 @@ const inputEmail = ref(props.email);
                 data-test="reset-password-button"
             >
                 <Spinner v-if="processing" />
-                Reset password
+                Lähtesta parool
             </R10Button>
         </div>
     </Form>

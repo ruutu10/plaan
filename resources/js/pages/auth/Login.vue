@@ -16,8 +16,8 @@ import type { TeamInvitationContext } from '@/types';
 
 defineOptions({
     layout: {
-        title: 'Log in to your account',
-        description: 'Enter your email and password below to log in',
+        title: 'Logi sisse',
+        description: 'Sisesta oma e-post ja parool, et sisse logida',
     },
 });
 
@@ -29,7 +29,7 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Log in" />
+    <Head title="Logi sisse" />
 
     <R10Notice v-if="status" tone="success" class="mb-4">
         {{ status }}
@@ -38,7 +38,7 @@ defineProps<{
     <TeamInvitationAlert
         v-if="teamInvitation"
         :invitation="teamInvitation"
-        action="Log in"
+        action="login"
         class="mb-4"
     />
 
@@ -55,7 +55,7 @@ defineProps<{
                 id="email"
                 type="email"
                 name="email"
-                label="Email address"
+                label="E-post"
                 required
                 autofocus
                 :tabindex="1"
@@ -68,11 +68,11 @@ defineProps<{
                 <PasswordInput
                     id="password"
                     name="password"
-                    label="Password"
+                    label="Parool"
                     required
                     :tabindex="2"
                     autocomplete="current-password"
-                    placeholder="Password"
+                    placeholder="Parool"
                     :error="errors.password"
                 />
                 <TextLink
@@ -81,7 +81,7 @@ defineProps<{
                     class="text-sm"
                     :tabindex="5"
                 >
-                    Forgot password?
+                    Unustasid parooli?
                 </TextLink>
             </div>
 
@@ -91,7 +91,7 @@ defineProps<{
                     class="flex items-center space-x-3 text-sm text-r10-grey-700"
                 >
                     <Checkbox id="remember" name="remember" :tabindex="3" />
-                    <span>Remember me</span>
+                    <span>Jäta mind meelde</span>
                 </label>
             </div>
 
@@ -104,12 +104,12 @@ defineProps<{
                 data-test="login-button"
             >
                 <Spinner v-if="processing" />
-                Log in
+                Logi sisse
             </R10Button>
         </div>
 
         <div class="text-center text-sm text-r10-grey-500">
-            Don't have an account?
+            Pole veel kontot?
             <TextLink
                 :href="
                     register({
@@ -121,7 +121,7 @@ defineProps<{
                 :tabindex="5"
                 data-test="register-link"
             >
-                Sign up
+                Registreeru
             </TextLink>
         </div>
     </Form>

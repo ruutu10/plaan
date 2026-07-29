@@ -9,9 +9,9 @@ import { send } from '@/routes/verification';
 
 defineOptions({
     layout: {
-        title: 'Email verification',
+        title: 'Kinnita e-post',
         description:
-            'Please verify your email address by clicking on the link we just emailed to you.',
+            'Palun kinnita oma e-posti aadress, klõpsates lingil, mille saatsime sulle just.',
     },
 });
 
@@ -21,15 +21,15 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Email verification" />
+    <Head title="Kinnita e-post" />
 
     <R10Notice
         v-if="status === 'verification-link-sent'"
         tone="success"
         class="mb-4"
     >
-        A new verification link has been sent to the email address you provided
-        during registration.
+        Uus kinnituslink on saadetud e-posti aadressile, mille registreerimisel
+        sisestasid.
     </R10Notice>
 
     <Form
@@ -39,11 +39,11 @@ defineProps<{
     >
         <R10Button type="submit" variant="outline" :disabled="processing">
             <Spinner v-if="processing" />
-            Resend verification email
+            Saada kinnituskiri uuesti
         </R10Button>
 
         <TextLink :href="logout()" as="button" class="mx-auto block text-sm">
-            Log out
+            Logi välja
         </TextLink>
     </Form>
 </template>

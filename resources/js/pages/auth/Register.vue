@@ -17,19 +17,19 @@ defineProps<{
 
 defineOptions({
     layout: {
-        title: 'Create an account',
-        description: 'Enter your details below to create your account',
+        title: 'Loo konto',
+        description: 'Sisesta oma andmed, et konto luua',
     },
 });
 </script>
 
 <template>
-    <Head title="Register" />
+    <Head title="Registreeru" />
 
     <TeamInvitationAlert
         v-if="teamInvitation"
         :invitation="teamInvitation"
-        action="Register"
+        action="register"
         class="mb-4"
     />
 
@@ -44,12 +44,12 @@ defineOptions({
                 id="name"
                 type="text"
                 name="name"
-                label="Name"
+                label="Nimi"
                 required
                 autofocus
                 :tabindex="1"
                 autocomplete="name"
-                placeholder="Full name"
+                placeholder="Ees- ja perekonnanimi"
                 :error="errors.name"
             />
 
@@ -57,7 +57,7 @@ defineOptions({
                 id="email"
                 type="email"
                 name="email"
-                label="Email address"
+                label="E-post"
                 required
                 :tabindex="2"
                 autocomplete="email"
@@ -68,11 +68,11 @@ defineOptions({
             <PasswordInput
                 id="password"
                 name="password"
-                label="Password"
+                label="Parool"
                 required
                 :tabindex="3"
                 autocomplete="new-password"
-                placeholder="Password"
+                placeholder="Parool"
                 :passwordrules="passwordRules"
                 :error="errors.password"
             />
@@ -80,11 +80,11 @@ defineOptions({
             <PasswordInput
                 id="password_confirmation"
                 name="password_confirmation"
-                label="Confirm password"
+                label="Kinnita parool"
                 required
                 :tabindex="4"
                 autocomplete="new-password"
-                placeholder="Confirm password"
+                placeholder="Kinnita parool"
                 :passwordrules="passwordRules"
                 :error="errors.password_confirmation"
             />
@@ -98,12 +98,12 @@ defineOptions({
                 data-test="register-user-button"
             >
                 <Spinner v-if="processing" />
-                Create account
+                Loo konto
             </R10Button>
         </div>
 
         <div class="text-center text-sm text-r10-grey-500">
-            Already have an account?
+            Kas sul on juba konto?
             <TextLink
                 :href="
                     teamInvitation
@@ -117,7 +117,7 @@ defineOptions({
                 :tabindex="6"
                 data-test="team-invitation-login-link"
             >
-                Log in
+                Logi sisse
             </TextLink>
         </div>
     </Form>

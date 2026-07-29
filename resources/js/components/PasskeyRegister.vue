@@ -52,11 +52,11 @@ const handleCancel = () => {
 
 <template>
     <div v-if="!isSupported" class="text-sm text-muted-foreground">
-        Passkeys are not supported in this browser.
+        Pääsuvõtmed ei ole selles brauseris toetatud.
     </div>
 
     <R10Button v-else-if="!showForm" variant="outline" @click="showForm = true">
-        Add passkey
+        Lisa pääsuvõti
     </R10Button>
 
     <form
@@ -67,9 +67,9 @@ const handleCancel = () => {
         <R10Input
             id="passkey-name"
             v-model="name"
-            label="Passkey name"
-            hint="A name helps you identify this passkey later."
-            placeholder="e.g., MacBook Pro, iPhone"
+            label="Pääsuvõtme nimi"
+            hint="Nimi aitab sul seda pääsuvõtit hiljem ära tunda."
+            placeholder="nt MacBook Pro, iPhone"
             autofocus
         />
 
@@ -77,10 +77,10 @@ const handleCancel = () => {
 
         <div class="flex gap-2">
             <R10Button type="submit" :disabled="isLoading || !name.trim()">
-                {{ isLoading ? 'Registering...' : 'Register passkey' }}
+                {{ isLoading ? 'Registreerin...' : 'Registreeri pääsuvõti' }}
             </R10Button>
             <R10Button type="button" variant="outline" @click="handleCancel">
-                Cancel
+                Loobu
             </R10Button>
         </div>
     </form>

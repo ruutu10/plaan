@@ -18,18 +18,18 @@ const code = ref<string>('');
 const authConfigContent = computed<TwoFactorConfigContent>(() => {
     if (showRecoveryInput.value) {
         return {
-            title: 'Recovery code',
+            title: 'Taastekood',
             description:
-                'Please confirm access to your account by entering one of your emergency recovery codes.',
-            buttonText: 'login using an authentication code',
+                'Kinnita ligipääs oma kontole, sisestades ühe oma varukoodidest.',
+            buttonText: 'logi sisse autentimiskoodiga',
         };
     }
 
     return {
-        title: 'Authentication code',
+        title: 'Autentimiskood',
         description:
-            'Enter the authentication code provided by your authenticator application.',
-        buttonText: 'login using a recovery code',
+            'Sisesta oma autentimisrakenduse pakutav autentimiskood.',
+        buttonText: 'logi sisse taastekoodiga',
     };
 });
 
@@ -48,7 +48,7 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
 </script>
 
 <template>
-    <Head title="Two-factor authentication" />
+    <Head title="Kaheastmeline autentimine" />
 
     <div class="space-y-6">
         <template v-if="!showRecoveryInput">
@@ -88,10 +88,10 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
                     class="w-full"
                     :disabled="processing"
                 >
-                    Continue
+                    Jätka
                 </R10Button>
                 <div class="text-center text-sm text-r10-grey-500">
-                    <span>or you can </span>
+                    <span>või sisesta selle asemel </span>
                     <button
                         type="button"
                         class="cursor-pointer font-medium text-r10-orange underline underline-offset-4 transition-colors hover:text-r10-orange-700"
@@ -113,8 +113,8 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
                 <R10Input
                     name="recovery_code"
                     type="text"
-                    label="Recovery code"
-                    placeholder="Enter recovery code"
+                    label="Taastekood"
+                    placeholder="Sisesta taastekood"
                     :autofocus="showRecoveryInput"
                     required
                     :error="errors.recovery_code"
@@ -125,11 +125,11 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
                     class="w-full"
                     :disabled="processing"
                 >
-                    Continue
+                    Jätka
                 </R10Button>
 
                 <div class="text-center text-sm text-r10-grey-500">
-                    <span>or you can </span>
+                    <span>või sisesta selle asemel </span>
                     <button
                         type="button"
                         class="cursor-pointer font-medium text-r10-orange underline underline-offset-4 transition-colors hover:text-r10-orange-700"

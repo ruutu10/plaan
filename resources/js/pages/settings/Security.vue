@@ -21,7 +21,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Security settings',
+                title: 'Turvalisuse seaded',
                 href: edit(),
             },
         ],
@@ -30,15 +30,15 @@ defineOptions({
 </script>
 
 <template>
-    <Head title="Security settings" />
+    <Head title="Turvalisuse seaded" />
 
-    <h1 class="sr-only">Security settings</h1>
+    <h1 class="sr-only">Turvalisuse seaded</h1>
 
     <div class="space-y-6">
         <Heading
             variant="small"
-            title="Update password"
-            description="Ensure your account is using a long, random password to stay secure"
+            title="Muuda parooli"
+            description="Turvalisuse huvides kasuta pikka ja juhuslikku parooli"
         />
 
         <Form
@@ -58,18 +58,18 @@ defineOptions({
             <PasswordInput
                 id="current_password"
                 name="current_password"
-                label="Current password"
+                label="Praegune parool"
                 autocomplete="current-password"
-                placeholder="Current password"
+                placeholder="Praegune parool"
                 :error="errors.current_password"
             />
 
             <PasswordInput
                 id="password"
                 name="password"
-                label="New password"
+                label="Uus parool"
                 autocomplete="new-password"
-                placeholder="New password"
+                placeholder="Uus parool"
                 :passwordrules="props.passwordRules"
                 :error="errors.password"
             />
@@ -77,9 +77,9 @@ defineOptions({
             <PasswordInput
                 id="password_confirmation"
                 name="password_confirmation"
-                label="Confirm password"
+                label="Kinnita parool"
                 autocomplete="new-password"
-                placeholder="Confirm password"
+                placeholder="Kinnita parool"
                 :passwordrules="props.passwordRules"
                 :error="errors.password_confirmation"
             />
@@ -90,7 +90,7 @@ defineOptions({
                     :disabled="processing"
                     data-test="update-password-button"
                 >
-                    Save
+                    Salvesta
                 </R10Button>
             </div>
         </Form>

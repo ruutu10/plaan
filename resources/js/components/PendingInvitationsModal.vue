@@ -38,8 +38,8 @@ const declineInvitation = (invitation: DashboardInvitation) => {
 <template>
     <R10Dialog
         v-model:open="open"
-        title="Pending team invitations"
-        description="Accept or decline the teams you have been invited to join."
+        title="Ootel tiimikutsed"
+        description="Kinnita või lükka tagasi tiimid, kuhu sind on kutsutud."
     >
         <!-- The marker sits on the body: `R10Dialog`'s root is renderless, so
              an attribute on the component itself would not reach the DOM. -->
@@ -57,8 +57,8 @@ const declineInvitation = (invitation: DashboardInvitation) => {
                         {{ invitation.team.name }}
                     </p>
                     <p class="text-sm text-r10-grey-500">
-                        {{ invitation.inviterName }} invited you to join this
-                        team.
+                        {{ invitation.inviterName }} kutsus sind selle tiimiga
+                        liituma.
                     </p>
                 </div>
 
@@ -70,7 +70,7 @@ const declineInvitation = (invitation: DashboardInvitation) => {
                         :disabled="processingCode === invitation.code"
                         @click="declineInvitation(invitation)"
                     >
-                        Decline
+                        Lükka tagasi
                     </R10Button>
 
                     <R10Button
@@ -79,7 +79,7 @@ const declineInvitation = (invitation: DashboardInvitation) => {
                         :disabled="processingCode === invitation.code"
                         @click="acceptInvitation(invitation)"
                     >
-                        Accept
+                        Nõustu
                     </R10Button>
                 </div>
             </div>

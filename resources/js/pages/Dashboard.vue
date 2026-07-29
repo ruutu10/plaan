@@ -36,7 +36,7 @@ defineOptions({
     layout: (layoutProps: { currentTeam?: Team | null }) => ({
         breadcrumbs: [
             {
-                title: 'Dashboard',
+                title: 'Töölaud',
                 href: layoutProps.currentTeam
                     ? dashboard(layoutProps.currentTeam.slug)
                     : '/',
@@ -47,7 +47,7 @@ defineOptions({
 </script>
 
 <template>
-    <Head title="Dashboard" />
+    <Head title="Töölaud" />
 
     <PendingInvitationsModal
         v-if="pendingInvitations && pendingInvitations.length > 0"

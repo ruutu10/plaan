@@ -22,8 +22,8 @@ const open = ref(false);
     <div class="space-y-6">
         <Heading
             variant="small"
-            title="Delete account"
-            description="Delete your account and all of its resources"
+            title="Kustuta konto"
+            description="Kustuta oma konto ja kõik selle andmed"
         />
 
         <div
@@ -34,9 +34,9 @@ const open = ref(false);
                     class="mt-0.5 h-5 w-5 shrink-0 text-r10-orange-700"
                 />
                 <div class="space-y-0.5">
-                    <p class="font-bold text-r10-ink">Warning</p>
+                    <p class="font-bold text-r10-ink">Hoiatus</p>
                     <p class="text-sm">
-                        Please proceed with caution, this cannot be undone.
+                        Ole ettevaatlik, seda toimingut ei saa tagasi võtta.
                     </p>
                 </div>
             </div>
@@ -46,7 +46,7 @@ const open = ref(false);
                 data-test="delete-user-button"
                 @click="open = true"
             >
-                Delete account
+                Kustuta konto
             </R10Button>
         </div>
 
@@ -66,15 +66,14 @@ const open = ref(false);
                         <DialogTitle
                             class="font-r10-display text-xl font-bold tracking-[0.02em] text-r10-ink uppercase"
                         >
-                            Are you sure you want to delete your account?
+                            Kas soovid kindlasti oma konto kustutada?
                         </DialogTitle>
                         <DialogDescription
                             class="text-[15px] text-r10-grey-500"
                         >
-                            Once your account is deleted, all of its resources
-                            and data will also be permanently deleted. Please
-                            enter your password to confirm you would like to
-                            permanently delete your account.
+                            Kui konto on kustutatud, kustutatakse jäädavalt ka
+                            kõik selle andmed ja ressursid. Konto kustutamise
+                            kinnitamiseks sisesta oma parool.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -82,8 +81,8 @@ const open = ref(false);
                         id="password"
                         name="password"
                         ref="passwordInput"
-                        label="Password"
-                        placeholder="Password"
+                        label="Parool"
+                        placeholder="Parool"
                         :error="errors.password"
                     />
 
@@ -98,7 +97,7 @@ const open = ref(false);
                                 }
                             "
                         >
-                            Cancel
+                            Loobu
                         </R10Button>
 
                         <R10Button
@@ -107,7 +106,7 @@ const open = ref(false);
                             :disabled="processing"
                             data-test="confirm-delete-user-button"
                         >
-                            Delete account
+                            Kustuta konto
                         </R10Button>
                     </div>
                 </Form>

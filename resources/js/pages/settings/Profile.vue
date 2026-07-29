@@ -15,7 +15,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Profile settings',
+                title: 'Profiili seaded',
                 href: edit(),
             },
         ],
@@ -27,15 +27,15 @@ const user = computed(() => page.props.auth.user);
 </script>
 
 <template>
-    <Head title="Profile settings" />
+    <Head title="Profiili seaded" />
 
-    <h1 class="sr-only">Profile settings</h1>
+    <h1 class="sr-only">Profiili seaded</h1>
 
     <div class="flex flex-col space-y-6">
         <Heading
             variant="small"
-            title="Profile"
-            description="Update your name and email address"
+            title="Profiil"
+            description="Muuda oma nime ja e-posti aadressi"
         />
 
         <Form
@@ -46,11 +46,11 @@ const user = computed(() => page.props.auth.user);
             <R10Input
                 id="name"
                 name="name"
-                label="Name"
+                label="Nimi"
                 :default-value="user.name"
                 required
                 autocomplete="name"
-                placeholder="Full name"
+                placeholder="Ees- ja perekonnanimi"
                 :error="errors.name"
             />
 
@@ -58,23 +58,23 @@ const user = computed(() => page.props.auth.user);
                 id="email"
                 type="email"
                 name="email"
-                label="Email address"
+                label="E-post"
                 :default-value="user.email"
                 required
                 autocomplete="username"
-                placeholder="Email address"
+                placeholder="E-posti aadress"
                 :error="errors.email"
             />
 
             <div v-if="page.props.mustVerifyEmail && !user.email_verified_at">
                 <p class="-mt-4 text-sm text-r10-grey-500">
-                    Your email address is unverified.
+                    Sinu e-posti aadress on kinnitamata.
                     <Link
                         :href="send()"
                         as="button"
                         class="cursor-pointer font-medium text-r10-orange underline underline-offset-4 transition-colors hover:text-r10-orange-700"
                     >
-                        Click here to re-send the verification email.
+                        Klõpsa siin, et saata kinnituskiri uuesti.
                     </Link>
                 </p>
 
@@ -83,7 +83,7 @@ const user = computed(() => page.props.auth.user);
                     tone="success"
                     class="mt-2"
                 >
-                    A new verification link has been sent to your email address.
+                    Uus kinnituslink on saadetud sinu e-posti aadressile.
                 </R10Notice>
             </div>
 
@@ -93,7 +93,7 @@ const user = computed(() => page.props.auth.user);
                     :disabled="processing"
                     data-test="update-profile-button"
                 >
-                    Save
+                    Salvesta
                 </R10Button>
             </div>
         </Form>
