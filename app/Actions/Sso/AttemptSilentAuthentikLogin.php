@@ -2,9 +2,9 @@
 
 namespace App\Actions\Sso;
 
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class AttemptSilentAuthentikLogin
 {
@@ -27,7 +27,7 @@ class AttemptSilentAuthentikLogin
      * destination worth returning to — like the technical-plan wizard's
      * entry page — set their own fallback before calling this.
      */
-    public function handle(Request $request): ?RedirectResponse
+    public function handle(Request $request): ?Response
     {
         if (! $this->shouldAttempt($request)) {
             return null;

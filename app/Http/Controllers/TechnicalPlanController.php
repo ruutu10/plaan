@@ -23,12 +23,12 @@ use App\Rules\AllowedAttachment;
 use App\Services\TechnicalPlanReviewer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class TechnicalPlanController extends Controller
 {
@@ -43,7 +43,7 @@ class TechnicalPlanController extends Controller
      * with an active Authentik session is redirected there first and
      * signed in silently, skipping the e-mail step below entirely.
      */
-    public function index(Request $request, AttemptSilentAuthentikLogin $attemptSsoLogin): Response|RedirectResponse
+    public function index(Request $request, AttemptSilentAuthentikLogin $attemptSsoLogin): Response|HttpResponse
     {
         // This page (not the dashboard) is where a successful login — silent
         // or via the e-mail step below — should return the guest to.

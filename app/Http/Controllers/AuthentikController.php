@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Laravel\Fortify\Fortify;
 use Laravel\Socialite\Facades\Socialite;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class AuthentikController extends Controller
@@ -20,7 +21,7 @@ class AuthentikController extends Controller
     /**
      * The user-initiated "Continue with Authentik" redirect.
      */
-    public function redirect(Request $request, RedirectToAuthentik $redirectToAuthentik): RedirectResponse
+    public function redirect(Request $request, RedirectToAuthentik $redirectToAuthentik): Response
     {
         return $redirectToAuthentik->handle($request, silent: false);
     }

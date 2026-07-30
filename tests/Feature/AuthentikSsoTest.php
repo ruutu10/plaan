@@ -41,6 +41,34 @@ class AuthentikSsoTest extends TestCase
         $this->assertStringContainsString('prompt=none', $location);
     }
 
+    public function test_a_silent_redirect_reached_via_an_inertia_visit_uses_location_not_a_plain_redirect(): void
+    {
+        // Reaching /tehnikaplaan via an in-app Inertia <Link> makes this
+        // request an XHR, not a full page navigation. A plain 302 here would
+        // have the browser's fetch() auto-follow it straight into a
+        // cross-origin CORS error against Authentik. Inertia::location()
+        // must kick in instead: a 409 with X-Inertia-Location, which Inertia's
+        // client turns into a real window.location visit.
+        //
+        // app.asset_url is pinned so the asset-version Inertia's own
+        // middleware negotiates is known ahead of time — otherwise a mismatch
+        // there makes it override our 409 with its own (pointed back at the
+        // same page), which would falsely look like our fix regressed.
+        config(['app.asset_url' => 'test-asset-version']);
+        $version = hash('xxh128', 'test-asset-version');
+
+        $response = $this->withHeaders([
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => $version,
+        ])->get(route('technical-plan.index'));
+
+        $response->assertStatus(409);
+        $location = $response->headers->get('X-Inertia-Location');
+        $this->assertNotNull($location);
+        $this->assertStringContainsString('sso.example.test', $location);
+        $this->assertStringContainsString('prompt=none', $location);
+    }
+
     public function test_a_second_visit_to_login_in_the_same_session_renders_normally(): void
     {
         $this->get(route('login'))->assertRedirect();
