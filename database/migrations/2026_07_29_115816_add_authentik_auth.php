@@ -1,10 +1,9 @@
 <?php
 
+use App\Enums\SignupSource;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Enums\SignupSource;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Links a user to their identity at the external Authentik IdP, so a
@@ -22,12 +21,11 @@ return new class extends Migration
             $table->string('authentik_id')->nullable()->unique()->after('email');
         });
 
-         $values = implode(', ', array_map(
-            fn (string $value): string => "'{$value}'",
-            SignupSource::values(),
-        ));
-
-        DB::statement("ALTER TABLE users MODIFY signup_source ENUM({$values}) NOT NULL DEFAULT '".SignupSource::SignupForm->value."'");
+        Schema::table('users', function (Blueprint $table) {
+            $table->enum('signup_source', SignupSource::values())
+                ->default(SignupSource::SignupForm->value)
+                ->change();
+        });
     }
 
     /**
@@ -36,10 +34,15 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
+            $table->enum('signup_source', [
+                SignupSource::AnonymousPlan->value,
+                SignupSource::SignupForm->value,
+            ])->default(SignupSource::SignupForm->value)->change();
+        });
+
+        Schema::table('users', function (Blueprint $table) {
             $table->dropUnique(['authentik_id']);
             $table->dropColumn('authentik_id');
         });
-        DB::statement("ALTER TABLE users MODIFY signup_source ENUM('anonymous-plan', 'signup-form') NOT NULL DEFAULT 'signup-form'");
-
     }
 };
