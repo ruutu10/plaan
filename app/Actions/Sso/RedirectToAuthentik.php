@@ -5,6 +5,7 @@ namespace App\Actions\Sso;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
 use Symfony\Component\HttpFoundation\Response;
 
 class RedirectToAuthentik
@@ -22,9 +23,18 @@ class RedirectToAuthentik
 
         $provider = Socialite::driver('authentik');
 
-        $redirect = $silent
-            ? $provider->with(['prompt' => 'none'])->redirect()
-            : $provider->redirect();
+        // Socialite::driver() is typed to the generic Contracts\Provider
+        // interface, which only declares redirect()/user() — with() is an
+        // OAuth2-provider-specific method from Two\AbstractProvider, which
+        // the real Authentik provider extends but Socialite::fake()'s test
+        // double does not. Narrowing here (rather than assuming it) keeps
+        // this working under Socialite::fake() in tests, where prompt=none
+        // isn't attached but the redirect itself still happens.
+        if ($silent && $provider instanceof AbstractProvider) {
+            $provider = $provider->with(['prompt' => 'none']);
+        }
+
+        $redirect = $provider->redirect();
 
         // Authentik is a different origin. If the caller reached this action
         // via an Inertia client-side visit (e.g. an in-app link to
