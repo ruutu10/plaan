@@ -51,6 +51,32 @@ function storedFile(file: PlanFile | null | undefined): PlanFile | null {
     return file?.id ? { ...file, status: 'ready' as const } : null;
 }
 
+/**
+ * Every blank plan opens and closes on the same template, most shows have these
+ */
+function defaultScenes(): Scene[] {
+    return [
+        {
+            ...blankScene(`${SCENE_ID_PREFIX}1`),
+            name: 'Lavale tulek',
+            light: 'üldvalgus',
+            sound: 'Vabalt valitud energiline muusika',
+            notes: 'Õhtujuht kutsub esinejad lavale',
+        },
+        {
+            ...blankScene(`${SCENE_ID_PREFIX}2`),
+            name: 'Stseenid',
+            light: 'üldvalgus'
+        },
+        {
+            ...blankScene(`${SCENE_ID_PREFIX}3`),
+            name: 'Lavalt äraminek',
+            light: 'üldvalgus',
+            notes: 'Kui aeg saab otsa - kummardus, lavalt mahaminek',
+        },
+    ];
+}
+
 export function blankPlan(): Plan {
     return {
         token: null,
@@ -70,7 +96,7 @@ export function blankPlan(): Plan {
             musicianMode: 'no',
             musicianDetail: '',
         },
-        scenes: [blankScene()],
+        scenes: defaultScenes(),
         equipment: {
             items: [],
             smoke: 'yes',
