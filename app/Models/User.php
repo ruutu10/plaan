@@ -22,6 +22,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int $id
  * @property string $name
  * @property string $email
+ * @property string|null $authentik_id
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property SignupSource $signup_source
@@ -37,7 +38,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Collection<int, Membership> $teamMemberships
  * @property-read Collection<int, Team> $teams
  */
-#[Fillable(['name', 'email', 'password', 'current_team_id', 'signup_source'])]
+#[Fillable(['name', 'email', 'authentik_id', 'password', 'current_team_id', 'signup_source'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {

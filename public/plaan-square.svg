@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="plaan-square-title">
+    <title id="plaan-square-title">Plaan</title>
+
+    <defs>
+        <!--
+            The ruut (diamond) formed by the two chevrons of the horizontal
+            lockup pushed together, with the P monogram knocked out and its
+            diamond counter left standing as an island.
+        -->
+        <clipPath id="plaan-mark">
+            <path clip-rule="evenodd"
+                d="M256 26 L486 256 L256 486 L26 256 Z
+                   M181.51 142.9 L307.09 142.9 L330.49 166.3 L330.49 267.7 L307.09 291.1 L233.77 291.1 L233.77 369.1 L181.51 369.1 Z
+                   M233.77 217 L264.97 178 L296.17 217 L264.97 256 Z" />
+        </clipPath>
+    </defs>
+
+    <g clip-path="url(#plaan-mark)">
+        <rect x="0" y="0" width="256" height="512" fill="#FF7F50" />
+        <rect x="256" y="0" width="256" height="512" fill="#11234F" />
+    </g>
+</svg>

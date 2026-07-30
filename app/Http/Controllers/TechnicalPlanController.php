@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\NotifyPlanSubmitted;
 use App\Actions\SaveTechnicalPlan;
+use App\Actions\Sso\AttemptSilentAuthentikLogin;
 use App\Actions\StagePlanCopy;
 use App\Data\PlanContent;
 use App\Enums\TechnicalPlanStatus;
@@ -22,6 +23,7 @@ use App\Rules\AllowedAttachment;
 use App\Services\TechnicalPlanReviewer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -37,11 +39,19 @@ class TechnicalPlanController extends Controller
     private const PRIOR_PLANS_PER_SHOW = 5;
 
     /**
-     * Show the landing page (gate) of the technical-plan wizard.
+     * Show the landing page (gate) of the technical-plan wizard. A guest
+     * with an active Authentik session is redirected there first and
+     * signed in silently, skipping the e-mail step below entirely.
      */
-    public function index(): Response
+    public function index(Request $request, AttemptSilentAuthentikLogin $attemptSsoLogin): Response|RedirectResponse
     {
-        return Inertia::render('TechnicalPlan', [
+        // This page (not the dashboard) is where a successful login — silent
+        // or via the e-mail step below — should return the guest to.
+        if (! $request->session()->has('url.intended')) {
+            $request->session()->put('url.intended', $request->fullUrl());
+        }
+
+        return $attemptSsoLogin->handle($request) ?? Inertia::render('TechnicalPlan', [
             'config' => $this->wizardConfig(),
             'initialPlan' => null,
         ]);

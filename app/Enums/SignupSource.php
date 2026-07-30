@@ -10,4 +10,5 @@ enum SignupSource: string
 
     case AnonymousPlan = 'anonymous-plan';
     case SignupForm = 'signup-form';
+    case AuthentikSso = 'authentik-sso';
 }

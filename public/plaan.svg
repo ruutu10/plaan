@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 460" width="1600" height="460" role="img" aria-labelledby="plaan-logo-title">
+    <title id="plaan-logo-title">Plaan</title>
+
+    <!-- Ruutu10 chevron framing: coral left, navy right -->
+    <path fill="#FF7F50" d="M120 22 L120 438 L14 230 Z" />
+    <path fill="#11234F" d="M1480 22 L1480 438 L1586 230 Z" />
+
+    <!-- P — coral initial, ruut (diamond) counter -->
+    <path fill="#FF7F50" fill-rule="evenodd"
+        d="M169 85 L330 85 L360 115 L360 245 L330 275 L236 275 L236 375 L169 375 Z
+           M236 180 L276 130 L316 180 L276 230 Z" />
+
+    <!-- L -->
+    <path fill="#11234F" d="M383 85 L450 85 L450 308 L533 308 L563 338 L563 375 L383 375 Z" />
+
+    <!-- A -->
+    <path fill="#11234F" fill-rule="evenodd"
+        d="M701.5 85 L745.5 85 L861 375 L794 375 L776.5 331 L670.5 331 L653 375 L586 375 Z
+           M723.5 198 L759.35 288 L687.65 288 Z" />
+
+    <!-- A -->
+    <path fill="#11234F" fill-rule="evenodd"
+        d="M999.5 85 L1043.5 85 L1159 375 L1092 375 L1074.5 331 L968.5 331 L951 375 L884 375 Z
+           M1021.5 198 L1057.35 288 L985.65 288 Z" />
+
+    <!-- N -->
+    <path fill="#11234F"
+        d="M1182 85 L1264 85 L1364 258.7 L1364 85 L1431 85 L1431 375 L1349 375 L1249 201.3 L1249 375 L1182 375 Z" />
+</svg>

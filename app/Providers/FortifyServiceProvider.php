@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Actions\Sso\AttemptSilentAuthentikLogin;
 use App\Http\Responses\LoginResponse;
+use App\Http\Responses\LogoutResponse;
 use App\Http\Responses\PasskeyLoginResponse;
 use App\Http\Responses\RegisterResponse;
 use App\Http\Responses\TwoFactorLoginResponse;
@@ -17,6 +19,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
+use Laravel\Fortify\Contracts\LogoutResponse as LogoutResponseContract;
 use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
 use Laravel\Fortify\Contracts\TwoFactorLoginResponse as TwoFactorLoginResponseContract;
 use Laravel\Fortify\Contracts\VerifyEmailResponse as VerifyEmailResponseContract;
@@ -32,6 +35,7 @@ class FortifyServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(LoginResponseContract::class, LoginResponse::class);
+        $this->app->singleton(LogoutResponseContract::class, LogoutResponse::class);
         $this->app->singleton(PasskeyLoginResponseContract::class, PasskeyLoginResponse::class);
         $this->app->singleton(RegisterResponseContract::class, RegisterResponse::class);
         $this->app->singleton(TwoFactorLoginResponseContract::class, TwoFactorLoginResponse::class);
@@ -62,11 +66,16 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureViews(): void
     {
-        Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
-            'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'status' => $request->session()->get('status'),
-            'teamInvitation' => $this->teamInvitation($request),
-        ]));
+        // Fortify's SimpleViewResponse invokes this closure via call_user_func
+        // with only $request, not through the container — so the silent-SSO
+        // action is resolved explicitly here rather than type-hinted in.
+        Fortify::loginView(fn (Request $request) => app(AttemptSilentAuthentikLogin::class)->handle($request)
+            ?? Inertia::render('auth/Login', [
+                'canResetPassword' => Features::enabled(Features::resetPasswords()),
+                'ssoEnabled' => filled(config('services.authentik.client_id')),
+                'status' => $request->session()->get('status'),
+                'teamInvitation' => $this->teamInvitation($request),
+            ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/ResetPassword', [
             'email' => $request->email,
