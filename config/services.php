@@ -58,4 +58,17 @@ return [
         'excluded_labels' => ['TÖÖTUBA'],
     ],
 
+    /*
+    | Authentik SSO. base_url is the bare Authentik root (e.g.
+    | https://sso.example.com — the provider appends /application/o/...
+    | itself). Leave client_id empty to disable SSO entirely: the silent
+    | login check and the "Continue with Authentik" link both stay inert.
+    */
+    'authentik' => [
+        'base_url' => env('AUTHENTIK_BASE_URL'),
+        'client_id' => env('AUTHENTIK_CLIENT_ID'),
+        'client_secret' => env('AUTHENTIK_CLIENT_SECRET'),
+        'redirect' => env('AUTHENTIK_REDIRECT_URI'),
+    ],
+
 ];

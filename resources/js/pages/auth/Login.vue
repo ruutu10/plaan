@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { LogIn } from '@lucide/vue';
 import PasskeyVerify from '@/components/PasskeyVerify.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import TeamInvitationAlert from '@/components/TeamInvitationAlert.vue';
@@ -10,6 +11,7 @@ import TextLink from '@/components/TextLink.vue';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
 import { register } from '@/routes';
+import { redirect as authentikRedirect } from '@/routes/auth/authentik';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import type { TeamInvitationContext } from '@/types';
@@ -24,6 +26,7 @@ defineOptions({
 defineProps<{
     status?: string;
     canResetPassword: boolean;
+    ssoEnabled: boolean;
     teamInvitation?: TeamInvitationContext | null;
 }>();
 </script>
@@ -42,7 +45,22 @@ defineProps<{
         class="mb-4"
     />
 
-    <PasskeyVerify />
+    <PasskeyVerify>
+        <template v-if="ssoEnabled" #alternatives>
+            <!-- A real top-level navigation to an external OAuth URL, so an
+                 `external` plain anchor and not Inertia's client router. -->
+            <R10Button
+                :href="authentikRedirect.url()"
+                external
+                variant="outline"
+                class="w-full"
+                data-test="authentik-login-link"
+            >
+                <LogIn class="h-4 w-4" />
+                Jätka R10 kontoga (Planka)
+            </R10Button>
+        </template>
+    </PasskeyVerify>
 
     <Form
         v-bind="store.form()"
@@ -125,4 +143,5 @@ defineProps<{
             </TextLink>
         </div>
     </Form>
+
 </template>

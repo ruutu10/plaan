@@ -27,6 +27,7 @@ trait RedirectsToCurrentTeam
     {
         Log::info('User signed in', [
             'user_id' => $request->user()?->id,
+            'user_email' => $request->user()?->email,
             'method' => $method,
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent(),

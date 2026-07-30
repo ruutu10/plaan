@@ -36,27 +36,32 @@ const { verify, isLoading, error, isSupported } = usePasskeyVerify({
 </script>
 
 <template>
-    <div v-if="isSupported">
+    <div v-if="isSupported || $slots.alternatives">
         <div class="grid gap-2">
-            <R10Button
-                type="button"
-                variant="outline"
-                class="w-full"
-                @click="verify"
-                :disabled="isLoading"
-            >
-                <Spinner v-if="isLoading" />
-                <KeyRound v-else class="h-4 w-4" />
-                {{
-                    isLoading
-                        ? (props.loadingLabel ?? 'Autendin...')
-                        : (props.label ?? 'Logi sisse pääsuvõtmega')
-                }}
-            </R10Button>
+            <template v-if="isSupported">
+                <R10Button
+                    type="button"
+                    variant="outline"
+                    class="w-full"
+                    @click="verify"
+                    :disabled="isLoading"
+                >
+                    <Spinner v-if="isLoading" />
+                    <KeyRound v-else class="h-4 w-4" />
+                    {{
+                        isLoading
+                            ? (props.loadingLabel ?? 'Autendin...')
+                            : (props.label ?? 'Logi sisse pääsuvõtmega')
+                    }}
+                </R10Button>
 
-            <div v-if="error" class="text-center">
-                <InputError :message="error" />
-            </div>
+                <div v-if="error" class="text-center">
+                    <InputError :message="error" />
+                </div>
+            </template>
+
+            <!-- Further ways to sign in, stacked under the passkey button. -->
+            <slot name="alternatives" />
         </div>
 
         <div class="relative my-6">
