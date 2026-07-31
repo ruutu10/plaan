@@ -134,13 +134,12 @@ class RemindAboutTechnicalPlan
         Notification::route('mail', $techEmail)->notify(new TechnicalPlanMissing(
             $performance,
             $schedule,
-            chased: $performers
+            chased: array_values($performers
                 ->map(fn (User $performer): array => [
                     'name' => $performer->name,
                     'email' => $performer->email,
                 ])
-                ->values()
-                ->all(),
+                ->all()),
         ));
 
         return true;
