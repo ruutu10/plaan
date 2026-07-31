@@ -13,7 +13,10 @@ use Laravel\Socialite\Contracts\User as SocialiteUser;
 
 class FindOrCreateUserByAuthentik
 {
-    public function __construct(private CreateTeam $createTeam) {}
+    public function __construct(
+        private CreateTeam $createTeam,
+        private GrantStaffAccess $grantStaffAccess,
+    ) {}
 
     /**
      * Find the user for this Authentik identity, linking or provisioning an
@@ -54,6 +57,8 @@ class FindOrCreateUserByAuthentik
             $user->forceFill(['email_verified_at' => now()])->save();
 
             $this->createTeam->handle($user, $user->name."'s Team", isPersonal: true);
+
+            $this->grantStaffAccess->handle($user);
 
             Log::info('Provisioned a new account via Authentik SSO', [
                 'user_id' => $user->id,

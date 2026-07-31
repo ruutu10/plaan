@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Actions\FindOrCreateUserByEmail;
+use App\Actions\MagicLink\LogInAndVerifyEmail;
 use App\Notifications\MagicLoginLink;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use MagicLink\Actions\LoginAction;
 use MagicLink\MagicLink;
 
 class MagicLoginController extends Controller
@@ -29,7 +29,7 @@ class MagicLoginController extends Controller
 
         $user = $this->findOrCreateUser->handle($data['email']);
 
-        $action = new LoginAction($user, redirect()->route('technical-plan.index'));
+        $action = new LogInAndVerifyEmail($user, redirect()->route('technical-plan.index'));
 
         $magicLink = MagicLink::create($action, lifetime: 30, numMaxVisits: 4);
 
