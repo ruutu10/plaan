@@ -154,8 +154,10 @@ class DashboardTest extends TestCase
 
     public function test_dashboard_counts_the_performances_that_are_still_ahead(): void
     {
-        Performance::factory()->count(2)->create(['date' => now()->addWeek()->toDateString()]);
-        Performance::factory()->create(['date' => now()->toDateString()]);
+        Performance::factory()->count(2)->create(['date' => now()->addWeek()]);
+        Performance::factory()->create(['date' => now()->addHours(2)]);
+        // Curtain-up was an hour ago: this one is being played, not awaited.
+        Performance::factory()->create(['date' => now()->subHour()]);
         Performance::factory()->past()->create();
 
         $this->actingAs(User::factory()->create())
@@ -163,7 +165,8 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Dashboard')
-                // The performance playing tonight is still ahead; yesterday's is not.
+                // Tonight's is still ahead until it starts; one that already
+                // started is not, now that a performance carries its hour.
                 ->where('upcoming.performances', 3));
     }
 

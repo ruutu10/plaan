@@ -39,6 +39,13 @@ class TechnicalPlanController extends Controller
     private const PRIOR_PLANS_PER_SHOW = 5;
 
     /**
+     * The last step of the wizard, counting from zero — the review page. Kept
+     * in step with `stepComponents` in resources/js/pages/TechnicalPlan.vue,
+     * and only used to hold a linked step to a page that exists.
+     */
+    private const LAST_STEP = 6;
+
+    /**
      * Show the landing page (gate) of the technical-plan wizard. A guest
      * with an active Authentik session is redirected there first and
      * signed in silently, skipping the e-mail step below entirely.
@@ -51,9 +58,15 @@ class TechnicalPlanController extends Controller
             $request->session()->put('url.intended', $request->fullUrl());
         }
 
+        $performance = $this->linkedPerformance($request);
+
         return $attemptSsoLogin->handle($request) ?? Inertia::render('TechnicalPlan', [
             'config' => $this->wizardConfig(),
             'initialPlan' => null,
+            // Set when the wizard was reached from a reminder's link, which
+            // names the night it is about — see App\Actions\BuildTechnicalPlanInvite.
+            'initialPerformance' => $performance,
+            'initialStep' => $performance === null ? 0 : $this->linkedStep($request),
         ]);
     }
 
@@ -88,6 +101,9 @@ class TechnicalPlanController extends Controller
         return Inertia::render('TechnicalPlan', [
             'config' => $this->wizardConfig(),
             'initialPlan' => TechnicalPlanResource::make($plan)->resolve(),
+            // A shared plan carries its own night and opens at the beginning.
+            'initialPerformance' => null,
+            'initialStep' => 0,
         ]);
     }
 
@@ -201,7 +217,9 @@ class TechnicalPlanController extends Controller
         $upcoming = Performance::query()
             ->with('show.team')
             ->vouchedFor()
-            ->whereDate('date', '>=', now()->toDateString())
+            // Still to come. A performance carries its curtain-up now, so
+            // tonight's stays on offer right up until it starts.
+            ->where('date', '>=', now())
             ->orderBy('date')
             ->limit(100)
             ->get();
@@ -261,6 +279,65 @@ class TechnicalPlanController extends Controller
         return response()->json([
             'review' => $review ?: 'Tagasisidet ei saadud. Proovi uuesti.',
         ]);
+    }
+
+    /**
+     * The night a reminder's link named, as the wizard's own performance meta —
+     * or null when the link named none, or named one that can no longer be
+     * written for.
+     *
+     * A linked performance is held to exactly what the picker on the first step
+     * offers: vouched for, and still to be played. That keeps a link from an
+     * old mail from quietly selecting a night that has since been put back to
+     * draft or already happened; the wizard simply opens at the beginning
+     * instead, with the list to choose from.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function linkedPerformance(Request $request): ?array
+    {
+        $id = (int) $request->query('performance');
+
+        if ($id <= 0) {
+            return null;
+        }
+
+        $performance = Performance::query()
+            ->with('show.team')
+            ->vouchedFor()
+            ->where('date', '>', now())
+            ->find($id);
+
+        if ($performance === null) {
+            // Reminders are the only thing handing these links out, so a link
+            // that resolves to nothing is a mail outliving its performance —
+            // harmless, but it explains a performer arriving at a blank wizard.
+            Log::info('A technical-plan link named a performance that can no longer be written for', [
+                'performance_id' => $id,
+                'user_id' => $request->user()?->id,
+            ]);
+
+            return null;
+        }
+
+        return [
+            'performanceId' => $performance->id,
+            'performer' => $performance->show->team->name ?? '',
+            'showName' => $performance->show->name,
+            'showDate' => $performance->startDate(),
+            'duration' => $performance->duration,
+            'description' => $performance->show->description ?? '',
+        ];
+    }
+
+    /**
+     * The step a link asks the wizard to open on, held to the steps there are.
+     * Only meaningful alongside a performance — a link that has chosen the
+     * night is the only reason to start anywhere but the beginning.
+     */
+    private function linkedStep(Request $request): int
+    {
+        return max(0, min(self::LAST_STEP, (int) $request->query('step')));
     }
 
     /**

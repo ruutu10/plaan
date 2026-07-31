@@ -28,8 +28,13 @@ export type ShowFieldErrors = Partial<Record<keyof ShowFormData, string>>;
 /** One dated performance of a show. */
 export interface Performance {
     id: number;
-    /** ISO date (YYYY-MM-DD). */
+    /**
+     * ISO date (YYYY-MM-DD), on the venue's clock. The date and the start time
+     * are one stored moment server-side; they are split for the form.
+     */
     date: string;
+    /** Curtain-up as "19:00", on the venue's clock. */
+    startTime: string;
     /** Minutes, or null when the performance is not timed. */
     duration: number | null;
     /**
@@ -44,6 +49,8 @@ export interface Performance {
 /** The fields a performance is written through. */
 export interface PerformanceFormData {
     date: string;
+    /** "19:00" on the venue's clock; empty falls back to the house's usual hour. */
+    start_time: string;
     duration: number | null;
     is_draft: boolean;
 }

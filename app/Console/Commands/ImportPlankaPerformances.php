@@ -13,6 +13,7 @@ use App\Services\PlankaPerformanceExtractor;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -204,11 +205,15 @@ class ImportPlankaPerformances extends Command
             return;
         }
 
+        $startsAt = Performance::momentFrom($performance->date->toDateString(), $performance->startTime);
+
         $this->line(sprintf(
-            '  %s performance: %s on %s',
+            '  %s performance: %s on %s at %s%s',
             $dryRun ? 'Would create' : 'Creating',
             $performance->showName,
             $performance->date->toDateString(),
+            $startsAt->copy()->setTimezone(Performance::venueTimezone())->format('H:i'),
+            $performance->startTime === null ? ' (the house\'s usual hour; the card named none)' : '',
         ));
         $summary->performancesCreated++;
 
@@ -217,7 +222,7 @@ class ImportPlankaPerformances extends Command
         }
 
         $created = $show->performances()->create([
-            'date' => $performance->date,
+            'date' => $startsAt,
             'duration' => $performance->duration,
             // What a card announces is a claim, not a booking: it waits as a
             // draft until an admin has looked it over.
@@ -227,7 +232,11 @@ class ImportPlankaPerformances extends Command
         Log::info('Registered a performance from a Planka card', [
             'performance_id' => $created->id,
             'show_id' => $show->id,
-            'date' => $performance->date->toDateString(),
+            'starts_at' => $created->startsAt()->toDateTimeString(),
+            // Whether the hour is the card's own or the house's fallback: a
+            // season imported entirely at the default hour means the cards
+            // stopped carrying times, or the reading of them broke.
+            'start_time_from_card' => $performance->startTime !== null,
             'duration' => $performance->duration,
             'is_draft' => true,
         ]);
@@ -376,6 +385,12 @@ class ImportPlankaPerformances extends Command
     /**
      * Determine whether this performance is already on the books. A show that does
      * not exist yet (or was not created, in a dry run) has none.
+     *
+     * A night is matched by its day rather than its moment: the card may have
+     * named an hour this time and not last time, and the same act on the same
+     * evening is the same performance whatever the board now says about when it
+     * starts. The day is the venue's — bracketing the stored UTC by the local
+     * midnights, so a late-night show does not read as the day before.
      */
     protected function performanceExists(?Show $show, ImportedPerformance $performance): bool
     {
@@ -383,9 +398,14 @@ class ImportPlankaPerformances extends Command
             return false;
         }
 
+        $dayBegins = Carbon::parse($performance->date->toDateString(), Performance::venueTimezone())
+            ->startOfDay()
+            ->utc();
+
         return Performance::withTrashed()
             ->where('show_id', $show->id)
-            ->whereDate('date', $performance->date)
+            ->where('date', '>=', $dayBegins)
+            ->where('date', '<', $dayBegins->copy()->addDay())
             ->exists();
     }
 }

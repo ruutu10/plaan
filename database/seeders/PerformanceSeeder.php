@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Performance;
 use App\Models\Show;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -15,19 +16,19 @@ class PerformanceSeeder extends Seeder
      * what lets the wizard offer an earlier performance's plan as the basis for the
      * next one.
      *
-     * @var array<string, list<array{days: int, duration: int}>>
+     * @var array<string, list<array{days: int, at: string, duration: int}>>
      */
     private const PERFORMANCES = [
         'Hooaja avaetendus' => [
-            ['days' => -35, 'duration' => 75],
-            ['days' => 7, 'duration' => 75],
+            ['days' => -35, 'at' => '19:00', 'duration' => 75],
+            ['days' => 7, 'at' => '19:00', 'duration' => 75],
         ],
-        'Öine impro' => [['days' => 21, 'duration' => 60]],
-        'Talvefestival 2026' => [['days' => 14, 'duration' => 45]],
-        'Kolm lugu' => [['days' => 30, 'duration' => 50]],
-        'Pimeduse proov' => [['days' => 45, 'duration' => 90]],
-        'Suvelavastus' => [['days' => 60, 'duration' => 80]],
-        'Möödunud hooaja parimad' => [['days' => -10, 'duration' => 70]],
+        'Öine impro' => [['days' => 21, 'at' => '22:30', 'duration' => 60]],
+        'Talvefestival 2026' => [['days' => 14, 'at' => '18:00', 'duration' => 45]],
+        'Kolm lugu' => [['days' => 30, 'at' => '19:00', 'duration' => 50]],
+        'Pimeduse proov' => [['days' => 45, 'at' => '20:00', 'duration' => 90]],
+        'Suvelavastus' => [['days' => 60, 'at' => '19:30', 'duration' => 80]],
+        'Möödunud hooaja parimad' => [['days' => -10, 'at' => '19:00', 'duration' => 70]],
     ];
 
     /**
@@ -46,7 +47,12 @@ class PerformanceSeeder extends Seeder
 
             foreach ($performances as $performance) {
                 $show->performances()->create([
-                    'date' => Carbon::today()->addDays($performance['days'])->toDateString(),
+                    'date' => Performance::momentFrom(
+                        Carbon::today(Performance::venueTimezone())
+                            ->addDays($performance['days'])
+                            ->toDateString(),
+                        $performance['at'],
+                    ),
                     'duration' => $performance['duration'],
                 ]);
             }

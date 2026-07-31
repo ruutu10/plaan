@@ -60,7 +60,7 @@ class TechnicalPlan extends JsonResource
                 'performanceId' => $plan->performance_id,
                 'performer' => $plan->performance?->show->team->name ?? '',
                 'showName' => $plan->performance?->show->name ?? '',
-                'showDate' => $plan->performance?->date?->format('Y-m-d') ?? '',
+                'showDate' => $plan->performance?->startDate() ?? '',
                 'duration' => $plan->performance?->duration,
                 'description' => $plan->performance?->show->description ?? '',
             ],

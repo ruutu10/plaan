@@ -108,9 +108,66 @@ class ImportPlankaPerformancesTest extends TestCase
         );
     }
 
-    private function performance(string $name, string $date = '2025-09-13', ?int $duration = 90, ?int $teamId = null): ImportedPerformance
+    /**
+     * One performance as the AI would have read it off a card. The start time
+     * defaults to none, which is the common case — most cards name a date and
+     * leave the hour to the house.
+     */
+    private function performance(
+        string $name,
+        string $date = '2025-09-13',
+        ?int $duration = 90,
+        ?int $teamId = null,
+        ?string $startTime = null,
+    ): ImportedPerformance {
+        return new ImportedPerformance(
+            showName: $name,
+            date: Carbon::parse($date),
+            startTime: $startTime,
+            duration: $duration,
+            teamId: $teamId,
+        );
+    }
+
+    public function test_an_imported_performance_keeps_the_hour_the_card_named(): void
     {
-        return new ImportedPerformance($name, Carbon::parse($date), $duration, $teamId);
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([$this->performance('Trupp 1', startTime: '18:00')]);
+
+        $this->artisan('planka:import-performances')->assertSuccessful();
+
+        $this->assertSame('18:00', Performance::sole()->startTime());
+    }
+
+    public function test_a_card_naming_no_hour_leaves_the_performance_at_the_houses_usual_one(): void
+    {
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([$this->performance('Trupp 1')]);
+
+        $this->artisan('planka:import-performances')->assertSuccessful();
+
+        $performance = Performance::sole();
+
+        $this->assertSame('19:00', $performance->startTime());
+        // Still the night the card announced, not the day the UTC lands on.
+        $this->assertSame('2025-09-13', $performance->startDate());
+    }
+
+    public function test_a_night_already_imported_is_not_imported_again_when_the_card_gains_an_hour(): void
+    {
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([$this->performance('Trupp 1')]);
+
+        $this->artisan('planka:import-performances')->assertSuccessful();
+
+        // The board is tidied up and the card now says when the act is on. It
+        // is the same night, so it stays one performance.
+        $this->fakeExtraction([$this->performance('Trupp 1', startTime: '21:45')]);
+
+        $this->artisan('planka:import-performances')->assertSuccessful();
+
+        $this->assertSame(1, Performance::query()->count());
+        $this->assertSame('19:00', Performance::sole()->startTime());
     }
 
     public function test_it_creates_a_show_and_a_performance_for_every_act_on_the_card(): void

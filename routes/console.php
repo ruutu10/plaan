@@ -17,3 +17,11 @@ Schedule::command('attachments:prune-stale')
 Schedule::command('planka:import-performances')
     ->weekly()
     ->description('Import new shows and performances from the Planka board');
+
+// Hourly, and quiet almost every hour: the run only mails when a reminder has
+// just fallen due. Often enough that the thirty-hour notice lands within an
+// hour of its moment, and cheap enough that a missed hour catches up by itself.
+Schedule::command('performances:remind-missing-plans')
+    ->hourly()
+    ->withoutOverlapping()
+    ->description('Remind performers about technical plans that have not been handed in');

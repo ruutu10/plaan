@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { formatEstonianDate } from '@/lib/date';
+import { formatEstonianDateTime } from '@/lib/date';
 import { requestJson } from '@/lib/http';
 import type { UpcomingPerformance } from '@/types/technicalPlan';
 import { applyPlanContent, resetPlanContent } from '../plan';
@@ -170,7 +170,12 @@ onMounted(loadPerformances);
                         <span
                             class="mt-0.5 block text-[13px] text-r10-grey-500"
                         >
-                            {{ formatEstonianDate(performance.showDate) }}
+                            {{
+                                formatEstonianDateTime(
+                                    performance.showDate,
+                                    performance.startTime,
+                                )
+                            }}
                             <template v-if="performance.performer">
                                 · {{ performance.performer }}
                             </template>

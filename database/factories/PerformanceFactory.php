@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Performance;
 use App\Models\Show;
+use Carbon\CarbonInterval;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,10 +21,36 @@ class PerformanceFactory extends Factory
     {
         return [
             'show_id' => Show::factory(),
-            'date' => fake()->dateTimeBetween('now', '+2 months')->format('Y-m-d'),
+            'date' => Performance::momentFrom(
+                fake()->dateTimeBetween('now', '+2 months')->format('Y-m-d'),
+                fake()->randomElement(['18:00', '19:00', '20:00', '21:30']),
+            ),
             'duration' => fake()->numberBetween(3, 90),
             'is_draft' => false,
         ];
+    }
+
+    /**
+     * Put the performance at a given moment on the venue's clock, which is how
+     * a test means a date and time — "the first of September at seven", not the
+     * UTC the row happens to hold.
+     */
+    public function startingAt(string $date, string $startTime = '19:00'): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'date' => Performance::momentFrom($date, $startTime),
+        ]);
+    }
+
+    /**
+     * Put the performance a given interval from now, for the reminder tests —
+     * "in five days" being the thing those are actually about.
+     */
+    public function startingIn(CarbonInterval $ahead): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'date' => now()->add($ahead),
+        ]);
     }
 
     /**
@@ -43,7 +70,9 @@ class PerformanceFactory extends Factory
     public function past(): static
     {
         return $this->state(fn (array $attributes) => [
-            'date' => fake()->dateTimeBetween('-2 months', '-1 day')->format('Y-m-d'),
+            'date' => Performance::momentFrom(
+                fake()->dateTimeBetween('-2 months', '-1 day')->format('Y-m-d'),
+            ),
         ]);
     }
 }

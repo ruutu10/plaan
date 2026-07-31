@@ -16,9 +16,14 @@ class Performance extends JsonResource
     /**
      * Transform the performance into a listable and editable row.
      *
+     * The date and the start time are split apart again here: they are one
+     * stored moment, but two fields on the form, and both are given on the
+     * venue's clock rather than in the UTC they are kept in.
+     *
      * @return array{
      *     id: int,
      *     date: string,
+     *     startTime: string,
      *     duration: int|null,
      *     isDraft: bool,
      *     technicalPlanCount: int|null,
@@ -30,7 +35,8 @@ class Performance extends JsonResource
 
         return [
             'id' => $performance->id,
-            'date' => $performance->date->toDateString(),
+            'date' => $performance->startDate(),
+            'startTime' => $performance->startTime(),
             'duration' => $performance->duration,
             // Imported and not reviewed yet, which keeps it out of the listing
             // plans are written from until somebody clears it here.

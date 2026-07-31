@@ -60,7 +60,7 @@ class DashboardController extends Controller
      * @return array{
      *     performances: int,
      *     missingPlans: int,
-     *     next: array{showName: string, teamName: string|null, date: string}|null,
+     *     next: array{showName: string, teamName: string|null, date: string, startTime: string}|null,
      * }
      */
     private function upcomingSummary(): array
@@ -81,20 +81,22 @@ class DashboardController extends Controller
             'next' => $next ? [
                 'showName' => $next->show->name,
                 'teamName' => $next->show->team?->name,
-                'date' => $next->date->toDateString(),
+                'date' => $next->startDate(),
+                'startTime' => $next->startTime(),
             ] : null,
         ];
     }
 
     /**
-     * The performances from today on. A performance is dated to the day, so the one
-     * playing tonight is still ahead.
+     * The performances still to come. A performance now carries its curtain-up,
+     * so tonight's stays ahead until it actually starts rather than until
+     * midnight.
      *
      * @return Builder<Performance>
      */
     private function upcomingPerformances(): Builder
     {
-        return Performance::query()->whereDate('date', '>=', now()->toDateString());
+        return Performance::query()->where('date', '>=', now());
     }
 
     /**
