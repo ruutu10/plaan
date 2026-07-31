@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Version
+    |--------------------------------------------------------------------------
+    |
+    | This value is the current version of your application, typically the
+    | short git commit hash it was built from. It's baked into the Docker
+    | image at build time and displayed in the UI.
+    |
+    */
+
+    'version' => env('APP_VERSION', '0.1-dev'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

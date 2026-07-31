@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import AppFooter from '@/components/AppFooter.vue';
 import { dashboard, login, logout } from '@/routes';
 
 withDefaults(
@@ -86,5 +87,7 @@ const dashboardUrl = computed(() =>
         </header>
 
         <slot />
+
+        <AppFooter />
     </div>
 </template>

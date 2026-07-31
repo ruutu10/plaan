@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import AppFooter from '@/components/AppFooter.vue';
 import { home } from '@/routes';
 
 defineProps<{
@@ -42,5 +43,7 @@ defineProps<{
                 </div>
             </div>
         </div>
+
+        <AppFooter class="w-full" />
     </div>
 </template>
