@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Concerns\ScopedByTeamAccess;
+use App\Enums\ReminderSchedule;
+use Carbon\CarbonInterface;
 use Database\Factories\PerformanceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -14,11 +16,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 
 /**
  * One dated performance of a {@see Show}. Everything the performances of a show
  * have in common — the name, the description, the performing group — belongs to
  * the show; a performance holds only what can differ between them.
+ *
+ * `date` is the full moment the performance starts, stored in UTC like every
+ * other timestamp here. The house does not think in UTC, though, so the hour is
+ * only ever written and read through {@see venueTimezone()} — see
+ * {@see startsAt()} and {@see momentFrom()}, which are the two ends of that
+ * conversion and the only places it should happen.
  *
  * @property int $id
  * @property int $show_id
@@ -31,6 +40,8 @@ use Illuminate\Support\Carbon;
  * @property-read Show $show
  * @property-read Collection<int, TechnicalPlan> $technicalPlans
  * @property-read int|null $technical_plans_count
+ * @property-read Collection<int, PerformanceReminder> $reminders
+ * @property-read int|null $reminders_count
  */
 #[Fillable([
     'show_id',
@@ -130,6 +141,71 @@ class Performance extends Model
     }
 
     /**
+     * The {@see ReminderSchedule} moments of this performance that have already
+     * been dealt with.
+     *
+     * @return HasMany<PerformanceReminder, $this>
+     */
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(PerformanceReminder::class);
+    }
+
+    /**
+     * The wall clock the house runs on. Stored moments mean nothing to a
+     * performer until they are read through this.
+     */
+    public static function venueTimezone(): string
+    {
+        return (string) config('performance.timezone', 'Europe/Tallinn');
+    }
+
+    /**
+     * The moment this performance starts, on the venue's clock. This is the
+     * form every screen and every mail shows; the stored UTC is an
+     * implementation detail nothing outside the model should have to know.
+     */
+    public function startsAt(): CarbonInterface
+    {
+        return $this->date->setTimezone(self::venueTimezone());
+    }
+
+    /**
+     * The curtain-up as the house says it: "19:00".
+     */
+    public function startTime(): string
+    {
+        return $this->startsAt()->format('H:i');
+    }
+
+    /**
+     * The venue-local date the performance falls on: "2026-09-01". Not the same
+     * as the stored date once a late night crosses midnight in UTC, which is
+     * why this goes through {@see startsAt()} rather than reading `date`.
+     */
+    public function startDate(): string
+    {
+        return $this->startsAt()->toDateString();
+    }
+
+    /**
+     * Turn a venue-local date and time — as a person typed them, or as the
+     * Planka import read them off a card — into the UTC moment to store. A
+     * missing time falls back to the venue's usual curtain-up rather than to
+     * midnight, which would read as a real start time everywhere it was shown.
+     */
+    public static function momentFrom(string $date, ?string $startTime = null): CarbonInterface
+    {
+        $time = blank($startTime)
+            ? (string) config('performance.default_start_time', '19:00')
+            : $startTime;
+
+        return Date::parse($date, self::venueTimezone())
+            ->setTimeFromTimeString($time)
+            ->utc();
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -137,7 +213,7 @@ class Performance extends Model
     protected function casts(): array
     {
         return [
-            'date' => 'date',
+            'date' => 'datetime',
             'duration' => 'integer',
             'is_draft' => 'boolean',
         ];

@@ -56,7 +56,10 @@ export interface UpcomingPerformance {
     id: number;
     performer: string;
     showName: string;
+    /** ISO date (YYYY-MM-DD), on the venue's clock. */
     showDate: string;
+    /** Curtain-up as "19:00", on the venue's clock. */
+    startTime: string;
     duration: number | null;
     description: string;
     /** Plans handed in for other performances of the same show, by the user or their teams. */

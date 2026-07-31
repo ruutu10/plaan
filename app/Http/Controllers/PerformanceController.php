@@ -46,12 +46,12 @@ class PerformanceController extends Controller
      */
     public function store(SavePerformanceRequest $request, Show $show): JsonResponse
     {
-        $performance = $show->performances()->create($request->validated());
+        $performance = $show->performances()->create($request->performanceAttributes());
 
         Log::info('Performance added to a show', [
             'performance_id' => $performance->id,
             'show_id' => $show->id,
-            'date' => $performance->date->toDateString(),
+            'starts_at' => $performance->startsAt()->toDateTimeString(),
             'user_id' => $request->user()->id,
         ]);
 
@@ -65,7 +65,7 @@ class PerformanceController extends Controller
      */
     public function update(SavePerformanceRequest $request, Show $show, Performance $performance): PerformanceResource
     {
-        $performance->fill($request->validated());
+        $performance->fill($request->performanceAttributes());
 
         $changed = array_keys($performance->getDirty());
 
@@ -74,7 +74,7 @@ class PerformanceController extends Controller
         Log::info('Performance updated', [
             'performance_id' => $performance->id,
             'show_id' => $show->id,
-            'date' => $performance->date->toDateString(),
+            'starts_at' => $performance->startsAt()->toDateTimeString(),
             'user_id' => $request->user()->id,
             'changed' => $changed,
         ]);
@@ -100,7 +100,7 @@ class PerformanceController extends Controller
         Log::notice('Performance deleted', [
             'performance_id' => $performance->id,
             'show_id' => $show->id,
-            'date' => $performance->date->toDateString(),
+            'starts_at' => $performance->startsAt()->toDateTimeString(),
             'user_id' => $request->user()->id,
             'orphaned_plans' => $orphanedPlans,
         ]);

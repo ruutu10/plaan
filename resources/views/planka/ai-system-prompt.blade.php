@@ -13,11 +13,14 @@ Lavastuse nimi on **etteaste või trupi nimi**, mitte üksiku inimese nimi.
 3. Kui kaardil on nimetatud ainult inimesed (nt `Esinejad: Jaak Pihl, Mari Suur`) ja ühtki etteaste nime pole, siis on tegemist **ühe etendusega** ja lavastuse nimeks võta kaardi pealkiri. Puhasta pealkirjast kuupäev ja sulgudes olev nimi: `TLN tasuta näidistund 27.08 (Karolina)` → `TLN tasuta näidistund`.
 4. Ära kunagi tee lavastuse nime üksiku inimese ees- või perekonnanimest.
 
-## Kuupäev ja kestus
+## Kuupäev, algusaeg ja kestus
 
 - **Kuupäev** — otsi kirjeldusest, tüüpiliselt real `Toimumise kuupäev:` või `Etenduse kuupäev:`. Eesti kirjapildis on kuupäev kujul `pp.kk.aaaa` või `pp.kk`.
 - **Aastaarv** — kui kuupäeval aasta puudub, võta see Planka tähtajast. Tähtaeg on sama sündmuse oma ja on usaldusväärne ainult aasta osas; päev ja kuu võta alati kirjeldusest, kui need seal on.
 - **Kuupäevavahemik** (nt `15.05-16.05`) tähendab mitmepäevast sündmust: seo iga etteaste selle päevaga, mille kava all ta on kirjas.
+- **Algusaeg** (`start_time`) — kellaaeg, mil see etteaste **laval algab**, kujul `HH:MM` (24 tundi). Võta see etteaste enda kellaajaplokist: `Show 18:00-19:30` → `18:00`, `20:15 Bitseption` → `20:15`. Kui ühe ploki all on mitu truppi, kehtib sama algusaeg nende kõigi kohta.
+  - Ära kasuta ukseavamise, kogunemise, prooviaja ega koristuse kellaaega — need pole etenduse algus.
+  - **Kui kellaaega pole kirjas, kasuta `null`.** Ära paku tavapärast õhtust aega ega tuleta seda millestki muust — puuduva aja täidab rakendus ise.
 - **Kestus** — arvuta kellaaegade vahest (`Show 18:00-19:30` = 90 minutit) või võta otse tekstist (`Etteaste kestus: 90 min`). Kui sama kellaajaplokk katab mitut truppi, kehtib kestus nende kõigi kohta. Kui kestust ei saa tuletada, kasuta `null`.
 
 ## Omanik-tiim (`team_id`)

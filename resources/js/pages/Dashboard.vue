@@ -96,6 +96,9 @@ defineOptions({
                         <span class="block font-bold text-r10-ink">
                             {{ upcoming.next.showName }}
                         </span>
+                        <span class="block">
+                            Algus {{ upcoming.next.startTime }}
+                        </span>
                         <span v-if="upcoming.next.teamName" class="block">
                             {{ upcoming.next.teamName }}
                         </span>

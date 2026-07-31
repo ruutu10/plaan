@@ -119,6 +119,9 @@ class PlankaPerformanceExtractor
             $performances[] = new ImportedPerformance(
                 showName: $name,
                 date: Carbon::createFromFormat('Y-m-d', $date)->startOfDay(),
+                // A card that names no hour — most of them — leaves this empty
+                // and the performance takes the house's usual curtain-up.
+                startTime: $this->readStartTime($entry['start_time'] ?? null),
                 duration: is_numeric($duration) && (int) $duration > 0 ? (int) $duration : null,
                 // A group the model invented owns nothing; only the ids it was
                 // given are worth handing a show to.
@@ -127,6 +130,20 @@ class PlankaPerformanceExtractor
         }
 
         return $performances;
+    }
+
+    /**
+     * The curtain-up the model read off the card, as "19:00", or null when it
+     * found none — or returned something that is not a time of day. A board is
+     * written by hand, so "kell 7" and "õhtul" both turn up; anything the
+     * format does not cover is better left to the house's usual hour than
+     * guessed at.
+     */
+    protected function readStartTime(mixed $startTime): ?string
+    {
+        $time = trim((string) ($startTime ?? ''));
+
+        return $time !== '' && Carbon::hasFormat($time, 'H:i') ? $time : null;
     }
 
     /**
@@ -168,6 +185,13 @@ class PlankaPerformanceExtractor
                                 'type' => 'string',
                                 'description' => 'The date of the performance, as YYYY-MM-DD.',
                             ],
+                            'start_time' => [
+                                'anyOf' => [
+                                    ['type' => 'string'],
+                                    ['type' => 'null'],
+                                ],
+                                'description' => 'The time the performance starts, as 24-hour HH:MM, or null when the card does not say. Do not guess a usual hour.',
+                            ],
                             'duration_minutes' => [
                                 'anyOf' => [
                                     ['type' => 'integer'],
@@ -183,7 +207,7 @@ class PlankaPerformanceExtractor
                                 'description' => 'Id of the group that owns the show, from the list given, or null when no group is a clear match.',
                             ],
                         ],
-                        'required' => ['show_name', 'date', 'duration_minutes', 'team_id'],
+                        'required' => ['show_name', 'date', 'start_time', 'duration_minutes', 'team_id'],
                         'additionalProperties' => false,
                     ],
                 ],

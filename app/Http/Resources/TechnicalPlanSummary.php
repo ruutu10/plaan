@@ -31,7 +31,7 @@ class TechnicalPlanSummary extends JsonResource
             'token' => $plan->token,
             'title' => trim(($show?->name ?: 'Nimeta plaan').($show?->team?->name ? ' — '.$show->team->name : '')),
             'sub' => collect([
-                $plan->performance?->date?->format('d.m.Y'),
+                $plan->performance?->startsAt()->format('d.m.Y'),
                 $plan->submitted_at ? 'esitatud '.$plan->submitted_at->format('d.m.Y') : null,
             ])->filter()->implode(' · '),
         ];

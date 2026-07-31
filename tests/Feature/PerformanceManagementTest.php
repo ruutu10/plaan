@@ -82,6 +82,109 @@ class PerformanceManagementTest extends TestCase
         $this->assertSame(90, $performance->duration);
     }
 
+    public function test_a_performance_keeps_the_hour_it_was_given(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+
+        $this->actingAs($user)
+            ->postJson(route('api.shows.performances.store', $show), [
+                'date' => '2026-08-14',
+                'start_time' => '20:30',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.date', '2026-08-14')
+            ->assertJsonPath('data.startTime', '20:30');
+
+        // Half past eight on an August evening in Tallinn is 17:30 UTC, which
+        // is what a column shared with every other timestamp in the app holds.
+        $this->assertSame('2026-08-14 17:30:00', Performance::sole()->date->utc()->toDateTimeString());
+    }
+
+    public function test_a_performance_without_an_hour_takes_the_houses_usual_one(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+
+        $this->actingAs($user)
+            ->postJson(route('api.shows.performances.store', $show), ['date' => '2026-08-14'])
+            ->assertCreated()
+            ->assertJsonPath('data.startTime', '19:00');
+
+        $this->actingAs($user)
+            ->postJson(route('api.shows.performances.store', $show), [
+                'date' => '2026-08-15',
+                'start_time' => '',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.startTime', '19:00');
+    }
+
+    public function test_a_late_night_performance_stays_on_the_night_it_is_played(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+
+        $this->actingAs($user)
+            ->postJson(route('api.shows.performances.store', $show), [
+                'date' => '2026-08-14',
+                'start_time' => '00:30',
+            ])
+            ->assertCreated()
+            // Half past midnight Tallinn time is still the 13th in UTC. The
+            // house means the 14th, and that is what it is given back as.
+            ->assertJsonPath('data.date', '2026-08-14')
+            ->assertJsonPath('data.startTime', '00:30');
+
+        $this->assertSame('2026-08-13 21:30:00', Performance::sole()->date->utc()->toDateTimeString());
+    }
+
+    public function test_the_venues_winter_clock_is_a_different_offset_from_its_summer_one(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+
+        // Two hours ahead of UTC in January, three in August: a start time
+        // stored as a fixed offset would be an hour out for half the season.
+        $this->actingAs($user)
+            ->postJson(route('api.shows.performances.store', $show), [
+                'date' => '2027-01-14',
+                'start_time' => '19:00',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.startTime', '19:00');
+
+        $this->assertSame('2027-01-14 17:00:00', Performance::sole()->date->utc()->toDateTimeString());
+    }
+
+    public function test_an_hour_that_is_not_a_time_of_day_is_refused(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+
+        $this->actingAs($user)
+            ->postJson(route('api.shows.performances.store', $show), [
+                'date' => '2026-08-14',
+                'start_time' => 'kell seitse',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('start_time');
+
+        $this->assertDatabaseCount('performances', 0);
+    }
+
+    public function test_a_member_can_move_a_performances_start_time(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+
+        $performance = Performance::factory()->startingAt('2026-08-01', '19:00')->create(['show_id' => $show->id]);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.shows.performances.update', [$show, $performance]), [
+                'date' => '2026-08-01',
+                'start_time' => '21:15',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.startTime', '21:15');
+
+        $this->assertSame('21:15', $performance->fresh()->startTime());
+    }
+
     public function test_a_performance_may_be_added_without_a_duration(): void
     {
         [$user, $show] = $this->showOfOwnTeam();

@@ -21,14 +21,24 @@ const emit = defineEmits<{ saved: [] }>();
 
 const open = defineModel<boolean>('open', { required: true });
 
+/**
+ * The hour a new performance is offered at. The house's own default lives
+ * server-side (`config/performance.php`), which is what an empty start time
+ * falls back to; this only spares whoever is adding a performance from typing
+ * the usual answer.
+ */
+const USUAL_START_TIME = '19:00';
+
 // The dated fields are held as the strings the inputs deal in; the duration
 // becomes a number (or nothing at all) on its way out.
 const form = useHttp({
     date: '',
+    start_time: '',
     duration: '',
     is_draft: false,
 }).transform((data) => ({
     date: data.date,
+    start_time: data.start_time,
     duration: data.duration === '' ? null : Number(data.duration),
     is_draft: data.is_draft,
 }));
@@ -42,6 +52,7 @@ const isEditing = computed(() => props.performance !== null);
 function fill(): void {
     form.clearErrors();
     form.date = props.performance?.date ?? '';
+    form.start_time = props.performance?.startTime ?? USUAL_START_TIME;
     form.duration = props.performance?.duration?.toString() ?? '';
     // A performance added here is vouched for by the adding; only an imported
     // one starts out waiting to be reviewed.
@@ -89,6 +100,15 @@ async function save(): Promise<void> {
             label="Kuupäev"
             required
             :error="form.errors.date"
+        />
+
+        <R10Input
+            v-model="form.start_time"
+            type="time"
+            label="Algusaeg"
+            hint="Mis kell etendus laval algab. Sellest arvestatakse tehnikaplaani meeldetuletused."
+            required
+            :error="form.errors.start_time"
         />
 
         <R10Input

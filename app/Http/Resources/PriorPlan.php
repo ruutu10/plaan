@@ -30,7 +30,7 @@ class PriorPlan extends JsonResource
 
         return [
             'token' => $plan->token,
-            'label' => $plan->performance?->date?->format('d.m.Y') ?? '',
+            'label' => $plan->performance?->startsAt()->format('d.m.Y') ?? '',
             'author' => $plan->user_id === $request->user()?->id ? null : $plan->user?->name,
         ];
     }

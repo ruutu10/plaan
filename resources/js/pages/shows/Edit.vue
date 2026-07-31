@@ -204,7 +204,7 @@ async function save(): Promise<void> {
 
             <R10Table
                 :columns="[
-                    { label: 'Kuupäev' },
+                    { label: 'Kuupäev ja algus' },
                     { label: 'Kestus' },
                     { label: 'Olek' },
                     { label: 'Tehnikaplaane' },
@@ -224,6 +224,9 @@ async function save(): Promise<void> {
                         class="px-5 py-4 font-medium whitespace-nowrap text-r10-ink"
                     >
                         {{ formatEstonianDate(performance.date) }}
+                        <span class="text-r10-grey-500">
+                            {{ performance.startTime }}
+                        </span>
                     </td>
                     <td class="px-5 py-4 whitespace-nowrap">
                         {{

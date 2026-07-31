@@ -20,14 +20,30 @@ import type { User } from '@/types';
 import type {
     Plan,
     PlanFile,
+    PlanMeta,
     Scene,
     WizardConfig,
 } from '@/types/technicalPlan';
 
-const props = defineProps<{
-    config: WizardConfig;
-    initialPlan: Plan | null;
-}>();
+const props = withDefaults(
+    defineProps<{
+        config: WizardConfig;
+        initialPlan: Plan | null;
+        /**
+         * The night a reminder's link named, already resolved server-side. Set
+         * only when the wizard was opened from one of those links, which is
+         * also what lets it open past the first step — the step that would
+         * otherwise be where this gets chosen.
+         */
+        initialPerformance?: PlanMeta | null;
+        /** The step such a link asks for, counting from zero. */
+        initialStep?: number;
+    }>(),
+    {
+        initialPerformance: null,
+        initialStep: 0,
+    },
+);
 
 const STORAGE_KEY = 'r10-techplan-v1';
 
@@ -35,10 +51,18 @@ const page = usePage<{ auth: { user: User | null } }>();
 const user = computed(() => page.props.auth.user);
 
 const plan = reactive<Plan>(hydratePlan(props.initialPlan));
+
+// A reminder's link has already chosen the night, so the wizard starts with it
+// filled in rather than making a performer who was just told which show this is
+// about pick it out of a list.
+if (props.initialPerformance) {
+    Object.assign(plan.meta, props.initialPerformance);
+}
+
 provide(planKey, plan);
 provide(configKey, props.config);
 
-const step = ref(0);
+const step = ref(props.initialStep);
 
 // Login state
 const loginBusy = ref(false);
@@ -353,30 +377,47 @@ async function aiReview(): Promise<void> {
 
 /* ---- Local draft persistence ---------------------------------------- */
 
+/** The half-written plan left in this browser, if there is one still readable. */
+function savedDraft(): { step?: number; plan?: Partial<Plan> } | null {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        /* ignore malformed drafts */
+        return null;
+    }
+}
+
 onMounted(() => {
     if (props.initialPlan) {
         return;
     }
 
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+    const saved = savedDraft();
 
-        if (raw) {
-            const saved = JSON.parse(raw) as {
-                step?: number;
-                plan?: Partial<Plan>;
-            };
+    if (!saved?.plan) {
+        return;
+    }
 
-            if (saved.plan) {
-                Object.assign(plan, hydratePlan(saved.plan));
-            }
-
-            if (typeof saved.step === 'number') {
-                step.value = Math.min(Math.max(saved.step, 0), 6);
-            }
+    // A link that names a night overrides the stored draft — unless the draft
+    // is for that very night, in which case the performer is coming back to
+    // work they have already started and it would be theirs to lose.
+    if (props.initialPerformance) {
+        if (
+            saved.plan.meta?.performanceId ===
+            props.initialPerformance.performanceId
+        ) {
+            Object.assign(plan, hydratePlan(saved.plan));
         }
-    } catch {
-        /* ignore malformed drafts */
+
+        return;
+    }
+
+    Object.assign(plan, hydratePlan(saved.plan));
+
+    if (typeof saved.step === 'number') {
+        step.value = Math.min(Math.max(saved.step, 0), 6);
     }
 });
 

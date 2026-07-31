@@ -91,6 +91,36 @@ class PlankaPerformanceExtractorTest extends TestCase
         $this->assertNull($performances[1]->duration);
     }
 
+    public function test_it_reads_the_hour_a_card_names(): void
+    {
+        $performances = $this->extractorAnswering((string) json_encode([
+            'performances' => [
+                ['show_name' => 'Trupp 1', 'date' => '2025-09-13', 'start_time' => '18:00', 'duration_minutes' => 90],
+            ],
+        ]))->extract('13.09 õhtu', 'Show 18:00-19:30', null);
+
+        $this->assertSame('18:00', $performances[0]->startTime);
+    }
+
+    public function test_an_hour_that_is_not_a_time_of_day_is_left_to_the_house(): void
+    {
+        // A board is written by hand, and the model passes on what it finds.
+        // Anything the format does not cover is better left empty than guessed
+        // at — the importer falls back to the venue's usual curtain-up.
+        foreach ([null, '', 'õhtul', 'kell 7', '25:00', '7pm'] as $unreadable) {
+            $performances = $this->extractorAnswering((string) json_encode([
+                'performances' => [
+                    ['show_name' => 'Trupp 1', 'date' => '2025-09-13', 'start_time' => $unreadable],
+                ],
+            ]))->extract('13.09 õhtu', 'Kaardi tekst', null);
+
+            $this->assertNull(
+                $performances[0]->startTime,
+                sprintf('Expected "%s" to be left to the house.', var_export($unreadable, true)),
+            );
+        }
+    }
+
     public function test_it_asks_for_a_schema_constrained_answer(): void
     {
         $this->extractorAnswering('{"performances": []}')->extract(
@@ -103,7 +133,7 @@ class PlankaPerformanceExtractorTest extends TestCase
 
         $this->assertSame('json_schema', $body['output_config']['format']['type']);
         $this->assertSame(
-            ['show_name', 'date', 'duration_minutes', 'team_id'],
+            ['show_name', 'date', 'start_time', 'duration_minutes', 'team_id'],
             $body['output_config']['format']['schema']['properties']['performances']['items']['required'],
         );
 
