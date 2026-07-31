@@ -10,6 +10,6 @@ const appVersion = computed(() => page.props.appVersion);
     <footer
         class="border-t border-r10-grey-200 py-4 text-center text-xs font-r10-body text-xs text-r10-grey-500"
     >
-        version v{{ appVersion }}
+        versioon v{{ appVersion }}
     </footer>
 </template>

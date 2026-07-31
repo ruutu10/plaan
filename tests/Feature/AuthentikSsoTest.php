@@ -99,6 +99,17 @@ class AuthentikSsoTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_a_failed_silent_login_from_the_wizard_entry_returns_there_not_to_login(): void
+    {
+        $this->get(route('technical-plan.index'))->assertRedirect();
+
+        $response = $this->get(route('auth.authentik.callback', ['error' => 'login_required']));
+
+        $response->assertRedirect(route('technical-plan.index'));
+        $response->assertSessionHasNoErrors();
+        $this->assertGuest();
+    }
+
     public function test_a_failed_interactive_login_falls_through_with_a_visible_error(): void
     {
         $response = $this->withSession(['sso.silent_attempt' => false])

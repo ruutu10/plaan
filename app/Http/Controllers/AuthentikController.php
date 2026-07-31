@@ -40,7 +40,7 @@ class AuthentikController extends Controller
                 'silent' => $silent,
             ]);
 
-            return $this->failure($silent);
+            return $this->failure($request, $silent);
         }
 
         try {
@@ -51,7 +51,7 @@ class AuthentikController extends Controller
                 'silent' => $silent,
             ]);
 
-            return $this->failure($silent);
+            return $this->failure($request, $silent);
         }
 
         $user = $findOrCreateUser->handle($ssoUser);
@@ -64,16 +64,22 @@ class AuthentikController extends Controller
     }
 
     /**
-     * A silent (prompt=none) failure is swallowed with no visible error —
-     * it just means there was no Authentik session, which is the expected
-     * outcome for most visitors. An interactive failure gets one.
+     * A silent (prompt=none) failure is swallowed with no visible error — it
+     * just means there was no Authentik session, which is the expected
+     * outcome for most visitors — and returns to whichever page triggered
+     * the check (peeking at `url.intended`, the same value a successful
+     * login would consume via redirect()->intended(), rather than always
+     * defaulting to /login). An interactive failure always goes to /login,
+     * with a visible error, since that's the only place the button lives.
      */
-    private function failure(bool $silent): RedirectResponse
+    private function failure(Request $request, bool $silent): RedirectResponse
     {
-        return $silent
-            ? redirect()->route('login')
-            : redirect()->route('login')->withErrors([
+        if (! $silent) {
+            return redirect()->route('login')->withErrors([
                 'email' => 'Authentikuga sisselogimine ebaõnnestus.',
             ]);
+        }
+
+        return redirect()->to($request->session()->get('url.intended', route('login')));
     }
 }
