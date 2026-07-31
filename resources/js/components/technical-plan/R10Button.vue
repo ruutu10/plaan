@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, type InertiaLinkProps } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = withDefaults(
@@ -14,7 +14,7 @@ const props = withDefaults(
          * default, because most destinations are pages of this app; pass
          * `external` for a plain `<a>` that leaves it.
          */
-        href?: string;
+        href?: InertiaLinkProps['href'];
         external?: boolean;
     }>(),
     {

@@ -115,7 +115,7 @@ async function save(): Promise<void> {
             v-model="form.duration"
             type="number"
             label="Kestus (min)"
-            hint="Vabatahtlik. Etenduse eeldatav pikkus minutites."
+            hint="Etenduse eeldatav pikkus minutites"
             placeholder="90"
             :error="form.errors.duration"
         />
@@ -137,8 +137,8 @@ async function save(): Promise<void> {
                         Ülevaatamata
                     </span>
                     <span class="text-xs text-r10-grey-500">
-                        Ülevaatamata etendust ei pakuta tehnikaplaani
-                        koostajale. Imporditud etendused ootavad siin
+                        Ülevaatamata etendus on mustand või mitte kinnitatud kuupäev. Seda ei pakuta tehnikaplaani
+                        koostajale valikuna. Imporditud etendused ootavad siin
                         ülevaatamist — eemalda linnuke, kui kuupäev on õige.
                     </span>
                 </span>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
 import { ArrowLeft } from '@lucide/vue';
+import R10Button from '@/components/technical-plan/R10Button.vue';
 import type { BreadcrumbItem } from '@/types';
 
 /** The way back out of an edit screen, to the listing it was opened from. */
@@ -10,11 +10,8 @@ withDefaults(defineProps<{ href: BreadcrumbItem['href']; label?: string }>(), {
 </script>
 
 <template>
-    <Link
-        :href="href"
-        class="inline-flex items-center gap-2 font-r10-body text-xs font-bold tracking-[0.04em] text-r10-navy uppercase transition hover:text-r10-orange-700"
-    >
+    <R10Button :href="href" variant="outline" size="sm">
         <ArrowLeft class="h-3.5 w-3.5" />
         {{ label }}
-    </Link>
+    </R10Button>
 </template>

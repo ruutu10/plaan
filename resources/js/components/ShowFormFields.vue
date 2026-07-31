@@ -47,7 +47,7 @@ const teamOptions = computed(() =>
         <R10Textarea
             v-model="description"
             label="Kirjeldus"
-            hint="Lühikirjeldus, mida lavastus endast kujutab."
+            hint="Lühikirjeldus, mida lavastus endast kujutab. Just struktuuri poolest (mitte turunduslik tekst), nt: Küsime publikult inspiratsiooni, ning teeme siis pool tundi edititeta monostseeni."
             :error="errors.description"
         />
     </div>
