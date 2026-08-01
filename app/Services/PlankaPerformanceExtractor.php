@@ -82,6 +82,7 @@ class PlankaPerformanceExtractor
                 fn (ImportedNight $night): int => count($night->performances),
                 $nights,
             )),
+            'reasoningNotes' => $this->readReasoningNotes($aiResponse),
             'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
         ]);
 
@@ -180,6 +181,29 @@ class PlankaPerformanceExtractor
         }
 
         return $performances;
+    }
+
+    /**
+     * The model's own account of how it read the card, logged for whoever has
+     * to work out later why a card came out the way it did. Nothing in it is
+     * shown to anyone using the app, so anything that is not a list of lines is
+     * simply dropped.
+     *
+     * @return list<string>
+     */
+    protected function readReasoningNotes(string $aiResponse): array
+    {
+        $decoded = json_decode($aiResponse, true);
+        $notes = is_array($decoded) ? ($decoded['reasoningNotes'] ?? null) : null;
+
+        if (! is_array($notes)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(fn (mixed $note): string => trim((string) (is_scalar($note) ? $note : '')), $notes),
+            fn (string $note): bool => $note !== '',
+        ));
     }
 
     /**
@@ -293,8 +317,13 @@ class PlankaPerformanceExtractor
                         'additionalProperties' => false,
                     ],
                 ],
+                'reasoningNotes' => [
+                    'type' => 'array',
+                    'description' => 'Why the card was read this way, one short note per decision, for the person debugging an import later: where a date or an hour came from, why a night was split or kept whole, why a group was matched or left null, who was left out as crew, and why a card yielded nothing. Not shown to anyone using the app.',
+                    'items' => ['type' => 'string'],
+                ],
             ],
-            'required' => ['shows'],
+            'required' => ['shows', 'reasoningNotes'],
             'additionalProperties' => false,
         ];
     }

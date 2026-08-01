@@ -207,7 +207,7 @@ async function save(): Promise<void> {
             </div>
         </form>
 
-        <section class="mt-9 max-w-2xl">
+        <section class="mt-9">
             <R10SectionHeader
                 title="Etendused"
                 lead="Selle lavastuse kuupäevad. Iga kuupäeva külge käib eraldi tehnikaplaan."
@@ -228,7 +228,7 @@ async function save(): Promise<void> {
 
             <R10Table
                 :columns="[
-                    { label: 'Kuupäev ja algus' },
+                    { label: 'Algus' },
                     { label: 'Etteaste' },
                     { label: 'Kestus' },
                     { label: 'Olek' },

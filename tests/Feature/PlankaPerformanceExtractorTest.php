@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Team;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Tests\Concerns\AnswersAsTheExtractionModel;
 use Tests\TestCase;
 
@@ -182,6 +183,14 @@ class PlankaPerformanceExtractorTest extends TestCase
             $shows['items']['properties']['performances']['items']['required'],
         );
 
+        // The reading is only debuggable if the model says how it read the card.
+        $schema = $body['output_config']['format']['schema'];
+
+        $this->assertSame(['shows', 'reasoningNotes'], $schema['required']);
+        $this->assertSame('array', $schema['properties']['reasoningNotes']['type']);
+        $this->assertSame('string', $schema['properties']['reasoningNotes']['items']['type']);
+        $this->assertStringContainsString('reasoningNotes', $body['system']);
+
         // The card must reach the model whole — title, description and the due
         // date that supplies the year for dates written without one.
         $this->assertStringContainsString('13.09 õhtu', $body['messages'][0]['content']);
@@ -283,5 +292,56 @@ class PlankaPerformanceExtractorTest extends TestCase
     public function test_an_answer_that_is_not_a_night_list_yields_nothing(): void
     {
         $this->assertSame([], $this->extractorAnswering('Vabandust, ma ei oska.')->extract('Tühi', 'Tühi kaart'));
+    }
+
+    public function test_it_logs_why_the_model_read_the_card_the_way_it_did(): void
+    {
+        Log::spy();
+
+        $this->extractorAnswering((string) json_encode([
+            'shows' => [
+                [
+                    'show_name' => 'Trupp 1',
+                    'date' => '2025-09-13',
+                    'performances' => [['title' => null]],
+                ],
+            ],
+            'reasoningNotes' => [
+                'Kuupäev real "Toimumise kuupäev: 13.09.2025".',
+                'Ükski tiim ei sobinud, seega team_id on tühi.',
+                '   ',
+                ['mitte lause'],
+            ],
+        ]))->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
+
+        Log::shouldHaveReceived('info')
+            ->withArgs(fn (string $message, array $context): bool => $message === 'Read a Planka card'
+                && $context['reasoningNotes'] === [
+                    'Kuupäev real "Toimumise kuupäev: 13.09.2025".',
+                    'Ükski tiim ei sobinud, seega team_id on tühi.',
+                ])
+            ->once();
+    }
+
+    public function test_an_answer_without_notes_is_still_read(): void
+    {
+        Log::spy();
+
+        $nights = $this->extractorAnswering((string) json_encode([
+            'shows' => [
+                [
+                    'show_name' => 'Trupp 1',
+                    'date' => '2025-09-13',
+                    'performances' => [['title' => null]],
+                ],
+            ],
+        ]))->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
+
+        $this->assertCount(1, $nights);
+
+        Log::shouldHaveReceived('info')
+            ->withArgs(fn (string $message, array $context): bool => $message === 'Read a Planka card'
+                && $context['reasoningNotes'] === [])
+            ->once();
     }
 }

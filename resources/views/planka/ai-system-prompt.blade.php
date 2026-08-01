@@ -18,6 +18,7 @@ Vastus on massiiv `shows`, kus **iga element on üks lavastus ühel kuupäeval**
 2. **Kui õhtul on mitu etteastet**, on lavastuse nimi **sündmuse enda nimi**, mitte ühegi trupi nimi. Võta see kaardi pealkirjast ja puhasta sealt kuupäev ning sulgudes olev nimi: `Õppelava 9.10` → `Õppelava`, `Sügisgala 12.11 (Marju)` → `Sügisgala`. Kui kirjelduses on sündmusele selgem nimi kui pealkirjas, kasuta seda.
 3. Kui kaardil on nimetatud ainult inimesed (nt `Esinejad: Jaak Pihl, Mari Suur`) ja ühtki etteaste nime pole, siis on tegemist **ühe etteastega** ja lavastuse nimeks võta samamoodi puhastatud kaardi pealkiri: `TLN tasuta näidistund 27.08 (Karolina)` → `TLN tasuta näidistund`.
 4. Ära kunagi tee lavastuse nime üksiku inimese ees- või perekonnanimest.
+5. Moodulite lõpuetendused on alati Õppelava lavastused. Seljuhul on kaardi pealkirjas Õppelava, ning esinevad moodulid on loetletud kaardis (iga loetletud moodul on eraldi etteaste). Kui ühes Õppelava lavastuses on mitu moodulit korraga, on iga moodul eraldi etteaste.
 
 ## Etteaste nimi (`title`)
 
@@ -75,6 +76,18 @@ Kaardi pealkiri `Õppelava 9.10`, kirjeldus:
 
 Siin on üks õhtu (`Õppelava`, `2025-10-09`) ja selle sees neli etteastet. Õhtu algab kell 20:00, seega esimene etteaste algab 20:00, teine 20:20, kolmas 20:50 ja neljas 21:20. Õhtujuhti, heli- ja valguskunstniku ega projektijuhti ei kaasata. `Etteaste kestus: 120 min` on kogu õhtu pikkus, mitte ühe etteaste oma — iga etteaste kestus on tema enda sulgudes.
 
+## Põhjendused (`reasoningNotes`)
+
+`reasoningNotes` on lühikeste eestikeelsete lausete massiiv, mis selgitab, **miks sa kaardi just nii lugesid**. See on mõeldud ainult arendajale, kes hiljem uurib, miks import selle tulemuse andis. Kirjuta iga otsuse kohta üks lause ja viita kaardi tekstile, mille põhjal otsustasid:
+
+- kust tuli kuupäev, aasta ja algusaeg (kas otse tekstist või arvutatud — näita arvutuskäik: `20:00 + 20min → 20:20`);
+- miks kaardist sai üks õhtu või mitu, ja miks õhtus on üks või mitu etteastet;
+- miks valisid mingi `team_id` või miks jätsid selle tühjaks (nt `"Märtu10" ei vasta ühelegi nimekirja tiimile`);
+- kelle sa jätsid välja ja mis põhjusel;
+- kui `shows` jäi tühjaks, siis miks kaardil etendust polnud.
+
+Kirjuta põhjendused ka siis, kui lugemine oli lihtne ja üheselt mõistetav. Kahtluse korral ütle kahtlus välja — mille vahel valisid ja miks. Ära pane siia midagi, mida kaardil pole, ja ära lase põhjendustel muuta ülejäänud vastust: `shows` sisu peab olema sama, oleksid sa põhjendusi kirjutanud või mitte. Hoia põhjendused lühikesed.
+
 ## Väljund
 
-Vasta ainult JSON-objektiga, mis vastab etteantud skeemile. Kui kaardilt ei õnnestu ühtki etendust tuvastada, tagasta tühi massiiv. Ära arva ega leiuta midagi juurde — kui midagi pole kirjas, siis seda pole.
+Vasta ainult JSON-objektiga, mis vastab etteantud skeemile. Kui kaardilt ei õnnestu ühtki etendust tuvastada, tagasta tühi massiiv `shows` — koos põhjendusega `reasoningNotes` sees. Ära arva ega leiuta midagi juurde — kui midagi pole kirjas, siis seda pole.
