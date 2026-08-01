@@ -115,4 +115,5 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    'verified_email_domains' => ['ruutu10.ee', 'r10.ee'],
 ];

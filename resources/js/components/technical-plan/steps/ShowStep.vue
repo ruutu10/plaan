@@ -115,7 +115,7 @@ onMounted(loadPerformances);
         <StepHeader
             eyebrow="Samm 1 / 7 · Etendus"
             title="Vali etendus"
-            lead="Vali nimekirjast eelseisev etendus ja seejärel, kas alustad tühjalt lehelt või varasema plaani põhjal."
+            lead="Vali nimekirjast eelseisev etendus. Plaani täitmist saad alustada kas tühjalt lehelt või varasemalt saadetud plaani kopeerides."
         />
 
         <div v-if="loading" class="flex flex-col gap-3">

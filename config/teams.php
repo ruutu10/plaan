@@ -349,4 +349,7 @@ return [
         'zones',
     ],
 
+    // Name of the house's own team
+    // This team gets admin permissions
+    'theatre_team_name' => 'Ruutu10',
 ];

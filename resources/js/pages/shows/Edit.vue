@@ -171,7 +171,9 @@ async function save(): Promise<void> {
                 :errors="form.errors"
             />
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center justify-between gap-3">
+                <R10BackLink :href="index()" />
+
                 <R10Button
                     type="submit"
                     :disabled="form.processing"
@@ -179,15 +181,13 @@ async function save(): Promise<void> {
                 >
                     Salvesta
                 </R10Button>
-
-                <R10BackLink :href="index()" />
             </div>
         </form>
 
         <section class="mt-9 max-w-2xl">
             <R10SectionHeader
                 title="Etendused"
-                lead="Selle lavastuse kuupäevad. Etendus on see, mille külge tehnikaplaan käib."
+                lead="Selle lavastuse kuupäevad. Iga kuupäeva külge käib eraldi tehnikaplaan."
                 class="mb-4"
             >
                 <template #action>

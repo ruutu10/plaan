@@ -11,7 +11,7 @@ defineOptions({
     layout: {
         title: 'Kinnita e-post',
         description:
-            'Palun kinnita oma e-posti aadress, klõpsates lingil, mille saatsime sulle just.',
+            'Saatsime sulle e-kirja kinnituslingiga. Palun ava kiri, ja kliki kirjas oleval lingil.',
     },
 });
 

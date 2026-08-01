@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Actions\GrantStaffAccess;
+use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -28,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureSocialite();
+        $this->configureStaffAccess();
     }
 
     /**
@@ -50,6 +54,23 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+    }
+
+    /**
+     * Take an account into the house the moment its address is proven to be
+     * one of the theatre's own — however it came to be proven. This is the only
+     * place the grant hangs off for accounts that sign up by hand: an address
+     * nobody has answered mail at is not evidence of anything.
+     */
+    private function configureStaffAccess(): void
+    {
+        Event::listen(function (Verified $event) {
+            // The event only promises somebody with a verifiable address; the
+            // grant needs the application's own user.
+            if ($event->user instanceof User) {
+                app(GrantStaffAccess::class)->handle($event->user);
+            }
+        });
     }
 
     /**
