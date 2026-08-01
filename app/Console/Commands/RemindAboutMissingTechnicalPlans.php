@@ -109,8 +109,11 @@ class RemindAboutMissingTechnicalPlans extends Command
             // Still ahead of us, and near enough for this reminder to be due.
             ->where('date', '>', $now)
             ->where('date', '<=', $schedule->dueForPerformancesStartingBy($now))
-            // Nobody to chase without an owning group.
-            ->whereHas('show', fn (Builder $show) => $show->whereNotNull('team_id'))
+            // Nobody to chase without a group — the performance's own, or the
+            // show's when the evening is not a shared one.
+            ->where(fn (Builder $performance) => $performance
+                ->whereNotNull('performances.team_id')
+                ->orWhereHas('show', fn (Builder $show) => $show->whereNotNull('team_id')))
             ->whereDoesntHave(
                 'reminders',
                 fn (Builder $reminders) => $reminders->where('schedule', $schedule),
@@ -119,7 +122,7 @@ class RemindAboutMissingTechnicalPlans extends Command
                 'technicalPlans',
                 fn (Builder $plans) => $plans->whereIn('status', TechnicalPlanStatus::delivered()),
             )
-            ->with(['show.team.members'])
+            ->with(['team.members', 'show.team.members'])
             ->orderBy('date')
             ->get();
     }
@@ -130,7 +133,7 @@ class RemindAboutMissingTechnicalPlans extends Command
      */
     private function audience(Performance $performance): string
     {
-        $members = $performance->show->team?->members->count() ?? 0;
+        $members = $performance->performedBy()?->members->count() ?? 0;
 
         return $members === 0
             ? 'nobody — the group has no members'

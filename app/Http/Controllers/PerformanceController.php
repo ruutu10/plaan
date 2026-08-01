@@ -6,6 +6,7 @@ use App\Http\Requests\Performances\SavePerformanceRequest;
 use App\Http\Resources\Performance as PerformanceResource;
 use App\Models\Performance;
 use App\Models\Show;
+use App\Models\Team;
 use App\Policies\PerformancePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,7 +26,9 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 class PerformanceController extends Controller
 {
     /**
-     * List the show's performances, soonest first.
+     * List the show's performances, soonest first, together with the groups a
+     * performance may be handed to — the form offering the choice is on the
+     * same page, so one round trip is enough for both.
      *
      * @return AnonymousResourceCollection<int, PerformanceResource>
      */
@@ -34,11 +37,16 @@ class PerformanceController extends Controller
         Gate::authorize('viewAny', [Performance::class, $show]);
 
         $performances = $show->performances()
+            ->with('team')
             ->withCount('technicalPlans')
             ->orderBy('date')
             ->get();
 
-        return PerformanceResource::collection($performances);
+        return PerformanceResource::collection($performances)->additional([
+            'teams' => Performance::assignableTeams($request->user())
+                ->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])
+                ->values(),
+        ]);
     }
 
     /**
@@ -55,7 +63,7 @@ class PerformanceController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        return PerformanceResource::make($performance->loadCount('technicalPlans'))
+        return PerformanceResource::make($performance->load('team')->loadCount('technicalPlans'))
             ->response()
             ->setStatusCode(SymfonyResponse::HTTP_CREATED);
     }
@@ -79,7 +87,7 @@ class PerformanceController extends Controller
             'changed' => $changed,
         ]);
 
-        return PerformanceResource::make($performance->loadCount('technicalPlans'));
+        return PerformanceResource::make($performance->load('team')->loadCount('technicalPlans'));
     }
 
     /**

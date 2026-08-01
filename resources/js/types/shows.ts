@@ -8,6 +8,11 @@ export interface Show {
     teamName: string | null;
     /** How many dated performances hang off the show; only the listing counts them. */
     performanceCount: number | null;
+    /**
+     * Whether the user may correct the show itself. False for a show they only
+     * reach because one of their groups plays a performance of it.
+     */
+    canEdit: boolean;
 }
 
 /** A group the show may be handed to, as offered by the show forms. */
@@ -29,6 +34,17 @@ export type ShowFieldErrors = Partial<Record<keyof ShowFormData, string>>;
 export interface Performance {
     id: number;
     /**
+     * The act's own name, for an evening several groups share. Null when the
+     * show's own name already says what is played.
+     */
+    title: string | null;
+    /**
+     * The group playing this performance, when it is not the show's own. Null
+     * for the ordinary performance, which the show's group plays.
+     */
+    teamId: number | null;
+    teamName: string | null;
+    /**
      * ISO date (YYYY-MM-DD), on the venue's clock. The date and the start time
      * are one stored moment server-side; they are split for the form.
      */
@@ -48,6 +64,10 @@ export interface Performance {
 
 /** The fields a performance is written through. */
 export interface PerformanceFormData {
+    /** The act's own name; empty leaves the performance under the show's. */
+    title: string;
+    /** The performing group; null leaves the performance to the show's own. */
+    team_id: number | null;
     date: string;
     /** "19:00" on the venue's clock; empty falls back to the house's usual hour. */
     start_time: string;

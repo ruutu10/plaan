@@ -69,7 +69,7 @@ function write(event: Event): void {
             :required="required"
             :autocomplete="autocomplete"
             :placeholder="placeholder"
-            class="w-full rounded-lg border-2 border-r10-grey-200 bg-white px-4 py-3 font-r10-body text-[15px] text-r10-ink outline-none focus:border-r10-orange"
+            class="w-full rounded-lg border-2 border-r10-grey-200 bg-white px-4 py-3 font-r10-body text-[15px] text-r10-ink outline-none focus:border-r10-orange disabled:opacity-50"
             @input="write"
         />
         <span

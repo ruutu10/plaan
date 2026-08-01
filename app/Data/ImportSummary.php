@@ -22,21 +22,21 @@ class ImportSummary
     public int $passedOver = 0;
 
     /**
-     * The performances this run has already dealt with, by fingerprint. The
-     * same act can be named twice on one card, or spread over two cards for the
-     * same night; either way it is one performance.
+     * The nights this run has already dealt with, by fingerprint. The same show
+     * on the same date can be named on two cards, or twice on one; either way
+     * it is one night, with the acts the first reading of it gave.
      *
      * @var array<string, true>
      */
     private array $seen = [];
 
     /**
-     * Whether this performance has already been dealt with, remembering it if
-     * not — so the caller asks once rather than checking and then recording.
+     * Whether this night has already been dealt with, remembering it if not —
+     * so the caller asks once rather than checking and then recording.
      */
-    public function isNew(ImportedPerformance $performance): bool
+    public function isNew(ImportedNight $night): bool
     {
-        $fingerprint = $performance->fingerprint();
+        $fingerprint = $night->fingerprint();
 
         if (isset($this->seen[$fingerprint])) {
             return false;

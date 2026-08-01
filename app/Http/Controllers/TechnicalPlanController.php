@@ -81,7 +81,7 @@ class TechnicalPlanController extends Controller
         // what the crew looks for. Plans not tied to a performance have no date
         // to sort by and land at the end, newest of those first.
         $plans = TechnicalPlan::query()
-            ->with(['user', 'performance.show.team'])
+            ->with(['user', 'performance.team', 'performance.show.team'])
             ->leftJoin('performances', 'performances.id', '=', 'technical_plans.performance_id')
             ->orderByDesc('performances.date')
             ->orderByDesc('technical_plans.created_at')
@@ -189,7 +189,7 @@ class TechnicalPlanController extends Controller
     public function lookup(Request $request): JsonResponse
     {
         $plans = TechnicalPlan::query()
-            ->with('performance.show.team')
+            ->with(['performance.team', 'performance.show.team'])
             ->where('user_id', $request->user()->id)
             ->where('status', TechnicalPlanStatus::Submitted)
             ->latest('submitted_at')
@@ -215,7 +215,7 @@ class TechnicalPlanController extends Controller
     public function performances(Request $request): JsonResponse
     {
         $upcoming = Performance::query()
-            ->with('show.team')
+            ->with(['team', 'show.team'])
             ->vouchedFor()
             // Still to come. A performance carries its curtain-up now, so
             // tonight's stays on offer right up until it starts.
@@ -303,7 +303,7 @@ class TechnicalPlanController extends Controller
         }
 
         $performance = Performance::query()
-            ->with('show.team')
+            ->with(['team', 'show.team'])
             ->vouchedFor()
             ->where('date', '>', now())
             ->find($id);
@@ -322,7 +322,7 @@ class TechnicalPlanController extends Controller
 
         return [
             'performanceId' => $performance->id,
-            'performer' => $performance->show->team->name ?? '',
+            'performer' => $performance->performerName() ?? '',
             'showName' => $performance->show->name,
             'showDate' => $performance->startDate(),
             'duration' => $performance->duration,

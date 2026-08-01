@@ -41,7 +41,7 @@ class AdminTechnicalPlan extends JsonResource
         return [
             'token' => $plan->token,
             'showName' => $show?->name,
-            'teamName' => $show?->team?->name,
+            'teamName' => $plan->performance?->performerName(),
             'performanceDate' => $plan->performance?->startDate(),
             'submittedBy' => $plan->user?->name,
             'submittedByEmail' => $plan->user?->email,

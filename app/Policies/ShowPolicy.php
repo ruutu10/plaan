@@ -29,12 +29,14 @@ class ShowPolicy
     }
 
     /**
-     * Determine whether the user can view the show. Seeing a show and editing
-     * it are one and the same right: the list is the only way to the edit page.
+     * Determine whether the user can view the show. Wider than editing it: a
+     * group with a performance of its own on somebody else's evening reaches
+     * that evening's page to correct its own slot, and finds the show's own
+     * details read-only there — see {@see Show::visibleTo()}.
      */
     public function view(User $user, Show $show): bool
     {
-        return $show->isEditableBy($user);
+        return $show->isVisibleTo($user);
     }
 
     /**

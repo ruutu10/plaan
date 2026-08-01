@@ -60,8 +60,10 @@ class TechnicalPlanMissing extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject($this->subject())
             ->view('emails.technical-plan-missing', [
-                'showName' => $show->name,
-                'performer' => $show->team->name ?? '',
+                'showName' => $this->performance->title === null
+                    ? $show->name
+                    : $show->name.' — '.$this->performance->title,
+                'performer' => $this->performance->performerName() ?? '',
                 'startsAt' => $this->performance->startsAt(),
                 'noticeLabel' => $this->schedule->noticeLabel(),
                 'duration' => $this->performance->duration,

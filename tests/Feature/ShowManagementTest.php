@@ -67,6 +67,27 @@ class ShowManagementTest extends TestCase
         $this->assertNotContains($somebodyElses->id, array_column($response->json('data'), 'id'));
     }
 
+    public function test_the_listing_holds_the_evenings_the_users_group_only_plays_an_act_on(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user, 'Märtu10');
+
+        $own = Show::factory()->create(['team_id' => $team->id, 'name' => 'Hooaja avaetendus']);
+
+        // Somebody else's Õppelava, with one slot played by the user's group.
+        $evening = Show::factory()->create(['name' => 'Õppelava']);
+        Performance::factory()->for($evening)->performedBy($team, 'Märtu10')->create();
+
+        $ids = array_column(
+            $this->actingAs($user)->getJson(route('api.shows.index'))->assertOk()->json('data'),
+            'canEdit',
+            'id',
+        );
+
+        // Both are reachable, but only their own is theirs to correct.
+        $this->assertSame([$own->id => true, $evening->id => false], $ids);
+    }
+
     public function test_the_listing_counts_the_performances_and_sorts_by_name(): void
     {
         $user = User::factory()->create();

@@ -27,7 +27,8 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 class ShowController extends Controller
 {
     /**
-     * List the shows the user may edit.
+     * List the shows the user may open — their groups' own, and the evenings
+     * their groups merely have a performance on.
      *
      * @return AnonymousResourceCollection<int, ShowResource>
      */
@@ -38,7 +39,7 @@ class ShowController extends Controller
         $shows = Show::query()
             ->with('team')
             ->withCount('performances')
-            ->editableBy($request->user())
+            ->visibleTo($request->user())
             ->orderByRaw('LOWER(shows.name)')
             ->get();
 

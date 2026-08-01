@@ -82,6 +82,42 @@ class Show extends Model
     }
 
     /**
+     * Limit the query to the shows the given user may open: the ones their
+     * groups own, plus the ones their groups merely play a performance of.
+     *
+     * The two are deliberately not the same right. A guest troupe with a slot
+     * on somebody else's evening has to be able to reach that evening to
+     * correct its own performance, but the show is not theirs to rename, hand
+     * over or put aside — that stays with {@see editableBy()}.
+     *
+     * @param  Builder<Show>  $query
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user): void
+    {
+        if (self::seesEverything($user)) {
+            return;
+        }
+
+        $teamIds = $user->teamIds();
+
+        $query->where(fn (Builder $show) => $show
+            ->whereIn('shows.team_id', $teamIds)
+            ->orWhereHas('performances', fn (Builder $performance) => $performance->whereIn('performances.team_id', $teamIds)));
+    }
+
+    /**
+     * Whether the user may open this show — see {@see visibleTo()}.
+     */
+    public function isVisibleTo(User $user): bool
+    {
+        return static::query()
+            ->whereKey($this->getKey())
+            ->visibleTo($user)
+            ->exists();
+    }
+
+    /**
      * The teams the given user may hand a show to: the ones they belong to, or
      * every group in the house for the holders of {@see EDIT_ALL_PERMISSION}.
      * A show is never moved somewhere its editor cannot follow it.

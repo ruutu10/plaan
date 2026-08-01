@@ -5,12 +5,14 @@ withDefaults(
         hint?: string;
         placeholder?: string;
         minHeight?: string;
+        disabled?: boolean;
         /** Validation message for this field, shown beneath it. */
         error?: string;
         modelValue: string;
     }>(),
     {
         minHeight: '128px',
+        disabled: false,
     },
 );
 
@@ -31,8 +33,9 @@ defineEmits<{ 'update:modelValue': [value: string] }>();
         <textarea
             :value="modelValue"
             :placeholder="placeholder"
+            :disabled="disabled"
             :style="{ minHeight }"
-            class="w-full resize-y rounded-lg border-2 border-r10-grey-200 bg-white px-4 py-3 font-r10-body text-[15px] leading-relaxed text-r10-ink outline-none focus:border-r10-orange"
+            class="w-full resize-y rounded-lg border-2 border-r10-grey-200 bg-white px-4 py-3 font-r10-body text-[15px] leading-relaxed text-r10-ink outline-none focus:border-r10-orange disabled:opacity-50"
             @input="
                 $emit(
                     'update:modelValue',

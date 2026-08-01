@@ -386,6 +386,35 @@ class TechnicalPlanTest extends TestCase
         $response->assertJsonMissing(['showName' => 'Ülevaatamata']);
     }
 
+    public function test_the_performances_endpoint_names_the_group_playing_each_act(): void
+    {
+        // An evening several groups share is one show with a row per act, and
+        // each row has to say who is playing it — otherwise the picker offers
+        // four identical lines.
+        $evening = Show::factory()->create(['name' => 'Õppelava']);
+        $marturu = Team::factory()->create(['name' => 'Märtu10']);
+
+        $act = Performance::factory()->for($evening)->performedBy($marturu, 'Märtu10')->create();
+        $house = Performance::factory()->for($evening)->create();
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+        $response->assertJsonFragment([
+            'id' => $act->id,
+            'showName' => 'Õppelava',
+            'title' => 'Märtu10',
+            'performer' => 'Märtu10',
+        ]);
+
+        // An act with no group of its own is still the show's own.
+        $response->assertJsonFragment([
+            'id' => $house->id,
+            'title' => null,
+            'performer' => $evening->team->name,
+        ]);
+    }
+
     public function test_every_upcoming_performance_of_a_show_is_listed_separately(): void
     {
         // The picker lists performances, not shows: a show staged twice is two
@@ -990,6 +1019,24 @@ class TechnicalPlanTest extends TestCase
         $plan = TechnicalPlan::factory()->for($performance)->submitted()->create();
 
         $this->postJson(route('technical-plan.copy', $plan))->assertOk();
+    }
+
+    public function test_copying_a_handed_in_plan_of_a_slot_the_users_team_plays_is_allowed(): void
+    {
+        $team = Team::factory()->create();
+        $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
+
+        // Somebody else's evening, with one slot played by the user's group.
+        $slot = Performance::factory()->performedBy($team, 'Märtu10')->create();
+        $plan = TechnicalPlan::factory()->for($slot)->submitted()->create();
+
+        $this->postJson(route('technical-plan.copy', $plan))->assertOk();
+
+        // The rest of that evening is still none of their business.
+        $othersSlot = Performance::factory()->for($slot->show)->create();
+        $othersPlan = TechnicalPlan::factory()->for($othersSlot)->submitted()->create();
+
+        $this->postJson(route('technical-plan.copy', $othersPlan))->assertForbidden();
     }
 
     public function test_copying_a_team_mates_draft_is_forbidden(): void

@@ -6,6 +6,7 @@ use App\Models\Performance;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 class SavePerformanceRequest extends FormRequest
 {
@@ -24,14 +25,14 @@ class SavePerformanceRequest extends FormRequest
     }
 
     /**
-     * A cleared duration or start time arrives as an empty string from a plain
-     * HTML client. Neither is a bad value: one is a performance nobody has
-     * timed, the other one nobody has given an hour, and both are handled
-     * further down as an absence.
+     * A cleared field arrives as an empty string from a plain HTML client. None
+     * of these is a bad value: a performance nobody has timed, one nobody has
+     * given an hour, an act the show's own name already names, a slot played by
+     * the show's own group. All are handled further down as an absence.
      */
     protected function prepareForValidation(): void
     {
-        foreach (['duration', 'start_time'] as $field) {
+        foreach (['duration', 'start_time', 'title', 'team_id'] as $field) {
             if ($this->input($field) === '') {
                 $this->merge([$field => null]);
             }
@@ -49,6 +50,17 @@ class SavePerformanceRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // The act's own name, for an evening several groups share. Left
+            // out, the show's name is what the performance is listed under.
+            'title' => ['nullable', 'string', 'max:255'],
+            // The group playing this performance, when it is not the show's
+            // own. Held to the groups the user may hand a performance to, the
+            // way a show's owner is held by SaveShowRequest.
+            'team_id' => [
+                'nullable',
+                'integer',
+                Rule::in(Performance::assignableTeams($this->user())->modelKeys()),
+            ],
             'date' => ['required', 'date_format:Y-m-d'],
             // Curtain-up on the venue's clock, as a 24-hour "19:00". Left out,
             // the performance takes the house's usual hour — see
@@ -97,6 +109,8 @@ class SavePerformanceRequest extends FormRequest
             'date.date_format' => __('Etenduse kuupäev pole korrektne.'),
             'start_time.date_format' => __('Etenduse algusaeg pole korrektne.'),
             'duration.max' => __('Etenduse kestus saab olla kuni 1440 minutit.'),
+            'title.max' => __('Etteaste nimi saab olla kuni 255 tähemärki.'),
+            'team_id.in' => __('Vali tiim, kuhu sa ise kuulud.'),
         ];
     }
 }

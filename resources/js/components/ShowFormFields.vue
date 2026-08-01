@@ -9,10 +9,15 @@ import type { ShowFieldErrors, ShowTeamOption } from '@/types';
  * The three fields a show is made of, shared by the page that corrects a show
  * and the modal that enters a new one, so the two never drift apart.
  */
-const props = defineProps<{
-    teams: ShowTeamOption[];
-    errors: ShowFieldErrors;
-}>();
+const props = withDefaults(
+    defineProps<{
+        teams: ShowTeamOption[];
+        errors: ShowFieldErrors;
+        /** Read-only, for whoever may open the show but not correct it. */
+        disabled?: boolean;
+    }>(),
+    { disabled: false },
+);
 
 const teamId = defineModel<number | null>('teamId', { required: true });
 const name = defineModel<string>('name', { required: true });
@@ -33,6 +38,7 @@ const teamOptions = computed(() =>
             placeholder="Vali tiim"
             :options="teamOptions"
             :error="errors.team_id"
+            :disabled="disabled"
             data-test="show-team-select"
         />
 
@@ -42,6 +48,7 @@ const teamOptions = computed(() =>
             required
             placeholder="Lavastuse nimi"
             :error="errors.name"
+            :disabled="disabled"
         />
 
         <R10Textarea
@@ -49,6 +56,7 @@ const teamOptions = computed(() =>
             label="Kirjeldus"
             hint="Lühikirjeldus, mida lavastus endast kujutab. Just struktuuri poolest (mitte turunduslik tekst), nt: Küsime publikult inspiratsiooni, ning teeme siis pool tundi edititeta monostseeni."
             :error="errors.description"
+            :disabled="disabled"
         />
     </div>
 </template>

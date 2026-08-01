@@ -22,6 +22,9 @@ class Performance extends JsonResource
      *
      * @return array{
      *     id: int,
+     *     title: string|null,
+     *     teamId: int|null,
+     *     teamName: string|null,
      *     date: string,
      *     startTime: string,
      *     duration: int|null,
@@ -35,6 +38,12 @@ class Performance extends JsonResource
 
         return [
             'id' => $performance->id,
+            // Both empty for the ordinary performance, whose show already says
+            // what is played and by whom; filled for an act on an evening
+            // several groups share.
+            'title' => $performance->title,
+            'teamId' => $performance->team_id,
+            'teamName' => $performance->team?->name,
             'date' => $performance->startDate(),
             'startTime' => $performance->startTime(),
             'duration' => $performance->duration,

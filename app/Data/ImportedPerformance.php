@@ -3,23 +3,23 @@
 namespace App\Data;
 
 use App\Models\Performance;
-use Illuminate\Support\Carbon;
 
 /**
- * One show read off a Planka card: who performs, on what night, at what hour
- * and for how long. The name is the show's, the rest the performance's — the
- * importer splits them across the two models.
+ * One act read off a Planka card: who takes the stage, under what name, when
+ * and for how long. Several of these make up an {@see ImportedNight} — a card
+ * announcing an Õppelava lists three or four, one after the other.
  *
- * The date and the start time are kept apart here because that is how a card
- * gives them, and because a card often gives no time at all; folding the two
- * into the stored moment is {@see Performance::momentFrom()}'s job,
- * and it is the one place the venue's clock is applied.
+ * The title is the act as the board writes it, and is empty when the show's own
+ * name already says who is playing. The start time is kept apart from the
+ * night's date because that is how a card gives them, and because most cards
+ * give no time at all; folding the two into the stored moment is
+ * {@see Performance::momentFrom()}'s job, and it is the one place the venue's
+ * clock is applied.
  */
 readonly class ImportedPerformance
 {
     public function __construct(
-        public string $showName,
-        public Carbon $date,
+        public ?string $title = null,
         public ?string $startTime = null,
         public ?int $duration = null,
         public ?int $teamId = null,
@@ -28,11 +28,14 @@ readonly class ImportedPerformance
     }
 
     /**
-     * The key two readings of the same night share. Distinct performers on one
-     * date are distinct performances; the same performer twice is one.
+     * The key two readings of the same act share. An act named on the card is
+     * told apart by that name; one the card leaves unnamed has only its place
+     * in the running order to go by.
      */
-    public function fingerprint(): string
+    public function key(int $index): string
     {
-        return mb_strtolower($this->showName).'|'.$this->date->toDateString();
+        return $this->title === null
+            ? "#{$index}"
+            : mb_strtolower(trim($this->title));
     }
 }

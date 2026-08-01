@@ -4,8 +4,9 @@ import { computed } from 'vue';
 import { toast } from 'vue-sonner';
 import R10FormDialog from '@/components/technical-plan/R10FormDialog.vue';
 import R10Input from '@/components/technical-plan/R10Input.vue';
+import R10Select from '@/components/technical-plan/R10Select.vue';
 import { store, update } from '@/routes/api/shows/performances';
-import type { Performance } from '@/types';
+import type { Performance, ShowTeamOption } from '@/types';
 
 /**
  * Adds a performance to a show, or corrects one — the two differ only in where
@@ -15,6 +16,8 @@ const props = defineProps<{
     showId: number;
     /** The performance being corrected, or null when a new one is being added. */
     performance: Performance | null;
+    /** The groups a performance may be handed to. */
+    teams: ShowTeamOption[];
 }>();
 
 const emit = defineEmits<{ saved: [] }>();
@@ -29,14 +32,25 @@ const open = defineModel<boolean>('open', { required: true });
  */
 const USUAL_START_TIME = '19:00';
 
-// The dated fields are held as the strings the inputs deal in; the duration
-// becomes a number (or nothing at all) on its way out.
+/**
+ * The value standing for "no group of its own", which leaves the performance to
+ * the show's own. An empty string rather than null so the select can offer it
+ * as an ordinary option to come back to.
+ */
+const SHOW_S_OWN_TEAM = '';
+
+// The dated fields are held as the strings the inputs deal in; the duration and
+// the team become numbers (or nothing at all) on their way out.
 const form = useHttp({
+    title: '',
+    team_id: SHOW_S_OWN_TEAM as string | number,
     date: '',
     start_time: '',
     duration: '',
     is_draft: false,
 }).transform((data) => ({
+    title: data.title,
+    team_id: data.team_id === SHOW_S_OWN_TEAM ? null : Number(data.team_id),
     date: data.date,
     start_time: data.start_time,
     duration: data.duration === '' ? null : Number(data.duration),
@@ -46,11 +60,23 @@ const form = useHttp({
 const isEditing = computed(() => props.performance !== null);
 
 /**
+ * The groups on offer, led by the option that hands the performance back to the
+ * show's own group — the ordinary case, and the one a mis-set team is undone
+ * with.
+ */
+const teamOptions = computed(() => [
+    { value: SHOW_S_OWN_TEAM, label: '— lavastuse enda tiim —' },
+    ...props.teams.map((team) => ({ value: team.id, label: team.name })),
+]);
+
+/**
  * Fill the form as the dialog opens, so it never shows the previous
  * performance's values for a beat before the right ones land.
  */
 function fill(): void {
     form.clearErrors();
+    form.title = props.performance?.title ?? '';
+    form.team_id = props.performance?.teamId ?? SHOW_S_OWN_TEAM;
     form.date = props.performance?.date ?? '';
     form.start_time = props.performance?.startTime ?? USUAL_START_TIME;
     form.duration = props.performance?.duration?.toString() ?? '';
@@ -95,6 +121,24 @@ async function save(): Promise<void> {
         @submit="save"
     >
         <R10Input
+            v-model="form.title"
+            label="Etteaste nimi"
+            hint="Täida ainult siis, kui samal õhtul astub üles mitu truppi — nt õppelaval. Muidu jääb etendus lavastuse enda nime alla."
+            placeholder="Nt Märtu10"
+            data-test="performance-title-input"
+            :error="form.errors.title"
+        />
+
+        <R10Select
+            v-model="form.team_id"
+            label="Esineja tiim"
+            hint="Trupp, kes selle etteaste laval teeb. Jäta täitmata, kui esineb lavastuse enda tiim."
+            :options="teamOptions"
+            :error="form.errors.team_id"
+            data-test="performance-team-select"
+        />
+
+        <R10Input
             v-model="form.date"
             type="date"
             label="Kuupäev"
@@ -137,9 +181,10 @@ async function save(): Promise<void> {
                         Ülevaatamata
                     </span>
                     <span class="text-xs text-r10-grey-500">
-                        Ülevaatamata etendus on mustand või mitte kinnitatud kuupäev. Seda ei pakuta tehnikaplaani
-                        koostajale valikuna. Imporditud etendused ootavad siin
-                        ülevaatamist — eemalda linnuke, kui kuupäev on õige.
+                        Ülevaatamata etendus on mustand või mitte kinnitatud
+                        kuupäev. Seda ei pakuta tehnikaplaani koostajale
+                        valikuna. Imporditud etendused ootavad siin ülevaatamist
+                        — eemalda linnuke, kui kuupäev on õige.
                     </span>
                 </span>
             </label>

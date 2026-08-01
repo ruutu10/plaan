@@ -117,11 +117,15 @@ function openDelete(show: Show): void {
                             data-test="show-edit-link"
                             class="px-4 py-2"
                         >
-                            Muuda
+                            <!-- A show reached only because one of the user's
+                                 groups plays an act on it opens read-only,
+                                 apart from that act. -->
+                            {{ show.canEdit ? 'Muuda' : 'Vaata' }}
                             <Pencil class="h-3.5 w-3.5" />
                         </R10Button>
 
                         <button
+                            v-if="show.canEdit"
                             type="button"
                             title="Kustuta lavastus"
                             data-test="delete-show-button"

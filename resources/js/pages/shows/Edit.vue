@@ -24,6 +24,15 @@ import type { Performance, Show, ShowFormData, ShowTeamOption } from '@/types';
 const props = defineProps<{ showId: number }>();
 
 const teams = ref<ShowTeamOption[]>([]);
+/** The groups a performance may be handed to; wider than the show's own. */
+const performanceTeams = ref<ShowTeamOption[]>([]);
+
+/**
+ * Whether the user may correct the show itself. A group that only plays a
+ * performance on this evening reaches the page to correct its own slot and
+ * finds the show's own details read-only.
+ */
+const canEditShow = ref(true);
 
 const performanceModalOpen = ref(false);
 const deleteModalOpen = ref(false);
@@ -64,6 +73,7 @@ const { data: show, loadFailed } = useResource(async () => {
     };
 
     teams.value = response.teams;
+    canEditShow.value = response.data.canEdit;
 
     form.team_id = response.data.teamId;
     form.name = response.data.name;
@@ -80,11 +90,13 @@ const {
     loadFailed: performancesFailed,
     reload: reloadPerformances,
 } = useResource(async () => {
-    const { data } = (await performanceLoader.submit(
+    const response = (await performanceLoader.submit(
         performancesApi(props.showId),
-    )) as { data: Performance[] };
+    )) as { data: Performance[]; teams: ShowTeamOption[] };
 
-    return data;
+    performanceTeams.value = response.teams;
+
+    return response.data;
 });
 
 function openAddPerformance(): void {
@@ -163,18 +175,29 @@ async function save(): Promise<void> {
             class="flex max-w-2xl flex-col gap-6 rounded-xl border-2 border-r10-grey-200 bg-white p-5 md:p-7"
             @submit.prevent="save"
         >
+            <p
+                v-if="!canEditShow"
+                data-test="show-read-only-notice"
+                class="rounded-lg border-2 border-r10-grey-200 bg-r10-grey-100 px-4 py-3 text-[13px] text-r10-grey-700"
+            >
+                See lavastus kuulub teisele tiimile. Sa saad muuta ainult oma
+                tiimi etteastet allpool.
+            </p>
+
             <ShowFormFields
                 v-model:team-id="form.team_id"
                 v-model:name="form.name"
                 v-model:description="form.description"
                 :teams="teams"
                 :errors="form.errors"
+                :disabled="!canEditShow"
             />
 
             <div class="flex items-center justify-between gap-3">
                 <R10BackLink :href="index()" />
 
                 <R10Button
+                    v-if="canEditShow"
                     type="submit"
                     :disabled="form.processing"
                     data-test="show-save-button"
@@ -192,6 +215,7 @@ async function save(): Promise<void> {
             >
                 <template #action>
                     <R10Button
+                        v-if="canEditShow"
                         size="sm"
                         data-test="add-performance-button"
                         @click="openAddPerformance"
@@ -205,6 +229,7 @@ async function save(): Promise<void> {
             <R10Table
                 :columns="[
                     { label: 'Kuupäev ja algus' },
+                    { label: 'Etteaste' },
                     { label: 'Kestus' },
                     { label: 'Olek' },
                     { label: 'Tehnikaplaane' },
@@ -226,6 +251,21 @@ async function save(): Promise<void> {
                         {{ formatEstonianDate(performance.date) }}
                         <span class="text-r10-grey-500">
                             {{ performance.startTime }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-4 align-top">
+                        <span
+                            v-if="performance.title"
+                            class="block text-r10-ink"
+                            data-test="performance-title"
+                        >
+                            {{ performance.title }}
+                        </span>
+                        <span
+                            class="block text-r10-grey-500"
+                            data-test="performance-team"
+                        >
+                            {{ performance.teamName ?? show?.teamName ?? '—' }}
                         </span>
                     </td>
                     <td class="px-5 py-4 whitespace-nowrap">
@@ -289,6 +329,7 @@ async function save(): Promise<void> {
             v-model:open="performanceModalOpen"
             :show-id="showId"
             :performance="chosenPerformance"
+            :teams="performanceTeams"
             @saved="reloadPerformances"
         />
 

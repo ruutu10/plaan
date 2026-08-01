@@ -2,104 +2,140 @@
 
 namespace Tests\Feature;
 
-use Anthropic\Client;
 use App\Models\Team;
-use App\Services\PlankaPerformanceExtractor;
-use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
+use Tests\Concerns\AnswersAsTheExtractionModel;
 use Tests\TestCase;
 
 class PlankaPerformanceExtractorTest extends TestCase
 {
-    use RefreshDatabase;
+    use AnswersAsTheExtractionModel, RefreshDatabase;
 
-    /**
-     * The bodies the extractor sent, in order, so a test can look at the
-     * request it built instead of only the answer it parsed.
-     *
-     * @var list<array<string, mixed>>
-     */
-    private array $sentBodies = [];
-
-    /**
-     * An extractor talking to a transport that always answers with the given
-     * text, as if it were the model's single content block.
-     */
-    private function extractorAnswering(string $text): PlankaPerformanceExtractor
-    {
-        $sentBodies = &$this->sentBodies;
-
-        $transporter = new class($text, $sentBodies) implements ClientInterface
-        {
-            /**
-             * @param  list<array<string, mixed>>  $sentBodies
-             */
-            public function __construct(private string $text, private array &$sentBodies)
-            {
-                //
-            }
-
-            public function sendRequest(RequestInterface $request): ResponseInterface
-            {
-                /** @var array<string, mixed> $body */
-                $body = json_decode((string) $request->getBody(), true) ?: [];
-                $this->sentBodies[] = $body;
-
-                return new Response(200, ['Content-Type' => 'application/json'], (string) json_encode([
-                    'id' => 'msg_test',
-                    'type' => 'message',
-                    'role' => 'assistant',
-                    'model' => 'claude-sonnet-5',
-                    'content' => [['type' => 'text', 'text' => $this->text]],
-                    'stop_reason' => 'end_turn',
-                    'stop_sequence' => null,
-                    'usage' => ['input_tokens' => 1, 'output_tokens' => 1],
-                ]));
-            }
-        };
-
-        return new PlankaPerformanceExtractor(
-            new Client(apiKey: 'test-key', requestOptions: ['transporter' => $transporter]),
-        );
-    }
-
-    public function test_it_turns_the_ai_answer_into_performances(): void
+    public function test_it_turns_the_ai_answer_into_nights(): void
     {
         $extractor = $this->extractorAnswering((string) json_encode([
-            'performances' => [
-                ['show_name' => 'Trupp 1', 'date' => '2025-09-13', 'duration_minutes' => 90],
-                ['show_name' => 'JadaJada Special', 'date' => '2025-09-13', 'duration_minutes' => null],
+            'shows' => [
+                [
+                    'show_name' => 'Trupp 1',
+                    'date' => '2025-09-13',
+                    'performances' => [['title' => 'Trupp 1', 'duration_minutes' => 90]],
+                ],
+                [
+                    'show_name' => 'JadaJada Special',
+                    'date' => '2025-09-13',
+                    'performances' => [['title' => null, 'duration_minutes' => null]],
+                ],
             ],
         ]));
 
-        $performances = $extractor->extract(
+        $nights = $extractor->extract(
             'TLN Duubel: R10 ja JadaJada etendus',
             "- **Toimumise kuupäev:** 13.09.2025\n\n**Show 18:00-19:30**\nTrupp 1 - Martin, Trent, Rauno\n\n**Show 20:00-21:30**\nJadaJada Special",
             '2025-09-13T15:00:00.000Z',
         );
 
-        $this->assertCount(2, $performances);
+        $this->assertCount(2, $nights);
 
-        $this->assertSame('Trupp 1', $performances[0]->showName);
-        $this->assertSame('2025-09-13', $performances[0]->date->toDateString());
-        $this->assertSame(90, $performances[0]->duration);
+        $this->assertSame('Trupp 1', $nights[0]->showName);
+        $this->assertSame('2025-09-13', $nights[0]->date->toDateString());
+        $this->assertCount(1, $nights[0]->performances);
+        $this->assertSame(90, $nights[0]->performances[0]->duration);
 
-        $this->assertSame('JadaJada Special', $performances[1]->showName);
-        $this->assertNull($performances[1]->duration);
+        $this->assertSame('JadaJada Special', $nights[1]->showName);
+        $this->assertNull($nights[1]->performances[0]->duration);
+    }
+
+    public function test_it_reads_an_evening_several_groups_share_as_one_show(): void
+    {
+        $marturu = Team::factory()->create(['name' => 'Märtu10']);
+        $matu = Team::factory()->create(['name' => 'Mätu']);
+
+        // The card the change exists for: four acts, one after the other, on
+        // one night. Each is a performance of the same show.
+        $nights = $this->extractorAnswering((string) json_encode([
+            'shows' => [
+                [
+                    'show_name' => 'Õppelava',
+                    'date' => '2025-10-09',
+                    'team_id' => null,
+                    'performances' => [
+                        ['title' => 'Märtu10', 'start_time' => '20:00', 'duration_minutes' => 20, 'team_id' => $marturu->id],
+                        ['title' => 'Tõnis ilma Tanelita külalisega', 'start_time' => '20:20', 'duration_minutes' => 30, 'team_id' => null],
+                        ['title' => 'Mätu', 'start_time' => '20:50', 'duration_minutes' => 30, 'team_id' => $matu->id],
+                        ['title' => 'Improräpp', 'start_time' => '21:20', 'duration_minutes' => 30, 'team_id' => null],
+                    ],
+                ],
+            ],
+        ]))->extract('Õppelava 9.10', 'Esinejad: Märtu10 (20min), ...', '2025-10-09T15:00:00.000Z');
+
+        $this->assertCount(1, $nights);
+        $this->assertSame('Õppelava', $nights[0]->showName);
+        $this->assertSame('2025-10-09', $nights[0]->date->toDateString());
+        // The evening has no owner of its own; each act names its own group.
+        $this->assertNull($nights[0]->teamId);
+
+        $acts = $nights[0]->performances;
+
+        $this->assertCount(4, $acts);
+        $this->assertSame(
+            ['Märtu10', 'Tõnis ilma Tanelita külalisega', 'Mätu', 'Improräpp'],
+            array_map(fn ($act): ?string => $act->title, $acts),
+        );
+        $this->assertSame(
+            ['20:00', '20:20', '20:50', '21:20'],
+            array_map(fn ($act): ?string => $act->startTime, $acts),
+        );
+        $this->assertSame([20, 30, 30, 30], array_map(fn ($act): ?int => $act->duration, $acts));
+        $this->assertSame([$marturu->id, null, $matu->id, null], array_map(fn ($act): ?int => $act->teamId, $acts));
+    }
+
+    public function test_a_lone_act_named_after_its_show_carries_no_title_of_its_own(): void
+    {
+        // The show's own name already says who is playing, so repeating it on
+        // the performance would only put the same word on the screen twice —
+        // and every performance already on the books has none.
+        $nights = $this->extractorAnswering((string) json_encode([
+            'shows' => [
+                [
+                    'show_name' => 'Bitseption',
+                    'date' => '2025-09-13',
+                    'performances' => [['title' => 'BITSEPTION', 'duration_minutes' => 90]],
+                ],
+            ],
+        ]))->extract('13.09 õhtu', 'Kaardi tekst');
+
+        $this->assertNull($nights[0]->performances[0]->title);
+        $this->assertSame(90, $nights[0]->performances[0]->duration);
+    }
+
+    public function test_a_night_the_model_broke_down_into_no_acts_is_still_played_once(): void
+    {
+        $team = Team::factory()->create(['name' => 'Tsikid Reas']);
+
+        $nights = $this->extractorAnswering((string) json_encode([
+            'shows' => [
+                ['show_name' => 'Tšikid reas', 'date' => '2025-09-13', 'team_id' => $team->id, 'performances' => []],
+            ],
+        ]))->extract('13.09 õhtu', 'Kaardi tekst');
+
+        $this->assertCount(1, $nights[0]->performances);
+        $this->assertNull($nights[0]->performances[0]->title);
+        $this->assertSame($team->id, $nights[0]->performances[0]->teamId);
     }
 
     public function test_it_reads_the_hour_a_card_names(): void
     {
-        $performances = $this->extractorAnswering((string) json_encode([
-            'performances' => [
-                ['show_name' => 'Trupp 1', 'date' => '2025-09-13', 'start_time' => '18:00', 'duration_minutes' => 90],
+        $nights = $this->extractorAnswering((string) json_encode([
+            'shows' => [
+                [
+                    'show_name' => 'Trupp 1',
+                    'date' => '2025-09-13',
+                    'performances' => [['title' => null, 'start_time' => '18:00', 'duration_minutes' => 90]],
+                ],
             ],
         ]))->extract('13.09 õhtu', 'Show 18:00-19:30', null);
 
-        $this->assertSame('18:00', $performances[0]->startTime);
+        $this->assertSame('18:00', $nights[0]->performances[0]->startTime);
     }
 
     public function test_an_hour_that_is_not_a_time_of_day_is_left_to_the_house(): void
@@ -108,14 +144,18 @@ class PlankaPerformanceExtractorTest extends TestCase
         // Anything the format does not cover is better left empty than guessed
         // at — the importer falls back to the venue's usual curtain-up.
         foreach ([null, '', 'õhtul', 'kell 7', '25:00', '7pm'] as $unreadable) {
-            $performances = $this->extractorAnswering((string) json_encode([
-                'performances' => [
-                    ['show_name' => 'Trupp 1', 'date' => '2025-09-13', 'start_time' => $unreadable],
+            $nights = $this->extractorAnswering((string) json_encode([
+                'shows' => [
+                    [
+                        'show_name' => 'Trupp 1',
+                        'date' => '2025-09-13',
+                        'performances' => [['title' => null, 'start_time' => $unreadable]],
+                    ],
                 ],
             ]))->extract('13.09 õhtu', 'Kaardi tekst', null);
 
             $this->assertNull(
-                $performances[0]->startTime,
+                $nights[0]->performances[0]->startTime,
                 sprintf('Expected "%s" to be left to the house.', var_export($unreadable, true)),
             );
         }
@@ -123,18 +163,23 @@ class PlankaPerformanceExtractorTest extends TestCase
 
     public function test_it_asks_for_a_schema_constrained_answer(): void
     {
-        $this->extractorAnswering('{"performances": []}')->extract(
+        $this->extractorAnswering('{"shows": []}')->extract(
             '13.09 õhtu',
             'Toimumise kuupäev: 13.09.2025',
             '2025-09-13T15:00:00.000Z',
         );
 
         $body = $this->sentBodies[0];
+        $shows = $body['output_config']['format']['schema']['properties']['shows'];
 
         $this->assertSame('json_schema', $body['output_config']['format']['type']);
         $this->assertSame(
-            ['show_name', 'date', 'start_time', 'duration_minutes', 'team_id'],
-            $body['output_config']['format']['schema']['properties']['performances']['items']['required'],
+            ['show_name', 'date', 'team_id', 'performances'],
+            $shows['items']['required'],
+        );
+        $this->assertSame(
+            ['title', 'start_time', 'duration_minutes', 'team_id'],
+            $shows['items']['properties']['performances']['items']['required'],
         );
 
         // The card must reach the model whole — title, description and the due
@@ -147,7 +192,7 @@ class PlankaPerformanceExtractorTest extends TestCase
 
     public function test_a_card_without_a_due_date_still_reaches_the_model(): void
     {
-        $this->extractorAnswering('{"performances": []}')->extract('Tühi', 'Kaardi tekst');
+        $this->extractorAnswering('{"shows": []}')->extract('Tühi', 'Kaardi tekst');
 
         $this->assertStringContainsString('puudub', $this->sentBodies[0]['messages'][0]['content']);
     }
@@ -156,19 +201,22 @@ class PlankaPerformanceExtractorTest extends TestCase
     {
         $team = Team::factory()->create(['name' => 'Tsikid Reas']);
 
-        $this->extractorAnswering('{"performances": []}')->extract('13.09 õhtu', 'Kaardi tekst');
+        $this->extractorAnswering('{"shows": []}')->extract('13.09 õhtu', 'Kaardi tekst');
 
         $prompt = $this->sentBodies[0]['messages'][0]['content'];
 
         $this->assertStringContainsString("- {$team->id} — Tsikid Reas", $prompt);
 
-        $schema = $this->sentBodies[0]['output_config']['format']['schema'];
-        $this->assertContains('team_id', $schema['properties']['performances']['items']['required']);
+        $shows = $this->sentBodies[0]['output_config']['format']['schema']['properties']['shows'];
+
+        // Asked for at both levels: the show's owner, and who plays each act.
+        $this->assertContains('team_id', $shows['items']['required']);
+        $this->assertContains('team_id', $shows['items']['properties']['performances']['items']['required']);
     }
 
     public function test_it_says_so_when_there_are_no_groups_to_hand_a_show_to(): void
     {
-        $this->extractorAnswering('{"performances": []}')->extract('13.09 õhtu', 'Kaardi tekst');
+        $this->extractorAnswering('{"shows": []}')->extract('13.09 õhtu', 'Kaardi tekst');
 
         $this->assertStringContainsString('Tiime pole registreeritud', $this->sentBodies[0]['messages'][0]['content']);
     }
@@ -177,46 +225,62 @@ class PlankaPerformanceExtractorTest extends TestCase
     {
         $team = Team::factory()->create(['name' => 'Tsikid Reas']);
 
-        $performances = $this->extractorAnswering((string) json_encode([
-            'performances' => [
-                ['show_name' => 'Tšikid reas', 'date' => '2025-08-14', 'duration_minutes' => 120, 'team_id' => $team->id],
+        $nights = $this->extractorAnswering((string) json_encode([
+            'shows' => [
+                [
+                    'show_name' => 'Tšikid reas',
+                    'date' => '2025-08-14',
+                    'team_id' => $team->id,
+                    'performances' => [['title' => null, 'duration_minutes' => 120, 'team_id' => $team->id]],
+                ],
             ],
         ]))->extract('13.09 õhtu', 'Kaardi tekst');
 
-        $this->assertSame($team->id, $performances[0]->teamId);
+        $this->assertSame($team->id, $nights[0]->teamId);
+        $this->assertSame($team->id, $nights[0]->performances[0]->teamId);
     }
 
     public function test_it_refuses_a_group_that_does_not_exist(): void
     {
         Team::factory()->create(['name' => 'Tsikid Reas']);
 
-        $performances = $this->extractorAnswering((string) json_encode([
-            'performances' => [
-                ['show_name' => 'Trupp 1', 'date' => '2025-08-14', 'duration_minutes' => null, 'team_id' => 4242],
+        $nights = $this->extractorAnswering((string) json_encode([
+            'shows' => [
+                [
+                    'show_name' => 'Trupp 1',
+                    'date' => '2025-08-14',
+                    'team_id' => 4242,
+                    'performances' => [['title' => null, 'team_id' => 4242]],
+                ],
             ],
         ]))->extract('13.09 õhtu', 'Kaardi tekst');
 
-        $this->assertNull($performances[0]->teamId);
+        $this->assertNull($nights[0]->teamId);
+        $this->assertNull($nights[0]->performances[0]->teamId);
     }
 
     public function test_it_drops_entries_it_cannot_use(): void
     {
         $extractor = $this->extractorAnswering((string) json_encode([
-            'performances' => [
-                ['show_name' => '', 'date' => '2025-09-13', 'duration_minutes' => 90],
-                ['show_name' => 'Trupp 1', 'date' => 'kevadel', 'duration_minutes' => 90],
-                ['show_name' => 'Trupp 2', 'date' => '2025-09-13', 'duration_minutes' => 0],
+            'shows' => [
+                ['show_name' => '', 'date' => '2025-09-13', 'performances' => [['title' => null]]],
+                ['show_name' => 'Trupp 1', 'date' => 'kevadel', 'performances' => [['title' => null]]],
+                [
+                    'show_name' => 'Trupp 2',
+                    'date' => '2025-09-13',
+                    'performances' => [['title' => null, 'duration_minutes' => 0]],
+                ],
             ],
         ]));
 
-        $performances = $extractor->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
+        $nights = $extractor->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
 
-        $this->assertCount(1, $performances);
-        $this->assertSame('Trupp 2', $performances[0]->showName);
-        $this->assertNull($performances[0]->duration);
+        $this->assertCount(1, $nights);
+        $this->assertSame('Trupp 2', $nights[0]->showName);
+        $this->assertNull($nights[0]->performances[0]->duration);
     }
 
-    public function test_an_answer_that_is_not_a_performance_list_yields_nothing(): void
+    public function test_an_answer_that_is_not_a_night_list_yields_nothing(): void
     {
         $this->assertSame([], $this->extractorAnswering('Vabandust, ma ei oska.')->extract('Tühi', 'Tühi kaart'));
     }

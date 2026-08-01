@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Performance;
 use App\Models\Show;
+use App\Models\Team;
 use Carbon\CarbonInterval;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,6 +22,10 @@ class PerformanceFactory extends Factory
     {
         return [
             'show_id' => Show::factory(),
+            // The show's own group plays it, under the show's own name — the
+            // ordinary case. A shared evening says otherwise; see performedBy().
+            'team_id' => null,
+            'title' => null,
             'date' => Performance::momentFrom(
                 fake()->dateTimeBetween('now', '+2 months')->format('Y-m-d'),
                 fake()->randomElement(['18:00', '19:00', '20:00', '21:30']),
@@ -50,6 +55,19 @@ class PerformanceFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'date' => now()->add($ahead),
+        ]);
+    }
+
+    /**
+     * Put a group of its own on the performance, as an act on an evening the
+     * show's owner shares with others — optionally under the name the board
+     * gives the act.
+     */
+    public function performedBy(Team $team, ?string $title = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'team_id' => $team->id,
+            'title' => $title,
         ]);
     }
 
