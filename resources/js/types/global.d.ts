@@ -25,6 +25,7 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             appVersion: string;
+            contactEmail: string;
             auth: Auth;
             sidebarOpen: boolean;
             currentTeam: Team | null;

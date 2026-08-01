@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -43,6 +44,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'appVersion' => config('app.version'),
+            'contactEmail' => Str::reverse(config('technical_plan.tech_email')), // UTF RTL protection for email scraping
             'auth' => [
                 'user' => $user,
                 // What the signed-in user is allowed to do beyond their own
