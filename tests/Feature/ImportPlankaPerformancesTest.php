@@ -134,7 +134,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Trupp 1', startTime: '18:00')]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertSame('18:00', Performance::sole()->startTime());
     }
@@ -144,7 +144,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Trupp 1')]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         $performance = Performance::sole();
 
@@ -158,13 +158,13 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Trupp 1')]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         // The board is tidied up and the card now says when the act is on. It
         // is the same night, so it stays one performance.
         $this->fakeExtraction([$this->performance('Trupp 1', startTime: '21:45')]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertSame(1, Performance::query()->count());
         $this->assertSame('19:00', Performance::sole()->startTime());
@@ -178,7 +178,7 @@ class ImportPlankaPerformancesTest extends TestCase
             $this->performance('JadaJada Special', duration: null),
         ]);
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->assertSuccessful();
 
         $this->assertSame(2, Show::query()->count());
@@ -198,7 +198,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Trupp 1')]);
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->assertSuccessful();
 
         // A card is a claim about a night, so the performance it announces is a
@@ -213,9 +213,9 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Trupp 1')]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('Imported 0 show(s) and 0 performance(s); 0 show(s) handed to a group, 1 already known')
             ->assertSuccessful();
 
@@ -231,7 +231,7 @@ class ImportPlankaPerformancesTest extends TestCase
             $this->performance('trupp 1'),
         ]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertSame(1, Show::query()->count());
         $this->assertSame(1, Performance::query()->count());
@@ -245,7 +245,7 @@ class ImportPlankaPerformancesTest extends TestCase
             $this->performance('Trupp 1', '2025-10-11'),
         ]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertSame(1, Show::query()->count());
         $this->assertSame(2, Performance::query()->count());
@@ -258,7 +258,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('jadajada special')]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertSame(1, Show::query()->count());
         $this->assertSame($existing->id, Performance::query()->sole()->show_id);
@@ -272,7 +272,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Trupp 1')]);
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('the show was deleted here')
             ->assertSuccessful();
 
@@ -288,7 +288,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Tšikid reas', teamId: $team->id)]);
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('Creating show: Tšikid reas (owner: Tsikid Reas)')
             ->assertSuccessful();
 
@@ -303,7 +303,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Tšikid reas', teamId: $team->id)]);
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('Handing over show: Tšikid reas (owner: Tsikid Reas)')
             ->expectsOutputToContain('1 show(s) handed to a group')
             ->assertSuccessful();
@@ -320,7 +320,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Tšikid reas', teamId: $other->id)]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertSame($owner->id, $show->refresh()->team_id);
     }
@@ -330,7 +330,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Trupp 1', teamId: null)]);
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('Creating show: Trupp 1')
             ->doesntExpectOutputToContain('owner:')
             ->assertSuccessful();
@@ -349,7 +349,7 @@ class ImportPlankaPerformancesTest extends TestCase
             $this->performance('Tšikid reas', '2025-09-05', teamId: $team->id),
         ]);
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('1 show(s) handed to a group')
             ->assertSuccessful();
     }
@@ -362,7 +362,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Tšikid reas', teamId: $team->id)]);
 
-        $this->artisan('planka:import-performances', ['--dry-run' => true])
+        $this->artisan('planka:import', ['--dry-run' => true])
             ->expectsOutputToContain('Would hand over show: Tšikid reas (owner: Tsikid Reas)')
             ->assertSuccessful();
 
@@ -374,7 +374,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Trupp 1')]);
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('Creating show: Trupp 1')
             ->assertSuccessful();
 
@@ -391,7 +391,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Trupp 1')]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertSame(0, Performance::query()->count());
     }
@@ -405,7 +405,7 @@ class ImportPlankaPerformancesTest extends TestCase
             $this->performance('Barprov TRT', '2025-11-03'),
         ]);
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('Imported 1 show(s) and 3 performance(s)')
             ->assertSuccessful();
 
@@ -423,7 +423,7 @@ class ImportPlankaPerformancesTest extends TestCase
 
         // Nothing is written in a dry run, so a second look at the database
         // would report the same show as new all over again.
-        $this->artisan('planka:import-performances', ['--dry-run' => true])
+        $this->artisan('planka:import', ['--dry-run' => true])
             ->expectsOutputToContain('Would import 1 show(s) and 2 performance(s)')
             ->assertSuccessful();
     }
@@ -436,7 +436,7 @@ class ImportPlankaPerformancesTest extends TestCase
             $this->performance('Märtu10', '2025-11-15'),
         ]);
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('Imported 1 show(s) and 2 performance(s)')
             ->assertSuccessful();
 
@@ -453,7 +453,7 @@ class ImportPlankaPerformancesTest extends TestCase
             $this->performance('TŠIKID REAS', '2025-09-05'),
         ]);
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('Imported 0 show(s) and 0 performance(s); 0 show(s) handed to a group, 2 already known')
             ->assertSuccessful();
 
@@ -468,7 +468,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Tšikid reas', '2025-08-14')]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertSame($kept->id, Performance::query()->sole()->show_id);
     }
@@ -478,7 +478,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Trupp 1')]);
 
-        $this->artisan('planka:import-performances', ['--dry-run' => true])
+        $this->artisan('planka:import', ['--dry-run' => true])
             ->expectsOutputToContain('Would import 1 show(s) and 1 performance(s)')
             ->assertSuccessful();
 
@@ -495,7 +495,7 @@ class ImportPlankaPerformancesTest extends TestCase
             $mock->shouldReceive('extract')->once()->andReturn([$this->performance('Trupp 1')]);
         });
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('AI is down')
             ->assertSuccessful();
 
@@ -515,7 +515,7 @@ class ImportPlankaPerformancesTest extends TestCase
             ->with('13.09 õhtu', \Mockery::any(), \Mockery::any())
             ->andReturn([$this->performance('Trupp 1')]));
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('Passing over "Töötuba": labelled TÖÖTUBA.')
             ->expectsOutputToContain('1 card(s) passed over by label')
             ->assertSuccessful();
@@ -533,7 +533,7 @@ class ImportPlankaPerformancesTest extends TestCase
             fn (MockInterface $mock) => $mock->shouldNotReceive('extract'),
         );
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertSame(0, Performance::query()->count());
     }
@@ -543,7 +543,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->performance('Trupp 1')]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertSame(1, Performance::query()->count());
     }
@@ -555,7 +555,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeLists(['list-1' => [$this->card()], 'list-2' => []]);
         $this->fakeExtraction([]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         Http::assertSentCount(3);
     }
@@ -568,7 +568,7 @@ class ImportPlankaPerformancesTest extends TestCase
             fn (MockInterface $mock) => $mock->shouldNotReceive('extract'),
         );
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertSame(0, Performance::query()->count());
     }
@@ -589,7 +589,7 @@ class ImportPlankaPerformancesTest extends TestCase
             $mock->shouldReceive('extract')->once()->andReturn([$this->performance('Trupp 2', '2025-10-11')]);
         });
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('Read 2 card(s) from 3 Planka list(s).')
             ->assertSuccessful();
 
@@ -610,7 +610,7 @@ class ImportPlankaPerformancesTest extends TestCase
             ->with('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025', '2025-09-13T15:00:00.000Z')
             ->andReturn([]));
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
     }
 
     public function test_it_signs_its_requests_with_the_api_key_header(): void
@@ -618,7 +618,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([]);
         $this->fakeExtraction([]);
 
-        $this->artisan('planka:import-performances')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
 
         // Planka refuses the same value on an Authorization header.
         Http::assertSent(fn ($request) => $request->hasHeader('X-Api-Key', 'test-token')
@@ -629,7 +629,7 @@ class ImportPlankaPerformancesTest extends TestCase
     {
         config()->set('services.planka.list_ids', '');
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('Planka is not configured')
             ->assertFailed();
     }
@@ -638,7 +638,7 @@ class ImportPlankaPerformancesTest extends TestCase
     {
         Http::fake(['planka.test/*' => Http::response(['message' => 'nope'], 500)]);
 
-        $this->artisan('planka:import-performances')
+        $this->artisan('planka:import')
             ->expectsOutputToContain('Could not read the Planka lists')
             ->assertFailed();
     }

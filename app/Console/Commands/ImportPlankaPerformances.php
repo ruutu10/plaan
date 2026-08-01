@@ -26,7 +26,7 @@ use Throwable;
  * created; records an admin has put aside are left alone rather than
  * resurrected — a weekly job must not undo a deletion.
  */
-#[Signature('planka:import-performances {--dry-run : Report what would be imported without writing anything}')]
+#[Signature('planka:import {--dry-run : Report what would be imported without writing anything}')]
 #[Description('Import new shows and performances from the cards of the configured Planka list.')]
 class ImportPlankaPerformances extends Command
 {
