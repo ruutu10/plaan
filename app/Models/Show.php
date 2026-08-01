@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasClaudeReasoningLog;
 use App\Concerns\ScopedByTeamAccess;
 use Database\Factories\ShowFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -25,22 +26,25 @@ use Illuminate\Support\Carbon;
  * @property int|null $team_id
  * @property string $name
  * @property string|null $description
+ * @property string|null $planka_card_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  * @property-read Team|null $team
  * @property-read Collection<int, Performance> $performances
  * @property-read int|null $performances_count
+ * @property-read Collection<int, ClaudeReasoningLog> $reasoningLogs
  */
 #[Fillable([
     'team_id',
     'name',
     'description',
+    'planka_card_id',
 ])]
 class Show extends Model
 {
     /** @use HasFactory<ShowFactory> */
-    use HasFactory, ScopedByTeamAccess, SoftDeletes;
+    use HasClaudeReasoningLog, HasFactory, ScopedByTeamAccess, SoftDeletes;
 
     /**
      * Bootstrap the model and its traits.
@@ -79,6 +83,42 @@ class Show extends Model
         }
 
         $query->whereIn('team_id', $user->teamIds());
+    }
+
+    /**
+     * Limit the query to the shows the given user may open: the ones their
+     * groups own, plus the ones their groups merely play a performance of.
+     *
+     * The two are deliberately not the same right. A guest troupe with a slot
+     * on somebody else's evening has to be able to reach that evening to
+     * correct its own performance, but the show is not theirs to rename, hand
+     * over or put aside — that stays with {@see editableBy()}.
+     *
+     * @param  Builder<Show>  $query
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, User $user): void
+    {
+        if (self::seesEverything($user)) {
+            return;
+        }
+
+        $teamIds = $user->teamIds();
+
+        $query->where(fn (Builder $show) => $show
+            ->whereIn('shows.team_id', $teamIds)
+            ->orWhereHas('performances', fn (Builder $performance) => $performance->whereIn('performances.team_id', $teamIds)));
+    }
+
+    /**
+     * Whether the user may open this show — see {@see visibleTo()}.
+     */
+    public function isVisibleTo(User $user): bool
+    {
+        return static::query()
+            ->whereKey($this->getKey())
+            ->visibleTo($user)
+            ->exists();
     }
 
     /**

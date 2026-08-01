@@ -27,7 +27,8 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 class ShowController extends Controller
 {
     /**
-     * List the shows the user may edit.
+     * List the shows the user may open — their groups' own, and the evenings
+     * their groups merely have a performance on.
      *
      * @return AnonymousResourceCollection<int, ShowResource>
      */
@@ -36,9 +37,11 @@ class ShowController extends Controller
         Gate::authorize('viewAny', Show::class);
 
         $shows = Show::query()
-            ->with('team')
+            // The reading that made each show rides along: the listing offers
+            // it as a button, and asking per row would be a query per row.
+            ->with(['team', 'reasoningLogs'])
             ->withCount('performances')
-            ->editableBy($request->user())
+            ->visibleTo($request->user())
             ->orderByRaw('LOWER(shows.name)')
             ->get();
 
@@ -57,7 +60,7 @@ class ShowController extends Controller
     {
         Gate::authorize('view', $show);
 
-        return ShowResource::make($show->load('team'))->additional([
+        return ShowResource::make($show->load(['team', 'reasoningLogs']))->additional([
             'teams' => $this->assignableTeams($request->user()),
         ]);
     }

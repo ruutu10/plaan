@@ -8,6 +8,35 @@ export interface Show {
     teamName: string | null;
     /** How many dated performances hang off the show; only the listing counts them. */
     performanceCount: number | null;
+    /**
+     * Whether the user may correct the show itself. False for a show they only
+     * reach because one of their groups plays a performance of it.
+     */
+    canEdit: boolean;
+    /**
+     * How many readings of Planka cards stand behind this show — one per card
+     * that made it or added a night to it. Zero for a show entered by hand, and
+     * for a user who may not read them.
+     */
+    reasoningLogCount: number;
+    /** The card on the Planka board this show was announced on. */
+    plankaCardId: string | null;
+    /** That card on the board, ready to open. Null when none is configured. */
+    plankaCardUrl: string | null;
+}
+
+/** What the AI made of the Planka card an imported record came from. */
+export interface ClaudeReasoningLog {
+    id: number;
+    /** The card on the board, when the reading came from one. */
+    cardId: string | null;
+    cardName: string | null;
+    /** That card on the board, ready to open. Null when none is configured. */
+    cardUrl: string | null;
+    /** One line per decision, in the model's own words. */
+    notes: string[];
+    /** When the card was read; ISO 8601. */
+    readAt: string | null;
 }
 
 /** A group the show may be handed to, as offered by the show forms. */
@@ -21,6 +50,8 @@ export interface ShowFormData {
     team_id: number | null;
     name: string;
     description: string;
+    /** Empty for a show that is not on the board at all. */
+    planka_card_id: string;
 }
 
 export type ShowFieldErrors = Partial<Record<keyof ShowFormData, string>>;
@@ -28,6 +59,17 @@ export type ShowFieldErrors = Partial<Record<keyof ShowFormData, string>>;
 /** One dated performance of a show. */
 export interface Performance {
     id: number;
+    /**
+     * The act's own name, for an evening several groups share. Null when the
+     * show's own name already says what is played.
+     */
+    title: string | null;
+    /**
+     * The group playing this performance, when it is not the show's own. Null
+     * for the ordinary performance, which the show's group plays.
+     */
+    teamId: number | null;
+    teamName: string | null;
     /**
      * ISO date (YYYY-MM-DD), on the venue's clock. The date and the start time
      * are one stored moment server-side; they are split for the form.
@@ -44,15 +86,31 @@ export interface Performance {
     isDraft: boolean;
     /** Plans written for this performance; they outlive it, without a performance. */
     technicalPlanCount: number | null;
+    /**
+     * Whether the reading of the Planka card that registered this performance
+     * can be read: one card, so never more than one. Zero for a performance
+     * entered by hand, and for a user who may not read it.
+     */
+    reasoningLogCount: number;
+    /** The card on the Planka board this performance was announced on. */
+    plankaCardId: string | null;
+    /** That card on the board, ready to open. Null when none is configured. */
+    plankaCardUrl: string | null;
 }
 
 /** The fields a performance is written through. */
 export interface PerformanceFormData {
+    /** The act's own name; empty leaves the performance under the show's. */
+    title: string;
+    /** The performing group; null leaves the performance to the show's own. */
+    team_id: number | null;
     date: string;
     /** "19:00" on the venue's clock; empty falls back to the house's usual hour. */
     start_time: string;
     duration: number | null;
     is_draft: boolean;
+    /** Empty for a performance that is not on the board at all. */
+    planka_card_id: string;
 }
 
 export type PerformanceFieldErrors = Partial<

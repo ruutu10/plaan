@@ -67,6 +67,27 @@ class ShowManagementTest extends TestCase
         $this->assertNotContains($somebodyElses->id, array_column($response->json('data'), 'id'));
     }
 
+    public function test_the_listing_holds_the_evenings_the_users_group_only_plays_an_act_on(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user, 'Märtu10');
+
+        $own = Show::factory()->create(['team_id' => $team->id, 'name' => 'Hooaja avaetendus']);
+
+        // Somebody else's Õppelava, with one slot played by the user's group.
+        $evening = Show::factory()->create(['name' => 'Õppelava']);
+        Performance::factory()->for($evening)->performedBy($team, 'Märtu10')->create();
+
+        $ids = array_column(
+            $this->actingAs($user)->getJson(route('api.shows.index'))->assertOk()->json('data'),
+            'canEdit',
+            'id',
+        );
+
+        // Both are reachable, but only their own is theirs to correct.
+        $this->assertSame([$own->id => true, $evening->id => false], $ids);
+    }
+
     public function test_the_listing_counts_the_performances_and_sorts_by_name(): void
     {
         $user = User::factory()->create();
@@ -287,6 +308,66 @@ class ShowManagementTest extends TestCase
             ->assertOk();
 
         $this->assertNull($show->fresh()->description);
+    }
+
+    public function test_the_planka_card_can_be_written_down_by_hand(): void
+    {
+        config()->set('services.planka.url', 'https://planka.test/');
+
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+        $show = Show::factory()->create(['team_id' => $team->id]);
+
+        // A show staged here and only later put on the board is tied to its
+        // card by typing the id in, not by waiting for an import.
+        $this->actingAs($user)
+            ->patchJson(route('api.shows.update', $show), [
+                'team_id' => $team->id,
+                'name' => $show->name,
+                'planka_card_id' => '1516073411733063234',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.plankaCardId', '1516073411733063234')
+            ->assertJsonPath('data.plankaCardUrl', 'https://planka.test/cards/1516073411733063234');
+
+        $this->assertSame('1516073411733063234', $show->fresh()?->planka_card_id);
+    }
+
+    public function test_a_show_that_is_on_no_card_links_to_none(): void
+    {
+        config()->set('services.planka.url', 'https://planka.test');
+
+        $user = User::factory()->create();
+        $show = Show::factory()->create(['team_id' => $this->teamOf($user)->id]);
+
+        $this->actingAs($user)
+            ->getJson(route('api.shows.show', $show))
+            ->assertOk()
+            ->assertJsonPath('data.plankaCardId', null)
+            ->assertJsonPath('data.plankaCardUrl', null);
+    }
+
+    public function test_the_planka_card_may_be_cleared(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+        $show = Show::factory()->create([
+            'team_id' => $team->id,
+            'planka_card_id' => '1516073411733063234',
+        ]);
+
+        // An empty field is how the screen says "this show is not on the
+        // board", so it is stored as an absence rather than as an empty id.
+        $this->actingAs($user)
+            ->patchJson(route('api.shows.update', $show), [
+                'team_id' => $team->id,
+                'name' => $show->name,
+                'planka_card_id' => '',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.plankaCardId', null);
+
+        $this->assertNull($show->fresh()?->planka_card_id);
     }
 
     public function test_updating_another_teams_show_is_forbidden(): void

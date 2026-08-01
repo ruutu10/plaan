@@ -192,8 +192,12 @@ class TechnicalPlan extends Model implements HasMedia
             ->where('user_id', $user->id)
             ->orWhere(fn (Builder $query) => $query
                 ->whereIn('status', TechnicalPlanStatus::delivered())
-                // A performance is the team's through the show it stages.
-                ->whereHas('performance.show', fn (Builder $show) => $show->whereIn('team_id', $teamIds))));
+                // A performance is the team's through the show it stages, or by
+                // being the team's own act on an evening somebody else stages —
+                // an Õppelava slot's plan belongs to whoever plays the slot.
+                ->whereHas('performance', fn (Builder $performance) => $performance
+                    ->whereIn('performances.team_id', $teamIds)
+                    ->orWhereHas('show', fn (Builder $show) => $show->whereIn('team_id', $teamIds)))));
     }
 
     /**

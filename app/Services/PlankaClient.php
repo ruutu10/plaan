@@ -37,6 +37,23 @@ class PlankaClient
     }
 
     /**
+     * Where a card lives on the board, for a person rather than for this
+     * client: the same host serves the API and the interface, so the card a
+     * record was read off is one link away from the screen showing it. Null
+     * when there is no card, or nowhere configured to look for one.
+     */
+    public static function cardUrl(?string $cardId): ?string
+    {
+        $url = (string) config('services.planka.url');
+
+        if (blank($cardId) || blank($url)) {
+            return null;
+        }
+
+        return rtrim($url, '/').'/cards/'.$cardId;
+    }
+
+    /**
      * The lists to watch, as configured. Written as one comma-separated env
      * value because a board keeps its seasons in more than one column.
      *

@@ -397,6 +397,57 @@ class PerformanceReminderTest extends TestCase
         $this->assertDatabaseCount('performance_reminders', 0);
     }
 
+    public function test_the_group_playing_an_act_is_chased_rather_than_the_shows_owner(): void
+    {
+        Notification::fake();
+
+        [$performance, $ownersMembers] = $this->performanceIn('6 days');
+
+        // The evening is handed to a guest troupe for this slot.
+        $guest = Team::factory()->create();
+        $guestMember = User::factory()->create(['email' => 'kylaline@naide.ee']);
+        $guest->members()->attach($guestMember, ['role' => TeamRole::Owner->value]);
+
+        $performance->forceFill(['team_id' => $guest->id, 'title' => 'Märtu10'])->save();
+
+        $this->artisan('performances:remind-missing-plans')->assertSuccessful();
+
+        Notification::assertSentTo($guestMember, TechnicalPlanMissing::class);
+
+        foreach ($ownersMembers as $member) {
+            Notification::assertNotSentTo($member, TechnicalPlanMissing::class);
+        }
+
+        $this->assertDatabaseHas('performance_reminders', [
+            'performance_id' => $performance->id,
+            'recipients' => 1,
+        ]);
+    }
+
+    public function test_an_act_of_an_ownerless_show_is_still_chased_through_its_own_group(): void
+    {
+        Notification::fake();
+
+        // The Õppelava case: nobody owns the evening, but every slot on it has
+        // a group of its own. Chasing nobody would lose the whole night.
+        $guest = Team::factory()->create();
+        $guestMember = User::factory()->create(['email' => 'kylaline@naide.ee']);
+        $guest->members()->attach($guestMember, ['role' => TeamRole::Owner->value]);
+
+        $performance = Performance::factory()
+            ->for(Show::factory()->state(['team_id' => null, 'name' => 'Õppelava']))
+            ->performedBy($guest, 'Märtu10')
+            ->create([
+                'date' => now()->addDays(6)->subMinute(),
+                'created_at' => now()->subMonths(3),
+            ]);
+
+        $this->artisan('performances:remind-missing-plans')->assertSuccessful();
+
+        Notification::assertSentTo($guestMember, TechnicalPlanMissing::class);
+        $this->assertDatabaseHas('performance_reminders', ['performance_id' => $performance->id]);
+    }
+
     public function test_a_performance_already_being_played_is_not_chased(): void
     {
         Notification::fake();

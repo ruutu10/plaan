@@ -39,8 +39,11 @@ class UpcomingPerformance extends JsonResource
 
         return [
             'id' => $performance->id,
-            'performer' => $performance->show->team->name ?? '',
+            'performer' => $performance->performerName() ?? '',
             'showName' => $performance->show->name,
+            // The act's own name, when the evening is shared and the show's
+            // name alone would leave three identical rows to choose between.
+            'title' => $performance->title,
             'showDate' => $performance->startDate(),
             'startTime' => $performance->startTime(),
             'duration' => $performance->duration,

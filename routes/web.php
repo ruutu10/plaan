@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\ClaudeReasoningLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\PerformanceController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Teams\TeamAdminPageController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Controllers\TechnicalPlanController;
 use App\Http\Middleware\EnsureTeamMembership;
+use App\Models\ClaudeReasoningLog;
 use App\Models\TechnicalPlan;
 use Illuminate\Support\Facades\Route;
 
@@ -86,6 +88,13 @@ Route::prefix('api/shows')
         Route::patch('{show}', [ShowController::class, 'update'])->name('update');
         Route::delete('{show}', [ShowController::class, 'destroy'])->name('destroy');
 
+        // What the AI made of the cards this show was built from. A debugging
+        // aid for the house's own people, so the permission alone governs it —
+        // the listings decide which shows a user is offered it on.
+        Route::get('{show}/claude-logs', [ClaudeReasoningLogController::class, 'forShow'])
+            ->middleware('can:'.ClaudeReasoningLog::VIEW_PERMISSION)
+            ->name('claude-logs');
+
         // A show's dated performances. Scoped bindings tie the performance to the show
         // in the URL, so one show's id can never reach another's performance.
         Route::prefix('{show}/performances')
@@ -96,6 +105,10 @@ Route::prefix('api/shows')
                 Route::post('/', [PerformanceController::class, 'store'])->name('store');
                 Route::patch('{performance}', [PerformanceController::class, 'update'])->name('update');
                 Route::delete('{performance}', [PerformanceController::class, 'destroy'])->name('destroy');
+
+                Route::get('{performance}/claude-logs', [ClaudeReasoningLogController::class, 'forPerformance'])
+                    ->middleware('can:'.ClaudeReasoningLog::VIEW_PERMISSION)
+                    ->name('claude-logs');
             });
     });
 

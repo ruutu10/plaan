@@ -56,6 +56,11 @@ export interface UpcomingPerformance {
     id: number;
     performer: string;
     showName: string;
+    /**
+     * The act's own name, when the evening is shared and the show's name alone
+     * would leave several identical rows to choose between.
+     */
+    title: string | null;
     /** ISO date (YYYY-MM-DD), on the venue's clock. */
     showDate: string;
     /** Curtain-up as "19:00", on the venue's clock. */

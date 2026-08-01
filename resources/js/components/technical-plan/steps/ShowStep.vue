@@ -166,6 +166,11 @@ onMounted(loadPerformances);
                             class="block font-r10-display text-base font-semibold text-r10-ink"
                         >
                             {{ performance.showName }}
+                            <!-- An evening several groups share would otherwise
+                                 offer three identical rows to choose between. -->
+                            <template v-if="performance.title">
+                                — {{ performance.title }}
+                            </template>
                         </span>
                         <span
                             class="mt-0.5 block text-[13px] text-r10-grey-500"

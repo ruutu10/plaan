@@ -13,4 +13,7 @@ return [
     'teams' => [
         'edit_all' => 'Kõigi tiimide muutmine',
     ],
+    'claude' => [
+        'view_log' => 'Imporditud kirjete AI-põhjenduste vaatamine',
+    ],
 ];

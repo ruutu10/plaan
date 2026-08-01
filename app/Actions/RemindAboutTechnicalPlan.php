@@ -69,7 +69,7 @@ class RemindAboutTechnicalPlan
             Log::warning('A performance needs its technical plan chased, but its group has no members', [
                 'performance_id' => $performance->id,
                 'show_id' => $performance->show_id,
-                'team_id' => $performance->show->team_id,
+                'team_id' => $performance->performingTeamId(),
                 'schedule' => $schedule->value,
             ]);
 
@@ -169,15 +169,16 @@ class RemindAboutTechnicalPlan
     }
 
     /**
-     * Who hears about it: every member of the group whose show this is. A show
-     * without an owning group has nobody to chase — the caller filters those
+     * Who hears about it: every member of the group playing this performance —
+     * its own when the evening is shared, the show's otherwise. A performance
+     * neither has a group for has nobody to chase; the caller filters those
      * out, and this returns nothing for them either way.
      *
      * @return Collection<int, User>
      */
     private function performers(Performance $performance): Collection
     {
-        $members = $performance->show->team?->members;
+        $members = $performance->performedBy()?->members;
 
         return $members === null
             ? new Collection

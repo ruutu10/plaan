@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasClaudeReasoningLog;
 use App\Concerns\ScopedByTeamAccess;
 use App\Enums\ReminderSchedule;
 use Carbon\CarbonInterface;
@@ -20,8 +21,14 @@ use Illuminate\Support\Facades\Date;
 
 /**
  * One dated performance of a {@see Show}. Everything the performances of a show
- * have in common — the name, the description, the performing group — belongs to
- * the show; a performance holds only what can differ between them.
+ * have in common — the name, the description — belongs to the show; a
+ * performance holds only what can differ between them.
+ *
+ * Who plays it is one of those things. A show one troupe fills has its group on
+ * the show, and its performances inherit it; an evening several groups share —
+ * an Õppelava, a gala — is one show played once, with a performance per act,
+ * each naming its own group and carrying the act's name off the board. {@see
+ * performerName()} is the one place that distinction is resolved.
  *
  * `date` is the full moment the performance starts, stored in UTC like every
  * other timestamp here. The house does not think in UTC, though, so the hour is
@@ -31,6 +38,9 @@ use Illuminate\Support\Facades\Date;
  *
  * @property int $id
  * @property int $show_id
+ * @property int|null $team_id
+ * @property string|null $title
+ * @property string|null $planka_card_id
  * @property Carbon $date
  * @property int|null $duration
  * @property bool $is_draft
@@ -38,13 +48,18 @@ use Illuminate\Support\Facades\Date;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  * @property-read Show $show
+ * @property-read Team|null $team
  * @property-read Collection<int, TechnicalPlan> $technicalPlans
  * @property-read int|null $technical_plans_count
  * @property-read Collection<int, PerformanceReminder> $reminders
  * @property-read int|null $reminders_count
+ * @property-read Collection<int, ClaudeReasoningLog> $reasoningLogs
  */
 #[Fillable([
     'show_id',
+    'team_id',
+    'title',
+    'planka_card_id',
     'date',
     'duration',
     'is_draft',
@@ -52,7 +67,7 @@ use Illuminate\Support\Facades\Date;
 class Performance extends Model
 {
     /** @use HasFactory<PerformanceFactory> */
-    use HasFactory, ScopedByTeamAccess, SoftDeletes;
+    use HasClaudeReasoningLog, HasFactory, ScopedByTeamAccess, SoftDeletes;
 
     /**
      * The permission — held by the "technician" role — that opens the performances
@@ -88,8 +103,13 @@ class Performance extends Model
 
         $teamIds = $user->teamIds();
 
-        // A performance is the group's through the show it belongs to.
-        $query->whereHas('show', fn (Builder $show) => $show->whereIn('team_id', $teamIds));
+        // A performance is the group's through the show it belongs to, or by
+        // being the group's own slot on an evening somebody else stages. The
+        // second does not carry over to the show: a guest may correct their own
+        // performance without touching the show it sits in.
+        $query->where(fn (Builder $performance) => $performance
+            ->whereHas('show', fn (Builder $show) => $show->whereIn('team_id', $teamIds))
+            ->orWhereIn('performances.team_id', $teamIds));
     }
 
     /**
@@ -121,6 +141,22 @@ class Performance extends Model
     }
 
     /**
+     * The groups a performance may be handed to: the ones the user belongs to,
+     * or every group in the house for the holders of {@see EDIT_ALL_PERMISSION}.
+     * Mirrors {@see Show::assignableTeams()}, on the performances' own right.
+     *
+     * @return Collection<int, Team>
+     */
+    public static function assignableTeams(User $user): Collection
+    {
+        $teams = $user->can(self::EDIT_ALL_PERMISSION)
+            ? Team::query()
+            : $user->teams();
+
+        return $teams->orderByRaw('LOWER(teams.name)')->get();
+    }
+
+    /**
      * The show this is a performance of.
      *
      * @return BelongsTo<Show, $this>
@@ -128,6 +164,46 @@ class Performance extends Model
     public function show(): BelongsTo
     {
         return $this->belongsTo(Show::class);
+    }
+
+    /**
+     * The group playing this performance, when it is not simply the show's own.
+     * Set for the acts of an evening several groups share; empty otherwise.
+     *
+     * @return BelongsTo<Team, $this>
+     */
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
+    }
+
+    /**
+     * Who is playing this performance: its own group, or the show's when it has
+     * none of its own. Every screen, mail and listing asks the question here
+     * rather than reaching for `show->team`, so an act on a shared evening is
+     * never announced under the name of whoever happens to own the show.
+     */
+    public function performerName(): ?string
+    {
+        return $this->performedBy()?->name;
+    }
+
+    /**
+     * The same group as an id — see {@see performerName()}.
+     */
+    public function performingTeamId(): ?int
+    {
+        return $this->team_id ?? $this->show->team_id;
+    }
+
+    /**
+     * The group playing this performance as a model — its own, or the show's.
+     * The one to chase about a missing plan, and the one whose members may read
+     * the plans written for it.
+     */
+    public function performedBy(): ?Team
+    {
+        return $this->team ?? $this->show->team;
     }
 
     /**
@@ -217,5 +293,20 @@ class Performance extends Model
             'duration' => 'integer',
             'is_draft' => 'boolean',
         ];
+    }
+
+    /**
+     * Bootstrap the model and its traits.
+     */
+    protected static function booted(): void
+    {
+        // An act carrying no name of its own is one the show's name already
+        // names, so an empty string is stored as an absence rather than as a
+        // title nobody can see.
+        static::saving(function (Performance $performance): void {
+            if ($performance->title !== null && trim($performance->title) === '') {
+                $performance->title = null;
+            }
+        });
     }
 }

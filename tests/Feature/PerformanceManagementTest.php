@@ -257,6 +257,45 @@ class PerformanceManagementTest extends TestCase
         $this->assertSame(120, $performance->duration);
     }
 
+    public function test_the_planka_card_can_be_written_down_by_hand(): void
+    {
+        config()->set('services.planka.url', 'https://planka.test/');
+
+        [$user, $show] = $this->showOfOwnTeam();
+        $performance = Performance::factory()->create(['show_id' => $show->id]);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.shows.performances.update', [$show, $performance]), [
+                'date' => $performance->startDate(),
+                'planka_card_id' => '1516073411733063234',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.plankaCardId', '1516073411733063234')
+            ->assertJsonPath('data.plankaCardUrl', 'https://planka.test/cards/1516073411733063234');
+
+        $this->assertSame('1516073411733063234', $performance->fresh()?->planka_card_id);
+    }
+
+    public function test_the_planka_card_may_be_cleared(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+        $performance = Performance::factory()->create([
+            'show_id' => $show->id,
+            'planka_card_id' => '1516073411733063234',
+        ]);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.shows.performances.update', [$show, $performance]), [
+                'date' => $performance->startDate(),
+                'planka_card_id' => '',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.plankaCardId', null)
+            ->assertJsonPath('data.plankaCardUrl', null);
+
+        $this->assertNull($performance->fresh()?->planka_card_id);
+    }
+
     public function test_the_listing_says_which_performances_wait_to_be_reviewed(): void
     {
         [$user, $show] = $this->showOfOwnTeam();
@@ -487,6 +526,126 @@ class PerformanceManagementTest extends TestCase
         $this->actingAs($user)
             ->getJson(route('api.shows.show', $show))
             ->assertForbidden();
+    }
+
+    public function test_a_performance_can_name_the_act_and_the_group_playing_it(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+        $guest = $show->team;
+
+        $this->actingAs($user)
+            ->postJson(route('api.shows.performances.store', $show), [
+                'date' => '2026-10-09',
+                'title' => 'Märtu10',
+                'team_id' => $guest->id,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.title', 'Märtu10')
+            ->assertJsonPath('data.teamId', $guest->id)
+            ->assertJsonPath('data.teamName', $guest->name);
+
+        $performance = Performance::sole();
+
+        $this->assertSame('Märtu10', $performance->title);
+        $this->assertSame($guest->id, $performance->team_id);
+    }
+
+    public function test_an_act_without_a_name_or_a_group_of_its_own_is_the_shows(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+
+        $this->actingAs($user)
+            ->postJson(route('api.shows.performances.store', $show), [
+                'date' => '2026-10-09',
+                'title' => '',
+                'team_id' => '',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.title', null)
+            ->assertJsonPath('data.teamId', null);
+
+        // The show's own group answers for it.
+        $this->assertSame($show->team->name, Performance::sole()->performerName());
+    }
+
+    public function test_a_performance_cannot_be_handed_to_a_group_the_user_is_not_in(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+        $stranger = Team::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson(route('api.shows.performances.store', $show), [
+                'date' => '2026-10-09',
+                'team_id' => $stranger->id,
+            ])
+            ->assertJsonValidationErrors('team_id');
+    }
+
+    public function test_an_act_name_longer_than_the_column_is_refused(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+
+        $this->actingAs($user)
+            ->postJson(route('api.shows.performances.store', $show), [
+                'date' => '2026-10-09',
+                'title' => str_repeat('a', 256),
+            ])
+            ->assertJsonValidationErrors('title');
+    }
+
+    public function test_a_group_playing_an_act_may_correct_it_on_somebody_elses_evening(): void
+    {
+        [$guest, $ownShow] = $this->showOfOwnTeam();
+        $guestTeam = $ownShow->team;
+
+        // Somebody else's Õppelava, with one slot played by the guest.
+        $evening = Show::factory()->create();
+        $slot = Performance::factory()->for($evening)
+            ->performedBy($guestTeam, 'Märtu10')
+            ->create(['date' => '2026-10-09 17:00:00']);
+
+        $this->actingAs($guest)
+            ->getJson(route('api.shows.performances.index', $evening))
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+
+        $this->actingAs($guest)
+            ->patchJson(route('api.shows.performances.update', [$evening, $slot]), [
+                'date' => '2026-10-10',
+                'duration' => 25,
+            ])
+            ->assertOk();
+
+        $this->assertSame(25, $slot->refresh()->duration);
+    }
+
+    public function test_a_group_playing_an_act_may_not_touch_the_show_around_it(): void
+    {
+        [$guest, $ownShow] = $this->showOfOwnTeam();
+
+        $evening = Show::factory()->create(['name' => 'Õppelava']);
+        Performance::factory()->for($evening)->performedBy($ownShow->team, 'Märtu10')->create();
+
+        // The evening's page opens, so the guest can reach its own slot…
+        $this->actingAs($guest)
+            ->getJson(route('api.shows.show', $evening))
+            ->assertOk()
+            ->assertJsonPath('data.canEdit', false);
+
+        // …but the show's own details are not theirs to rewrite, and neither is
+        // putting another performance of their own on the bill.
+        $this->actingAs($guest)
+            ->patchJson(route('api.shows.update', $evening), [
+                'team_id' => $ownShow->team_id,
+                'name' => 'Meie oma',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($guest)
+            ->postJson(route('api.shows.performances.store', $evening), ['date' => '2026-11-01'])
+            ->assertForbidden();
+
+        $this->assertSame('Õppelava', $evening->refresh()->name);
     }
 
     /**

@@ -58,7 +58,7 @@ class TechnicalPlan extends JsonResource
             'submittedAt' => $plan->submitted_at?->toIso8601String(),
             'meta' => [
                 'performanceId' => $plan->performance_id,
-                'performer' => $plan->performance?->show->team->name ?? '',
+                'performer' => $plan->performance?->performerName() ?? '',
                 'showName' => $plan->performance?->show->name ?? '',
                 'showDate' => $plan->performance?->startDate() ?? '',
                 'duration' => $plan->performance?->duration,
