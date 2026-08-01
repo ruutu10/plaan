@@ -28,7 +28,7 @@ class DeleteTeam
             User::where('current_team_id', $team->id)
                 ->when($except, fn ($query) => $query->where('id', '!=', $except->id))
                 ->each(function (User $member) use ($team, &$moved): void {
-                    $member->sendHomeFrom($team);
+                    $member->relocateFrom($team);
                     $moved++;
                 });
 
@@ -43,7 +43,6 @@ class DeleteTeam
             Log::notice('Team deleted', [
                 'team_id' => $team->id,
                 'slug' => $team->slug,
-                'is_personal' => $team->is_personal,
                 'members_moved' => $moved,
                 'memberships_cleared' => $membershipsCleared,
                 'invitations_cancelled' => $invitationsCancelled,

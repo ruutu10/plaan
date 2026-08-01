@@ -24,7 +24,7 @@ class TeamSeeder extends Seeder
         foreach ($teams as $name) {
             Team::firstOrCreate(
                 ['name' => $name],
-                ['slug' => Str::slug($name), 'is_personal' => false],
+                ['slug' => Str::slug($name)],
             );
         }
     }

@@ -18,12 +18,11 @@ class CreateTeam
      *                        necessarily going to work in, and leave them where
      *                        they are.
      */
-    public function handle(User $user, string $name, bool $isPersonal = false, bool $switch = true): Team
+    public function handle(User $user, string $name, bool $switch = true): Team
     {
-        return DB::transaction(function () use ($user, $name, $isPersonal, $switch) {
+        return DB::transaction(function () use ($user, $name, $switch) {
             $team = Team::create([
                 'name' => $name,
-                'is_personal' => $isPersonal,
             ]);
 
             $team->memberships()->create([
@@ -38,7 +37,6 @@ class CreateTeam
             Log::info('Team created', [
                 'team_id' => $team->id,
                 'slug' => $team->slug,
-                'is_personal' => $isPersonal,
                 'owner_id' => $user->id,
                 'switched' => $switch,
             ]);

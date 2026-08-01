@@ -31,9 +31,9 @@ const showCount = computed(() => props.team?.showCount ?? 0);
         </template>
 
         <template v-if="memberCount > 0 || showCount > 0" #warning>
-            Tiimi {{ memberCount }} liiget kaotavad ligipääsu ja viiakse üle oma
-            isiklikku tiimi. Tiimi {{ showCount }} lavastust jäävad alles, kuid
-            ilma tiimita neid enam ei halda.
+            Tiimi {{ memberCount }} liiget kaotavad ligipääsu ja viiakse üle
+            mõnda teise oma tiimi, kui neil see on. Tiimi {{ showCount }}
+            lavastust jäävad alles, kuid ilma tiimita neid enam ei halda.
         </template>
     </R10ConfirmDelete>
 </template>

@@ -155,17 +155,12 @@ class PlankaPerformanceExtractorTest extends TestCase
     public function test_it_lists_the_groups_a_show_can_be_handed_to(): void
     {
         $team = Team::factory()->create(['name' => 'Tsikid Reas']);
-        $personal = Team::factory()->create(['name' => "ando's Team", 'is_personal' => true]);
 
         $this->extractorAnswering('{"performances": []}')->extract('13.09 õhtu', 'Kaardi tekst');
 
         $prompt = $this->sentBodies[0]['messages'][0]['content'];
 
         $this->assertStringContainsString("- {$team->id} — Tsikid Reas", $prompt);
-
-        // A personal team stands for a person's corner of the app, not a group.
-        $this->assertStringNotContainsString("ando's Team", $prompt);
-        $this->assertStringNotContainsString("- {$personal->id} —", $prompt);
 
         $schema = $this->sentBodies[0]['output_config']['format']['schema'];
         $this->assertContains('team_id', $schema['properties']['performances']['items']['required']);

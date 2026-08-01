@@ -57,7 +57,7 @@ class TeamAdminTest extends TestCase
         $response = $this->actingAs($user)
             ->getJson(route('api.teams.index'))
             ->assertOk()
-            // The user's own personal team rides along; it is a team like any other.
+            // The factory's own team rides along too.
             ->assertJsonCount(2, 'data');
 
         $rows = collect($response->json('data'))->keyBy('id');
@@ -66,12 +66,10 @@ class TeamAdminTest extends TestCase
             'id' => $own->id,
             'name' => 'Improteater Ruutu10',
             'slug' => $own->slug,
-            'isPersonal' => false,
             'memberCount' => 1,
             'showCount' => 0,
         ], $rows->get($own->id));
 
-        $this->assertTrue($rows->get($user->personalTeam()->id)['isPersonal']);
         $this->assertNull($rows->get($somebodyElses->id));
     }
 
@@ -218,7 +216,6 @@ class TeamAdminTest extends TestCase
             ->postJson(route('api.teams.store'), ['name' => 'Uus trupp'])
             ->assertCreated()
             ->assertJsonPath('data.name', 'Uus trupp')
-            ->assertJsonPath('data.isPersonal', false)
             ->assertJsonPath('data.memberCount', 1);
 
         $team = Team::where('name', 'Uus trupp')->firstOrFail();
@@ -293,7 +290,7 @@ class TeamAdminTest extends TestCase
     public function test_an_owner_can_delete_their_team(): void
     {
         $user = User::factory()->create();
-        $personal = $user->personalTeam();
+        $ownTeam = $user->currentTeam;
         $team = $this->teamOf($user);
         $user->switchTeam($team);
 
@@ -305,7 +302,7 @@ class TeamAdminTest extends TestCase
         $this->assertDatabaseMissing('team_members', ['team_id' => $team->id]);
 
         // Nobody is left standing in a team that is gone.
-        $this->assertSame($personal->id, $user->fresh()->current_team_id);
+        $this->assertSame($ownTeam->id, $user->fresh()->current_team_id);
     }
 
     public function test_deleting_a_team_leaves_its_shows_alone(): void
@@ -318,17 +315,6 @@ class TeamAdminTest extends TestCase
             ->assertNoContent();
 
         $this->assertNotSoftDeleted($show);
-    }
-
-    public function test_a_personal_team_cannot_be_deleted(): void
-    {
-        $team = Team::factory()->personal()->create();
-
-        $this->actingAs($this->technician())
-            ->deleteJson(route('api.teams.destroy', $team))
-            ->assertForbidden();
-
-        $this->assertNotSoftDeleted($team);
     }
 
     public function test_a_plain_member_cannot_delete_the_team(): void
@@ -497,7 +483,7 @@ class TeamAdminTest extends TestCase
         $team = $this->teamOf($user);
 
         $member = User::factory()->create();
-        $personal = $member->personalTeam();
+        $ownTeam = $member->currentTeam;
         $team->members()->attach($member, ['role' => TeamRole::Member->value]);
         $member->switchTeam($team);
 
@@ -510,7 +496,7 @@ class TeamAdminTest extends TestCase
             'user_id' => $member->id,
         ]);
 
-        $this->assertSame($personal->id, $member->fresh()->current_team_id);
+        $this->assertSame($ownTeam->id, $member->fresh()->current_team_id);
     }
 
     public function test_the_owner_cannot_be_removed(): void

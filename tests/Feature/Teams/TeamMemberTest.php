@@ -153,14 +153,14 @@ class TeamMemberTest extends TestCase
         );
     }
 
-    public function test_a_removed_member_without_a_personal_team_is_left_without_a_current_team(): void
+    public function test_a_removed_member_with_no_other_team_is_left_without_a_current_team(): void
     {
         $owner = User::factory()->create();
         $member = User::factory()->create();
         $team = Team::factory()->create();
 
-        // Accounts provisioned by e-mail never get a personal team, so the
-        // member has nowhere to be sent back to.
+        // Simulates a member with no other team, so they have nowhere to be
+        // sent back to.
         $member->teamMemberships()->delete();
 
         $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
@@ -176,11 +176,11 @@ class TeamMemberTest extends TestCase
         $this->assertNull($member->fresh()->current_team_id);
     }
 
-    public function test_removed_member_current_team_is_set_to_personal_team()
+    public function test_removed_member_current_team_is_set_to_their_own_team()
     {
         $owner = User::factory()->create();
         $member = User::factory()->create();
-        $personalTeam = $member->personalTeam();
+        $ownTeam = $member->currentTeam;
         $team = Team::factory()->create();
 
         $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
@@ -192,6 +192,6 @@ class TeamMemberTest extends TestCase
             ->actingAs($owner)
             ->delete(route('teams.members.destroy', [$team, $member]));
 
-        $this->assertEquals($personalTeam->id, $member->fresh()->current_team_id);
+        $this->assertEquals($ownTeam->id, $member->fresh()->current_team_id);
     }
 }

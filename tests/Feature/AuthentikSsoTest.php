@@ -120,7 +120,7 @@ class AuthentikSsoTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_a_successful_callback_provisions_a_new_user_with_a_personal_team(): void
+    public function test_a_successful_callback_provisions_a_new_user_without_a_team(): void
     {
         Socialite::fake('authentik', SocialiteUser::fake([
             'id' => 'authentik-subject-1',
@@ -139,8 +139,7 @@ class AuthentikSsoTest extends TestCase
         $this->assertSame(SignupSource::AuthentikSso, $user->signup_source);
         $this->assertSame('authentik-subject-1', $user->authentik_id);
         $this->assertNotNull($user->email_verified_at);
-        $this->assertNotNull($user->currentTeam);
-        $this->assertTrue($user->currentTeam->is_personal);
+        $this->assertNull($user->current_team_id);
     }
 
     public function test_a_successful_callback_links_an_existing_account_by_email(): void

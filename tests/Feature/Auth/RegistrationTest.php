@@ -55,6 +55,10 @@ class RegistrationTest extends TestCase
         $this->assertAuthenticated();
 
         $user = User::where('email', 'test@example.com')->first();
-        $response->assertRedirect(route('dashboard'));
+
+        $this->assertNull($user->current_team_id);
+        // A new user joins no team of their own, so there is nothing
+        // team-scoped to send them to yet.
+        $response->assertRedirect(route('teams.index'));
     }
 }

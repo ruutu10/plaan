@@ -247,10 +247,7 @@ function confirmCancelInvitation(invitation: TeamInvitation): void {
             </R10Table>
         </section>
 
-        <section
-            v-if="permissions.canDeleteTeam && !team.isPersonal"
-            class="mt-9 max-w-2xl"
-        >
+        <section v-if="permissions.canDeleteTeam" class="mt-9 max-w-2xl">
             <R10SectionHeader
                 title="Kustuta tiim"
                 lead="Tiimi kustutamine on lõplik ja seda ei saa tagasi võtta."
@@ -290,7 +287,7 @@ function confirmCancelInvitation(invitation: TeamInvitation): void {
         />
 
         <DeleteTeamModal
-            v-if="permissions.canDeleteTeam && !team.isPersonal"
+            v-if="permissions.canDeleteTeam"
             v-model:open="deleteDialogOpen"
             :team="team"
         />

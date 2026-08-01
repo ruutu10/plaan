@@ -6,7 +6,6 @@ import CreateTeamModal from '@/components/CreateTeamModal.vue';
 import LeaveTeamModal from '@/components/LeaveTeamModal.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
-import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { edit, index } from '@/routes/teams';
@@ -17,9 +16,8 @@ defineProps<{ teams: Team[] }>();
 const leaveTeamDialogOpen = ref(false);
 const teamLeaving = ref<Team | null>(null);
 
-/** An owner cannot walk out on their own team, and nobody leaves their personal one. */
-const canLeaveTeam = (team: Team): boolean =>
-    !team.isPersonal && team.role !== 'owner';
+/** An owner cannot walk out on their own team. */
+const canLeaveTeam = (team: Team): boolean => team.role !== 'owner';
 
 function openLeaveTeamDialog(team: Team): void {
     teamLeaving.value = team;
@@ -75,9 +73,6 @@ defineOptions({
                     >
                         {{ team.name }}
                     </span>
-                    <R10Pill v-if="team.isPersonal" class="ml-2 align-middle">
-                        Isiklik
-                    </R10Pill>
                 </td>
                 <td class="px-5 py-4 align-top text-r10-grey-500">
                     {{ team.roleLabel }}

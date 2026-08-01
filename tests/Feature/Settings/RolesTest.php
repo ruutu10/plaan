@@ -16,7 +16,7 @@ class RolesTest extends TestCase
     public function test_roles_page_is_displayed_for_a_user_without_extra_roles(): void
     {
         $user = User::factory()->create();
-        $team = $user->personalTeam();
+        $team = $user->currentTeam;
 
         $this->actingAs($user)
             ->get(route('roles.show'))

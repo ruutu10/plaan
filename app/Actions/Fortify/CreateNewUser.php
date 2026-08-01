@@ -2,7 +2,6 @@
 
 namespace App\Actions\Fortify;
 
-use App\Actions\Teams\CreateTeam;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Enums\SignupSource;
@@ -16,13 +15,11 @@ class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules, ProfileValidationRules;
 
-    public function __construct(private CreateTeam $createTeam)
-    {
-        //
-    }
-
     /**
-     * Validate and create a newly registered user.
+     * Validate and create a newly registered user. They join no team of their
+     * own — only a house e-mail address, once verified, is taken into a team
+     * automatically (see App\Actions\GrantStaffAccess); everybody else stays
+     * teamless until they create or are invited into one.
      *
      * @param  array<string, string>  $input
      */
@@ -40,11 +37,6 @@ class CreateNewUser implements CreatesNewUsers
                 'password' => $input['password'],
             ]);
 
-            $this->createTeam->handle($user, $user->name."'s Team", isPersonal: true);
-
-            // Named rather than read back off the model: the column takes its
-            // value from a database default, so the attribute is still unset
-            // on the instance `create()` just handed us.
             Log::info('User registered', [
                 'user_id' => $user->id,
                 'signup_source' => SignupSource::SignupForm->value,

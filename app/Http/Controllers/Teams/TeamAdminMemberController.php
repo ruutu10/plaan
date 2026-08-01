@@ -100,7 +100,7 @@ class TeamAdminMemberController extends Controller
             ->firstOrFail()
             ->delete();
 
-        $home = $user->sendHomeFrom($team);
+        $home = $user->relocateFrom($team);
 
         Log::notice('Team member removed from the management screen', [
             'team_id' => $team->id,

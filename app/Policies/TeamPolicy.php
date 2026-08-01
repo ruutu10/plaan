@@ -51,9 +51,7 @@ class TeamPolicy
      */
     public function leave(User $user, Team $team): bool
     {
-        return ! $team->is_personal
-            && $user->belongsToTeam($team)
-            && ! $user->ownsTeam($team);
+        return $user->belongsToTeam($team) && ! $user->ownsTeam($team);
     }
 
     /**
@@ -97,13 +95,11 @@ class TeamPolicy
     }
 
     /**
-     * Determine whether the user can delete the model. A personal team is the
-     * one team nobody may delete: it is the home a user is put back into when
-     * the groups they joined go away.
+     * Determine whether the user can delete the model.
      */
     public function delete(User $user, Team $team): bool
     {
-        return ! $team->is_personal && $this->hasTeamPermission($user, $team, TeamPermission::DeleteTeam);
+        return $this->hasTeamPermission($user, $team, TeamPermission::DeleteTeam);
     }
 
     /**
