@@ -147,15 +147,13 @@ class PlankaPerformanceExtractor
     }
 
     /**
-     * The groups a show can be handed to. Personal teams are left out: they
-     * stand for a person's own corner of the app, not a performing group.
+     * The groups a show can be handed to.
      *
      * @return array<int, string>
      */
     protected function teams(): array
     {
         return $this->teams ??= Team::query()
-            ->where('is_personal', false)
             ->orderBy('name')
             ->pluck('name', 'id')
             ->all();

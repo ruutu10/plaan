@@ -38,7 +38,6 @@ class TeamTest extends TestCase
 
         $this->assertDatabaseHas('teams', [
             'name' => 'Test Team',
-            'is_personal' => false,
         ]);
     }
 
@@ -192,10 +191,10 @@ class TeamTest extends TestCase
         $this->assertEquals($alphaTeam->id, $user->fresh()->current_team_id);
     }
 
-    public function test_deleting_current_team_falls_back_to_personal_team_when_alphabetically_first()
+    public function test_deleting_current_team_falls_back_to_the_users_own_team_when_alphabetically_first()
     {
         $user = User::factory()->create();
-        $personalTeam = $user->personalTeam();
+        $ownTeam = $user->currentTeam;
         $team = Team::factory()->create(['name' => 'Zulu Team']);
         $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
 
@@ -213,17 +212,17 @@ class TeamTest extends TestCase
             'id' => $team->id,
         ]);
 
-        $this->assertEquals($personalTeam->id, $user->fresh()->current_team_id);
+        $this->assertEquals($ownTeam->id, $user->fresh()->current_team_id);
     }
 
     public function test_deleting_non_current_team_leaves_current_team_unchanged()
     {
         $user = User::factory()->create();
-        $personalTeam = $user->personalTeam();
+        $ownTeam = $user->currentTeam;
         $team = Team::factory()->create();
         $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
 
-        $user->update(['current_team_id' => $personalTeam->id]);
+        $user->update(['current_team_id' => $ownTeam->id]);
 
         $response = $this
             ->actingAs($user)
@@ -237,10 +236,10 @@ class TeamTest extends TestCase
             'id' => $team->id,
         ]);
 
-        $this->assertEquals($personalTeam->id, $user->fresh()->current_team_id);
+        $this->assertEquals($ownTeam->id, $user->fresh()->current_team_id);
     }
 
-    public function test_members_can_leave_non_personal_teams()
+    public function test_members_can_leave_a_team()
     {
         $owner = User::factory()->create();
         $member = User::factory()->create();
@@ -286,20 +285,6 @@ class TeamTest extends TestCase
         $this->assertEquals($alphaTeam->id, $member->fresh()->current_team_id);
     }
 
-    public function test_personal_teams_cannot_be_left()
-    {
-        $user = User::factory()->create();
-        $personalTeam = $user->personalTeam();
-
-        $response = $this
-            ->actingAs($user)
-            ->delete(route('teams.leave', $personalTeam));
-
-        $response->assertForbidden();
-
-        $this->assertTrue($user->fresh()->belongsToTeam($personalTeam));
-    }
-
     public function test_team_owners_cannot_leave_their_team()
     {
         $owner = User::factory()->create();
@@ -328,10 +313,11 @@ class TeamTest extends TestCase
         $response->assertForbidden();
     }
 
-    public function test_deleting_team_switches_other_affected_users_to_their_personal_team()
+    public function test_deleting_team_switches_other_affected_users_to_their_own_team()
     {
         $owner = User::factory()->create();
         $member = User::factory()->create();
+        $memberOwnTeam = $member->currentTeam;
 
         $team = Team::factory()->create();
         $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
@@ -348,27 +334,7 @@ class TeamTest extends TestCase
 
         $response->assertRedirect();
 
-        $this->assertEquals($member->personalTeam()->id, $member->fresh()->current_team_id);
-    }
-
-    public function test_personal_teams_cannot_be_deleted()
-    {
-        $user = User::factory()->create();
-
-        $personalTeam = $user->personalTeam();
-
-        $response = $this
-            ->actingAs($user)
-            ->delete(route('teams.destroy', $personalTeam), [
-                'name' => $personalTeam->name,
-            ]);
-
-        $response->assertForbidden();
-
-        $this->assertDatabaseHas('teams', [
-            'id' => $personalTeam->id,
-            'deleted_at' => null,
-        ]);
+        $this->assertEquals($memberOwnTeam->id, $member->fresh()->current_team_id);
     }
 
     public function test_teams_cannot_be_deleted_by_non_owners()

@@ -64,7 +64,7 @@ class TeamMemberController extends Controller
             ->where('user_id', $user->id)
             ->delete();
 
-        $home = $user->sendHomeFrom($team);
+        $home = $user->relocateFrom($team);
 
         Log::notice('Team member removed', [
             'team_id' => $team->id,

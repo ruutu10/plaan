@@ -80,16 +80,6 @@ trait HasTeams
     }
 
     /**
-     * Get the user's personal team.
-     */
-    public function personalTeam(): ?Team
-    {
-        return $this->teams()
-            ->where('is_personal', true)
-            ->first();
-    }
-
-    /**
      * Switch to the given team.
      */
     public function switchTeam(Team $team): bool
@@ -107,27 +97,15 @@ trait HasTeams
     }
 
     /**
-     * Move the user out of a team they have left of their own accord, to
-     * whichever of their remaining teams comes first by name.
+     * Move the user out of a team they no longer belong to — whether they left
+     * of their own accord, were removed by somebody else, or the team itself
+     * was deleted — to whichever of their remaining teams comes first by name.
      *
      * @return Team|null The team they landed in, or null if they did not move.
      */
     public function relocateFrom(Team $team): ?Team
     {
         return $this->moveOutOf($team, $this->fallbackTeam($team));
-    }
-
-    /**
-     * Move the user out of a team somebody else took them out of — because they
-     * were removed, or because the team was deleted. They go home to their own
-     * personal team where they have one, since being put somewhere they did not
-     * choose is better than being put in a stranger's team.
-     *
-     * @return Team|null The team they landed in, or null if they did not move.
-     */
-    public function sendHomeFrom(Team $team): ?Team
-    {
-        return $this->moveOutOf($team, $this->personalTeam() ?? $this->fallbackTeam($team));
     }
 
     /**
@@ -225,7 +203,6 @@ trait HasTeams
             id: $team->id,
             name: $team->name,
             slug: $team->slug,
-            isPersonal: $team->is_personal,
             role: $role?->value,
             roleLabel: $role?->label(),
             isCurrent: $this->isCurrentTeam($team),

@@ -6,7 +6,6 @@ import AdminCreateTeamModal from '@/components/AdminCreateTeamModal.vue';
 import AdminDeleteTeamModal from '@/components/AdminDeleteTeamModal.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
-import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { useResource } from '@/composables/useResource';
@@ -91,13 +90,6 @@ function openDelete(team: ManagedTeam): void {
                     >
                         {{ team.name }}
                     </span>
-                    <R10Pill
-                        v-if="team.isPersonal"
-                        data-test="team-personal-badge"
-                        class="ml-2 align-middle"
-                    >
-                        Isiklik
-                    </R10Pill>
                 </td>
                 <td class="px-5 py-4 align-top whitespace-nowrap tabular-nums">
                     {{ team.memberCount ?? 0 }}
@@ -118,11 +110,7 @@ function openDelete(team: ManagedTeam): void {
                             <Pencil class="h-3.5 w-3.5" />
                         </R10Button>
 
-                        <!-- A personal team is nobody's to delete: it is where
-                             members are put back when the groups they joined
-                             go away. -->
                         <button
-                            v-if="!team.isPersonal"
                             type="button"
                             title="Kustuta tiim"
                             data-test="delete-team-button"

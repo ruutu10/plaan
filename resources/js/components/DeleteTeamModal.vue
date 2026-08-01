@@ -63,8 +63,9 @@ function change(value: boolean): void {
                         class="mt-0.5 h-5 w-5 shrink-0 text-r10-orange-700"
                     />
                     <span>
-                        Liikmed kaotavad tiimile ligipääsu ja viiakse üle oma
-                        isiklikku tiimi. Seda ei saa tagasi võtta.
+                        Liikmed kaotavad tiimile ligipääsu ja viiakse üle mõnda
+                        teise oma tiimi, kui neil see on. Seda ei saa tagasi
+                        võtta.
                     </span>
                 </p>
 

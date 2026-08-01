@@ -4,7 +4,6 @@ export type Team = {
     id: number;
     name: string;
     slug: string;
-    isPersonal: boolean;
     role?: TeamRole;
     roleLabel?: string;
     isCurrent?: boolean;
@@ -61,7 +60,6 @@ export interface ManagedTeam {
     id: number;
     name: string;
     slug: string;
-    isPersonal: boolean;
     /** How many people belong to the team; only the listing counts them. */
     memberCount: number | null;
     /** How much the team has staged; only the listing counts it. */

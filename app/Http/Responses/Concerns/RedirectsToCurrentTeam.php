@@ -13,6 +13,12 @@ trait RedirectsToCurrentTeam
     {
         $team = $this->currentTeam($request);
 
+        if (! $team) {
+            // A user with no team of their own has nowhere team-scoped to go —
+            // send them to where they can create or wait to be invited into one.
+            return route('teams.index', absolute: false);
+        }
+
         URL::defaults(['current_team' => $team->slug]);
 
         return "/{$team->slug}{$redirect}";
@@ -34,7 +40,7 @@ trait RedirectsToCurrentTeam
         ]);
     }
 
-    protected function currentTeam(Request $request): Team
+    protected function currentTeam(Request $request): ?Team
     {
         $user = $request->user();
 
@@ -46,18 +52,6 @@ trait RedirectsToCurrentTeam
             abort(403);
         }
 
-        $team = $user->currentTeam ?? $user->personalTeam();
-
-        if (! $team) {
-            // Every screen is scoped to a team, so a user without one cannot
-            // get in at all — they are locked out until somebody notices.
-            Log::error('User signed in but belongs to no team', [
-                'user_id' => $user->id,
-            ]);
-
-            abort(403);
-        }
-
-        return $team;
+        return $user->currentTeam;
     }
 }

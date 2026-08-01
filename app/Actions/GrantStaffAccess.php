@@ -47,7 +47,6 @@ class GrantStaffAccess
         return DB::transaction(function () use ($user) {
             $team = Team::firstOrCreate(
                 ['name' => (string) config('teams.theatre_team_name')],
-                ['is_personal' => false],
             );
 
             $user->teams()->syncWithoutDetaching([

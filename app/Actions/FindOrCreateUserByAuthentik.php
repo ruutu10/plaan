@@ -2,7 +2,6 @@
 
 namespace App\Actions;
 
-use App\Actions\Teams\CreateTeam;
 use App\Enums\SignupSource;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -14,14 +13,15 @@ use Laravel\Socialite\Contracts\User as SocialiteUser;
 class FindOrCreateUserByAuthentik
 {
     public function __construct(
-        private CreateTeam $createTeam,
         private GrantStaffAccess $grantStaffAccess,
     ) {}
 
     /**
      * Find the user for this Authentik identity, linking or provisioning an
-     * account as needed, so an SSO login always resolves to a real user with
-     * a personal team — mirroring App\Actions\Fortify\CreateNewUser.
+     * account as needed, so an SSO login always resolves to a real user —
+     * mirroring App\Actions\Fortify\CreateNewUser, a freshly provisioned
+     * account joins no team of its own unless its address takes it into the
+     * house team (see App\Actions\GrantStaffAccess).
      */
     public function handle(SocialiteUser $ssoUser): User
     {
@@ -55,8 +55,6 @@ class FindOrCreateUserByAuthentik
             // account still has to click a verification e-mail, an SSO one
             // does not.
             $user->forceFill(['email_verified_at' => now()])->save();
-
-            $this->createTeam->handle($user, $user->name."'s Team", isPersonal: true);
 
             $this->grantStaffAccess->handle($user);
 

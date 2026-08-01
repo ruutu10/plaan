@@ -45,7 +45,7 @@ class StaffProvisioningTest extends TestCase
     {
         Notification::fake();
 
-        $theatre = Team::factory()->create(['name' => 'Ruutu10', 'is_personal' => false]);
+        $theatre = Team::factory()->create(['name' => 'Ruutu10']);
 
         $this->post(route('register.store'), [
             'name' => 'Mari Maasikas',
@@ -66,7 +66,7 @@ class StaffProvisioningTest extends TestCase
 
     public function test_following_the_verification_link_takes_a_house_address_into_the_theatre_team(): void
     {
-        $theatre = Team::factory()->create(['name' => 'Ruutu10', 'is_personal' => false]);
+        $theatre = Team::factory()->create(['name' => 'Ruutu10']);
 
         $this->post(route('register.store'), [
             'name' => 'Mari Maasikas',
@@ -86,13 +86,14 @@ class StaffProvisioningTest extends TestCase
         $this->assertTrue($user->can(TechnicalPlan::VIEW_ALL_PERMISSION));
         $this->assertSame(TeamRole::Member, $user->teamRole($theatre));
 
-        // Their own team is still where they land — the house team is extra.
-        $this->assertTrue($user->currentTeam->is_personal);
+        // A fresh registration has no team of its own, so the house team is
+        // where they land.
+        $this->assertTrue($user->currentTeam->is($theatre));
     }
 
     public function test_verifying_an_address_from_another_domain_grants_nothing(): void
     {
-        $theatre = Team::factory()->create(['name' => 'Ruutu10', 'is_personal' => false]);
+        $theatre = Team::factory()->create(['name' => 'Ruutu10']);
 
         $this->post(route('register.store'), [
             'name' => 'Väline Kasutaja',
@@ -115,7 +116,7 @@ class StaffProvisioningTest extends TestCase
 
     public function test_an_sso_login_with_a_house_address_provisions_a_staff_account_at_once(): void
     {
-        $theatre = Team::factory()->create(['name' => 'Ruutu10', 'is_personal' => false]);
+        $theatre = Team::factory()->create(['name' => 'Ruutu10']);
 
         Socialite::fake('authentik', SocialiteUser::fake([
             'id' => 'authentik-subject-staff',
@@ -132,7 +133,7 @@ class StaffProvisioningTest extends TestCase
         $this->assertTrue($user->hasVerifiedEmail());
         $this->assertTrue($user->hasRole(GrantStaffAccess::ROLE));
         $this->assertSame(TeamRole::Member, $user->teamRole($theatre));
-        $this->assertTrue($user->currentTeam->is_personal);
+        $this->assertTrue($user->currentTeam->is($theatre));
     }
 
     public function test_an_sso_login_from_another_domain_provisions_an_ordinary_account(): void
@@ -149,13 +150,14 @@ class StaffProvisioningTest extends TestCase
 
         $this->assertFalse($user->hasRole(GrantStaffAccess::ROLE));
         $this->assertSame(0, Team::where('name', 'Ruutu10')->count());
+        $this->assertNull($user->fresh()->current_team_id);
     }
 
     public function test_a_magic_link_account_with_a_house_address_becomes_staff_once_the_link_is_followed(): void
     {
         Notification::fake();
 
-        $theatre = Team::factory()->create(['name' => 'Ruutu10', 'is_personal' => false]);
+        $theatre = Team::factory()->create(['name' => 'Ruutu10']);
 
         $this->postJson(route('technical-plan.login'), [
             'email' => 'Uus@Ruutu10.ee',
@@ -203,7 +205,7 @@ class StaffProvisioningTest extends TestCase
 
     public function test_an_unverified_house_address_is_refused_outright(): void
     {
-        Team::factory()->create(['name' => 'Ruutu10', 'is_personal' => false]);
+        Team::factory()->create(['name' => 'Ruutu10']);
 
         $user = User::factory()->unverified()->create(['email' => 'ando@ruutu10.ee']);
 
@@ -215,7 +217,7 @@ class StaffProvisioningTest extends TestCase
     {
         Notification::fake();
 
-        $theatre = Team::factory()->create(['name' => 'Ruutu10', 'is_personal' => false]);
+        $theatre = Team::factory()->create(['name' => 'Ruutu10']);
         $user = User::factory()->create(['email' => 'ando@ruutu10.ee']);
 
         $this->postJson(route('technical-plan.login'), [
@@ -234,14 +236,13 @@ class StaffProvisioningTest extends TestCase
 
         $theatre = Team::where('name', 'Ruutu10')->firstOrFail();
 
-        $this->assertFalse($theatre->is_personal);
         $this->assertSame('ruutu10', $theatre->slug);
         $this->assertSame(TeamRole::Member, $user->fresh()->teamRole($theatre));
     }
 
     public function test_granting_twice_leaves_a_single_membership_and_a_single_role(): void
     {
-        $theatre = Team::factory()->create(['name' => 'Ruutu10', 'is_personal' => false]);
+        $theatre = Team::factory()->create(['name' => 'Ruutu10']);
         $user = User::factory()->create(['email' => 'ando@ruutu10.ee']);
 
         $grant = app(GrantStaffAccess::class);
