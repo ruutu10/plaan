@@ -7,6 +7,7 @@ import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit as editProfile } from '@/routes/profile';
+import { show as showRoles } from '@/routes/roles';
 import { edit as editSecurity } from '@/routes/security';
 import { index as teams } from '@/routes/teams';
 import type { NavItem } from '@/types';
@@ -23,6 +24,10 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Tiimid',
         href: teams(),
+    },
+    {
+        title: 'Rollid ja õigused',
+        href: showRoles(),
     },
     {
         title: 'Välimus',

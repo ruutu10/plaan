@@ -14,7 +14,7 @@ Schedule::command('attachments:prune-stale')
     ->weekly()
     ->description('Delete staged uploads never attached to a model');
 
-Schedule::command('planka:import-performances')
+Schedule::command('planka:import')
     ->weekly()
     ->description('Import new shows and performances from the Planka board');
 
