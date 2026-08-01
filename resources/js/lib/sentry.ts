@@ -27,6 +27,23 @@ export function initializeSentry(): void {
             // Inertia navigates with the History API, which this instruments out of the box...
             Sentry.browserTracingIntegration(),
             Sentry.replayIntegration(),
+            Sentry.feedbackIntegration({
+                colorScheme: "system",
+                showBranding: false,
+                triggerLabel: "Teata veast",
+                formTitle: "Teata veast",
+                submitButtonLabel: "Saada",
+                cancelButtonLabel: "Sulge",
+                confirmButtonLabel: "Kinnita",
+                addScreenshotButtonLabel: "Lisa ekraanipilt",
+                removeScreenshotButtonLabel: "Eemalda ekraanipilt",
+                nameLabel: "Sinu nimi",
+                namePlaceholder: "",
+                messageLabel: "Vea kirjeldus",
+                messagePlaceholder: "Mis juhtus? Kuidas süsteem oleks pidanud käituma? Kuidas viga testimiseks korrata?",
+                showEmail: false,
+                successMessageText: "Edastatud tehnikatiimile"
+            }),
         ],
         tracesSampleRate: sampleRate(
             import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE,

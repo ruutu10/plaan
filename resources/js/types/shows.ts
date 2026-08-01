@@ -14,10 +14,11 @@ export interface Show {
      */
     canEdit: boolean;
     /**
-     * The reading of the Planka card that made this show, for a user who may
-     * see it. Null for a show entered by hand, and for everyone else.
+     * How many readings of Planka cards stand behind this show — one per card
+     * that made it or added a night to it. Zero for a show entered by hand, and
+     * for a user who may not read them.
      */
-    reasoningLogId: number | null;
+    reasoningLogCount: number;
     /** The card on the Planka board this show was announced on. */
     plankaCardId: string | null;
     /** That card on the board, ready to open. Null when none is configured. */
@@ -86,10 +87,11 @@ export interface Performance {
     /** Plans written for this performance; they outlive it, without a performance. */
     technicalPlanCount: number | null;
     /**
-     * The reading of the Planka card that registered this performance, for a
-     * user who may see it. Null for one entered by hand, and for everyone else.
+     * Whether the reading of the Planka card that registered this performance
+     * can be read: one card, so never more than one. Zero for a performance
+     * entered by hand, and for a user who may not read it.
      */
-    reasoningLogId: number | null;
+    reasoningLogCount: number;
     /** The card on the Planka board this performance was announced on. */
     plankaCardId: string | null;
     /** That card on the board, ready to open. Null when none is configured. */

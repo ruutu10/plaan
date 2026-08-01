@@ -12,29 +12,22 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
  * the reasoning behind a wrong name or a wrong hour can be read from the screen
  * that shows it.
  *
- * The relation is a to-many because the link table is polymorphic and shared,
- * but a unique key holds it to one: {@see reasoningLog()} is how it is read.
+ * A performance is read off one card and has one account of itself. A show may
+ * have many: an Õppelava is created by the first card that announces one and
+ * gathers a night from every card after it, each read on its own.
  *
  * @mixin Model
  */
 trait HasClaudeReasoningLog
 {
     /**
-     * The reading that produced this record, as a relation — the form the
-     * eager loading in the listing controllers needs.
+     * The readings this record came out of, newest last — the order the pivot
+     * gives them, which the screens re-sort for themselves.
      *
      * @return MorphToMany<ClaudeReasoningLog, $this>
      */
     public function reasoningLogs(): MorphToMany
     {
         return $this->morphToMany(ClaudeReasoningLog::class, 'subject', 'claude_reasoning_log_subjects');
-    }
-
-    /**
-     * The reading that produced this record, or null for one entered by hand.
-     */
-    public function reasoningLog(): ?ClaudeReasoningLog
-    {
-        return $this->reasoningLogs->first();
     }
 }

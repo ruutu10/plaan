@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { UrlMethodPair } from '@inertiajs/core';
 import { Head, useHttp } from '@inertiajs/vue3';
 import { ExternalLink, Pencil, Plus, Sparkles, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
@@ -10,7 +11,10 @@ import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { useResource } from '@/composables/useResource';
-import { index as showsApi } from '@/routes/api/shows';
+import {
+    claudeLogs as reasoningLogsApi,
+    index as showsApi,
+} from '@/routes/api/shows';
 import { edit, index } from '@/routes/shows';
 import type { Show, ShowTeamOption } from '@/types';
 
@@ -19,8 +23,8 @@ const createOpen = ref(false);
 const deleteOpen = ref(false);
 /** The show the delete dialog is asking about. */
 const showToDelete = ref<Show | null>(null);
-/** The reading the log dialog is showing; null until a button is pressed. */
-const chosenLogId = ref<number | null>(null);
+/** Where the log dialog reads from; null until a button is pressed. */
+const chosenLogSource = ref<UrlMethodPair | null>(null);
 const logOpen = ref(false);
 
 const http = useHttp();
@@ -56,8 +60,8 @@ function openDelete(show: Show): void {
     deleteOpen.value = true;
 }
 
-function openReasoningLog(logId: number): void {
-    chosenLogId.value = logId;
+function openReasoningLog(show: Show): void {
+    chosenLogSource.value = reasoningLogsApi(show.id);
     logOpen.value = true;
 }
 </script>
@@ -146,15 +150,15 @@ function openReasoningLog(logId: number): void {
                             <span class="sr-only">Planka kaart</span>
                         </a>
 
-                        <!-- Only shown to a user the server told there is a
-                             reading to read; everyone else is sent null. -->
+                        <!-- Only shown to a user the server told there is
+                             something to read; everyone else is sent zero. -->
                         <button
-                            v-if="show.reasoningLogId !== null"
+                            v-if="show.reasoningLogCount > 0"
                             type="button"
                             title="Vaata impordi põhjendusi"
                             data-test="show-reasoning-log-button"
                             class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-grey-200 bg-white p-2 text-r10-grey-500 transition hover:border-r10-navy hover:text-r10-navy"
-                            @click="openReasoningLog(show.reasoningLogId)"
+                            @click="openReasoningLog(show)"
                         >
                             <Sparkles class="h-3.5 w-3.5" />
                             <span class="sr-only">Põhjendused</span>
@@ -188,6 +192,9 @@ function openReasoningLog(logId: number): void {
             @deleted="reloadShows"
         />
 
-        <ClaudeReasoningLogModal v-model:open="logOpen" :log-id="chosenLogId" />
+        <ClaudeReasoningLogModal
+            v-model:open="logOpen"
+            :source="chosenLogSource"
+        />
     </R10Page>
 </template>

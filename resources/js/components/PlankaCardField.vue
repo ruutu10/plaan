@@ -28,7 +28,7 @@ const cardId = defineModel<string>({ required: true });
         <R10Input
             v-model="cardId"
             label="Planka kaardi ID"
-            hint="Kaart, mille pealt see kirje imporditi. Impordi täidab ise; käsitsi lisatud kirjel võib tühjaks jääda."
+            hint="Planka kaardi number, mille pealt see kirje imporditi. Automaatne import täidab selle ise; käsitsi sisestatud kirjel võib välja tühjaks jätta."
             placeholder="Nt 1234567890123456789"
             data-test="planka-card-input"
             :disabled="disabled"

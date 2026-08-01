@@ -382,7 +382,50 @@ class ImportPlankaPerformancesTest extends TestCase
             Performance::query()->orderBy('id')->pluck('id')->all(),
             $log->performances->pluck('id')->sort()->values()->all(),
         );
-        $this->assertSame($log->id, $show->reasoningLog()?->id);
+        $this->assertSame([$log->id], $show->reasoningLogs->pluck('id')->all());
+    }
+
+    public function test_a_show_built_card_by_card_keeps_every_cards_reasoning(): void
+    {
+        // The Õppelava case: one show, a night from each of two cards. The show
+        // is created by the first and only added to by the second, and both
+        // readings have to survive — the one that explains a wrong date is
+        // rarely the one the show was created with.
+        $this->fakeBoard([
+            $this->card('card-1', 'Õppelava 9.10'),
+            $this->card('card-2', 'TLN õppelava 15.11'),
+        ]);
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')->andReturn(
+                [$this->night('Õppelava', '2025-10-09')],
+                [$this->night('Õppelava', '2025-11-15')],
+            );
+            $mock->shouldReceive('reasoningNotes')->andReturn(
+                ['Kuupäev real "Toimumise kuupäev: 9.10.2025".'],
+                ['Kuupäev real "Toimumise kuupäev: 15.11.2025".'],
+            );
+        });
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $show = Show::sole();
+
+        $this->assertDatabaseCount('claude_reasoning_logs', 2);
+        $this->assertSame(
+            ['Õppelava 9.10', 'TLN õppelava 15.11'],
+            $show->reasoningLogs()->orderBy('claude_reasoning_logs.id')->pluck('card_name')->all(),
+        );
+
+        // Each night still explains only itself.
+        $this->assertSame(
+            ['Õppelava 9.10', 'TLN õppelava 15.11'],
+            Performance::query()
+                ->orderBy('date')
+                ->get()
+                ->map(fn (Performance $performance): ?string => $performance->reasoningLogs->first()?->card_name)
+                ->all(),
+        );
     }
 
     public function test_a_second_reading_of_the_same_card_explains_only_what_it_added(): void
@@ -404,8 +447,9 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->artisan('planka:import')->assertSuccessful();
         $this->artisan('planka:import')->assertSuccessful();
 
-        // The second run created nothing, so it wrote no account of anything:
-        // the show keeps the reading it was made with.
+        // The second run created nothing, so it wrote no account of anything.
+        // This is what keeps a show from gathering another reading every week
+        // now that a card which adds a night explains the show as well.
         $this->assertDatabaseCount('claude_reasoning_logs', 1);
         $this->assertDatabaseCount('claude_reasoning_log_subjects', 2);
     }
@@ -425,7 +469,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertDatabaseCount('claude_reasoning_logs', 0);
-        $this->assertNull(Show::sole()->reasoningLog());
+        $this->assertCount(0, Show::sole()->reasoningLogs);
     }
 
     public function test_a_dry_run_keeps_no_reasoning_either(): void

@@ -31,6 +31,7 @@ Vastus on massiiv `shows`, kus **iga element on üks lavastus ühel kuupäeval**
 - `Tõnis ilma Tanelita külalisega (30min)` → `Tõnis ilma Tanelita külalisega`
 
 Kui õhtul on **ainult üks** etteaste ja lavastuse nimi juba ütleb, kes esineb, kasuta `title` väärtuseks `null`. Mitme etteastega õhtul on `title` alati täidetud — muidu pole etteasteid võimalik üksteisest eristada.
+Moodulite lõpuetenduste puhul võib kaart kirjeldada esinejaid stiilis "<juhendaja> I moodul" (ainult üks etteaste) või "<juhendaja> Rauno I ja II moodul" (kaks etteastet, mõlemad moodulid on eraldi etteasted)
 
 ## Kuupäev, algusaeg ja kestus
 

@@ -346,7 +346,13 @@ class ImportPlankaPerformances extends Command
             'is_draft' => true,
         ]);
 
-        $this->logForCard($dryRun)?->link($created);
+        // The card explains the act, and — because a show like Õppelava is
+        // built a night at a time by card after card — the show it went on too.
+        // A run that creates nothing writes no reading at all, so a card read
+        // again next week does not explain the same show a second time.
+        $log = $this->logForCard($dryRun);
+        $log?->link($created);
+        $log?->link($show);
 
         Log::info('Registered a performance from a Planka card', [
             'performance_id' => $created->id,

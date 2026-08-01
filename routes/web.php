@@ -88,6 +88,13 @@ Route::prefix('api/shows')
         Route::patch('{show}', [ShowController::class, 'update'])->name('update');
         Route::delete('{show}', [ShowController::class, 'destroy'])->name('destroy');
 
+        // What the AI made of the cards this show was built from. A debugging
+        // aid for the house's own people, so the permission alone governs it —
+        // the listings decide which shows a user is offered it on.
+        Route::get('{show}/claude-logs', [ClaudeReasoningLogController::class, 'forShow'])
+            ->middleware('can:'.ClaudeReasoningLog::VIEW_PERMISSION)
+            ->name('claude-logs');
+
         // A show's dated performances. Scoped bindings tie the performance to the show
         // in the URL, so one show's id can never reach another's performance.
         Route::prefix('{show}/performances')
@@ -98,14 +105,12 @@ Route::prefix('api/shows')
                 Route::post('/', [PerformanceController::class, 'store'])->name('store');
                 Route::patch('{performance}', [PerformanceController::class, 'update'])->name('update');
                 Route::delete('{performance}', [PerformanceController::class, 'destroy'])->name('destroy');
+
+                Route::get('{performance}/claude-logs', [ClaudeReasoningLogController::class, 'forPerformance'])
+                    ->middleware('can:'.ClaudeReasoningLog::VIEW_PERMISSION)
+                    ->name('claude-logs');
             });
     });
-
-// What the AI made of the Planka card an imported record came from. Read from
-// the management screens, which only offer the button to the same holders.
-Route::get('api/claude-logs/{log}', ClaudeReasoningLogController::class)
-    ->middleware(['auth', 'verified', 'throttle:200,1', 'can:'.ClaudeReasoningLog::VIEW_PERMISSION])
-    ->name('api.claude-logs.show');
 
 // Inertia-rendered team-management pages, shells like the show ones above.
 // These are the admin's view of the groups themselves; a user's own team

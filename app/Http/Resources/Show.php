@@ -28,7 +28,7 @@ class Show extends JsonResource
      *     teamName: string|null,
      *     performanceCount: int|null,
      *     canEdit: bool,
-     *     reasoningLogId: int|null,
+     *     reasoningLogCount: int,
      *     plankaCardId: string|null,
      *     plankaCardUrl: string|null,
      * }
@@ -49,12 +49,12 @@ class Show extends JsonResource
             // that only plays an act on the evening reaches the show to correct
             // its own slot, and finds the rest read-only.
             'canEdit' => Gate::allows('update', $show),
-            // How the import came to make this show, for whoever may read it —
-            // and null for everyone else, so the screen never offers a button
-            // the API would refuse.
-            'reasoningLogId' => $request->user()?->can(ClaudeReasoningLog::VIEW_PERMISSION)
-                ? $show->reasoningLog()?->id
-                : null,
+            // How many readings stand behind this show — one per card that made
+            // it or added a night to it. Zero for everyone who may not read
+            // them, so the screen never offers a button the API would refuse.
+            'reasoningLogCount' => $request->user()?->can(ClaudeReasoningLog::VIEW_PERMISSION)
+                ? $show->reasoningLogs->count()
+                : 0,
             // The card on the board, as a field to correct and as a link to
             // follow. The link is empty when no board is configured.
             'plankaCardId' => $show->planka_card_id,

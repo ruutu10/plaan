@@ -32,7 +32,7 @@ class Performance extends JsonResource
      *     duration: int|null,
      *     isDraft: bool,
      *     technicalPlanCount: int|null,
-     *     reasoningLogId: int|null,
+     *     reasoningLogCount: int,
      *     plankaCardId: string|null,
      *     plankaCardUrl: string|null,
      * }
@@ -58,12 +58,13 @@ class Performance extends JsonResource
             // Deleting a performance leaves the plans written for it behind without
             // one, so the screen warns before that happens.
             'technicalPlanCount' => $performance->technical_plans_count,
-            // How the import came to register this performance, for whoever may
-            // read it — and null for everyone else, so the screen never offers a
-            // button the API would refuse.
-            'reasoningLogId' => $request->user()?->can(ClaudeReasoningLog::VIEW_PERMISSION)
-                ? $performance->reasoningLog()?->id
-                : null,
+            // Whether the import's account of this performance can be read, for
+            // whoever may read it — and zero for everyone else, so the screen
+            // never offers a button the API would refuse. One card, so never
+            // more than one.
+            'reasoningLogCount' => $request->user()?->can(ClaudeReasoningLog::VIEW_PERMISSION)
+                ? $performance->reasoningLogs->count()
+                : 0,
             // The card on the board, as a field to correct and as a link to
             // follow. The link is empty when no board is configured.
             'plankaCardId' => $performance->planka_card_id,

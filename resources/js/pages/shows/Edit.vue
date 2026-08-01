@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { UrlMethodPair } from '@inertiajs/core';
 import { Head, useHttp } from '@inertiajs/vue3';
 import {
     ExternalLink,
@@ -25,7 +26,10 @@ import { useResource } from '@/composables/useResource';
 import { useTrailingCrumb } from '@/composables/useTrailingCrumb';
 import { formatEstonianDate } from '@/lib/date';
 import { show as showApi, update } from '@/routes/api/shows';
-import { index as performancesApi } from '@/routes/api/shows/performances';
+import {
+    claudeLogs as reasoningLogsApi,
+    index as performancesApi,
+} from '@/routes/api/shows/performances';
 import { edit, index } from '@/routes/shows';
 import type { Performance, Show, ShowFormData, ShowTeamOption } from '@/types';
 
@@ -46,8 +50,8 @@ const performanceModalOpen = ref(false);
 const deleteModalOpen = ref(false);
 /** The performance a modal is working on; null in the add-a-performance case. */
 const chosenPerformance = ref<Performance | null>(null);
-/** The reading the log dialog is showing; null until a button is pressed. */
-const chosenLogId = ref<number | null>(null);
+/** Where the log dialog reads from; null until a button is pressed. */
+const chosenLogSource = ref<UrlMethodPair | null>(null);
 const logOpen = ref(false);
 
 const loader = useHttp();
@@ -127,8 +131,8 @@ function openDeletePerformance(performance: Performance): void {
     deleteModalOpen.value = true;
 }
 
-function openReasoningLog(logId: number): void {
-    chosenLogId.value = logId;
+function openReasoningLog(performance: Performance): void {
+    chosenLogSource.value = reasoningLogsApi([props.showId, performance.id]);
     logOpen.value = true;
 }
 
@@ -331,17 +335,15 @@ async function save(): Promise<void> {
                                 <span class="sr-only">Planka kaart</span>
                             </a>
 
-                            <!-- Only shown to a user the server told there is a
-                                 reading to read; everyone else is sent null. -->
+                            <!-- Only shown to a user the server told there is
+                                 something to read; everyone else is sent zero. -->
                             <button
-                                v-if="performance.reasoningLogId !== null"
+                                v-if="performance.reasoningLogCount > 0"
                                 type="button"
                                 title="Vaata impordi põhjendusi"
                                 data-test="performance-reasoning-log-button"
                                 class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-grey-200 bg-white p-2 text-r10-grey-500 transition hover:border-r10-navy hover:text-r10-navy"
-                                @click="
-                                    openReasoningLog(performance.reasoningLogId)
-                                "
+                                @click="openReasoningLog(performance)"
                             >
                                 <Sparkles class="h-3.5 w-3.5" />
                                 <span class="sr-only">Põhjendused</span>
@@ -389,6 +391,9 @@ async function save(): Promise<void> {
             @deleted="reloadPerformances"
         />
 
-        <ClaudeReasoningLogModal v-model:open="logOpen" :log-id="chosenLogId" />
+        <ClaudeReasoningLogModal
+            v-model:open="logOpen"
+            :source="chosenLogSource"
+        />
     </R10Page>
 </template>
