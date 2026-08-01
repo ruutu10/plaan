@@ -44,11 +44,12 @@ class PlankaPerformanceExtractor
      * Read every night the card describes. Entries the model returns without a
      * usable name or date are dropped rather than guessed at.
      *
+     * @param  list<string>  $labels  The board labels the card carries.
      * @return list<ImportedNight>
      */
-    public function extract(string $cardName, string $cardDescription, ?string $dueDate = null): array
+    public function extract(string $cardName, string $cardDescription, ?string $dueDate = null, array $labels = []): array
     {
-        $userPrompt = $this->buildUserPrompt($cardName, $cardDescription, $dueDate);
+        $userPrompt = $this->buildUserPrompt($cardName, $cardDescription, $dueDate, $labels);
 
         // Whatever the last card was reasoned to, it is not this one's.
         $this->reasoningNotes = [];
@@ -367,8 +368,15 @@ class PlankaPerformanceExtractor
      * written on the board as a bare day and month. The groups are listed here
      * rather than in the system prompt because they are the app's own, and
      * change as groups come and go.
+     *
+     * The board's own labels come along too. They are how the producers say
+     * what a card is — an etendus, a workshop, a rented evening — in one word
+     * they have already agreed on, and a card whose description is thin is
+     * often only readable through them.
+     *
+     * @param  list<string>  $labels
      */
-    protected function buildUserPrompt(string $cardName, string $cardDescription, ?string $dueDate): string
+    protected function buildUserPrompt(string $cardName, string $cardDescription, ?string $dueDate, array $labels = []): string
     {
         $due = $dueDate === null
             ? 'puudub'
@@ -380,8 +388,13 @@ class PlankaPerformanceExtractor
                 ->map(fn (string $name, int $id): string => "- {$id} — {$name}")
                 ->implode("\n");
 
+        $cardLabels = $labels === []
+            ? 'Sildid puuduvad.'
+            : collect($labels)->map(fn (string $label): string => "- {$label}")->implode("\n");
+
         return "# Registreeritud tiimid\n\n{$teams}\n\n# Kaardi pealkiri\n\n{$cardName}"
-            ."\n\n# Planka tähtaeg\n\n{$due}\n\n# Kaardi kirjeldus\n\n{$cardDescription}";
+            ."\n\n# Planka tähtaeg\n\n{$due}\n\n# Kaardi sildid\n\n{$cardLabels}"
+            ."\n\n# Kaardi kirjeldus\n\n{$cardDescription}";
     }
 
     /**

@@ -165,7 +165,15 @@ class ImportPlankaPerformances extends Command
         }
 
         try {
-            $nights = $this->extractor->extract($card['name'], $card['description'], $card['dueDate']);
+            $nights = $this->extractor->extract(
+                $card['name'],
+                $card['description'],
+                $card['dueDate'],
+                // The board's labels say what kind of evening this is in the
+                // producers' own shorthand; the ones that rule a card out have
+                // already been dealt with above.
+                $card['labels'],
+            );
         } catch (Throwable $e) {
             // One unreadable card must not cost us the rest of the season.
             $this->warn("Could not read the card \"{$card['name']}\": {$e->getMessage()}");

@@ -223,6 +223,33 @@ class PlankaPerformanceExtractorTest extends TestCase
         $this->assertContains('team_id', $shows['items']['properties']['performances']['items']['required']);
     }
 
+    public function test_the_cards_own_labels_reach_the_model(): void
+    {
+        $this->extractorAnswering('{"shows": []}')->extract(
+            '13.09 õhtu',
+            'Kaardi tekst',
+            null,
+            ['ETENDUS', 'FESTIVAL'],
+        );
+
+        $prompt = $this->sentBodies[0]['messages'][0]['content'];
+
+        $this->assertStringContainsString('# Kaardi sildid', $prompt);
+        $this->assertStringContainsString('- ETENDUS', $prompt);
+        $this->assertStringContainsString('- FESTIVAL', $prompt);
+        // And the system prompt says what they are, or they are just words.
+        $this->assertStringContainsString('Sildid', $this->sentBodies[0]['system']);
+    }
+
+    public function test_a_card_carrying_no_labels_says_so(): void
+    {
+        $this->extractorAnswering('{"shows": []}')->extract('13.09 õhtu', 'Kaardi tekst');
+
+        // Said outright rather than left as an empty heading: an empty section
+        // reads as a card whose labels went missing on the way here.
+        $this->assertStringContainsString('Sildid puuduvad.', $this->sentBodies[0]['messages'][0]['content']);
+    }
+
     public function test_it_says_so_when_there_are_no_groups_to_hand_a_show_to(): void
     {
         $this->extractorAnswering('{"shows": []}')->extract('13.09 õhtu', 'Kaardi tekst');

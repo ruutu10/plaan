@@ -963,7 +963,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
             $mock->shouldReceive('extract')
                 ->once()
-                ->with('13.09 õhtu', \Mockery::any(), \Mockery::any())
+                ->with('13.09 õhtu', \Mockery::any(), \Mockery::any(), ['ETENDUS'])
                 ->andReturn([$this->night('Trupp 1')]);
             $mock->shouldReceive('reasoningNotes')->andReturn([]);
         });
@@ -1056,12 +1056,14 @@ class ImportPlankaPerformancesTest extends TestCase
 
     public function test_it_hands_the_card_to_the_ai_whole(): void
     {
-        $this->fakeBoard([$this->card()]);
+        $this->fakeBoard([$this->card(labelIds: ['label-etendus'])]);
 
         $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
             $mock->shouldReceive('extract')
                 ->once()
-                ->with('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025', '2025-09-13T15:00:00.000Z')
+                // The board's labels included: they are the producers' own word
+                // for what kind of evening the card is describing.
+                ->with('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025', '2025-09-13T15:00:00.000Z', ['ETENDUS'])
                 ->andReturn([]);
             $mock->shouldReceive('reasoningNotes')->andReturn([]);
         });
