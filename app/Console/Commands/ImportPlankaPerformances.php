@@ -6,6 +6,7 @@ use App\Data\ImportedNight;
 use App\Data\ImportedPerformance;
 use App\Data\ImportSummary;
 use App\Enums\ImportedShowStatus;
+use App\Models\ClaudeReasoningLog;
 use App\Models\Performance;
 use App\Models\Show;
 use App\Models\Team;
@@ -58,6 +59,20 @@ class ImportPlankaPerformances extends Command
      * @var array<string, true>
      */
     protected array $plannedShows = [];
+
+    /**
+     * The card in hand, as Planka names it. Kept so the reasoning written for
+     * the records it produces can be taken back to the board it came from.
+     */
+    protected ?string $cardId = null;
+
+    protected ?string $cardName = null;
+
+    /**
+     * The kept reasoning for the card in hand, once something has been created
+     * to hang it on. See {@see logForCard()}.
+     */
+    protected ?ClaudeReasoningLog $cardLog = null;
 
     public function __construct(
         protected PlankaClient $planka,
@@ -162,11 +177,64 @@ class ImportPlankaPerformances extends Command
             return;
         }
 
+        // Whatever is created from here on was created by this reading of this
+        // card, and the reasoning kept for it is this card's.
+        $this->cardId = $card['id'];
+        $this->cardName = $card['name'];
+        $this->cardLog = null;
+
+        $this->reportReasoning($card['name']);
+
         foreach ($nights as $night) {
             if ($summary->isNew($night)) {
                 $this->importNight($night, $summary, $dryRun);
             }
         }
+    }
+
+    /**
+     * Say how the AI read the card, before saying what came of it. A card that
+     * imports nothing, or imports the wrong thing, is otherwise a silent
+     * decision — this is the only place the reasoning behind it is visible
+     * without going to the log.
+     */
+    protected function reportReasoning(string $cardName): void
+    {
+        $notes = $this->extractor->reasoningNotes();
+
+        if ($notes === []) {
+            return;
+        }
+
+        $this->line("  Read \"{$cardName}\" as follows:");
+
+        foreach ($notes as $note) {
+            $this->line("    - {$note}");
+        }
+    }
+
+    /**
+     * The kept reasoning for the card in hand, made on demand and made once.
+     *
+     * A card that reads to nothing writes no row: there would be no record to
+     * reach it from, and the console and the log have already said what the
+     * model made of it. For the same reason only the records this run *creates*
+     * are linked — a night added to a show the house already had explains the
+     * night, not the show, and the show keeps whatever account it was made with.
+     */
+    protected function logForCard(bool $dryRun): ?ClaudeReasoningLog
+    {
+        $notes = $this->extractor->reasoningNotes();
+
+        if ($dryRun || $notes === []) {
+            return null;
+        }
+
+        return $this->cardLog ??= ClaudeReasoningLog::create([
+            'card_id' => $this->cardId,
+            'card_name' => $this->cardName,
+            'notes' => $notes,
+        ]);
     }
 
     /**
@@ -264,10 +332,13 @@ class ImportPlankaPerformances extends Command
             // is playing, and its own group is who that is.
             'title' => $act->title,
             'team_id' => $act->teamId,
+            'planka_card_id' => $this->cardId,
             // What a card announces is a claim, not a booking: it waits as a
             // draft until an admin has looked it over.
             'is_draft' => true,
         ]);
+
+        $this->logForCard($dryRun)?->link($created);
 
         Log::info('Registered a performance from a Planka card', [
             'performance_id' => $created->id,
@@ -370,9 +441,17 @@ class ImportPlankaPerformances extends Command
             // Nothing is written, so there would be no row to find next time.
             $this->plannedShows[$key] = true;
         } else {
-            $show = Show::create(['name' => $name, 'team_id' => $teamId]);
+            $show = Show::create([
+                'name' => $name,
+                'team_id' => $teamId,
+                // The card the show was announced on, so the board is one link
+                // away from the screen the show is corrected on.
+                'planka_card_id' => $this->cardId,
+            ]);
 
             $this->shows[$key] = $show;
+
+            $this->logForCard($dryRun)?->link($show);
 
             Log::info('Created a show from a Planka card', [
                 'show_id' => $show->id,

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Head, useHttp } from '@inertiajs/vue3';
-import { Pencil, Plus, Trash2 } from '@lucide/vue';
+import { ExternalLink, Pencil, Plus, Sparkles, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
+import ClaudeReasoningLogModal from '@/components/ClaudeReasoningLogModal.vue';
 import CreateShowModal from '@/components/CreateShowModal.vue';
 import DeleteShowModal from '@/components/DeleteShowModal.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
@@ -18,6 +19,9 @@ const createOpen = ref(false);
 const deleteOpen = ref(false);
 /** The show the delete dialog is asking about. */
 const showToDelete = ref<Show | null>(null);
+/** The reading the log dialog is showing; null until a button is pressed. */
+const chosenLogId = ref<number | null>(null);
+const logOpen = ref(false);
 
 const http = useHttp();
 
@@ -50,6 +54,11 @@ defineOptions({
 function openDelete(show: Show): void {
     showToDelete.value = show;
     deleteOpen.value = true;
+}
+
+function openReasoningLog(logId: number): void {
+    chosenLogId.value = logId;
+    logOpen.value = true;
 }
 </script>
 
@@ -124,6 +133,33 @@ function openDelete(show: Show): void {
                             <Pencil class="h-3.5 w-3.5" />
                         </R10Button>
 
+                        <a
+                            v-if="show.plankaCardUrl"
+                            :href="show.plankaCardUrl"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Ava kaart Plankas"
+                            data-test="show-planka-card-link"
+                            class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-grey-200 bg-white p-2 text-r10-grey-500 transition hover:border-r10-navy hover:text-r10-navy"
+                        >
+                            <ExternalLink class="h-3.5 w-3.5" />
+                            <span class="sr-only">Planka kaart</span>
+                        </a>
+
+                        <!-- Only shown to a user the server told there is a
+                             reading to read; everyone else is sent null. -->
+                        <button
+                            v-if="show.reasoningLogId !== null"
+                            type="button"
+                            title="Vaata impordi põhjendusi"
+                            data-test="show-reasoning-log-button"
+                            class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-grey-200 bg-white p-2 text-r10-grey-500 transition hover:border-r10-navy hover:text-r10-navy"
+                            @click="openReasoningLog(show.reasoningLogId)"
+                        >
+                            <Sparkles class="h-3.5 w-3.5" />
+                            <span class="sr-only">Põhjendused</span>
+                        </button>
+
                         <button
                             v-if="show.canEdit"
                             type="button"
@@ -151,5 +187,7 @@ function openDelete(show: Show): void {
             :show="showToDelete"
             @deleted="reloadShows"
         />
+
+        <ClaudeReasoningLogModal v-model:open="logOpen" :log-id="chosenLogId" />
     </R10Page>
 </template>

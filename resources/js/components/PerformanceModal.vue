@@ -2,6 +2,7 @@
 import { useHttp } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { toast } from 'vue-sonner';
+import PlankaCardField from '@/components/PlankaCardField.vue';
 import R10FormDialog from '@/components/technical-plan/R10FormDialog.vue';
 import R10Input from '@/components/technical-plan/R10Input.vue';
 import R10Select from '@/components/technical-plan/R10Select.vue';
@@ -48,6 +49,7 @@ const form = useHttp({
     start_time: '',
     duration: '',
     is_draft: false,
+    planka_card_id: '',
 }).transform((data) => ({
     title: data.title,
     team_id: data.team_id === SHOW_S_OWN_TEAM ? null : Number(data.team_id),
@@ -55,6 +57,7 @@ const form = useHttp({
     start_time: data.start_time,
     duration: data.duration === '' ? null : Number(data.duration),
     is_draft: data.is_draft,
+    planka_card_id: data.planka_card_id,
 }));
 
 const isEditing = computed(() => props.performance !== null);
@@ -83,6 +86,7 @@ function fill(): void {
     // A performance added here is vouched for by the adding; only an imported
     // one starts out waiting to be reviewed.
     form.is_draft = props.performance?.isDraft ?? false;
+    form.planka_card_id = props.performance?.plankaCardId ?? '';
 }
 
 async function save(): Promise<void> {
@@ -162,6 +166,12 @@ async function save(): Promise<void> {
             hint="Etenduse eeldatav pikkus minutites"
             placeholder="90"
             :error="form.errors.duration"
+        />
+
+        <PlankaCardField
+            v-model="form.planka_card_id"
+            :card-url="performance?.plankaCardUrl"
+            :error="form.errors.planka_card_id"
         />
 
         <div class="flex flex-col gap-1.5">

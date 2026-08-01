@@ -13,6 +13,29 @@ export interface Show {
      * reach because one of their groups plays a performance of it.
      */
     canEdit: boolean;
+    /**
+     * The reading of the Planka card that made this show, for a user who may
+     * see it. Null for a show entered by hand, and for everyone else.
+     */
+    reasoningLogId: number | null;
+    /** The card on the Planka board this show was announced on. */
+    plankaCardId: string | null;
+    /** That card on the board, ready to open. Null when none is configured. */
+    plankaCardUrl: string | null;
+}
+
+/** What the AI made of the Planka card an imported record came from. */
+export interface ClaudeReasoningLog {
+    id: number;
+    /** The card on the board, when the reading came from one. */
+    cardId: string | null;
+    cardName: string | null;
+    /** That card on the board, ready to open. Null when none is configured. */
+    cardUrl: string | null;
+    /** One line per decision, in the model's own words. */
+    notes: string[];
+    /** When the card was read; ISO 8601. */
+    readAt: string | null;
 }
 
 /** A group the show may be handed to, as offered by the show forms. */
@@ -26,6 +49,8 @@ export interface ShowFormData {
     team_id: number | null;
     name: string;
     description: string;
+    /** Empty for a show that is not on the board at all. */
+    planka_card_id: string;
 }
 
 export type ShowFieldErrors = Partial<Record<keyof ShowFormData, string>>;
@@ -60,6 +85,15 @@ export interface Performance {
     isDraft: boolean;
     /** Plans written for this performance; they outlive it, without a performance. */
     technicalPlanCount: number | null;
+    /**
+     * The reading of the Planka card that registered this performance, for a
+     * user who may see it. Null for one entered by hand, and for everyone else.
+     */
+    reasoningLogId: number | null;
+    /** The card on the Planka board this performance was announced on. */
+    plankaCardId: string | null;
+    /** That card on the board, ready to open. Null when none is configured. */
+    plankaCardUrl: string | null;
 }
 
 /** The fields a performance is written through. */
@@ -73,6 +107,8 @@ export interface PerformanceFormData {
     start_time: string;
     duration: number | null;
     is_draft: boolean;
+    /** Empty for a performance that is not on the board at all. */
+    planka_card_id: string;
 }
 
 export type PerformanceFieldErrors = Partial<

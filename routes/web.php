@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\ClaudeReasoningLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\PerformanceController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Teams\TeamAdminPageController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Controllers\TechnicalPlanController;
 use App\Http\Middleware\EnsureTeamMembership;
+use App\Models\ClaudeReasoningLog;
 use App\Models\TechnicalPlan;
 use Illuminate\Support\Facades\Route;
 
@@ -98,6 +100,12 @@ Route::prefix('api/shows')
                 Route::delete('{performance}', [PerformanceController::class, 'destroy'])->name('destroy');
             });
     });
+
+// What the AI made of the Planka card an imported record came from. Read from
+// the management screens, which only offer the button to the same holders.
+Route::get('api/claude-logs/{log}', ClaudeReasoningLogController::class)
+    ->middleware(['auth', 'verified', 'throttle:200,1', 'can:'.ClaudeReasoningLog::VIEW_PERMISSION])
+    ->name('api.claude-logs.show');
 
 // Inertia-rendered team-management pages, shells like the show ones above.
 // These are the admin's view of the groups themselves; a user's own team

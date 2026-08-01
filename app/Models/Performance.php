@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasClaudeReasoningLog;
 use App\Concerns\ScopedByTeamAccess;
 use App\Enums\ReminderSchedule;
 use Carbon\CarbonInterface;
@@ -39,6 +40,7 @@ use Illuminate\Support\Facades\Date;
  * @property int $show_id
  * @property int|null $team_id
  * @property string|null $title
+ * @property string|null $planka_card_id
  * @property Carbon $date
  * @property int|null $duration
  * @property bool $is_draft
@@ -51,11 +53,13 @@ use Illuminate\Support\Facades\Date;
  * @property-read int|null $technical_plans_count
  * @property-read Collection<int, PerformanceReminder> $reminders
  * @property-read int|null $reminders_count
+ * @property-read Collection<int, ClaudeReasoningLog> $reasoningLogs
  */
 #[Fillable([
     'show_id',
     'team_id',
     'title',
+    'planka_card_id',
     'date',
     'duration',
     'is_draft',
@@ -63,7 +67,7 @@ use Illuminate\Support\Facades\Date;
 class Performance extends Model
 {
     /** @use HasFactory<PerformanceFactory> */
-    use HasFactory, ScopedByTeamAccess, SoftDeletes;
+    use HasClaudeReasoningLog, HasFactory, ScopedByTeamAccess, SoftDeletes;
 
     /**
      * The permission — held by the "technician" role — that opens the performances

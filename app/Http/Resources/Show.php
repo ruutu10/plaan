@@ -2,7 +2,9 @@
 
 namespace App\Http\Resources;
 
+use App\Models\ClaudeReasoningLog;
 use App\Models\Show as ShowModel;
+use App\Services\PlankaClient;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
@@ -26,6 +28,9 @@ class Show extends JsonResource
      *     teamName: string|null,
      *     performanceCount: int|null,
      *     canEdit: bool,
+     *     reasoningLogId: int|null,
+     *     plankaCardId: string|null,
+     *     plankaCardUrl: string|null,
      * }
      */
     public function toArray(Request $request): array
@@ -44,6 +49,16 @@ class Show extends JsonResource
             // that only plays an act on the evening reaches the show to correct
             // its own slot, and finds the rest read-only.
             'canEdit' => Gate::allows('update', $show),
+            // How the import came to make this show, for whoever may read it —
+            // and null for everyone else, so the screen never offers a button
+            // the API would refuse.
+            'reasoningLogId' => $request->user()?->can(ClaudeReasoningLog::VIEW_PERMISSION)
+                ? $show->reasoningLog()?->id
+                : null,
+            // The card on the board, as a field to correct and as a link to
+            // follow. The link is empty when no board is configured.
+            'plankaCardId' => $show->planka_card_id,
+            'plankaCardUrl' => PlankaClient::cardUrl($show->planka_card_id),
         ];
     }
 }

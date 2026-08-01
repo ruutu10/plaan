@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { Head, useHttp } from '@inertiajs/vue3';
-import { FileClock, Pencil, Plus, Trash2 } from '@lucide/vue';
+import {
+    ExternalLink,
+    FileClock,
+    Pencil,
+    Plus,
+    Sparkles,
+    Trash2,
+} from '@lucide/vue';
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
+import ClaudeReasoningLogModal from '@/components/ClaudeReasoningLogModal.vue';
 import DeletePerformanceModal from '@/components/DeletePerformanceModal.vue';
 import PerformanceModal from '@/components/PerformanceModal.vue';
 import ShowFormFields from '@/components/ShowFormFields.vue';
@@ -38,6 +46,9 @@ const performanceModalOpen = ref(false);
 const deleteModalOpen = ref(false);
 /** The performance a modal is working on; null in the add-a-performance case. */
 const chosenPerformance = ref<Performance | null>(null);
+/** The reading the log dialog is showing; null until a button is pressed. */
+const chosenLogId = ref<number | null>(null);
+const logOpen = ref(false);
 
 const loader = useHttp();
 const performanceLoader = useHttp();
@@ -46,6 +57,7 @@ const form = useHttp<ShowFormData>({
     team_id: null,
     name: '',
     description: '',
+    planka_card_id: '',
 });
 
 defineOptions({
@@ -78,6 +90,7 @@ const { data: show, loadFailed } = useResource(async () => {
     form.team_id = response.data.teamId;
     form.name = response.data.name;
     form.description = response.data.description ?? '';
+    form.planka_card_id = response.data.plankaCardId ?? '';
     form.defaults();
 
     nameTheTrail(response.data.name);
@@ -112,6 +125,11 @@ function openEditPerformance(performance: Performance): void {
 function openDeletePerformance(performance: Performance): void {
     chosenPerformance.value = performance;
     deleteModalOpen.value = true;
+}
+
+function openReasoningLog(logId: number): void {
+    chosenLogId.value = logId;
+    logOpen.value = true;
 }
 
 async function save(): Promise<void> {
@@ -188,9 +206,11 @@ async function save(): Promise<void> {
                 v-model:team-id="form.team_id"
                 v-model:name="form.name"
                 v-model:description="form.description"
+                v-model:planka-card-id="form.planka_card_id"
                 :teams="teams"
                 :errors="form.errors"
                 :disabled="!canEditShow"
+                :planka-card-url="show?.plankaCardUrl"
             />
 
             <div class="flex items-center justify-between gap-3">
@@ -298,6 +318,35 @@ async function save(): Promise<void> {
                     </td>
                     <td class="px-5 py-4 text-right whitespace-nowrap">
                         <div class="inline-flex items-center justify-end gap-2">
+                            <a
+                                v-if="performance.plankaCardUrl"
+                                :href="performance.plankaCardUrl"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Ava kaart Plankas"
+                                data-test="performance-planka-card-link"
+                                class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-grey-200 bg-white p-2 text-r10-grey-500 transition hover:border-r10-navy hover:text-r10-navy"
+                            >
+                                <ExternalLink class="h-3.5 w-3.5" />
+                                <span class="sr-only">Planka kaart</span>
+                            </a>
+
+                            <!-- Only shown to a user the server told there is a
+                                 reading to read; everyone else is sent null. -->
+                            <button
+                                v-if="performance.reasoningLogId !== null"
+                                type="button"
+                                title="Vaata impordi põhjendusi"
+                                data-test="performance-reasoning-log-button"
+                                class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-grey-200 bg-white p-2 text-r10-grey-500 transition hover:border-r10-navy hover:text-r10-navy"
+                                @click="
+                                    openReasoningLog(performance.reasoningLogId)
+                                "
+                            >
+                                <Sparkles class="h-3.5 w-3.5" />
+                                <span class="sr-only">Põhjendused</span>
+                            </button>
+
                             <button
                                 type="button"
                                 title="Muuda etendust"
@@ -339,5 +388,7 @@ async function save(): Promise<void> {
             :performance="chosenPerformance"
             @deleted="reloadPerformances"
         />
+
+        <ClaudeReasoningLogModal v-model:open="logOpen" :log-id="chosenLogId" />
     </R10Page>
 </template>

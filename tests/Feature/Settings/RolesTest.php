@@ -46,6 +46,7 @@ class RolesTest extends TestCase
                     __('permissions.shows.edit_all', locale: 'et'),
                     __('permissions.performances.edit_all', locale: 'et'),
                     __('permissions.teams.edit_all', locale: 'et'),
+                    __('permissions.claude.view_log', locale: 'et'),
                 ])
             );
     }
@@ -60,7 +61,10 @@ class RolesTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('settings/Roles')
                 ->where('roles', [__('roles.staff', locale: 'et')])
-                ->where('permissions', [__('permissions.technical_plans.view_all', locale: 'et')])
+                ->where('permissions', [
+                    __('permissions.technical_plans.view_all', locale: 'et'),
+                    __('permissions.claude.view_log', locale: 'et'),
+                ])
             );
     }
 

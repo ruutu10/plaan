@@ -257,6 +257,45 @@ class PerformanceManagementTest extends TestCase
         $this->assertSame(120, $performance->duration);
     }
 
+    public function test_the_planka_card_can_be_written_down_by_hand(): void
+    {
+        config()->set('services.planka.url', 'https://planka.test/');
+
+        [$user, $show] = $this->showOfOwnTeam();
+        $performance = Performance::factory()->create(['show_id' => $show->id]);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.shows.performances.update', [$show, $performance]), [
+                'date' => $performance->startDate(),
+                'planka_card_id' => '1516073411733063234',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.plankaCardId', '1516073411733063234')
+            ->assertJsonPath('data.plankaCardUrl', 'https://planka.test/cards/1516073411733063234');
+
+        $this->assertSame('1516073411733063234', $performance->fresh()?->planka_card_id);
+    }
+
+    public function test_the_planka_card_may_be_cleared(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+        $performance = Performance::factory()->create([
+            'show_id' => $show->id,
+            'planka_card_id' => '1516073411733063234',
+        ]);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.shows.performances.update', [$show, $performance]), [
+                'date' => $performance->startDate(),
+                'planka_card_id' => '',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.plankaCardId', null)
+            ->assertJsonPath('data.plankaCardUrl', null);
+
+        $this->assertNull($performance->fresh()?->planka_card_id);
+    }
+
     public function test_the_listing_says_which_performances_wait_to_be_reviewed(): void
     {
         [$user, $show] = $this->showOfOwnTeam();

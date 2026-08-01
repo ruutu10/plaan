@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Data\ImportedNight;
 use App\Data\ImportedPerformance;
+use App\Models\ClaudeReasoningLog;
 use App\Models\Performance;
 use App\Models\Show;
 use App\Models\Team;
@@ -104,10 +105,10 @@ class ImportPlankaPerformancesTest extends TestCase
      */
     private function fakeExtraction(array $nights): void
     {
-        $this->mock(
-            PlankaPerformanceExtractor::class,
-            fn (MockInterface $mock) => $mock->shouldReceive('extract')->andReturn($nights),
-        );
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) use ($nights) {
+            $mock->shouldReceive('extract')->andReturn($nights);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
     }
 
     /**
@@ -258,6 +259,195 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame(0, Performance::query()->where('title', 'like', '%Tom%')->count());
     }
 
+    public function test_the_run_says_how_the_ai_read_each_card(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
+            'shows' => [[
+                'show_name' => 'Õppelava',
+                'date' => '2025-10-09',
+                'team_id' => null,
+                'performances' => [['title' => 'Märtu10', 'start_time' => '20:00', 'duration_minutes' => 20]],
+            ]],
+            'reasoningNotes' => [
+                'Kuupäev real "Toimumise kuupäev: 9.10.2025".',
+                'Tom on heli ja valgus, seega meeskond, mitte esineja.',
+            ],
+        ])));
+
+        $this->artisan('planka:import')
+            ->expectsOutputToContain('Read "Õppelava 9.10" as follows:')
+            ->expectsOutputToContain('- Kuupäev real "Toimumise kuupäev: 9.10.2025".')
+            ->expectsOutputToContain('- Tom on heli ja valgus, seega meeskond, mitte esineja.')
+            ->assertSuccessful();
+    }
+
+    public function test_a_card_the_ai_gave_no_account_of_says_nothing_extra(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
+            'shows' => [[
+                'show_name' => 'Õppelava',
+                'date' => '2025-10-09',
+                'performances' => [['title' => 'Märtu10']],
+            ]],
+        ])));
+
+        $this->artisan('planka:import')
+            ->doesntExpectOutputToContain('as follows:')
+            ->assertSuccessful();
+    }
+
+    public function test_every_record_says_which_card_it_was_read_off(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
+            'shows' => [[
+                'show_name' => 'Õppelava',
+                'date' => '2025-10-09',
+                'team_id' => null,
+                'performances' => [['title' => 'Märtu10', 'start_time' => '20:00', 'duration_minutes' => 20]],
+            ]],
+        ])));
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame('card-1', Show::sole()->planka_card_id);
+        $this->assertSame('card-1', Performance::sole()->planka_card_id);
+    }
+
+    public function test_a_night_added_by_a_second_card_says_that_card(): void
+    {
+        $this->fakeBoard([
+            $this->card('card-1', 'Õppelava 9.10'),
+            $this->card('card-2', 'Õppelava 16.10'),
+        ]);
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')->andReturn(
+                [$this->night('Õppelava', '2025-10-09')],
+                [$this->night('Õppelava', '2025-10-16')],
+            );
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        // The show was made by the first card and is not remade by the second,
+        // so it goes on pointing at the card it was announced on — while the
+        // night the second card added points at that one.
+        $this->assertSame('card-1', Show::sole()->planka_card_id);
+        $this->assertSame(
+            ['card-1', 'card-2'],
+            Performance::query()->orderBy('date')->pluck('planka_card_id')->all(),
+        );
+    }
+
+    public function test_the_reasoning_is_kept_and_tied_to_everything_the_card_made(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
+            'shows' => [[
+                'show_name' => 'Õppelava',
+                'date' => '2025-10-09',
+                'team_id' => null,
+                'performances' => [
+                    ['title' => 'Märtu10', 'start_time' => '20:00', 'duration_minutes' => 20],
+                    ['title' => 'Mätu', 'start_time' => '20:20', 'duration_minutes' => 30],
+                ],
+            ]],
+            'reasoningNotes' => ['Kuupäev real "Toimumise kuupäev: 9.10.2025".'],
+        ])));
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        // One reading, however much the card turned out to describe.
+        $this->assertDatabaseCount('claude_reasoning_logs', 1);
+
+        $log = ClaudeReasoningLog::sole();
+
+        $this->assertSame('card-1', $log->card_id);
+        $this->assertSame('Õppelava 9.10', $log->card_name);
+        $this->assertSame(['Kuupäev real "Toimumise kuupäev: 9.10.2025".'], $log->notes);
+
+        // And everything that reading made can be traced back to it.
+        $show = Show::sole();
+
+        $this->assertSame([$show->id], $log->shows->pluck('id')->all());
+        $this->assertSame(
+            Performance::query()->orderBy('id')->pluck('id')->all(),
+            $log->performances->pluck('id')->sort()->values()->all(),
+        );
+        $this->assertSame($log->id, $show->reasoningLog()?->id);
+    }
+
+    public function test_a_second_reading_of_the_same_card_explains_only_what_it_added(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $answer = (string) json_encode([
+            'shows' => [[
+                'show_name' => 'Õppelava',
+                'date' => '2025-10-09',
+                'team_id' => null,
+                'performances' => [['title' => 'Märtu10', 'start_time' => '20:00', 'duration_minutes' => 20]],
+            ]],
+            'reasoningNotes' => ['Kuupäev real "Toimumise kuupäev: 9.10.2025".'],
+        ]);
+
+        $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering($answer));
+
+        $this->artisan('planka:import')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
+
+        // The second run created nothing, so it wrote no account of anything:
+        // the show keeps the reading it was made with.
+        $this->assertDatabaseCount('claude_reasoning_logs', 1);
+        $this->assertDatabaseCount('claude_reasoning_log_subjects', 2);
+    }
+
+    public function test_a_card_the_ai_gave_no_account_of_is_imported_without_one(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
+            'shows' => [[
+                'show_name' => 'Õppelava',
+                'date' => '2025-10-09',
+                'performances' => [['title' => 'Märtu10']],
+            ]],
+        ])));
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertDatabaseCount('claude_reasoning_logs', 0);
+        $this->assertNull(Show::sole()->reasoningLog());
+    }
+
+    public function test_a_dry_run_keeps_no_reasoning_either(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
+            'shows' => [[
+                'show_name' => 'Õppelava',
+                'date' => '2025-10-09',
+                'performances' => [['title' => 'Märtu10']],
+            ]],
+            'reasoningNotes' => ['Kuupäev real "Toimumise kuupäev: 9.10.2025".'],
+        ])));
+
+        $this->artisan('planka:import', ['--dry-run' => true])
+            ->expectsOutputToContain('Read "Õppelava 9.10" as follows:')
+            ->assertSuccessful();
+
+        $this->assertDatabaseCount('claude_reasoning_logs', 0);
+    }
+
     public function test_an_evening_several_groups_share_is_one_show_played_once(): void
     {
         $marturu = Team::factory()->create(['name' => 'Märtu10']);
@@ -364,6 +554,7 @@ class ImportPlankaPerformancesTest extends TestCase
                     $this->act('Improräpp', '20:20', 30),
                 ]),
             ]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
         });
 
         $this->artisan('planka:import')->assertSuccessful();
@@ -752,6 +943,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
             $mock->shouldReceive('extract')->once()->andThrow(new RuntimeException('AI is down'));
             $mock->shouldReceive('extract')->once()->andReturn([$this->night('Trupp 1')]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
         });
 
         $this->artisan('planka:import')
@@ -768,11 +960,13 @@ class ImportPlankaPerformancesTest extends TestCase
             $this->card('card-2', '13.09 õhtu', labelIds: ['label-etendus']),
         ]);
 
-        $this->mock(PlankaPerformanceExtractor::class, fn (MockInterface $mock) => $mock
-            ->shouldReceive('extract')
-            ->once()
-            ->with('13.09 õhtu', \Mockery::any(), \Mockery::any())
-            ->andReturn([$this->night('Trupp 1')]));
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')
+                ->once()
+                ->with('13.09 õhtu', \Mockery::any(), \Mockery::any())
+                ->andReturn([$this->night('Trupp 1')]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
 
         $this->artisan('planka:import')
             ->expectsOutputToContain('Passing over "Töötuba": labelled TÖÖTUBA.')
@@ -846,6 +1040,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
             $mock->shouldReceive('extract')->once()->andReturn([$this->night('Trupp 1', '2025-09-13')]);
             $mock->shouldReceive('extract')->once()->andReturn([$this->night('Trupp 2', '2025-10-11')]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
         });
 
         $this->artisan('planka:import')
@@ -863,11 +1058,13 @@ class ImportPlankaPerformancesTest extends TestCase
     {
         $this->fakeBoard([$this->card()]);
 
-        $this->mock(PlankaPerformanceExtractor::class, fn (MockInterface $mock) => $mock
-            ->shouldReceive('extract')
-            ->once()
-            ->with('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025', '2025-09-13T15:00:00.000Z')
-            ->andReturn([]));
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')
+                ->once()
+                ->with('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025', '2025-09-13T15:00:00.000Z')
+                ->andReturn([]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
 
         $this->artisan('planka:import')->assertSuccessful();
     }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasClaudeReasoningLog;
 use App\Concerns\ScopedByTeamAccess;
 use Database\Factories\ShowFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -25,22 +26,25 @@ use Illuminate\Support\Carbon;
  * @property int|null $team_id
  * @property string $name
  * @property string|null $description
+ * @property string|null $planka_card_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  * @property-read Team|null $team
  * @property-read Collection<int, Performance> $performances
  * @property-read int|null $performances_count
+ * @property-read Collection<int, ClaudeReasoningLog> $reasoningLogs
  */
 #[Fillable([
     'team_id',
     'name',
     'description',
+    'planka_card_id',
 ])]
 class Show extends Model
 {
     /** @use HasFactory<ShowFactory> */
-    use HasFactory, ScopedByTeamAccess, SoftDeletes;
+    use HasClaudeReasoningLog, HasFactory, ScopedByTeamAccess, SoftDeletes;
 
     /**
      * Bootstrap the model and its traits.

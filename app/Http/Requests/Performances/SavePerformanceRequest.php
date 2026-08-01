@@ -32,7 +32,7 @@ class SavePerformanceRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        foreach (['duration', 'start_time', 'title', 'team_id'] as $field) {
+        foreach (['duration', 'start_time', 'title', 'team_id', 'planka_card_id'] as $field) {
             if ($this->input($field) === '') {
                 $this->merge([$field => null]);
             }
@@ -61,6 +61,9 @@ class SavePerformanceRequest extends FormRequest
                 'integer',
                 Rule::in(Performance::assignableTeams($this->user())->modelKeys()),
             ],
+            // The card on the Planka board this performance was announced on.
+            // Filled by the import; typed in by hand for one that was not.
+            'planka_card_id' => ['nullable', 'string', 'max:255'],
             'date' => ['required', 'date_format:Y-m-d'],
             // Curtain-up on the venue's clock, as a 24-hour "19:00". Left out,
             // the performance takes the house's usual hour — see

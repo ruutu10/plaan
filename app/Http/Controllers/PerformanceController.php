@@ -37,7 +37,9 @@ class PerformanceController extends Controller
         Gate::authorize('viewAny', [Performance::class, $show]);
 
         $performances = $show->performances()
-            ->with('team')
+            // The reading that registered each performance rides along, for the
+            // same reason the shows listing carries it: one query, not one a row.
+            ->with(['team', 'reasoningLogs'])
             ->withCount('technicalPlans')
             ->orderBy('date')
             ->get();

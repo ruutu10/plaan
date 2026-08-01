@@ -25,6 +25,17 @@ class SaveShowRequest extends FormRequest
     }
 
     /**
+     * A cleared card reference arrives as an empty string from the form, and
+     * means the show is not on the board at all.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('planka_card_id') === '') {
+            $this->merge(['planka_card_id' => null]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * The owning group is held to the ones the user may assign: handing a show
@@ -39,6 +50,9 @@ class SaveShowRequest extends FormRequest
             'team_id' => ['required', 'integer', Rule::in(Show::assignableTeams($this->user())->modelKeys())],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:10000'],
+            // The card on the Planka board this show was announced on. Filled
+            // by the import; typed in by hand for a show that was not.
+            'planka_card_id' => ['nullable', 'string', 'max:255'],
         ];
     }
 

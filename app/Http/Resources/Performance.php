@@ -2,7 +2,9 @@
 
 namespace App\Http\Resources;
 
+use App\Models\ClaudeReasoningLog;
 use App\Models\Performance as PerformanceModel;
+use App\Services\PlankaClient;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -30,6 +32,9 @@ class Performance extends JsonResource
      *     duration: int|null,
      *     isDraft: bool,
      *     technicalPlanCount: int|null,
+     *     reasoningLogId: int|null,
+     *     plankaCardId: string|null,
+     *     plankaCardUrl: string|null,
      * }
      */
     public function toArray(Request $request): array
@@ -53,6 +58,16 @@ class Performance extends JsonResource
             // Deleting a performance leaves the plans written for it behind without
             // one, so the screen warns before that happens.
             'technicalPlanCount' => $performance->technical_plans_count,
+            // How the import came to register this performance, for whoever may
+            // read it — and null for everyone else, so the screen never offers a
+            // button the API would refuse.
+            'reasoningLogId' => $request->user()?->can(ClaudeReasoningLog::VIEW_PERMISSION)
+                ? $performance->reasoningLog()?->id
+                : null,
+            // The card on the board, as a field to correct and as a link to
+            // follow. The link is empty when no board is configured.
+            'plankaCardId' => $performance->planka_card_id,
+            'plankaCardUrl' => PlankaClient::cardUrl($performance->planka_card_id),
         ];
     }
 }

@@ -27,6 +27,14 @@ class PlankaPerformanceExtractor
      */
     protected ?array $teams = null;
 
+    /**
+     * How the model said it read the card it was last given, kept here so a run
+     * can show its reasoning without the nights themselves having to carry it.
+     *
+     * @var list<string>
+     */
+    protected array $reasoningNotes = [];
+
     public function __construct(protected ?Client $client = null)
     {
         //
@@ -41,6 +49,9 @@ class PlankaPerformanceExtractor
     public function extract(string $cardName, string $cardDescription, ?string $dueDate = null): array
     {
         $userPrompt = $this->buildUserPrompt($cardName, $cardDescription, $dueDate);
+
+        // Whatever the last card was reasoned to, it is not this one's.
+        $this->reasoningNotes = [];
 
         $startedAt = microtime(true);
 
@@ -71,6 +82,8 @@ class PlankaPerformanceExtractor
             'aiOutput' => $aiResponse,
         ]);
 
+        $this->reasoningNotes = $this->readReasoningNotes($aiResponse);
+
         $nights = $this->parse($aiResponse);
 
         // One line per card, so a run that reads 40 cards can be told apart
@@ -82,7 +95,7 @@ class PlankaPerformanceExtractor
                 fn (ImportedNight $night): int => count($night->performances),
                 $nights,
             )),
-            'reasoningNotes' => $this->readReasoningNotes($aiResponse),
+            'reasoningNotes' => $this->reasoningNotes,
             'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
         ]);
 
@@ -181,6 +194,18 @@ class PlankaPerformanceExtractor
         }
 
         return $performances;
+    }
+
+    /**
+     * Why the last card read the way it did, in the model's own words, for
+     * whoever is watching the run. Empty until {@see extract()} has been called,
+     * and empty again for a card the model gave no account of.
+     *
+     * @return list<string>
+     */
+    public function reasoningNotes(): array
+    {
+        return $this->reasoningNotes;
     }
 
     /**
