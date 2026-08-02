@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { computed, onMounted, provide, reactive, ref, watch } from 'vue';
 import LoginScreen from '@/components/technical-plan/LoginScreen.vue';
 import { hydratePlan } from '@/components/technical-plan/plan';
@@ -16,7 +16,6 @@ import StandardInfoStep from '@/components/technical-plan/steps/StandardInfoStep
 import R10Layout from '@/layouts/R10Layout.vue';
 import { failureMessage, requestJson } from '@/lib/http';
 import technicalPlan from '@/routes/technical-plan';
-import type { User } from '@/types';
 import type {
     Plan,
     PlanFile,
@@ -29,6 +28,12 @@ const props = withDefaults(
     defineProps<{
         config: WizardConfig;
         initialPlan: Plan | null;
+        /**
+         * Whether this visitor may change the plan in front of them. False for
+         * a guest — a share link opens the plan to read, and the login step is
+         * what unlocks the rest of the wizard.
+         */
+        canEdit: boolean;
         /**
          * The night a reminder's link named, already resolved server-side. Set
          * only when the wizard was opened from one of those links, which is
@@ -47,9 +52,6 @@ const props = withDefaults(
 
 const STORAGE_KEY = 'r10-techplan-v1';
 
-const page = usePage<{ auth: { user: User | null } }>();
-const user = computed(() => page.props.auth.user);
-
 const plan = reactive<Plan>(hydratePlan(props.initialPlan));
 
 // A reminder's link has already chosen the night, so the wizard starts with it
@@ -63,6 +65,17 @@ provide(planKey, plan);
 provide(configKey, props.config);
 
 const step = ref(props.initialStep);
+
+/**
+ * A plan opened by its share link, by somebody who may not change it: the
+ * review page is the whole of it, as a document.
+ */
+const viewingOnly = computed(
+    () => !props.canEdit && props.initialPlan !== null,
+);
+
+/** Whether the login step (0) is what the main panel is showing. */
+const showLogin = ref(!props.canEdit && props.initialPlan === null);
 
 // Login state
 const loginBusy = ref(false);
@@ -145,7 +158,25 @@ function reset(): void {
 }
 
 function goTo(index: number): void {
+    // Every step of a plan somebody is only reading is behind the login: the
+    // stepper stays there to say so, and asking for one takes them to it.
+    if (viewingOnly.value) {
+        openLogin();
+
+        return;
+    }
+
     step.value = index;
+    scrollTop();
+}
+
+function openLogin(): void {
+    showLogin.value = true;
+    scrollTop();
+}
+
+function closeLogin(): void {
+    showLogin.value = false;
     scrollTop();
 }
 
@@ -180,6 +211,10 @@ async function sendLoginLink(email: string): Promise<void> {
     loginError.value = '';
     const { ok, data } = await requestJson('/api/tehnikaplaan/login', 'POST', {
         email: trimmed,
+        // Somebody logging in from a shared plan is logging in to work on that
+        // plan — the mailed link brings them back to it rather than to a blank
+        // wizard.
+        token: props.initialPlan ? plan.token : null,
     });
     loginBusy.value = false;
 
@@ -424,6 +459,12 @@ onMounted(() => {
 watch(
     [plan, step],
     () => {
+        // Reading somebody else's plan is not working on one: the draft this
+        // browser has half-written of its own must survive the visit.
+        if (viewingOnly.value) {
+            return;
+        }
+
         try {
             localStorage.setItem(
                 STORAGE_KEY,
@@ -450,10 +491,12 @@ watch(
             <Stepper
                 :step="step"
                 :optional-steps="[2, 5, 6]"
-                :login-active="!user"
-                :wizard-clickable="!!user"
-                :show-reset="!!user"
+                :login-active="showLogin"
+                :wizard-clickable="canEdit || viewingOnly"
+                :login-clickable="!canEdit"
+                :show-reset="canEdit"
                 @go="goTo"
+                @login="openLogin"
                 @reset="reset"
             />
 
@@ -461,19 +504,25 @@ watch(
                 class="min-w-0 flex-1 basis-[520px] rounded-[22px] border border-r10-grey-200 bg-white p-6 shadow-[0_6px_18px_rgba(10,14,23,0.1)] sm:p-10"
             >
                 <LoginScreen
-                    v-if="!user"
+                    v-if="showLogin"
                     :busy="loginBusy"
                     :sent="loginSent"
                     :error="loginError"
                     :sent-to="loginSentTo"
+                    :viewing-plan="viewingOnly"
                     @send-link="sendLoginLink"
+                    @back="closeLogin"
                 />
 
                 <template v-else>
-                    <component :is="stepComponents[step]" v-if="step < 6" />
+                    <component
+                        :is="stepComponents[step]"
+                        v-if="canEdit && step < 6"
+                    />
 
                     <ReviewStep
                         v-else
+                        :read-only="!canEdit"
                         :submitting="submitting"
                         :just-submitted="justSubmitted"
                         :save-error="saveError"
@@ -490,6 +539,7 @@ watch(
                     />
 
                     <div
+                        v-if="canEdit"
                         class="r10-no-print mt-9 flex items-center gap-4 border-t border-r10-grey-200 pt-6"
                     >
                         <R10Button

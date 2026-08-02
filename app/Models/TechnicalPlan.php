@@ -220,6 +220,61 @@ class TechnicalPlan extends Model implements HasMedia
     }
 
     /**
+     * Limit the query to the plans this user may write to on the strength of
+     * who they are: their own, and those of a performance — or its show —
+     * staged by one of their teams.
+     *
+     * Unlike {@see visibleTo()}, a team-mate's unfinished draft counts. That
+     * one governs opening a plan as the basis for a *new* plan, where somebody
+     * else's half-written draft is not a starting point worth offering; this
+     * one is about fixing the plan in front of you, which is exactly what an
+     * unfinished draft is for.
+     *
+     * @param  Builder<TechnicalPlan>  $query
+     */
+    #[Scope]
+    protected function editableBy(Builder $query, User $user): void
+    {
+        $teamIds = $user->teamIds();
+
+        $query->where(fn (Builder $query) => $query
+            ->where('user_id', $user->id)
+            // A performance is the team's through the show it stages, or by
+            // being the team's own act on an evening somebody else stages —
+            // an Õppelava slot's plan belongs to whoever plays the slot.
+            ->orWhereHas('performance', fn (Builder $performance) => $performance
+                ->whereIn('performances.team_id', $teamIds)
+                ->orWhereHas('show', fn (Builder $show) => $show->whereIn('team_id', $teamIds))));
+    }
+
+    /**
+     * Determine whether the user may write to this plan. Three ways in: they
+     * hold the plan's key — handing out the share link is how a plan's author
+     * lets somebody else work on it — {@see editableBy()} covers them on the
+     * strength of the team the plan's night belongs to, or they hold
+     * {@see EDIT_ALL_PERMISSION}, which reaches every plan in the house.
+     *
+     * @param  string|null  $key  The plan token the caller arrived with, if any.
+     */
+    public function isEditableBy(User $user, ?string $key = null): bool
+    {
+        if ($key !== null && $key === $this->token) {
+            return true;
+        }
+
+        // The crew running the shows fix the plans they are handed, whoever
+        // wrote them and whichever group's night they are for.
+        if ($user->can(self::EDIT_ALL_PERMISSION)) {
+            return true;
+        }
+
+        return static::query()
+            ->whereKey($this->getKey())
+            ->editableBy($user)
+            ->exists();
+    }
+
+    /**
      * The contact who owns this plan.
      *
      * @return BelongsTo<User, $this>

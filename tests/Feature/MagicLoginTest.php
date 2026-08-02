@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Actions\MagicLink\LogInAndVerifyEmail;
 use App\Enums\SignupSource;
+use App\Models\TechnicalPlan;
 use App\Models\User;
 use App\Notifications\MagicLoginLink;
 use Illuminate\Auth\Events\Verified;
@@ -111,6 +112,45 @@ class MagicLoginTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_a_link_asked_for_from_a_shared_plan_returns_to_that_plan(): void
+    {
+        Notification::fake();
+
+        // Somebody reading a plan by its share link, logging in to work on it:
+        // the wizard sends the plan's key along with the address.
+        $plan = TechnicalPlan::factory()->submitted()->create();
+        $user = User::factory()->create(['email' => 'lugeja@naide.ee']);
+
+        $this->postJson(route('technical-plan.login'), [
+            'email' => 'lugeja@naide.ee',
+            'token' => $plan->token,
+        ])->assertOk();
+
+        $response = $this->get($this->mailedLink($user));
+
+        $response->assertRedirect(route('technical-plan.public', $plan));
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_a_link_asked_for_from_a_plan_that_is_gone_still_logs_the_user_in(): void
+    {
+        Notification::fake();
+
+        // A key that names nothing is a plan deleted since the link was shared.
+        // Landing on the wizard beats being unable to log in at all.
+        $user = User::factory()->create(['email' => 'lugeja@naide.ee']);
+
+        $this->postJson(route('technical-plan.login'), [
+            'email' => 'lugeja@naide.ee',
+            'token' => 'R10-2026-KADUNUD1234',
+        ])->assertOk();
+
+        $response = $this->get($this->mailedLink($user));
+
+        $response->assertRedirect(route('technical-plan.index'));
+        $this->assertAuthenticatedAs($user);
+    }
+
     public function test_visiting_the_magic_link_settles_an_unverified_address(): void
     {
         Notification::fake();
@@ -146,5 +186,21 @@ class MagicLoginTest extends TestCase
 
         Event::assertNotDispatched(Verified::class);
         $this->assertTrue($user->fresh()->email_verified_at->equalTo($verifiedAt));
+    }
+
+    /**
+     * The one-time URL the user was just sent, taken off the notification.
+     */
+    private function mailedLink(User $user): string
+    {
+        $url = '';
+
+        Notification::assertSentTo($user, MagicLoginLink::class, function (MagicLoginLink $notification) use (&$url): bool {
+            $url = $notification->url;
+
+            return true;
+        });
+
+        return $url;
     }
 }

@@ -15,16 +15,25 @@ import StepHeader from '../StepHeader.vue';
 const plan = usePlan();
 const page = usePage<{ auth: { user: User | null } }>();
 
-defineProps<{
-    submitting: boolean;
-    justSubmitted: boolean;
-    saveError: string;
-    publicLink: string;
-    linkCopied: boolean;
-    aiLoading: boolean;
-    aiResult: string;
-    aiError: string;
-}>();
+withDefaults(
+    defineProps<{
+        submitting: boolean;
+        justSubmitted: boolean;
+        saveError: string;
+        publicLink: string;
+        linkCopied: boolean;
+        aiLoading: boolean;
+        aiResult: string;
+        aiError: string;
+        /**
+         * A plan opened by its share link without the right to change it: the
+         * document is all there is, and everything that would write to the
+         * plan — or spend the house's money on an AI review — is gone with it.
+         */
+        readOnly?: boolean;
+    }>(),
+    { readOnly: false },
+);
 
 defineEmits<{
     submit: [];
@@ -50,10 +59,23 @@ const playbackOpen = ref(false);
     <section class="animate-[r10fade_0.38s_ease]">
         <div class="r10-no-print">
             <StepHeader
+                v-if="readOnly"
+                eyebrow="Ülevaade"
+                title="Etenduse tehnikaplaan"
+                lead="See tehnikaplaan on jagatud avaliku lingi kaudu."
+            />
+
+            <StepHeader
+                v-else
                 eyebrow="Samm 7 / 7 · Ülevaade"
                 title="Vaata üle & saada"
                 lead="Kontrolli plaan üle. Seejärel esita see tehnikutiimile, laadi PDF-ina alla või loo jagatav link."
             />
+
+            <R10Notice v-if="readOnly" class="mb-6">
+                Avaliku lingiga jagatud tehnikaplaane saad ainult lugeda. Plaani
+                sisu muutmiseks palun logi sisse.
+            </R10Notice>
         </div>
 
         <!-- Printable document -->
@@ -77,30 +99,32 @@ const playbackOpen = ref(false);
             <R10Button variant="outline" size="lg" @click="$emit('download')"
                 >Laadi alla PDF</R10Button
             >
-            <R10Button
-                variant="outline"
-                size="lg"
-                :disabled="submitting"
-                @click="$emit('create-link')"
-            >
-                avalik link
-            </R10Button>
-            <R10Button
-                variant="outline"
-                size="lg"
-                :disabled="aiLoading"
-                @click="$emit('ai-review')"
-            >
-                AI ülevaatus
-            </R10Button>
-            <R10Button
-                variant="primary"
-                size="lg"
-                :disabled="submitting"
-                @click="$emit('submit')"
-            >
-                {{ submitting ? 'Esitan…' : 'Esita tehnikutiimile' }}
-            </R10Button>
+            <template v-if="!readOnly">
+                <R10Button
+                    variant="outline"
+                    size="lg"
+                    :disabled="submitting"
+                    @click="$emit('create-link')"
+                >
+                    avalik link
+                </R10Button>
+                <R10Button
+                    variant="outline"
+                    size="lg"
+                    :disabled="aiLoading"
+                    @click="$emit('ai-review')"
+                >
+                    AI ülevaatus
+                </R10Button>
+                <R10Button
+                    variant="primary"
+                    size="lg"
+                    :disabled="submitting"
+                    @click="$emit('submit')"
+                >
+                    {{ submitting ? 'Esitan…' : 'Esita tehnikutiimile' }}
+                </R10Button>
+            </template>
         </div>
 
         <R10Notice v-if="saveError" class="r10-no-print mt-4">
