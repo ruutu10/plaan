@@ -9,6 +9,7 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use SocialiteProviders\Authentik\Provider as AuthentikProvider;
@@ -32,6 +33,22 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureSocialite();
         $this->configureStaffAccess();
+        $this->configureSecureUrls();
+    }
+
+    protected function configureSecureUrls(): void
+    {
+        // Determine if HTTPS should be enforced
+        $enforceHttps = $this->app->environment(['production', 'staging'])
+            && ! $this->app->runningUnitTests();
+
+        // Force HTTPS for all generated URLs
+        URL::forceHttps($enforceHttps);
+
+        // Ensure proper server variable is set
+        if ($enforceHttps) {
+            request()->server->set('HTTPS', 'on');
+        }
     }
 
     /**
@@ -45,14 +62,15 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
+        Password::defaults(
+            fn (): ?Password => app()->isProduction()
+                ? Password::min(12)
+                    ->mixedCase()
+                    ->letters()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised()
+                : null,
         );
     }
 
