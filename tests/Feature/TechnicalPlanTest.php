@@ -314,6 +314,21 @@ class TechnicalPlanTest extends TestCase
             ->where('initialPlan.meta.performer', $plan->performance->show->team->name));
     }
 
+    public function test_the_public_link_opens_the_wizard_on_the_review_step(): void
+    {
+        // The plan behind the link is already filled in, so it should open on
+        // the review step instead of making the visitor click through every
+        // step to see the content the link was for.
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        $response = $this->get(route('technical-plan.public', $plan));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('TechnicalPlan')
+            ->where('initialStep', 6));
+    }
+
     public function test_the_public_link_never_hands_the_wizard_null_text(): void
     {
         // Every wizard field is optional, so a stored plan can hold nulls where
