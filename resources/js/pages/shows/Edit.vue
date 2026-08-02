@@ -61,7 +61,6 @@ const form = useHttp<ShowFormData>({
     team_id: null,
     name: '',
     description: '',
-    planka_card_id: '',
 });
 
 defineOptions({
@@ -94,7 +93,6 @@ const { data: show, loadFailed } = useResource(async () => {
     form.team_id = response.data.teamId;
     form.name = response.data.name;
     form.description = response.data.description ?? '';
-    form.planka_card_id = response.data.plankaCardId ?? '';
     form.defaults();
 
     nameTheTrail(response.data.name);
@@ -210,11 +208,9 @@ async function save(): Promise<void> {
                 v-model:team-id="form.team_id"
                 v-model:name="form.name"
                 v-model:description="form.description"
-                v-model:planka-card-id="form.planka_card_id"
                 :teams="teams"
                 :errors="form.errors"
                 :disabled="!canEditShow"
-                :planka-card-url="show?.plankaCardUrl"
             />
 
             <div class="flex items-center justify-between gap-3">

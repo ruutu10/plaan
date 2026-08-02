@@ -315,7 +315,6 @@ class ImportPlankaPerformancesTest extends TestCase
 
         $this->artisan('planka:import')->assertSuccessful();
 
-        $this->assertSame('card-1', Show::sole()->planka_card_id);
         $this->assertSame('card-1', Performance::sole()->planka_card_id);
     }
 
@@ -336,10 +335,8 @@ class ImportPlankaPerformancesTest extends TestCase
 
         $this->artisan('planka:import')->assertSuccessful();
 
-        // The show was made by the first card and is not remade by the second,
-        // so it goes on pointing at the card it was announced on — while the
-        // night the second card added points at that one.
-        $this->assertSame('card-1', Show::sole()->planka_card_id);
+        // Each night points at the card that announced it, even though both
+        // nights belong to the one show the first card made.
         $this->assertSame(
             ['card-1', 'card-2'],
             Performance::query()->orderBy('date')->pluck('planka_card_id')->all(),

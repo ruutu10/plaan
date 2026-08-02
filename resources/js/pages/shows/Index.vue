@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { UrlMethodPair } from '@inertiajs/core';
 import { Head, useHttp } from '@inertiajs/vue3';
-import { ExternalLink, Pencil, Plus, Sparkles, Trash2 } from '@lucide/vue';
+import { Pencil, Plus, Sparkles, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import ClaudeReasoningLogModal from '@/components/ClaudeReasoningLogModal.vue';
 import CreateShowModal from '@/components/CreateShowModal.vue';
@@ -136,19 +136,6 @@ function openReasoningLog(show: Show): void {
                             {{ show.canEdit ? 'Muuda' : 'Vaata' }}
                             <Pencil class="h-3.5 w-3.5" />
                         </R10Button>
-
-                        <a
-                            v-if="show.plankaCardUrl"
-                            :href="show.plankaCardUrl"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Ava kaart Plankas"
-                            data-test="show-planka-card-link"
-                            class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-grey-200 bg-white p-2 text-r10-grey-500 transition hover:border-r10-navy hover:text-r10-navy"
-                        >
-                            <ExternalLink class="h-3.5 w-3.5" />
-                            <span class="sr-only">Planka kaart</span>
-                        </a>
 
                         <!-- Only shown to a user the server told there is
                              something to read; everyone else is sent zero. -->
