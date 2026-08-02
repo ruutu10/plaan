@@ -25,3 +25,9 @@ Schedule::command('performances:remind-missing-plans')
     ->hourly()
     ->withoutOverlapping()
     ->description('Remind performers about technical plans that have not been handed in');
+
+// Daily is plenty: the command's own grace period decides when a plan goes
+// quiet, and a few hours either side of it changes nothing for anybody.
+Schedule::command('technical-plans:archive')
+    ->daily()
+    ->description('Archive technical plans whose performance has been played');

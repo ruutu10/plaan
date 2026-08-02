@@ -56,4 +56,15 @@ class TechnicalPlanFactory extends Factory
             'submitted_at' => now(),
         ]);
     }
+
+    /**
+     * Indicate that the plan's night has been played and it has been archived.
+     */
+    public function archived(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => TechnicalPlanStatus::Archived,
+            'submitted_at' => now(),
+        ]);
+    }
 }

@@ -572,6 +572,31 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame($upcoming->id, $response->json('results.0.id'));
     }
 
+    public function test_performances_surface_the_archived_plans_of_a_show_already_played(): void
+    {
+        // A plan is archived once its night has been played — which is exactly
+        // the plan the show's next run is written from, so archiving must not
+        // take it out of the picker.
+        $team = Team::factory()->create();
+        $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
+        $teamMate = User::factory()->create(['name' => 'Kadri Kolleeg']);
+
+        $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Sügisetendus']);
+        Performance::factory()->for($show)->create(['date' => now()->addWeek()->toDateString()]);
+        $past = Performance::factory()->for($show)->past()->create();
+
+        $ownPlan = TechnicalPlan::factory()->for($this->user)->for($past)->archived()->create();
+        $teamPlan = TechnicalPlan::factory()->for($teamMate)->for($past)->archived()->create();
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+        $this->assertEqualsCanonicalizing(
+            [$ownPlan->token, $teamPlan->token],
+            array_column($response->json('results.0.priorPlans'), 'token'),
+        );
+    }
+
     public function test_a_team_mates_plan_for_the_upcoming_performance_can_be_taken_over(): void
     {
         $team = Team::factory()->create();
@@ -1019,6 +1044,22 @@ class TechnicalPlanTest extends TestCase
         $plan = TechnicalPlan::factory()->for($performance)->submitted()->create();
 
         $this->postJson(route('technical-plan.copy', $plan))->assertOk();
+    }
+
+    public function test_copying_an_archived_plan_of_the_users_team_is_allowed(): void
+    {
+        $team = Team::factory()->create();
+        $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
+
+        $performance = Performance::factory()->for(Show::factory()->state(['team_id' => $team->id]))->past()->create();
+        $plan = TechnicalPlan::factory()->for($performance)->archived()->create();
+
+        $this->postJson(route('technical-plan.copy', $plan))->assertOk();
+
+        // Archived is not public: a stranger's is still none of their business.
+        $strangersPlan = TechnicalPlan::factory()->archived()->create();
+
+        $this->postJson(route('technical-plan.copy', $strangersPlan))->assertForbidden();
     }
 
     public function test_copying_a_handed_in_plan_of_a_slot_the_users_team_plays_is_allowed(): void

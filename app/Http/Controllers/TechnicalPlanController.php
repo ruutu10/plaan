@@ -207,7 +207,8 @@ class TechnicalPlanController extends Controller
      * plan can be pre-filled from a past one. Those are not only the user's own:
      * a plan for a performance of one of their teams counts too, which is how
      * the next plan for a show can be written by someone else in the group than
-     * the one who sent the last.
+     * the one who sent the last. Archived plans are offered too: a show that has
+     * been played is exactly the one whose plan the next run starts from.
      *
      * Drafts are left out: a performance the import guessed at is not one to
      * write a plan for until an admin has vouched for it.
@@ -231,7 +232,7 @@ class TechnicalPlanController extends Controller
         $priorPlans = TechnicalPlan::query()
             ->with(['performance', 'user'])
             ->visibleTo($request->user())
-            ->whereIn('status', TechnicalPlanStatus::delivered())
+            ->whereIn('status', TechnicalPlanStatus::reusable())
             ->whereHas('performance', fn ($query) => $query->whereIn('show_id', $upcoming->pluck('show_id')->all()))
             ->latest('submitted_at')
             ->get()
