@@ -24,9 +24,11 @@ jobs:
         with:
           plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
           plugins: "code-review@claude-code-plugins"
-          prompt: "/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
+          prompt: "/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }} --comment"
           anthropic_federation_rule_id: fdrl_01QGh8a998rYqoSn8CNbJyrd
           anthropic_organization_id: f7245fa2-3a45-4879-b09b-9cd0151d5722
           anthropic_service_account_id: svac_01WEEYs5yqMHhfMcgbuYHpbE
           anthropic_workspace_id: wrkspc_01KoPSoEPaNHmypWbnw63hPg
-          claude_args: "--model claude-sonnet-4-6"
+          claude_args: |
+            --model claude-sonnet-4-6
+            --allowedTools "Skill,mcp__github_inline_comment__create_inline_comment,Bash(gh pr:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git ls-tree:*),Read,Glob,Grep"
