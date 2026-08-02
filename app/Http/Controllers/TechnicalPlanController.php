@@ -148,7 +148,9 @@ class TechnicalPlanController extends Controller
             'initialPlan' => TechnicalPlanResource::make($plan)->resolve(),
             // A shared plan carries its own night and opens at the beginning.
             'initialPerformance' => null,
-            'initialStep' => 0,
+            // The plan is already filled in, so the link opens on the review
+            // page rather than making the visitor click through every step.
+            'initialStep' => self::LAST_STEP,
         ]);
     }
 

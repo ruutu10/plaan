@@ -26,8 +26,7 @@ jobs:
           plugins: "code-review@claude-code-plugins"
           prompt: "/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
           anthropic_federation_rule_id: fdrl_01QGh8a998rYqoSn8CNbJyrd
-          anthropic_organization_id: svac_01WEEYs5yqMHhfMcgbuYHpbE
+          anthropic_organization_id: f7245fa2-3a45-4879-b09b-9cd0151d5722
           anthropic_service_account_id: svac_01WEEYs5yqMHhfMcgbuYHpbE
           anthropic_workspace_id: wrkspc_01KoPSoEPaNHmypWbnw63hPg
           claude_args: "--model claude-sonnet-4-6"
-          show_full_output: "true"

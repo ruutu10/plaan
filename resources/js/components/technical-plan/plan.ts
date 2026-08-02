@@ -140,8 +140,10 @@ export function hydratePlan(payload: Partial<Plan> | null | undefined): Plan {
 
     return {
         token: payload.token ?? null,
-        status: 'draft',
-        submittedAt: null,
+        // A saved plan keeps the status it was loaded with; only a plan that
+        // has never reached the server is a draft.
+        status: payload.status ?? base.status,
+        submittedAt: payload.submittedAt ?? null,
         meta: mergeDefined(base.meta, payload.meta),
         sound: mergeDefined(base.sound, payload.sound),
         scenes:
