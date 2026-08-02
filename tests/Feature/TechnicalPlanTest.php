@@ -600,6 +600,40 @@ class TechnicalPlanTest extends TestCase
         $this->assertNull($priorPlans[0]['author']);
     }
 
+    public function test_a_prior_plans_label_names_the_performance_it_was_written_for(): void
+    {
+        // A show staged on evenings shared with other acts: two past performances
+        // on the same show, told apart by the name the board gave each act.
+        $show = Show::factory()->create(['name' => 'Kevadetendus']);
+        Performance::factory()->for($show)->create(['date' => now()->addWeek()->toDateString()]);
+
+        $team = Team::factory()->create();
+        $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
+
+        $titled = Performance::factory()
+            ->for($show)
+            ->performedBy($team, 'Improgrupp Kolm')
+            ->past()
+            ->create();
+        $untitled = Performance::factory()->for($show)->past()->create();
+
+        $titledPlan = TechnicalPlan::factory()->for($this->user)->for($titled)->submitted()->create();
+        $untitledPlan = TechnicalPlan::factory()->for($this->user)->for($untitled)->submitted()->create();
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+
+        $labels = collect($response->json('results.0.priorPlans'))->pluck('label', 'token');
+
+        $this->assertSame(
+            $titled->date->format('d.m.Y').' — Improgrupp Kolm',
+            $labels[$titledPlan->token],
+        );
+        // A performance without a title is still labelled by its date alone.
+        $this->assertSame($untitled->date->format('d.m.Y'), $labels[$untitledPlan->token]);
+    }
+
     public function test_a_busy_show_does_not_starve_the_other_shows_of_prior_plans(): void
     {
         // One show with a long history, and one with a single past plan. The

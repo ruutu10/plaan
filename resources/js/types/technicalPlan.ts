@@ -46,7 +46,7 @@ export interface PlanMeta {
 export interface PriorPlan {
     /** Token of a past submitted plan that can seed a new one. */
     token: string;
-    /** Human label distinguishing the plan (the past performance's date). */
+    /** Human label distinguishing the plan (the past performance's date, and its title when it has one). */
     label: string;
     /** Who handed the plan in, when that was not the user themselves. */
     author: string | null;
