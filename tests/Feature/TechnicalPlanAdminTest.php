@@ -308,6 +308,24 @@ class TechnicalPlanAdminTest extends TestCase
         $this->assertSame([['tehnikud@ruutu10.ee', null]], $mail->cc);
     }
 
+    public function test_the_received_mail_includes_the_performances_own_title_when_set(): void
+    {
+        $author = User::factory()->create();
+        $confirmedBy = User::factory()->create();
+        $team = Team::factory()->create();
+        $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
+        $performance = Performance::factory()->create(['show_id' => $show->id, 'title' => 'Märtu10']);
+        $plan = TechnicalPlan::factory()->create([
+            'status' => TechnicalPlanStatus::Received,
+            'user_id' => $author->id,
+            'performance_id' => $performance->id,
+        ]);
+
+        $mail = (new TechnicalPlanReceived($plan, $confirmedBy))->toMail($author);
+
+        $this->assertStringContainsString('Festival 2026 — Märtu10', $mail->render());
+    }
+
     public function test_the_received_mail_does_not_cc_the_author_who_is_the_technical_team(): void
     {
         $author = User::factory()->create(['email' => 'tehnikud@ruutu10.ee']);

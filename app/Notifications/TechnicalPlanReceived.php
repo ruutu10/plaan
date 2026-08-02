@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Performance;
 use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -50,7 +51,7 @@ class TechnicalPlanReceived extends Notification implements ShouldQueue
         $mail = (new MailMessage)
             ->subject('Tehnikaplaan kätte saadud · '.$this->planLabel())
             ->view('emails.technical-plan-received', [
-                'showName' => $performance?->show->name ?? $this->plan->token,
+                'showName' => $this->showName($performance),
                 'performer' => $performance?->performerName(),
                 'startsAt' => $performance?->startsAt(),
                 'statusLabel' => $this->plan->status->label(),
@@ -82,5 +83,20 @@ class TechnicalPlanReceived extends Notification implements ShouldQueue
         ]));
 
         return $parts === [] ? $this->plan->token : implode(' · ', $parts);
+    }
+
+    /**
+     * The show's name, with the performance's own title appended when it has
+     * one — e.g. a guest act's name on a night shared with others.
+     */
+    private function showName(?Performance $performance): string
+    {
+        if ($performance === null) {
+            return $this->plan->token;
+        }
+
+        return $performance->title === null
+            ? $performance->show->name
+            : $performance->show->name.' — '.$performance->title;
     }
 }
