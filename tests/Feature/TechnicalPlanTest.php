@@ -204,12 +204,12 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame($this->user->id, TechnicalPlan::first()->user_id);
     }
 
-    public function test_storing_over_a_plan_the_user_cannot_see_is_forbidden(): void
+    public function test_a_link_holder_may_write_to_the_plan_it_opens(): void
     {
         Storage::fake('local');
 
         // A plan its owner has submitted, with a file of its own, whose public
-        // link — the token — has made the rounds.
+        // link — the token — has been handed to somebody else to work on.
         $token = $this->postJson(route('technical-plan.store'), $this->validPayload([
             'submit' => true,
             'extra' => [
@@ -218,33 +218,92 @@ class TechnicalPlanTest extends TestCase
             ],
         ]))->json('token');
 
-        // Merely holding the link is not permission to write over what it opens.
+        // Holding the link is what lets somebody work on the plan behind it —
+        // sharing it is how its author hands that out.
         $this->actingAs(User::factory()->create());
 
-        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
             'token' => $token,
             'extra' => ['notes' => 'Ülekirjutatud', 'files' => []],
-        ]));
+        ]))->assertOk();
 
-        $response->assertForbidden();
-
+        // The plan's contents follow the last person to work on it; its owner
+        // stays whoever wrote it in the first place.
         $plan = TechnicalPlan::firstWhere('token', $token);
         $this->assertSame($this->user->id, $plan->user_id);
-        $this->assertSame('Originaal', $plan->extra['notes']);
-        $this->assertCount(1, $plan->getMedia($plan->attachmentsCollection()));
+        $this->assertSame('Ülekirjutatud', $plan->extra['notes']);
     }
 
-    public function test_storing_over_a_team_mates_draft_is_forbidden(): void
+    public function test_storing_over_a_team_mates_draft_is_allowed(): void
     {
+        // An unfinished plan for one of the user's teams: unlike copying it as
+        // the basis for a new plan, fixing it is exactly what a draft is for.
         $teamMate = User::factory()->create();
         $draft = TechnicalPlan::factory()->for($teamMate)->for($this->teamPerformance())->create();
 
         $this->postJson(route('technical-plan.store'), $this->validPayload([
             'token' => $draft->token,
             'extra' => ['notes' => 'Ülekirjutatud'],
-        ]))->assertForbidden();
+        ]))->assertOk();
 
-        $this->assertNotSame('Ülekirjutatud', $draft->refresh()->extra['notes']);
+        $draft->refresh();
+        $this->assertSame('Ülekirjutatud', $draft->extra['notes']);
+        $this->assertSame($teamMate->id, $draft->user_id);
+    }
+
+    public function test_a_plan_of_no_team_of_the_users_is_not_editable_without_its_key(): void
+    {
+        // The wizard always posts the key it opened with, so a write without
+        // one cannot be reached through the API — the rule is asserted on the
+        // model, which is where the guard reads it.
+        $plan = TechnicalPlan::factory()->for(User::factory())->for(Performance::factory())->create();
+
+        $this->assertFalse($plan->isEditableBy($this->user));
+        $this->assertTrue($plan->isEditableBy($this->user, $plan->token));
+    }
+
+    public function test_a_technician_may_write_to_any_plan(): void
+    {
+        // The crew running the shows hold technical_plans.edit_all, which
+        // reaches past both the key and the team the plan's night is for.
+        $plan = TechnicalPlan::factory()->for(User::factory())->for(Performance::factory())->create();
+        $technician = $this->technician();
+
+        $this->assertTrue($plan->isEditableBy($technician));
+
+        $this->actingAs($technician)
+            ->postJson(route('technical-plan.store'), $this->validPayload([
+                'token' => $plan->token,
+                'extra' => ['notes' => 'Tehniku parandus'],
+            ]))->assertOk();
+
+        $this->assertSame('Tehniku parandus', $plan->refresh()->extra['notes']);
+    }
+
+    public function test_a_plan_is_editable_by_the_team_staging_its_show(): void
+    {
+        $plan = TechnicalPlan::factory()
+            ->for(User::factory())
+            ->for($this->teamPerformance())
+            ->create();
+
+        $this->assertTrue($plan->isEditableBy($this->user));
+    }
+
+    public function test_a_plan_is_editable_by_the_team_playing_the_slot(): void
+    {
+        // An Õppelava slot: the evening is somebody else's show, the act on it
+        // is the user's team's — and so is the plan for it.
+        $team = Team::factory()->create();
+        $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
+
+        $performance = Performance::factory()
+            ->for(Show::factory())
+            ->create(['team_id' => $team->id, 'date' => now()->addWeek()->toDateString()]);
+
+        $plan = TechnicalPlan::factory()->for(User::factory())->for($performance)->create();
+
+        $this->assertTrue($plan->isEditableBy($this->user));
     }
 
     public function test_updating_a_team_mates_submitted_plan_leaves_its_owner_untouched(): void
@@ -327,6 +386,60 @@ class TechnicalPlanTest extends TestCase
         $response->assertInertia(fn (Assert $page) => $page
             ->component('TechnicalPlan')
             ->where('initialStep', 6));
+    }
+
+    public function test_the_public_link_opens_the_plan_without_an_account(): void
+    {
+        // The point of the link: its holder reads the plan, they do not have
+        // to be — or become — anybody to do it.
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        auth()->logout();
+
+        $response = $this->get(route('technical-plan.public', $plan));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('TechnicalPlan')
+            ->where('initialPlan.token', $plan->token)
+            ->where('initialStep', 6)
+            ->where('canEdit', false));
+    }
+
+    public function test_the_public_link_offers_editing_to_a_signed_in_visitor(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        $this->get(route('technical-plan.public', $plan))
+            ->assertInertia(fn (Assert $page) => $page->where('canEdit', true));
+    }
+
+    public function test_the_public_link_sends_a_login_back_to_the_plan(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        auth()->logout();
+
+        $this->get(route('technical-plan.public', $plan));
+
+        $this->assertSame(
+            route('technical-plan.public', $plan),
+            session('url.intended'),
+        );
+    }
+
+    public function test_a_guest_cannot_write_to_a_plan_they_hold_the_link_to(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create(['extra' => ['notes' => 'Originaal']]);
+
+        auth()->logout();
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $plan->token,
+            'extra' => ['notes' => 'Ülekirjutatud'],
+        ]))->assertUnauthorized();
+
+        $this->assertSame('Originaal', $plan->refresh()->extra['notes']);
     }
 
     public function test_the_public_link_never_hands_the_wizard_null_text(): void

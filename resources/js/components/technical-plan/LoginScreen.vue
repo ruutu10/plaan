@@ -6,14 +6,24 @@ import StepHeader from './StepHeader.vue';
 
 const emit = defineEmits<{
     'send-link': [email: string];
+    back: [];
 }>();
 
-const props = defineProps<{
-    busy: boolean;
-    sent: boolean;
-    error: string;
-    sentTo: string;
-}>();
+const props = withDefaults(
+    defineProps<{
+        busy: boolean;
+        sent: boolean;
+        error: string;
+        sentTo: string;
+        /**
+         * Whether the visitor came here from a plan they were reading. The
+         * screen then explains what logging in unlocks, and leaves a way back
+         * to the plan for somebody who only meant to read it.
+         */
+        viewingPlan?: boolean;
+    }>(),
+    { viewingPlan: false },
+);
 
 const email = ref('');
 
@@ -25,6 +35,14 @@ function submit(): void {
 <template>
     <section class="animate-[r10fade_0.38s_ease]">
         <StepHeader
+            v-if="props.viewingPlan"
+            eyebrow="Samm 0 · Plaani koostaja tuvastamine"
+            title="Plaani muutmiseks logi sisse"
+            lead="Plaani vaatamiseks pole kontot vaja. Muutmiseks sisesta oma e-post - saadetud link toob su tagasi sellesama plaani juurde ja avab selle muutmiseks."
+        />
+
+        <StepHeader
+            v-else
             eyebrow="Samm 0 · Plaani koostaja tuvastamine"
             title="Plaani koostaja"
             lead="Tehnikaplaani esitamine algab esitaja tuvastamisest. Sisesta oma e-post - saadame sulle ühekordse lingi, millega plaani koostamist jätkata."
@@ -109,5 +127,14 @@ function submit(): void {
                 emaili uue kasutajana.
             </p>
         </form>
+
+        <button
+            v-if="props.viewingPlan"
+            type="button"
+            class="mt-4 cursor-pointer border-none bg-transparent px-0 py-1.5 font-r10-body text-xs font-bold tracking-[0.06em] text-r10-grey-500 uppercase underline"
+            @click="emit('back')"
+        >
+            Tagasi plaani juurde
+        </button>
     </section>
 </template>

@@ -31,4 +31,4 @@ jobs:
           anthropic_workspace_id: wrkspc_01KoPSoEPaNHmypWbnw63hPg
           claude_args: |
             --model claude-sonnet-4-6
-            --allowedTools "Skill,mcp__github_inline_comment__create_inline_comment,Bash(gh pr:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git ls-tree:*),Read,Glob,Grep"
+          show_full_output: true

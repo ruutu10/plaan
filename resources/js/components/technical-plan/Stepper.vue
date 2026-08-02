@@ -11,6 +11,8 @@ const props = withDefaults(
         loginActive?: boolean;
         /** Whether the wizard step nodes navigate when clicked. */
         wizardClickable?: boolean;
+        /** Whether step 0 opens the login screen when clicked. */
+        loginClickable?: boolean;
         /** Whether to show the "start over" link. */
         showReset?: boolean;
     }>(),
@@ -18,11 +20,12 @@ const props = withDefaults(
         optionalSteps: () => [],
         loginActive: false,
         wizardClickable: true,
+        loginClickable: false,
         showReset: true,
     },
 );
 
-const emit = defineEmits<{ go: [index: number]; reset: [] }>();
+const emit = defineEmits<{ go: [index: number]; login: []; reset: [] }>();
 
 const LOGIN_LABEL = 'Plaani koostaja';
 
@@ -46,7 +49,7 @@ const nodes = computed<StepNode[]>(() => {
             display: '0',
             kind: 'login',
             wizardIndex: null,
-            clickable: false,
+            clickable: props.loginClickable && !props.loginActive,
         },
     ];
 
@@ -120,9 +123,17 @@ function labelClasses(node: StepNode): string {
 }
 
 function onNodeClick(node: StepNode): void {
-    if (node.clickable && node.wizardIndex !== null) {
-        emit('go', node.wizardIndex);
+    if (!node.clickable) {
+        return;
     }
+
+    if (node.wizardIndex === null) {
+        emit('login');
+
+        return;
+    }
+
+    emit('go', node.wizardIndex);
 }
 </script>
 

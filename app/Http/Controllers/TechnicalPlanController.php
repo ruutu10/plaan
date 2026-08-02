@@ -65,6 +65,9 @@ class TechnicalPlanController extends Controller
         return $attemptSsoLogin->handle($request) ?? Inertia::render('TechnicalPlan', [
             'config' => $this->wizardConfig(),
             'initialPlan' => null,
+            // Writing a plan at all takes an account: every endpoint the wizard
+            // saves through sits behind the login.
+            'canEdit' => $request->user() !== null,
             // Set when the wizard was reached from a reminder's link, which
             // names the night it is about — see App\Actions\BuildTechnicalPlanInvite.
             'initialPerformance' => $performance,
@@ -138,13 +141,27 @@ class TechnicalPlanController extends Controller
     }
 
     /**
-     * Open a previously shared plan as the basis for a new plan.
+     * Open a plan by its share link. The link is what a plan's author sends
+     * out for other people to read, so it opens without an account — on the
+     * review page, as a document. Editing it takes a login; see
+     * {@see TechnicalPlan::isEditableBy()} for who gets one.
      */
-    public function public(TechnicalPlan $plan): Response
+    public function public(Request $request, TechnicalPlan $plan): Response
     {
+        $user = $request->user();
+
+        // A guest reading a shared plan who then logs in belongs back at the
+        // plan, not at the dashboard — the same reasoning as index() above.
+        if (! $request->session()->has('url.intended')) {
+            $request->session()->put('url.intended', $request->fullUrl());
+        }
+
         return Inertia::render('TechnicalPlan', [
             'config' => $this->wizardConfig(),
             'initialPlan' => TechnicalPlanResource::make($plan)->resolve(),
+            // The visitor is standing on the plan's own URL, so they hold its
+            // key — what is left to settle is whether they are signed in.
+            'canEdit' => $user !== null && $plan->isEditableBy($user, $plan->token),
             // A shared plan carries its own night and opens at the beginning.
             'initialPerformance' => null,
             // The plan is already filled in, so the link opens on the review
@@ -198,22 +215,36 @@ class TechnicalPlanController extends Controller
         $submitting = (bool) ($data['submit'] ?? false);
         $user = $request->user();
 
-        $plan = TechnicalPlan::query()
-            ->firstOrNew(['token' => $data['token'] ?? null]);
+        $key = $data['token'] ?? null;
 
-        // The token is handed out by the public share link, so anyone holding
-        // it could otherwise post over the plan behind it. Writing to a plan
-        // that already exists is held to the same rule as opening it.
-        if ($plan->exists && ! $plan->isVisibleTo($user)) {
-            // A refusal here is somebody writing to a plan they only ever
-            // received a link to. Worth seeing.
-            Log::warning('Refused a write to a plan the user may not open', [
+        $plan = TechnicalPlan::query()
+            ->firstOrNew(['token' => $key]);
+
+        // Holding a plan's key is what lets somebody work on it — sharing the
+        // link is how its author hands that out — and so is the team whose
+        // night the plan is for. The wizard always posts the key it opened
+        // with, so it is that half of the rule which answers here; the guard
+        // is what stops a caller reaching an existing plan any other way.
+        if ($plan->exists && ! $plan->isEditableBy($user, $key)) {
+            Log::warning('Refused a write to a plan the user may not edit', [
                 'plan_id' => $plan->id,
                 'user_id' => $user->id,
                 'ip' => $request->ip(),
             ]);
 
             abort(403);
+        }
+
+        // Someone other than the author working on a plan is the share link
+        // being used as intended, but it is still the kind of thing worth
+        // being able to look up afterwards.
+        if ($plan->exists && $plan->user_id !== $user->id) {
+            Log::info('A plan is being saved by someone other than its author', [
+                'plan_id' => $plan->id,
+                'user_id' => $user->id,
+                'owner_id' => $plan->user_id,
+                'ip' => $request->ip(),
+            ]);
         }
 
         $plan = $save->handle($plan, $data, $user, $submitting);
