@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\TechnicalPlanStatus;
+use App\Events\TechnicalPlanStatusChanged;
 use App\Models\Performance;
 use App\Models\Show;
 use App\Models\Team;
@@ -10,6 +11,7 @@ use App\Models\TechnicalPlan;
 use App\Models\User;
 use App\Notifications\TechnicalPlanReceived;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -214,20 +216,41 @@ class TechnicalPlanAdminTest extends TestCase
         $this->assertSame(TechnicalPlanStatus::Received, $plan->fresh()->status);
     }
 
+    public function test_changing_a_plans_status_dispatches_an_event(): void
+    {
+        Event::fake([TechnicalPlanStatusChanged::class]);
+
+        $plan = TechnicalPlan::factory()->submitted()->create();
+        $technician = $this->technician();
+
+        $this->actingAs($technician)
+            ->patch(route('technical-plans.update-status', $plan), ['status' => TechnicalPlanStatus::Received->value]);
+
+        Event::assertDispatched(
+            TechnicalPlanStatusChanged::class,
+            fn (TechnicalPlanStatusChanged $event): bool => $event->plan->is($plan)
+                && $event->previousStatus === TechnicalPlanStatus::Submitted
+                && $event->newStatus === TechnicalPlanStatus::Received
+                && $event->changedBy->is($technician),
+        );
+    }
+
     public function test_moving_a_plan_from_submitted_to_received_mails_its_author(): void
     {
         Notification::fake();
         config(['technical_plan.tech_email' => 'tehnikud@ruutu10.ee']);
 
         $author = User::factory()->create();
+        $technician = $this->technician();
         $plan = TechnicalPlan::factory()->submitted()->create(['user_id' => $author->id]);
 
-        $this->actingAs($this->technician())
+        $this->actingAs($technician)
             ->patch(route('technical-plans.update-status', $plan), ['status' => TechnicalPlanStatus::Received->value]);
 
         Notification::assertSentTo(
             $author,
-            fn (TechnicalPlanReceived $notification): bool => $notification->plan->is($plan),
+            fn (TechnicalPlanReceived $notification): bool => $notification->plan->is($plan)
+                && $notification->confirmedBy->is($technician),
         );
     }
 
@@ -259,25 +282,29 @@ class TechnicalPlanAdminTest extends TestCase
         Notification::assertNothingSent();
     }
 
-    public function test_the_received_mail_carries_the_plan_and_ccs_the_technical_team(): void
+    public function test_the_received_mail_carries_the_plan_its_status_and_who_confirmed_it(): void
     {
         config(['technical_plan.tech_email' => 'tehnikud@ruutu10.ee']);
 
         $author = User::factory()->create(['email' => 'mart@naide.ee']);
+        $confirmedBy = User::factory()->create(['name' => 'Tiit Tehnik']);
         $team = Team::factory()->create();
         $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
         $performance = Performance::factory()->create(['show_id' => $show->id, 'date' => '2026-08-10']);
-        $plan = TechnicalPlan::factory()->submitted()->create([
+        $plan = TechnicalPlan::factory()->create([
+            'status' => TechnicalPlanStatus::Received,
             'user_id' => $author->id,
             'performance_id' => $performance->id,
         ]);
 
-        $mail = (new TechnicalPlanReceived($plan))->toMail($author);
+        $mail = (new TechnicalPlanReceived($plan, $confirmedBy))->toMail($author);
         $html = $mail->render();
 
         $this->assertStringContainsString('Festival 2026', $mail->subject);
         $this->assertStringContainsString('Festival 2026', $html);
         $this->assertStringContainsString(route('technical-plan.public', $plan), $html);
+        $this->assertStringContainsString(TechnicalPlanStatus::Received->label(), $html);
+        $this->assertStringContainsString('Tiit Tehnik', $html);
         $this->assertSame([['tehnikud@ruutu10.ee', null]], $mail->cc);
     }
 
@@ -286,9 +313,9 @@ class TechnicalPlanAdminTest extends TestCase
         $author = User::factory()->create(['email' => 'tehnikud@ruutu10.ee']);
         config(['technical_plan.tech_email' => 'tehnikud@ruutu10.ee']);
 
-        $plan = TechnicalPlan::factory()->submitted()->create(['user_id' => $author->id]);
+        $plan = TechnicalPlan::factory()->create(['status' => TechnicalPlanStatus::Received, 'user_id' => $author->id]);
 
-        $mail = (new TechnicalPlanReceived($plan))->toMail($author);
+        $mail = (new TechnicalPlanReceived($plan, $author))->toMail($author);
 
         $this->assertSame([], $mail->cc);
     }

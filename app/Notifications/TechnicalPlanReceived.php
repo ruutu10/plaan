@@ -23,7 +23,7 @@ class TechnicalPlanReceived extends Notification implements ShouldQueue
     /**
      * Create a new notification instance.
      */
-    public function __construct(public TechnicalPlan $plan)
+    public function __construct(public TechnicalPlan $plan, public User $confirmedBy)
     {
         //
     }
@@ -53,6 +53,8 @@ class TechnicalPlanReceived extends Notification implements ShouldQueue
                 'showName' => $performance?->show->name ?? $this->plan->token,
                 'performer' => $performance?->performerName(),
                 'startsAt' => $performance?->startsAt(),
+                'statusLabel' => $this->plan->status->label(),
+                'confirmedByName' => $this->confirmedBy->name,
                 'publicUrl' => route('technical-plan.public', $this->plan),
                 'techEmail' => $techEmail,
             ]);

@@ -36,27 +36,33 @@
         </tr>
     </table>
 
-    @if ($performer || $startsAt)
-        <div style="{{ $sectionTitle }}">Etendus</div>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+    <div style="{{ $sectionTitle }}">Etendus</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+        <tr>
+            <td style="{{ $labelCell }}">Lavastus</td>
+            <td style="{{ $cell }}">{{ $showName }}</td>
+        </tr>
+        @if ($performer)
             <tr>
-                <td style="{{ $labelCell }}">Lavastus</td>
-                <td style="{{ $cell }}">{{ $showName }}</td>
+                <td style="{{ $labelCell }}">Esineja</td>
+                <td style="{{ $cell }}">{{ $performer }}</td>
             </tr>
-            @if ($performer)
-                <tr>
-                    <td style="{{ $labelCell }}">Esineja</td>
-                    <td style="{{ $cell }}">{{ $performer }}</td>
-                </tr>
-            @endif
-            @if ($startsAt)
-                <tr>
-                    <td style="{{ $labelCell }}">Kuupäev</td>
-                    <td style="{{ $cell }}">{{ $startsAt->format('d.m.Y') }}</td>
-                </tr>
-            @endif
-        </table>
-    @endif
+        @endif
+        @if ($startsAt)
+            <tr>
+                <td style="{{ $labelCell }}">Kuupäev</td>
+                <td style="{{ $cell }}">{{ $startsAt->format('d.m.Y') }}</td>
+            </tr>
+        @endif
+        <tr>
+            <td style="{{ $labelCell }}">Staatus</td>
+            <td style="{{ $cell }}">{{ $statusLabel }}</td>
+        </tr>
+        <tr>
+            <td style="{{ $labelCell }}">Kinnitas</td>
+            <td style="{{ $cell }}">{{ $confirmedByName }}</td>
+        </tr>
+    </table>
 
     <p style="margin:24px 0 0 0; font-size:13px; line-height:1.6; color:#6b7386;">
         Küsimuste korral kirjuta aadressil

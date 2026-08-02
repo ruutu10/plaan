@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\NotifyPlanReceived;
 use App\Actions\NotifyPlanSubmitted;
 use App\Actions\SaveTechnicalPlan;
 use App\Actions\Sso\AttemptSilentAuthentikLogin;
 use App\Actions\StagePlanCopy;
 use App\Data\PlanContent;
 use App\Enums\TechnicalPlanStatus;
+use App\Events\TechnicalPlanStatusChanged;
 use App\Http\Requests\StoreTechnicalPlanRequest;
 use App\Http\Requests\UpdateTechnicalPlanStatusRequest;
 use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
@@ -116,19 +116,17 @@ class TechnicalPlanController extends Controller
      * Move a plan to a different status from its details page. The route is
      * closed to anyone without {@see TechnicalPlan::EDIT_ALL_PERMISSION}.
      */
-    public function updateStatus(UpdateTechnicalPlanStatusRequest $request, TechnicalPlan $plan, NotifyPlanReceived $notifyReceived): RedirectResponse
+    public function updateStatus(UpdateTechnicalPlanStatusRequest $request, TechnicalPlan $plan): RedirectResponse
     {
         $newStatus = TechnicalPlanStatus::from($request->validated('status'));
         $previousStatus = $plan->status;
 
         $plan->update(['status' => $newStatus]);
 
-        // The author hears back only the once, at the moment the crew first
-        // has the plan in hand — not on every status a plan passes through
-        // afterwards.
-        if ($previousStatus === TechnicalPlanStatus::Submitted && $newStatus === TechnicalPlanStatus::Received) {
-            $notifyReceived->handle($plan);
-        }
+        // What happens off the back of a status change — mailing the author
+        // once a plan is received, and whatever else joins it later — is
+        // between the event and its listeners, not this controller's concern.
+        TechnicalPlanStatusChanged::dispatch($plan, $previousStatus, $newStatus, $request->user());
 
         Log::notice('Technical plan status changed from its details page', [
             'plan_id' => $plan->id,
