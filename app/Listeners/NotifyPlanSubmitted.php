@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Actions;
+namespace App\Listeners;
 
-use App\Models\TechnicalPlan;
-use App\Notifications\TechnicalPlanSubmitted;
+use App\Events\TechnicalPlanSubmitted as TechnicalPlanSubmittedEvent;
+use App\Notifications\TechnicalPlanSubmitted as TechnicalPlanSubmittedNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
@@ -14,9 +14,10 @@ use Illuminate\Support\Facades\Notification;
  */
 class NotifyPlanSubmitted
 {
-    public function handle(TechnicalPlan $plan): void
+    public function handle(TechnicalPlanSubmittedEvent $event): void
     {
-        $notification = new TechnicalPlanSubmitted($plan);
+        $plan = $event->plan;
+        $notification = new TechnicalPlanSubmittedNotification($plan);
 
         $plan->user?->notify($notification);
 

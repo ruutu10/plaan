@@ -19,10 +19,6 @@ export interface Show {
      * for a user who may not read them.
      */
     reasoningLogCount: number;
-    /** The card on the Planka board this show was announced on. */
-    plankaCardId: string | null;
-    /** That card on the board, ready to open. Null when none is configured. */
-    plankaCardUrl: string | null;
 }
 
 /** What the AI made of the Planka card an imported record came from. */
@@ -50,8 +46,6 @@ export interface ShowFormData {
     team_id: number | null;
     name: string;
     description: string;
-    /** Empty for a show that is not on the board at all. */
-    planka_card_id: string;
 }
 
 export type ShowFieldErrors = Partial<Record<keyof ShowFormData, string>>;

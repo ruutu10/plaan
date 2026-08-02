@@ -458,9 +458,6 @@ class ImportPlankaPerformances extends Command
             $show = Show::create([
                 'name' => $name,
                 'team_id' => $teamId,
-                // The card the show was announced on, so the board is one link
-                // away from the screen the show is corrected on.
-                'planka_card_id' => $this->cardId,
             ]);
 
             $this->shows[$key] = $show;

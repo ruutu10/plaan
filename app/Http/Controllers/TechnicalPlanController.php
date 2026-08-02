@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\NotifyPlanSubmitted;
 use App\Actions\SaveTechnicalPlan;
 use App\Actions\Sso\AttemptSilentAuthentikLogin;
 use App\Actions\StagePlanCopy;
 use App\Data\PlanContent;
 use App\Enums\TechnicalPlanStatus;
 use App\Events\TechnicalPlanStatusChanged;
+use App\Events\TechnicalPlanSubmitted;
 use App\Http\Requests\StoreTechnicalPlanRequest;
 use App\Http\Requests\UpdateTechnicalPlanStatusRequest;
 use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
@@ -28,7 +28,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
@@ -194,7 +193,6 @@ class TechnicalPlanController extends Controller
     public function store(
         StoreTechnicalPlanRequest $request,
         SaveTechnicalPlan $save,
-        NotifyPlanSubmitted $notify,
     ): SavedTechnicalPlanResource {
         $data = $request->validated();
         $submitting = (bool) ($data['submit'] ?? false);
@@ -223,7 +221,7 @@ class TechnicalPlanController extends Controller
         // Only once the files are in place does the plan mail out complete —
         // the notification links to the plan's stored attachments.
         if ($submitting) {
-            $notify->handle($plan);
+            TechnicalPlanSubmitted::dispatch($plan);
         }
 
         return SavedTechnicalPlanResource::make($plan);

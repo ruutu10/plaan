@@ -26,7 +26,6 @@ use Illuminate\Support\Carbon;
  * @property int|null $team_id
  * @property string $name
  * @property string|null $description
- * @property string|null $planka_card_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -39,7 +38,6 @@ use Illuminate\Support\Carbon;
     'team_id',
     'name',
     'description',
-    'planka_card_id',
 ])]
 class Show extends Model
 {

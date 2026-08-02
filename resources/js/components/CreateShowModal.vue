@@ -18,7 +18,6 @@ const form = useHttp<ShowFormData>({
     team_id: null,
     name: '',
     description: '',
-    planka_card_id: '',
 });
 
 /**
@@ -69,7 +68,6 @@ async function save(): Promise<void> {
             v-model:team-id="form.team_id"
             v-model:name="form.name"
             v-model:description="form.description"
-            v-model:planka-card-id="form.planka_card_id"
             :teams="teams"
             :errors="form.errors"
         />
