@@ -22,7 +22,7 @@ export function initializeSentry(): void {
         dsn,
         environment:
             import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
-        release: import.meta.env.VITE_SENTRY_RELEASE,
+        release: import.meta.env.VITE_SENTRY_RELEASE || undefined,
         integrations: [
             // Inertia navigates with the History API, which this instruments out of the box...
             Sentry.browserTracingIntegration(),
