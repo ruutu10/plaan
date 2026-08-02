@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\NotifyPlanReceived;
 use App\Actions\NotifyPlanSubmitted;
 use App\Actions\SaveTechnicalPlan;
 use App\Actions\Sso\AttemptSilentAuthentikLogin;
@@ -9,6 +10,7 @@ use App\Actions\StagePlanCopy;
 use App\Data\PlanContent;
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Requests\StoreTechnicalPlanRequest;
+use App\Http\Requests\UpdateTechnicalPlanStatusRequest;
 use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
 use App\Http\Resources\SavedTechnicalPlan as SavedTechnicalPlanResource;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
@@ -23,6 +25,7 @@ use App\Rules\AllowedAttachment;
 use App\Services\TechnicalPlanReviewer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -90,7 +93,51 @@ class TechnicalPlanController extends Controller
 
         return Inertia::render('technical-plans/Index', [
             'plans' => AdminTechnicalPlanResource::collection($plans)->resolve($request),
+            'statuses' => TechnicalPlanStatus::options(),
         ]);
+    }
+
+    /**
+     * Show one plan's details to the crew running the shows — the same fields
+     * as the overview's row, plus when it was submitted. The route is closed
+     * to anyone without {@see TechnicalPlan::VIEW_ALL_PERMISSION}.
+     */
+    public function showDetails(Request $request, TechnicalPlan $plan): Response
+    {
+        $plan->load(['user', 'performance.team', 'performance.show.team']);
+
+        return Inertia::render('technical-plans/Show', [
+            'plan' => AdminTechnicalPlanResource::make($plan)->resolve($request),
+            'statuses' => TechnicalPlanStatus::options(),
+        ]);
+    }
+
+    /**
+     * Move a plan to a different status from its details page. The route is
+     * closed to anyone without {@see TechnicalPlan::EDIT_ALL_PERMISSION}.
+     */
+    public function updateStatus(UpdateTechnicalPlanStatusRequest $request, TechnicalPlan $plan, NotifyPlanReceived $notifyReceived): RedirectResponse
+    {
+        $newStatus = TechnicalPlanStatus::from($request->validated('status'));
+        $previousStatus = $plan->status;
+
+        $plan->update(['status' => $newStatus]);
+
+        // The author hears back only the once, at the moment the crew first
+        // has the plan in hand — not on every status a plan passes through
+        // afterwards.
+        if ($previousStatus === TechnicalPlanStatus::Submitted && $newStatus === TechnicalPlanStatus::Received) {
+            $notifyReceived->handle($plan);
+        }
+
+        Log::notice('Technical plan status changed from its details page', [
+            'plan_id' => $plan->id,
+            'from_status' => $previousStatus->value,
+            'to_status' => $newStatus->value,
+            'changed_by' => $request->user()->id,
+        ]);
+
+        return to_route('technical-plans.show', $plan);
     }
 
     /**

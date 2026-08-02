@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { ExternalLink } from '@lucide/vue';
+import { ExternalLink, Info } from '@lucide/vue';
 import { statusTone } from '@/components/technical-plan/presentPlan';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
@@ -8,7 +8,7 @@ import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { formatEstonianDate } from '@/lib/date';
-import { index } from '@/routes/technical-plans';
+import { index, show } from '@/routes/technical-plans';
 import type { AdminPlanRow } from '@/types/technicalPlan';
 
 defineProps<{ plans: AdminPlanRow[] }>();
@@ -42,7 +42,7 @@ defineOptions({
                 { label: 'Kuupäev' },
                 { label: 'Esitaja' },
                 { label: 'Staatus' },
-                { label: 'Ava plaan', align: 'right', srOnly: true },
+                { label: 'Tegevused', align: 'right', srOnly: true },
             ]"
             :rows="plans"
             row-test-id="technical-plan-row"
@@ -80,19 +80,31 @@ defineOptions({
                     </R10Pill>
                 </td>
                 <td class="px-5 py-4 text-right align-top">
-                    <R10Button
-                        variant="outline"
-                        size="sm"
-                        external
-                        :href="plan.url"
-                        target="_blank"
-                        rel="noopener"
-                        data-test="technical-plan-link"
-                        class="px-4 py-2"
-                    >
-                        Ava
-                        <ExternalLink class="h-3.5 w-3.5" />
-                    </R10Button>
+                    <div class="flex justify-end gap-2">
+                        <R10Button
+                            variant="outline"
+                            size="sm"
+                            :href="show(plan.token)"
+                            data-test="technical-plan-details"
+                            class="px-4 py-2"
+                        >
+                            Detailid
+                            <Info class="h-3.5 w-3.5" />
+                        </R10Button>
+                        <R10Button
+                            variant="outline"
+                            size="sm"
+                            external
+                            :href="plan.url"
+                            target="_blank"
+                            rel="noopener"
+                            data-test="technical-plan-link"
+                            class="px-4 py-2"
+                        >
+                            Ava
+                            <ExternalLink class="h-3.5 w-3.5" />
+                        </R10Button>
+                    </div>
                 </td>
             </template>
         </R10Table>

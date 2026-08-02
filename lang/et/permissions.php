@@ -3,6 +3,7 @@
 return [
     'technical_plans' => [
         'view_all' => 'Kõigi tehnikaplaanide vaatamine',
+        'edit_all' => 'Kõigi tehnikaplaanide muutmine',
     ],
     'shows' => [
         'edit_all' => 'Kõigi lavastuste muutmine',

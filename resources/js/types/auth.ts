@@ -13,6 +13,7 @@ export type User = {
 /** Abilities the signed-in user holds outside their teams (Spatie permissions). */
 export type AuthAbilities = {
     viewAllTechnicalPlans: boolean;
+    editAllTechnicalPlans: boolean;
     manageAllTeams: boolean;
 };
 

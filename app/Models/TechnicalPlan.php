@@ -64,6 +64,13 @@ class TechnicalPlan extends Model implements HasMedia
      */
     public const VIEW_ALL_PERMISSION = 'technical_plans.view_all';
 
+    /**
+     * The permission — held by the "technician" role — that lets its holder
+     * change any plan's status from the admin overview, not just the ones they
+     * wrote or their teams sent.
+     */
+    public const EDIT_ALL_PERMISSION = 'technical_plans.edit_all';
+
     protected string $attachmentsCollection = 'technical-plan';
 
     /**

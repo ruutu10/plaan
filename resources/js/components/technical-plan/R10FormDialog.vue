@@ -2,9 +2,9 @@
 import { watch } from 'vue';
 import {
     Dialog,
-    DialogContent,
     DialogDescription,
     DialogHeader,
+    DialogScrollContent,
     DialogTitle,
 } from '@/components/ui/dialog';
 import R10Button from './R10Button.vue';
@@ -44,7 +44,9 @@ watch(open, (isOpen) => {
 
 <template>
     <Dialog :open="open" @update:open="open = $event">
-        <DialogContent class="bg-r10-paper font-r10-body text-r10-grey-700">
+        <DialogScrollContent
+            class="bg-r10-paper font-r10-body text-r10-grey-700"
+        >
             <form class="flex flex-col gap-6" @submit.prevent="emit('submit')">
                 <DialogHeader>
                     <DialogTitle
@@ -85,6 +87,6 @@ watch(open, (isOpen) => {
                     </R10Button>
                 </div>
             </form>
-        </DialogContent>
+        </DialogScrollContent>
     </Dialog>
 </template>

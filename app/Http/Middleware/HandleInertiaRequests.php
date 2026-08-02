@@ -51,6 +51,7 @@ class HandleInertiaRequests extends Middleware
                 // teams — the frontend hides what the backend would refuse.
                 'can' => fn (): array => [
                     'viewAllTechnicalPlans' => (bool) $user?->can(TechnicalPlan::VIEW_ALL_PERMISSION),
+                    'editAllTechnicalPlans' => (bool) $user?->can(TechnicalPlan::EDIT_ALL_PERMISSION),
                     'manageAllTeams' => (bool) $user?->can(Team::EDIT_ALL_PERMISSION),
                 ],
             ],
