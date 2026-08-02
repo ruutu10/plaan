@@ -47,6 +47,17 @@ Route::get('technical-plans', [TechnicalPlanController::class, 'overview'])
     ->middleware(['auth', 'can:'.TechnicalPlan::VIEW_ALL_PERMISSION])
     ->name('technical-plans.index');
 
+// A single plan's details, opened from a row of the overview above.
+Route::get('technical-plans/{plan:token}', [TechnicalPlanController::class, 'showDetails'])
+    ->middleware(['auth', 'can:'.TechnicalPlan::VIEW_ALL_PERMISSION])
+    ->name('technical-plans.show');
+
+// Changing a plan's status from its details page is a right of its own — held
+// by the same "technician" role, but not implied by being able to merely view it.
+Route::patch('technical-plans/{plan:token}', [TechnicalPlanController::class, 'updateStatus'])
+    ->middleware(['auth', 'can:'.TechnicalPlan::EDIT_ALL_PERMISSION])
+    ->name('technical-plans.update-status');
+
 // JSON API consumed by the technical-plan wizard frontend.
 Route::prefix('api/tehnikaplaan')
     ->name('technical-plan.')

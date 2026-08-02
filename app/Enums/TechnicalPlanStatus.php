@@ -21,7 +21,7 @@ enum TechnicalPlanStatus: string
         return match ($this) {
             self::Draft => 'Mustand',
             self::Submitted => 'Esitatud',
-            self::Received => 'Tehnik kätte saanud',
+            self::Received => 'Tehniku kinnitatud',
             self::Archived => 'Arhiveeritud',
         };
     }
@@ -50,5 +50,18 @@ enum TechnicalPlanStatus: string
     public static function reusable(): array
     {
         return [...self::delivered(), self::Archived];
+    }
+
+    /**
+     * Every status as a value/label pair, for a picker offering all of them.
+     *
+     * @return array<int, array{value: string, label: string}>
+     */
+    public static function options(): array
+    {
+        return array_map(
+            fn (self $status): array => ['value' => $status->value, 'label' => $status->label()],
+            self::cases(),
+        );
     }
 }

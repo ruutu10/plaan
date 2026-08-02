@@ -15,7 +15,7 @@
     "statusLabels": {
         "draft": "Mustand",
         "submitted": "Esitatud",
-        "received": "Tehnik kätte saanud",
+        "received": "Tehniku kinnitatud",
         "archived": "Arhiveeritud",
         "": "Mustand",
         "something-else": "Mustand"
@@ -272,7 +272,7 @@
             },
             "expected": {
                 "token": "R10-2026-000000000000",
-                "statusLabel": "Tehnik kätte saanud",
+                "statusLabel": "Tehniku kinnitatud",
                 "showName": "Proov",
                 "performer": "Trupp",
                 "contact": "tehnik@example.com",

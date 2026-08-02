@@ -103,7 +103,7 @@ export function smoke(value: unknown): string {
 const STATUS_LABELS: Record<string, string> = {
     draft: 'Mustand',
     submitted: 'Esitatud',
-    received: 'Tehnik kätte saanud',
+    received: 'Tehniku kinnitatud',
     archived: 'Arhiveeritud',
 };
 

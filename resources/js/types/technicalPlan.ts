@@ -177,3 +177,9 @@ export interface AdminPlanRow {
     /** Public link opening the plan itself. */
     url: string;
 }
+
+/** One status a plan may be moved to, offered to a picker. */
+export interface StatusOption {
+    value: string;
+    label: string;
+}
