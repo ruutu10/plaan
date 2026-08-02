@@ -178,8 +178,9 @@ class TechnicalPlan extends Model implements HasMedia
     /**
      * Limit the query to the plans the given user may open as the basis for a
      * new plan: their own plans, whatever state those are in, plus the plans
-     * their teams' performances have already been handed in with. A team-mate's
-     * unfinished draft stays theirs alone.
+     * their teams' performances have already been handed in with — archived
+     * ones included, since a played show's plan is the one worth copying for
+     * its next run. A team-mate's unfinished draft stays theirs alone.
      *
      * @param  Builder<TechnicalPlan>  $query
      */
@@ -191,7 +192,7 @@ class TechnicalPlan extends Model implements HasMedia
         $query->where(fn (Builder $query) => $query
             ->where('user_id', $user->id)
             ->orWhere(fn (Builder $query) => $query
-                ->whereIn('status', TechnicalPlanStatus::delivered())
+                ->whereIn('status', TechnicalPlanStatus::reusable())
                 // A performance is the team's through the show it stages, or by
                 // being the team's own act on an evening somebody else stages —
                 // an Õppelava slot's plan belongs to whoever plays the slot.
