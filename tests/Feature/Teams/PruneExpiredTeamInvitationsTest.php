@@ -13,10 +13,8 @@ class PruneExpiredTeamInvitationsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_expired_invitations_are_deleted_by_the_scheduled_cleanup(): void
+    public function test_expired_invitations_are_deleted(): void
     {
-        $this->travelTo(now()->startOfDay());
-
         $owner = User::factory()->create();
         $team = Team::factory()->create();
 
@@ -37,7 +35,7 @@ class PruneExpiredTeamInvitationsTest extends TestCase
             'invited_by' => $owner->id,
         ]);
 
-        $this->artisan('schedule:run')->assertSuccessful();
+        $this->artisan('team-invitations:prune-expired')->assertSuccessful();
 
         $this->assertDatabaseMissing('team_invitations', [
             'id' => $expiredInvitation->id,
