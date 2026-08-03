@@ -4,6 +4,7 @@
       "mcp__laravel-boost__database-query",
       "Bash(vendor/bin/sail artisan *)",
       "Bash(vendor/bin/sail php *)",
+      "Bash(vendor/bin/sail open *)",
       "mcp__laravel-boost__search-docs",
       "WebFetch(domain:docs.sentry.io)"
     ]
