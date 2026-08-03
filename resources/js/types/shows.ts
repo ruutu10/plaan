@@ -113,6 +113,31 @@ export interface Performance {
     createdAt: string | null;
 }
 
+/**
+ * One row of the crew's overview of every performance in the house. Narrower
+ * than {@link Performance}: the overview only reads, and a performance is
+ * corrected on the show it belongs to.
+ */
+export interface AdminPerformanceRow {
+    id: number;
+    /** The show the row opens — where the performance is edited. */
+    showId: number;
+    showName: string;
+    /** The act's own name, for an evening several groups share. */
+    title: string | null;
+    /** Who plays it: the performance's own group, or the show's. */
+    teamName: string | null;
+    /** ISO date (YYYY-MM-DD), on the venue's clock. */
+    date: string;
+    /** Curtain-up as "19:00", on the venue's clock. */
+    startTime: string;
+    /** Minutes, or null when the performance is not timed. */
+    duration: number | null;
+    /** Imported and not reviewed yet. */
+    isDraft: boolean;
+    technicalPlanCount: number | null;
+}
+
 /** The fields a performance is written through. */
 export interface PerformanceFormData {
     /** The act's own name; empty leaves the performance under the show's. */

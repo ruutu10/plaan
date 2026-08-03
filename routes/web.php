@@ -14,6 +14,7 @@ use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Controllers\TechnicalPlanController;
 use App\Http\Middleware\EnsureTeamMembership;
 use App\Models\ClaudeReasoningLog;
+use App\Models\Performance;
 use App\Models\TechnicalPlan;
 use Illuminate\Support\Facades\Route;
 
@@ -122,6 +123,14 @@ Route::prefix('api/shows')
                     ->name('claude-logs');
             });
     });
+
+// The crew's overview of every performance in the house, whatever show it
+// belongs to and whichever group plays it. Opened by the performance edit-all
+// permission (the "technician" role), which is also what decides how far the
+// listing itself reaches; everybody else keeps to their own groups' shows above.
+Route::get('performances', [PerformanceController::class, 'overview'])
+    ->middleware(['auth', 'verified', 'can:'.Performance::EDIT_ALL_PERMISSION])
+    ->name('admin.performances.index');
 
 // Inertia-rendered team-management pages, shells like the show ones above.
 // These are the admin's view of the groups themselves; a user's own team

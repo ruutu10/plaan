@@ -15,6 +15,7 @@ export type AuthAbilities = {
     viewAllTechnicalPlans: boolean;
     editAllTechnicalPlans: boolean;
     manageAllTeams: boolean;
+    manageAllPerformances: boolean;
 };
 
 export type Auth = {

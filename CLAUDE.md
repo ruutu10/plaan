@@ -61,6 +61,11 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 - Be concise in your explanations - focus on what's important rather than explaining obvious details.
 
+## Preferred architecture
+
+- Use HTTP Response classes to compose API response data structures instead of building this inline into the controller
+- Use Event/Listener pattern to trigger on significant events, instead of invoking an Action class 
+
 === boost rules ===
 
 # Laravel Boost

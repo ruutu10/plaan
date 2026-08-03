@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Performance;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use Illuminate\Http\Request;
@@ -53,6 +54,7 @@ class HandleInertiaRequests extends Middleware
                     'viewAllTechnicalPlans' => (bool) $user?->can(TechnicalPlan::VIEW_ALL_PERMISSION),
                     'editAllTechnicalPlans' => (bool) $user?->can(TechnicalPlan::EDIT_ALL_PERMISSION),
                     'manageAllTeams' => (bool) $user?->can(Team::EDIT_ALL_PERMISSION),
+                    'manageAllPerformances' => (bool) $user?->can(Performance::EDIT_ALL_PERMISSION),
                 ],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import {
+    CalendarDays,
     ClipboardList,
     FolderGit2,
     LayoutGrid,
@@ -24,6 +25,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as adminPerformances } from '@/routes/admin/performances';
 import { index as adminTeams } from '@/routes/admin/teams';
 import { index as shows } from '@/routes/shows';
 import { index as technicalPlan } from '@/routes/technical-plan';
@@ -62,6 +64,18 @@ const mainNavItems = computed<NavItem[]>(() => [
                   title: 'Saadetud plaanid',
                   href: technicalPlans().url,
                   icon: ClipboardList,
+              },
+          ]
+        : []),
+    // The house-wide performance overview, next to the plans it feeds. A user
+    // without the permission reaches their own groups' dates through Lavastused
+    // and is not shown a door the server would shut.
+    ...(page.props.auth?.can?.manageAllPerformances
+        ? [
+              {
+                  title: 'Etendused',
+                  href: adminPerformances().url,
+                  icon: CalendarDays,
               },
           ]
         : []),

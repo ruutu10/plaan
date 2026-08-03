@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Performances\SavePerformanceRequest;
+use App\Http\Resources\AdminPerformance as AdminPerformanceResource;
 use App\Http\Resources\Performance as PerformanceResource;
 use App\Models\Performance;
 use App\Models\Show;
@@ -14,17 +15,47 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
- * The JSON API behind a show's dated performances. Every route is nested under the
- * show and the bindings are scoped to it, so a performance is only ever reachable
- * through the show it belongs to.
+ * Dated performances of a show: the JSON API the management screens read and
+ * write them through, and the house-wide overview {@see overview()} renders.
+ * Every writing route is nested under the show and its bindings are scoped to
+ * it, so a performance is only ever changed through the show it belongs to.
  *
- * Who may write here is settled by {@see PerformancePolicy}.
+ * Who may write here is settled by {@see PerformancePolicy}; how far a reader
+ * sees is settled by {@see Performance::scopeEditableBy()}, which hands the
+ * holders of {@see Performance::EDIT_ALL_PERMISSION} the whole house and
+ * everybody else their own groups' nights.
  */
 class PerformanceController extends Controller
 {
+    /**
+     * The overview of the performances the user may manage, newest first.
+     *
+     * What comes back is decided by permission rather than by the route: a
+     * technician is handed every performance in the house, whatever show it
+     * belongs to and whichever group plays it, and anybody else only the nights
+     * of their own groups.
+     */
+    public function overview(Request $request): InertiaResponse
+    {
+        // Newest first, like the plan overview: what is coming up — or has just
+        // been played — is what the crew looks for, not the archive.
+        $performances = Performance::query()
+            ->with(['show.team', 'team'])
+            ->withCount('technicalPlans')
+            ->editableBy($request->user())
+            ->orderByDesc('date')
+            ->get();
+
+        return Inertia::render('admin/performances/Index', [
+            'performances' => AdminPerformanceResource::collection($performances)->resolve($request),
+        ]);
+    }
+
     /**
      * List the show's performances, soonest first, together with the groups a
      * performance may be handed to — the form offering the choice is on the
