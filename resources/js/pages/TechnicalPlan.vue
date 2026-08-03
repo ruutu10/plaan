@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { computed, onMounted, provide, reactive, ref, watch } from 'vue';
+import {
+    clearDraft,
+    readDraft,
+    writeDraft,
+} from '@/components/technical-plan/draftStorage';
 import LoginScreen from '@/components/technical-plan/LoginScreen.vue';
 import { hydratePlan } from '@/components/technical-plan/plan';
 import { configKey, planKey } from '@/components/technical-plan/planKey';
@@ -49,8 +54,6 @@ const props = withDefaults(
         initialStep: 0,
     },
 );
-
-const STORAGE_KEY = 'r10-techplan-v1';
 
 const plan = reactive<Plan>(hydratePlan(props.initialPlan));
 
@@ -135,12 +138,7 @@ function loadIntoWizard(payload: Partial<Plan> | null, asNew = false): void {
 }
 
 function reset(): void {
-    try {
-        localStorage.removeItem(STORAGE_KEY);
-    } catch {
-        /* ignore */
-    }
-
+    clearDraft();
     loadIntoWizard(null);
 
     // A plan opened from a shared link lives at that link's own URL. Starting
@@ -412,24 +410,12 @@ async function aiReview(): Promise<void> {
 
 /* ---- Local draft persistence ---------------------------------------- */
 
-/** The half-written plan left in this browser, if there is one still readable. */
-function savedDraft(): { step?: number; plan?: Partial<Plan> } | null {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-
-        return raw ? JSON.parse(raw) : null;
-    } catch {
-        /* ignore malformed drafts */
-        return null;
-    }
-}
-
 onMounted(() => {
     if (props.initialPlan) {
         return;
     }
 
-    const saved = savedDraft();
+    const saved = readDraft();
 
     if (!saved?.plan) {
         return;
@@ -459,23 +445,11 @@ onMounted(() => {
 watch(
     [plan, step],
     () => {
-        // Reading somebody else's plan is not working on one: the draft this
-        // browser has half-written of its own must survive the visit.
-        if (viewingOnly.value) {
-            return;
-        }
-
-        try {
-            localStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify({
-                    step: step.value,
-                    plan,
-                }),
-            );
-        } catch {
-            /* ignore quota errors */
-        }
+        // A plan opened by its share link is never this browser's draft —
+        // whether it is being read or edited, it is saved at its own link, and
+        // storing it here would prefill the next new plan with it. The draft
+        // this browser has half-written of its own must survive the visit.
+        writeDraft({ step: step.value, plan }, props.initialPlan);
     },
     { deep: true },
 );
