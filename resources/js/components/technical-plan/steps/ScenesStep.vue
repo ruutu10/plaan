@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Copy, Trash2 } from '@lucide/vue';
+import { Copy, Link, Trash2, Upload } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import type { Component } from 'vue';
 import type { Scene } from '@/types/technicalPlan';
 import {
     acceptAttribute,
@@ -29,9 +30,9 @@ const SOUND_COLLECTION = 'sound';
 
 type SoundMode = 'url' | 'file';
 
-const SOUND_MODES: { value: SoundMode; label: string }[] = [
-    { value: 'url', label: 'Link' },
-    { value: 'file', label: 'Laadi fail üles' },
+const SOUND_MODES: { value: SoundMode; label: string; icon: Component }[] = [
+    { value: 'url', label: 'Link', icon: Link },
+    { value: 'file', label: 'Laadi fail üles', icon: Upload },
 ];
 
 const soundAccept = computed(() => acceptAttribute(config.soundExtensions));
@@ -347,6 +348,7 @@ function onDrop(targetId: string): void {
                                 </li>
                             </ul>
                             <RadioPills
+                                compact
                                 :model-value="soundMode(scene)"
                                 :options="SOUND_MODES"
                                 @update:model-value="

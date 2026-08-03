@@ -27,8 +27,7 @@ const authConfigContent = computed<TwoFactorConfigContent>(() => {
 
     return {
         title: 'Autentimiskood',
-        description:
-            'Sisesta oma autentimisrakenduse pakutav autentimiskood.',
+        description: 'Sisesta oma autentimisrakenduse pakutav autentimiskood.',
         buttonText: 'logi sisse taastekoodiga',
     };
 });

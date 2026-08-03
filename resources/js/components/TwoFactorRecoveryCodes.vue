@@ -45,8 +45,8 @@ onMounted(async () => {
                 <LockKeyhole class="size-4" />2FA taastekoodid
             </CardTitle>
             <CardDescription>
-                Taastekoodid võimaldavad taastada ligipääsu, kui kaotad oma
-                2FA seadme. Hoia neid turvalises paroolihaldusrakenduses.
+                Taastekoodid võimaldavad taastada ligipääsu, kui kaotad oma 2FA
+                seadme. Hoia neid turvalises paroolihaldusrakenduses.
             </CardDescription>
         </CardHeader>
         <CardContent>
@@ -110,9 +110,9 @@ onMounted(async () => {
                         </div>
                     </div>
                     <p class="text-xs text-muted-foreground select-none">
-                        Iga taastekoodi saab kasutada üks kord ligipääsuks
-                        oma kontole ning see eemaldatakse pärast kasutamist.
-                        Kui vajad rohkem koode, klõpsa ülal nupul
+                        Iga taastekoodi saab kasutada üks kord ligipääsuks oma
+                        kontole ning see eemaldatakse pärast kasutamist. Kui
+                        vajad rohkem koode, klõpsa ülal nupul
                         <span class="font-bold">Genereeri koodid uuesti</span>.
                     </p>
                 </div>

@@ -41,8 +41,8 @@ onUnmounted(() => clearTwoFactorAuthData());
         >
             <p class="text-sm text-muted-foreground">
                 Kui lülitad kaheastmelise autentimise sisse, küsitakse
-                sisselogimisel sinult turvakoodi. Selle koodi leiad oma
-                telefoni TOTP-autentimisrakendusest.
+                sisselogimisel sinult turvakoodi. Selle koodi leiad oma telefoni
+                TOTP-autentimisrakendusest.
             </p>
 
             <div>

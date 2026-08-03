@@ -66,7 +66,7 @@ function defaultScenes(): Scene[] {
         {
             ...blankScene(`${SCENE_ID_PREFIX}2`),
             name: 'Stseenid',
-            light: 'üldvalgus'
+            light: 'üldvalgus',
         },
         {
             ...blankScene(`${SCENE_ID_PREFIX}3`),
