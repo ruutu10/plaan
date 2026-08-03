@@ -234,4 +234,9 @@ Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `
 Vue components must have a single root element.
 - IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
 
+# System design
+
+If you need a high level overview of the intended usage of the system - how users expect the system to behave, user stories and workflows - then read MANUAL.md.
+This is not a technical document, but a user-facing overview of system behavior.
+
 </laravel-boost-guidelines>

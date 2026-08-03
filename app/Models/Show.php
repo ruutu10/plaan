@@ -93,6 +93,44 @@ class Show extends Model
     public const EDIT_ALL_PERMISSION = 'shows.edit_all';
 
     /**
+     * The name of the stand-in show, under which the plans for nights that are
+     * not on the books are filed. Every plan names the performance it is for,
+     * so a performer whose evening nobody has registered yet still needs one to
+     * name; the crew move the plan onto the real performance once it exists.
+     *
+     * It belongs to no group, which is what keeps its plans to whoever wrote
+     * them — see {@see TechnicalPlan::visibleTo()}.
+     */
+    public const PLACEHOLDER_NAME = 'Etendust pole nimekirjas';
+
+    /**
+     * The stand-in show itself, registered the first time it is asked for.
+     * One brought back rather than a second one created: two shows under this
+     * name would split the plans that belong to no performance between them.
+     */
+    public static function placeholder(): self
+    {
+        $show = static::withTrashed()->firstOrCreate(
+            ['name' => self::PLACEHOLDER_NAME, 'team_id' => null],
+            ['description' => 'Kohatäide plaanidele, mille etendust pole veel registreeritud. Tehnik tõstab plaani õige etenduse alla, kui see on kirjas.'],
+        );
+
+        if ($show->trashed()) {
+            $show->restore();
+        }
+
+        return $show;
+    }
+
+    /**
+     * Whether this is the stand-in show — see {@see PLACEHOLDER_NAME}.
+     */
+    public function isPlaceholder(): bool
+    {
+        return $this->team_id === null && $this->name === self::PLACEHOLDER_NAME;
+    }
+
+    /**
      * Limit the query to the shows the given user may see and edit: the ones
      * owned by a team they belong to. Holders of {@see EDIT_ALL_PERMISSION} are
      * not limited at all — shows without an owning team included, as those are

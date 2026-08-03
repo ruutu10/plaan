@@ -32,12 +32,16 @@ class PerformanceSeeder extends Seeder
     ];
 
     /**
-     * Seed the example performances for the seeded shows. The dates are
+     * Seed the example performances for the seeded shows, plus the stand-in
+     * show's own — the night a performer picks when theirs is not on the books,
+     * dated years ahead so it never leaves the picker. The example dates are
      * relative to the day of seeding, so a show that already has its performances
      * is left alone rather than given a second set a few days apart.
      */
     public function run(): void
     {
+        Performance::placeholder();
+
         foreach (self::PERFORMANCES as $showName => $performances) {
             $show = Show::where('name', $showName)->first();
 

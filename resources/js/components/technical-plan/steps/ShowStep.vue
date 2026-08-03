@@ -5,11 +5,18 @@ import { requestJson } from '@/lib/http';
 import type { UpcomingPerformance } from '@/types/technicalPlan';
 import { applyPlanContent, resetPlanContent } from '../plan';
 import { usePlan } from '../planKey';
+import PriorPlanPicker from '../PriorPlanPicker.vue';
 import StepHeader from '../StepHeader.vue';
 
 const plan = usePlan();
 
 const performances = ref<UpcomingPerformance[]>([]);
+/**
+ * The stand-in performance, offered below the list: a plan always names the
+ * night it is for, so a performer whose evening is not on the books files it
+ * here and the crew move it once the performance has been registered.
+ */
+const placeholder = ref<UpcomingPerformance | null>(null);
 const loading = ref(true);
 const loadError = ref('');
 
@@ -26,9 +33,12 @@ async function loadPerformances(): Promise<void> {
     if (ok) {
         performances.value =
             (data.results as UpcomingPerformance[] | undefined) ?? [];
+        placeholder.value =
+            (data.placeholder as UpcomingPerformance | undefined) ?? null;
     } else {
         loadError.value = 'Etenduste laadimine ebaõnnestus.';
         performances.value = [];
+        placeholder.value = null;
     }
 
     loading.value = false;
@@ -38,10 +48,20 @@ function isSelected(performance: UpcomingPerformance): boolean {
     return plan.meta.performanceId === performance.id;
 }
 
-/** Reset to a fresh blank plan whenever the chosen performance changes. */
+/**
+ * Reset to a fresh blank plan whenever the chosen performance changes — unless
+ * the plan has already been saved. Moving one of those onto another night is
+ * re-filing it, not starting over: it is what the crew does with the plans
+ * handed in under the stand-in performance once the real one is on the books,
+ * and the content is the whole of what they are keeping.
+ */
 function freshStart(): void {
     sourceToken.value = null;
-    plan.token = null;
+
+    if (plan.token !== null) {
+        return;
+    }
+
     resetPlanContent(plan);
 }
 
@@ -56,20 +76,6 @@ function selectPerformance(performance: UpcomingPerformance): void {
     plan.meta.showDate = performance.showDate;
     plan.meta.duration = performance.duration;
     plan.meta.description = performance.description;
-    freshStart();
-}
-
-function selectNotListed(): void {
-    if (plan.meta.performanceId === null) {
-        return;
-    }
-
-    plan.meta.performanceId = null;
-    plan.meta.performer = '';
-    plan.meta.showName = '';
-    plan.meta.showDate = '';
-    plan.meta.duration = null;
-    plan.meta.description = '';
     freshStart();
 }
 
@@ -191,109 +197,64 @@ onMounted(loadPerformances);
                     </span>
                 </button>
 
-                <div
+                <PriorPlanPicker
                     v-if="
                         isSelected(performance) && performance.priorPlans.length
                     "
-                    class="border-t border-r10-orange/30 px-4 pt-3 pb-3.5"
-                >
-                    <span
-                        class="mb-2 block font-r10-body text-[11px] font-bold tracking-[0.12em] text-r10-grey-700 uppercase"
-                    >
-                        Millest alustada?
-                    </span>
-                    <div class="flex max-h-72 flex-col gap-1 overflow-y-auto">
-                        <button
-                            type="button"
-                            :disabled="applyingSource"
-                            class="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-white/70"
-                            @click="chooseSource(null)"
-                        >
-                            <span
-                                :class="[
-                                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
-                                    sourceToken === null
-                                        ? 'border-r10-orange'
-                                        : 'border-r10-grey-200',
-                                ]"
-                            >
-                                <span
-                                    v-if="sourceToken === null"
-                                    class="h-2 w-2 rounded-full bg-r10-orange"
-                                />
-                            </span>
-                            <span class="text-sm font-semibold text-r10-ink">
-                                Alusta tühjalt lehelt
-                            </span>
-                        </button>
-
-                        <button
-                            v-for="prior in performance.priorPlans"
-                            :key="prior.token"
-                            type="button"
-                            :disabled="applyingSource"
-                            class="flex cursor-pointer items-start gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-white/70"
-                            @click="chooseSource(prior.token)"
-                        >
-                            <span
-                                :class="[
-                                    'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
-                                    sourceToken === prior.token
-                                        ? 'border-r10-orange'
-                                        : 'border-r10-grey-200',
-                                ]"
-                            >
-                                <span
-                                    v-if="sourceToken === prior.token"
-                                    class="h-2 w-2 rounded-full bg-r10-orange"
-                                />
-                            </span>
-                            <span class="min-w-0 flex-1">
-                                <span class="block text-sm text-r10-ink">
-                                    Kopeeri varem esitatud plaan
-                                    <span class="font-semibold"
-                                        >· {{ prior.label }}</span
-                                    >
-                                </span>
-                                <span
-                                    v-if="prior.author"
-                                    class="block text-[12px] text-r10-grey-500"
-                                >
-                                    Koostas {{ prior.author }}
-                                </span>
-                            </span>
-                        </button>
-                    </div>
-                </div>
+                    :plans="performance.priorPlans"
+                    :selected="sourceToken"
+                    :busy="applyingSource"
+                    @choose="chooseSource"
+                />
             </div>
 
             <div
+                v-if="placeholder"
                 :class="[
                     'rounded-xl border-2 border-dashed transition-colors',
-                    plan.meta.performanceId === null
+                    isSelected(placeholder)
                         ? 'border-r10-orange bg-r10-orange-100'
                         : 'border-r10-grey-200 bg-white',
                 ]"
             >
                 <button
                     type="button"
-                    class="flex w-full cursor-pointer items-center gap-3.5 px-4 py-3.5 text-left"
-                    @click="selectNotListed"
+                    class="flex w-full cursor-pointer items-start gap-3.5 px-4 py-3.5 text-left"
+                    @click="selectPerformance(placeholder)"
                 >
                     <span
                         :class="[
-                            'h-2.5 w-2.5 shrink-0 rotate-45 rounded-[1px]',
-                            plan.meta.performanceId === null
+                            'mt-1 h-2.5 w-2.5 shrink-0 rotate-45 rounded-[1px]',
+                            isSelected(placeholder)
                                 ? 'bg-r10-orange'
                                 : 'bg-r10-grey-200',
                         ]"
                     />
-                    <span
-                        class="font-r10-body text-sm font-semibold text-r10-ink"
-                    >
-                        Etendust pole nimekirjas
+                    <span class="min-w-0 flex-1">
+                        <span
+                            class="block font-r10-body text-sm font-semibold text-r10-ink"
+                        >
+                            Etendust pole nimekirjas
+                        </span>
+                        <span
+                            class="mt-0.5 block text-[13px] text-r10-grey-500"
+                        >
+                            Plaan jõuab tehnikuni ka nii. Kirjuta etenduse nimi,
+                            kuupäev ja kellaaeg viimase sammu lisainfo lahtrisse
+                            — tehnik seob plaani õige etendusega.
+                        </span>
                     </span>
                 </button>
+
+                <PriorPlanPicker
+                    v-if="
+                        isSelected(placeholder) && placeholder.priorPlans.length
+                    "
+                    :plans="placeholder.priorPlans"
+                    :selected="sourceToken"
+                    :busy="applyingSource"
+                    @choose="chooseSource"
+                />
             </div>
         </div>
     </section>

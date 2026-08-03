@@ -296,7 +296,8 @@ class OperationalLoggingTest extends TestCase
             'token' => null,
             'submit' => true,
             'meta' => [
-                'performanceId' => null,
+                // Every plan names the night it is for.
+                'performanceId' => Performance::factory()->create()->id,
                 'performer' => 'Märold',
                 'showName' => 'Festival 2026',
                 'showDate' => '2026-08-01',

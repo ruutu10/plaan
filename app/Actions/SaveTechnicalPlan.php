@@ -26,7 +26,7 @@ class SaveTechnicalPlan
         $wasNew = ! $plan->exists;
 
         $attributes = PlanContent::fromValidated($data) + [
-            'performance_id' => $data['meta']['performanceId'] ?? null,
+            'performance_id' => $data['meta']['performanceId'],
         ];
 
         // A plan's owner is settled when it is created; a later save never

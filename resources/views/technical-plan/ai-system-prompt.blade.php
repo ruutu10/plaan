@@ -21,7 +21,7 @@ Need väljad on kasutaja saadetud JSON objektis. Kui viitad mõnele väljale, si
 - **meta** — üldinfo. Siin on põimitud kaks asja: **lavastus** (püsiv kontseptsioon, mida mängitakse korduvalt) ja **etendus** (üks konkreetne mängukord).
   - Lavastuse omad: `performer` (esineja/tiim, kellele lavastus kuulub), `showName` (lavastuse nimi), `description` (vabakirjeldus). Need on kõigil sama lavastuse mängukordadel ühesugused — kirjeldus peab seega kirjeldama lavastust üldiselt, mitte ühte õhtut.
   - Etenduse omad: `showDate` (selle mängukorra kuupäev), `duration` (selle mängukorra kestus minutites) — need võivad mängukordade vahel erineda.
-  - `performanceId` — registreeritud etenduse sisemine id või `null`, kui esineja koostab plaani etendusele, mida nimekirjas veel pole.
+  - `performanceId` — registreeritud etenduse sisemine id. Iga plaan käib mõne etenduse kohta; kui esineja etendust nimekirjas polnud, viitab see kohatäite-etendusele ja `showName` on „Etendust pole nimekirjas“ — sel juhul ära kommenteeri etenduse nime ega kuupäeva, need täpsustab tehnik hiljem.
 - **sound** — heli üldvajadused:
   - `micsMode` (`yes`/`no`) — kas esineja vajab mikrofone; `micsDetail` — täpsustus (mitu, mis tüüpi, kus laval).
   - `musicianMode` (`yes`/`no`) — kas laval on elava muusika esitaja; `musicianDetail` — pill, ühendusvajadus, asukoht laval.

@@ -109,6 +109,15 @@ const stepComponents = [
 
 const nextLabel = computed(() => (step.value === 5 ? 'Vaata üle' : 'Edasi'));
 
+/**
+ * Every plan names the night it is for — the performer whose evening is not on
+ * the books picks the stand-in performance offered on the first step — so the
+ * picker is the one step that has to be answered before the rest opens. The
+ * server refuses a plan without it either way; this is what keeps somebody from
+ * filling in seven steps before being told.
+ */
+const performanceChosen = computed(() => plan.meta.performanceId !== null);
+
 /* ---- Plan lifecycle -------------------------------------------------- */
 
 function scrollTop(): void {
@@ -164,7 +173,10 @@ function goTo(index: number): void {
         return;
     }
 
-    step.value = index;
+    // Nothing past the picker until the night has been chosen — see
+    // `performanceChosen`. The stepper offers every step, so it is refused
+    // here rather than only on the "Edasi" button.
+    step.value = index > 0 && !performanceChosen.value ? 0 : index;
     scrollTop();
 }
 
@@ -530,12 +542,16 @@ watch(
                         <span
                             class="order-1 w-full text-center text-xs font-bold tracking-[0.1em] text-r10-grey-500 uppercase sm:order-none sm:ml-auto sm:w-auto sm:text-left"
                         >
-                            Samm {{ step + 1 }} / 7
+                            <template v-if="!performanceChosen">
+                                Vali etendus, et edasi liikuda
+                            </template>
+                            <template v-else>Samm {{ step + 1 }} / 7</template>
                         </span>
                         <R10Button
                             v-if="step < 6"
                             variant="primary"
                             size="md"
+                            :disabled="!performanceChosen"
                             class="order-3 ml-auto sm:order-none sm:ml-0"
                             @click="goNext"
                         >
