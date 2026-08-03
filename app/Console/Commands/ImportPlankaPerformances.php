@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Data\ImportedNight;
 use App\Data\ImportedPerformance;
 use App\Data\ImportSummary;
+use App\Enums\CreatedBy;
 use App\Enums\ImportedShowStatus;
 use App\Models\ClaudeReasoningLog;
 use App\Models\Performance;
@@ -344,6 +345,10 @@ class ImportPlankaPerformances extends Command
             // What a card announces is a claim, not a booking: it waits as a
             // draft until an admin has looked it over.
             'is_draft' => true,
+            // Nobody chose this date; a card did. The screens say so, so a
+            // performance that looks wrong is taken back to the board rather
+            // than to whoever is assumed to have typed it.
+            'created_by' => CreatedBy::PlankaImport,
         ]);
 
         // The card explains the act, and — because a show like Õppelava is
@@ -366,6 +371,7 @@ class ImportPlankaPerformances extends Command
             'title' => $act->title,
             'team_id' => $act->teamId,
             'is_draft' => true,
+            'created_by' => CreatedBy::PlankaImport->value,
         ]);
     }
 
@@ -458,6 +464,9 @@ class ImportPlankaPerformances extends Command
             $show = Show::create([
                 'name' => $name,
                 'team_id' => $teamId,
+                // Nobody entered this show; a card named it and the house had
+                // never had it. See the performances, registered the same way.
+                'created_by' => CreatedBy::PlankaImport,
             ]);
 
             $this->shows[$key] = $show;
@@ -468,6 +477,7 @@ class ImportPlankaPerformances extends Command
                 'show_id' => $show->id,
                 'name' => $name,
                 'team_id' => $teamId,
+                'created_by' => CreatedBy::PlankaImport->value,
             ]);
         }
 

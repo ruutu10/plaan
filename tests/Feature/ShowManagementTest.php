@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CreatedBy;
 use App\Models\Performance;
 use App\Models\Show;
 use App\Models\Team;
@@ -146,6 +147,68 @@ class ShowManagementTest extends TestCase
             ->assertJsonCount(2, 'teams');
 
         $this->assertContains('Jaanuar', array_column($response->json('teams'), 'name'));
+    }
+
+    public function test_the_api_reports_where_a_show_came_from_and_when(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+
+        $entered = Show::factory()->create([
+            'team_id' => $team->id,
+            'created_at' => '2026-07-15 06:30:00',
+        ]);
+        $imported = Show::factory()->plankaImported()->create(['team_id' => $team->id]);
+
+        $this->actingAs($user)
+            ->getJson(route('api.shows.show', $entered))
+            ->assertOk()
+            ->assertJsonPath('data.createdBy', 'manual')
+            // On the venue's clock, like every other moment the screens are
+            // handed: 06:30 UTC is half past nine in Tallinn.
+            ->assertJsonPath('data.createdAt', '2026-07-15T09:30:00+03:00');
+
+        $this->actingAs($user)
+            ->getJson(route('api.shows.show', $imported))
+            ->assertOk()
+            ->assertJsonPath('data.createdBy', 'planka-import');
+    }
+
+    public function test_a_show_entered_by_hand_says_so(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+
+        // The origin is the server's to decide: a client claiming the import
+        // made this one is not believed.
+        $this->actingAs($user)
+            ->postJson(route('api.shows.store'), [
+                'team_id' => $team->id,
+                'name' => 'Käsitsi sisestatud',
+                'created_by' => 'planka-import',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.createdBy', 'manual');
+
+        $this->assertSame(CreatedBy::Manual, Show::sole()->created_by);
+    }
+
+    public function test_saving_an_imported_show_leaves_its_origin_alone(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+        $show = Show::factory()->plankaImported()->create(['team_id' => $team->id]);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.shows.update', $show), [
+                'team_id' => $team->id,
+                'name' => 'Uus nimi',
+                'created_by' => 'manual',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.createdBy', 'planka-import');
+
+        $this->assertSame(CreatedBy::PlankaImport, $show->fresh()->created_by);
     }
 
     public function test_another_teams_show_is_forbidden(): void

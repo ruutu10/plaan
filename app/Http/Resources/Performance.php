@@ -35,6 +35,8 @@ class Performance extends JsonResource
      *     reasoningLogCount: int,
      *     plankaCardId: string|null,
      *     plankaCardUrl: string|null,
+     *     createdBy: string,
+     *     createdAt: string|null,
      * }
      */
     public function toArray(Request $request): array
@@ -69,6 +71,15 @@ class Performance extends JsonResource
             // follow. The link is empty when no board is configured.
             'plankaCardId' => $performance->planka_card_id,
             'plankaCardUrl' => PlankaClient::cardUrl($performance->planka_card_id),
+            // Where the performance came from and when, both read-only: a date
+            // nobody remembers choosing was read off a card, and the screens say
+            // so rather than leaving it to be guessed.
+            'createdBy' => $performance->created_by->value,
+            // Already on the venue's clock, like the date and the start time
+            // above — the browser is never asked to do the arithmetic.
+            'createdAt' => $performance->created_at
+                ?->setTimezone(PerformanceModel::venueTimezone())
+                ->toIso8601String(),
         ];
     }
 }

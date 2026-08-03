@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
+import { ExternalLink } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { statusTone } from '@/components/technical-plan/presentPlan';
 import R10BackLink from '@/components/technical-plan/R10BackLink.vue';
@@ -64,6 +65,20 @@ function confirmStatus(): void {
             :title="plan.showName ?? 'Nimeta plaan'"
             lead="Tehnilise plaani detailid."
         />
+
+        <!-- The plan itself opens in its own tab, so the details page stays
+             where the technician left it. -->
+        <R10Button
+            external
+            :href="plan.url"
+            target="_blank"
+            rel="noopener"
+            data-test="technical-plan-open"
+            class="mb-8"
+        >
+            Vaata plaani
+            <ExternalLink class="h-4 w-4" />
+        </R10Button>
 
         <dl class="grid max-w-2xl grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
             <div>

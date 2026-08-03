@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\ClaudeReasoningLog;
+use App\Models\Performance as PerformanceModel;
 use App\Models\Show as ShowModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -28,6 +29,8 @@ class Show extends JsonResource
      *     performanceCount: int|null,
      *     canEdit: bool,
      *     reasoningLogCount: int,
+     *     createdBy: string,
+     *     createdAt: string|null,
      * }
      */
     public function toArray(Request $request): array
@@ -52,6 +55,15 @@ class Show extends JsonResource
             'reasoningLogCount' => $request->user()?->can(ClaudeReasoningLog::VIEW_PERMISSION)
                 ? $show->reasoningLogs->count()
                 : 0,
+            // Where the show came from and when, both read-only: a show nobody
+            // remembers entering was read off a card, and the screens say so
+            // rather than leaving it to be guessed.
+            'createdBy' => $show->created_by->value,
+            // Already on the venue's clock, like every other moment leaving
+            // here — the browser is never asked to do the arithmetic.
+            'createdAt' => $show->created_at
+                ?->setTimezone(PerformanceModel::venueTimezone())
+                ->toIso8601String(),
         ];
     }
 }

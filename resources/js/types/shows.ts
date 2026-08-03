@@ -1,3 +1,10 @@
+/**
+ * What put a record on the books: somebody typing it in, or the weekly reading
+ * of the Planka board. Read-only everywhere — the screens report it, the server
+ * decides it.
+ */
+export type CreatedBy = 'manual' | 'planka-import';
+
 /** One show as the management screens list and edit it. */
 export interface Show {
     id: number;
@@ -19,6 +26,13 @@ export interface Show {
      * for a user who may not read them.
      */
     reasoningLogCount: number;
+    /** Whether the show was entered by hand or read off a Planka card. */
+    createdBy: CreatedBy;
+    /**
+     * When the show was put on the books; ISO 8601, already on the venue's
+     * clock. Null only for a show the server has not saved yet.
+     */
+    createdAt: string | null;
 }
 
 /** What the AI made of the Planka card an imported record came from. */
@@ -90,6 +104,13 @@ export interface Performance {
     plankaCardId: string | null;
     /** That card on the board, ready to open. Null when none is configured. */
     plankaCardUrl: string | null;
+    /** Whether the performance was entered by hand or read off a Planka card. */
+    createdBy: CreatedBy;
+    /**
+     * When the performance was put on the books; ISO 8601, already on the
+     * venue's clock. Not the date it is played — that is `date` above.
+     */
+    createdAt: string | null;
 }
 
 /** The fields a performance is written through. */

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Data\ImportedNight;
 use App\Data\ImportedPerformance;
+use App\Enums\CreatedBy;
 use App\Models\ClaudeReasoningLog;
 use App\Models\Performance;
 use App\Models\Show;
@@ -697,6 +698,36 @@ class ImportPlankaPerformancesTest extends TestCase
         // among the performances a technical plan can be written for.
         $this->assertTrue(Performance::sole()->is_draft);
         $this->assertSame(0, Performance::query()->vouchedFor()->count());
+    }
+
+    public function test_what_the_import_creates_says_it_came_from_the_board(): void
+    {
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([$this->night('Trupp 1')]);
+
+        $this->artisan('planka:import')
+            ->assertSuccessful();
+
+        // Both the show the house had never had and the night it was made for:
+        // nobody typed either, and the screens have to be able to say so.
+        $this->assertSame(CreatedBy::PlankaImport, Show::sole()->created_by);
+        $this->assertSame(CreatedBy::PlankaImport, Performance::sole()->created_by);
+    }
+
+    public function test_a_night_added_to_a_show_somebody_entered_leaves_the_show_alone(): void
+    {
+        $show = Show::factory()->create(['name' => 'Trupp 1']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([$this->night('Trupp 1')]);
+
+        $this->artisan('planka:import')
+            ->assertSuccessful();
+
+        // The card announced the night, not the show: a show somebody entered
+        // by hand does not become an imported one by being played again.
+        $this->assertSame(CreatedBy::Manual, $show->fresh()->created_by);
+        $this->assertSame(CreatedBy::PlankaImport, Performance::sole()->created_by);
     }
 
     public function test_running_it_again_changes_nothing(): void

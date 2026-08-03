@@ -26,3 +26,18 @@ export function formatEstonianDateTime(
 
     return startTime ? `${date} ${startTime}` : date;
 }
+
+/**
+ * A full ISO 8601 moment as "03.08.2026 14:32". The server sends these already
+ * on the venue's clock, so the string is split rather than parsed — for the same
+ * reason as above, the viewer's own timezone is nothing to go by.
+ */
+export function formatEstonianTimestamp(
+    iso: string | null | undefined,
+): string {
+    if (!iso) {
+        return '—';
+    }
+
+    return formatEstonianDateTime(iso.slice(0, 10), iso.slice(11, 16));
+}

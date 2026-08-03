@@ -60,3 +60,6 @@ composer test          # lint + static analysis + PHPUnit
 MIT License
 
 Copyright (c) 2026 Ando Roots
+
+AI disclosure: large parts of this application were written-by or contributed-to by
+LLM-s (with human oversight).

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\HasClaudeReasoningLog;
 use App\Concerns\ScopedByTeamAccess;
+use App\Enums\CreatedBy;
 use App\Enums\ReminderSchedule;
 use Carbon\CarbonInterface;
 use Database\Factories\PerformanceFactory;
@@ -44,6 +45,7 @@ use Illuminate\Support\Facades\Date;
  * @property Carbon $date
  * @property int|null $duration
  * @property bool $is_draft
+ * @property CreatedBy $created_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -63,6 +65,7 @@ use Illuminate\Support\Facades\Date;
     'date',
     'duration',
     'is_draft',
+    'created_by',
 ])]
 class Performance extends Model
 {
@@ -76,15 +79,17 @@ class Performance extends Model
     public const EDIT_ALL_PERMISSION = 'performances.edit_all';
 
     /**
-     * A performance nobody said anything about is one the house stands behind:
-     * only the Planka import asks for a draft. Spelt out here as well as in the
-     * column default so a performance just created reads as false rather than as
-     * an attribute that has not come back from the database yet.
+     * A performance nobody said anything about is one the house stands behind
+     * and one somebody entered by hand: only the Planka import asks for a draft,
+     * and only it comes from anywhere else. Spelt out here as well as in the
+     * column defaults so a performance just created reads as both rather than as
+     * attributes that have not come back from the database yet.
      *
      * @var array<string, mixed>
      */
     protected $attributes = [
         'is_draft' => false,
+        'created_by' => CreatedBy::Manual->value,
     ];
 
     /**
@@ -292,6 +297,7 @@ class Performance extends Model
             'date' => 'datetime',
             'duration' => 'integer',
             'is_draft' => 'boolean',
+            'created_by' => CreatedBy::class,
         ];
     }
 

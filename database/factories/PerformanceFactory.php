@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\CreatedBy;
 use App\Models\Performance;
 use App\Models\Show;
 use App\Models\Team;
@@ -32,6 +33,7 @@ class PerformanceFactory extends Factory
             ),
             'duration' => fake()->numberBetween(3, 90),
             'is_draft' => false,
+            'created_by' => CreatedBy::Manual,
         ];
     }
 
@@ -78,6 +80,18 @@ class PerformanceFactory extends Factory
     public function draft(): static
     {
         return $this->state(fn (array $attributes) => [
+            'is_draft' => true,
+        ]);
+    }
+
+    /**
+     * Indicate that the performance was registered off a Planka card rather than
+     * entered by hand — as the import leaves them, waiting to be reviewed.
+     */
+    public function plankaImported(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'created_by' => CreatedBy::PlankaImport,
             'is_draft' => true,
         ]);
     }

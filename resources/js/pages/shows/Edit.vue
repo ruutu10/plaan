@@ -14,6 +14,7 @@ import { toast } from 'vue-sonner';
 import ClaudeReasoningLogModal from '@/components/ClaudeReasoningLogModal.vue';
 import DeletePerformanceModal from '@/components/DeletePerformanceModal.vue';
 import PerformanceModal from '@/components/PerformanceModal.vue';
+import RecordOriginFields from '@/components/RecordOriginFields.vue';
 import ShowFormFields from '@/components/ShowFormFields.vue';
 import R10BackLink from '@/components/technical-plan/R10BackLink.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
@@ -211,6 +212,14 @@ async function save(): Promise<void> {
                 :teams="teams"
                 :errors="form.errors"
                 :disabled="!canEditShow"
+            />
+
+            <!-- Below the fields, and outside them: nothing here is saved with
+                 the form, and the read-only pair reads as a footnote to the
+                 show rather than as two more things to fill in. -->
+            <RecordOriginFields
+                :created-by="show.createdBy"
+                :created-at="show.createdAt"
             />
 
             <div class="flex items-center justify-between gap-3">

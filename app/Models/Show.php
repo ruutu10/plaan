@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\HasClaudeReasoningLog;
 use App\Concerns\ScopedByTeamAccess;
+use App\Enums\CreatedBy;
 use Database\Factories\ShowFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -26,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $team_id
  * @property string $name
  * @property string|null $description
+ * @property CreatedBy $created_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -38,11 +40,36 @@ use Illuminate\Support\Carbon;
     'team_id',
     'name',
     'description',
+    'created_by',
 ])]
 class Show extends Model
 {
     /** @use HasFactory<ShowFactory> */
     use HasClaudeReasoningLog, HasFactory, ScopedByTeamAccess, SoftDeletes;
+
+    /**
+     * A show nobody said otherwise about was entered by hand: only the Planka
+     * import says where else it came from. Spelt out here as well as in the
+     * column default so a show just created reads as manual rather than as an
+     * attribute that has not come back from the database yet.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'created_by' => CreatedBy::Manual->value,
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'created_by' => CreatedBy::class,
+        ];
+    }
 
     /**
      * Bootstrap the model and its traits.

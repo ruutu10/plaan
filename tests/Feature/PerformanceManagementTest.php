@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CreatedBy;
 use App\Enums\TeamRole;
 use App\Models\Performance;
 use App\Models\Show;
@@ -294,6 +295,71 @@ class PerformanceManagementTest extends TestCase
             ->assertJsonPath('data.plankaCardUrl', null);
 
         $this->assertNull($performance->fresh()?->planka_card_id);
+    }
+
+    public function test_the_api_reports_where_a_performance_came_from_and_when(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+
+        Performance::factory()->create([
+            'show_id' => $show->id,
+            'date' => '2026-08-01',
+            'created_at' => '2026-07-15 06:30:00',
+        ]);
+        Performance::factory()->plankaImported()->create([
+            'show_id' => $show->id,
+            'date' => '2026-08-02',
+            'created_at' => '2026-07-16 06:30:00',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson(route('api.shows.performances.index', $show))
+            ->assertOk()
+            ->assertJsonPath('data.0.createdBy', 'manual')
+            // On the venue's clock, like every other moment the screens are
+            // handed: 06:30 UTC is half past nine in Tallinn.
+            ->assertJsonPath('data.0.createdAt', '2026-07-15T09:30:00+03:00')
+            ->assertJsonPath('data.1.createdBy', 'planka-import')
+            ->assertJsonPath('data.1.createdAt', '2026-07-16T09:30:00+03:00');
+    }
+
+    public function test_a_performance_added_by_hand_says_so(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+
+        // The origin is the server's to decide: a client claiming the import
+        // made this one is not believed.
+        $this->actingAs($user)
+            ->postJson(route('api.shows.performances.store', $show), [
+                'date' => '2026-08-14',
+                'created_by' => 'planka-import',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.createdBy', 'manual');
+
+        $this->assertSame(CreatedBy::Manual, Performance::sole()->created_by);
+    }
+
+    public function test_saving_an_imported_performance_leaves_its_origin_alone(): void
+    {
+        [$user, $show] = $this->showOfOwnTeam();
+        $performance = Performance::factory()->plankaImported()->create([
+            'show_id' => $show->id,
+            'date' => '2026-08-01',
+        ]);
+
+        // Reviewing an imported performance does not turn it into one somebody
+        // entered: the card is still where its date came from.
+        $this->actingAs($user)
+            ->patchJson(route('api.shows.performances.update', [$show, $performance]), [
+                'date' => '2026-08-01',
+                'is_draft' => false,
+                'created_by' => 'manual',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.createdBy', 'planka-import');
+
+        $this->assertSame(CreatedBy::PlankaImport, $performance->fresh()->created_by);
     }
 
     public function test_the_listing_says_which_performances_wait_to_be_reviewed(): void
