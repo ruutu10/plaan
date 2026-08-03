@@ -17,8 +17,6 @@ use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Http\Resources\TechnicalPlanSummary as TechnicalPlanSummaryResource;
 use App\Http\Resources\UpcomingPerformance as UpcomingPerformanceResource;
 use App\Models\Performance;
-use App\Models\Show;
-use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
 use App\Rules\AllowedAttachment;
@@ -82,9 +80,10 @@ class TechnicalPlanController extends Controller
      */
     public function overview(Request $request): Response
     {
-        // Newest performance first: what is coming up (or has just been played) is
-        // what the crew looks for. Plans not tied to a performance have no date
-        // to sort by and land at the end, newest of those first.
+        // Newest performance first: what is coming up (or has just been played)
+        // is what the crew looks for. The plans filed under the stand-in
+        // performance are dated years out and so gather at the top, which is
+        // where the crew wants them — those are the ones needing a real night.
         $plans = TechnicalPlan::query()
             ->with(['user', 'performance.team', 'performance.show.team'])
             ->leftJoin('performances', 'performances.id', '=', 'technical_plans.performance_id')
@@ -294,6 +293,7 @@ class TechnicalPlanController extends Controller
         $upcoming = Performance::query()
             ->with(['team', 'show.team'])
             ->vouchedFor()
+            ->excludingPlaceholder()
             // Still to come. A performance carries its curtain-up now, so
             // tonight's stays on offer right up until it starts.
             ->where('date', '>=', now())
@@ -301,15 +301,23 @@ class TechnicalPlanController extends Controller
             ->limit(100)
             ->get();
 
+        // Offered beside the list rather than in it: it is not a night anybody
+        // is playing, and it has to stay on offer whatever else is coming up,
+        // since a plan can be written no other way when the real performance is
+        // not on the books.
+        $placeholder = Performance::placeholder()->load(['team', 'show.team']);
+
         // Kept per show rather than as one global list: a single busy show would
         // otherwise fill a shared limit and leave every other row offering no
         // prior plan at all. The set is bounded by the upcoming performances
         // above, so it stays small without a limit of its own.
+        $showIds = $upcoming->pluck('show_id')->push($placeholder->show_id)->all();
+
         $priorPlans = TechnicalPlan::query()
             ->with(['performance', 'user'])
             ->visibleTo($request->user())
             ->whereIn('status', TechnicalPlanStatus::reusable())
-            ->whereHas('performance', fn ($query) => $query->whereIn('show_id', $upcoming->pluck('show_id')->all()))
+            ->whereHas('performance', fn ($query) => $query->whereIn('show_id', $showIds))
             ->latest('submitted_at')
             ->get()
             ->groupBy(fn (TechnicalPlan $plan): int => $plan->performance->show_id)
@@ -319,7 +327,10 @@ class TechnicalPlanController extends Controller
             fn (Performance $performance): array => UpcomingPerformanceResource::make($performance, $priorPlans)->resolve($request),
         );
 
-        return response()->json(['results' => $results]);
+        return response()->json([
+            'results' => $results,
+            'placeholder' => UpcomingPerformanceResource::make($placeholder, $priorPlans)->resolve($request),
+        ]);
     }
 
     /**
@@ -436,31 +447,24 @@ class TechnicalPlanController extends Controller
     /**
      * Hydrate an unsaved plan (with its performance, show, team and contact
      * user) from validated wizard input, so it can be handed to the AI reviewer
-     * as a full TechnicalPlan model without touching the database.
+     * as a full TechnicalPlan model without saving anything.
+     *
+     * The night is loaded rather than rebuilt from what the wizard posted: the
+     * show, the group, the date and the running time belong to the performance,
+     * so the reviewer reads the same ones the saved plan would show. The rules
+     * have already held the id to a performance that exists.
      *
      * @param  array<string, mixed>  $data
      */
     private function planFromRequest(array $data, User $user): TechnicalPlan
     {
-        $meta = $data['meta'];
-
         $plan = new TechnicalPlan(PlanContent::fromValidated($data) + [
             'status' => TechnicalPlanStatus::Draft,
         ]);
 
-        $show = new Show([
-            'name' => $meta['showName'] ?? null,
-            'description' => $meta['description'] ?? null,
-        ]);
-        $show->setRelation('team', new Team(['name' => $meta['performer'] ?? null]));
-
-        $performance = new Performance([
-            'date' => $meta['showDate'] ?? null,
-            'duration' => $meta['duration'] ?? null,
-        ]);
-        $performance->setRelation('show', $show);
-
-        $plan->setRelation('performance', $performance);
+        $plan->setRelation('performance', Performance::query()
+            ->with(['team', 'show.team'])
+            ->findOrFail($data['meta']['performanceId']));
         $plan->setRelation('user', $user);
 
         return $plan;

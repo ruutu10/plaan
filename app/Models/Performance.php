@@ -118,6 +118,62 @@ class Performance extends Model
     }
 
     /**
+     * How far ahead the stand-in performance sits. Far enough that it is never
+     * taken for a night anybody is playing, and never falls behind the picker's
+     * "still to come" — see {@see placeholder()}.
+     */
+    private const PLACEHOLDER_YEARS_AHEAD = 5;
+
+    /**
+     * The one performance of the stand-in show, registered the first time it is
+     * asked for: the night a plan is written under when the real one is not on
+     * the books yet. Restored rather than duplicated if it has been put aside,
+     * for the same reason as {@see Show::placeholder()}.
+     */
+    public static function placeholder(): self
+    {
+        $performance = static::withTrashed()->firstOrCreate(
+            ['show_id' => Show::placeholder()->id],
+            [
+                'date' => self::momentFrom(
+                    Carbon::today(self::venueTimezone())
+                        ->addYears(self::PLACEHOLDER_YEARS_AHEAD)
+                        ->toDateString(),
+                ),
+            ],
+        );
+
+        if ($performance->trashed()) {
+            $performance->restore();
+        }
+
+        return $performance;
+    }
+
+    /**
+     * Whether this is the stand-in performance — see {@see placeholder()}.
+     */
+    public function isPlaceholder(): bool
+    {
+        return $this->show->isPlaceholder();
+    }
+
+    /**
+     * Leave the stand-in performance out: it is a filing drawer for the plans
+     * whose night is not on the books, not an evening the house is playing, so
+     * nothing counting or chasing performances should see it.
+     *
+     * @param  Builder<Performance>  $query
+     */
+    #[Scope]
+    protected function excludingPlaceholder(Builder $query): void
+    {
+        $query->whereHas('show', fn (Builder $show) => $show
+            ->where('shows.name', '!=', Show::PLACEHOLDER_NAME)
+            ->orWhereNotNull('shows.team_id'));
+    }
+
+    /**
      * Limit the query to the performances the house has vouched for. A draft is
      * one the Planka import registered and nobody has reviewed yet: its date may
      * be wrong or the night may not be happening at all, so it is kept out of

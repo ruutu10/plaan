@@ -28,6 +28,12 @@ class TechnicalPlanTest extends TestCase
 
     private User $user;
 
+    /**
+     * The night the default payload is for. Every plan names a performance, so
+     * the tests that are not about *which* one share this.
+     */
+    private ?Performance $performance = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -49,7 +55,7 @@ class TechnicalPlanTest extends TestCase
             'token' => null,
             'submit' => false,
             'meta' => [
-                'performanceId' => null,
+                'performanceId' => $this->defaultPerformance()->id,
                 'performer' => 'Märold',
                 'showName' => 'Festival 2026',
                 'showDate' => '2026-08-01',
@@ -78,6 +84,16 @@ class TechnicalPlanTest extends TestCase
                 'files' => [],
             ],
         ], $overrides);
+    }
+
+    /**
+     * The performance {@see validPayload()} attaches its plan to, registered
+     * once and reused, so a test that posts several payloads is not quietly
+     * writing them for different nights.
+     */
+    private function defaultPerformance(): Performance
+    {
+        return $this->performance ??= Performance::factory()->create();
     }
 
     public function test_the_landing_page_renders_the_wizard(): void
@@ -121,19 +137,37 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame('Suitsumasin', $plan->equipment['items'][0]['name']);
     }
 
-    public function test_a_plan_can_be_stored_without_a_performance(): void
+    public function test_storing_refuses_a_plan_without_a_performance(): void
     {
-        $this->postJson(route('technical-plan.store'), $this->validPayload([
+        // Everything naming a plan — the show, the group, the date, the running
+        // time — is read off its performance, so a plan without one is a plan
+        // nobody can place. A performer whose night is not on the books picks
+        // the stand-in performance instead.
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
             'meta' => ['performanceId' => null],
+        ]));
+
+        $response->assertUnprocessable();
+        $this->assertArrayHasKey('meta.performanceId', $response->json('errors'));
+        $this->assertSame(0, TechnicalPlan::count());
+    }
+
+    public function test_a_plan_can_be_stored_for_the_stand_in_performance(): void
+    {
+        $placeholder = Performance::placeholder();
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'meta' => ['performanceId' => $placeholder->id],
         ]))->assertOk();
 
-        $this->assertSame(0, Performance::count());
-        $this->assertNull(TechnicalPlan::first()->performance_id);
+        $plan = TechnicalPlan::first();
+        $this->assertSame($placeholder->id, $plan->performance_id);
+        $this->assertSame(Show::PLACEHOLDER_NAME, $plan->performance->show->name);
     }
 
     public function test_storing_links_the_selected_performance(): void
     {
-        $performance = Performance::factory()->create();
+        $performance = $this->defaultPerformance();
 
         $this->postJson(route('technical-plan.store'), $this->validPayload([
             'meta' => ['performanceId' => $performance->id],
@@ -342,9 +376,14 @@ class TechnicalPlanTest extends TestCase
         ]);
     }
 
-    public function test_a_plan_without_a_performance_can_be_fetched_by_token(): void
+    public function test_a_plan_whose_performance_was_put_aside_can_be_fetched_by_token(): void
     {
-        $plan = TechnicalPlan::factory()->create(['performance_id' => null]);
+        // Every plan names a performance, but the night can be put aside after
+        // the fact — the plan itself stays readable, with the blocks its
+        // performance would have filled in left empty.
+        $plan = TechnicalPlan::factory()->create();
+        $plan->performance->delete();
+        $plan->refresh();
 
         $response = $this->getJson(route('technical-plan.show', $plan));
 
@@ -352,7 +391,9 @@ class TechnicalPlanTest extends TestCase
         $response->assertJson([
             'token' => $plan->token,
             'meta' => [
-                'performanceId' => null,
+                // The plan goes on naming the night it was written for, even
+                // once that night is no longer on the books.
+                'performanceId' => $plan->performance_id,
                 'performer' => '',
                 'showName' => '',
                 'showDate' => '',
@@ -499,6 +540,22 @@ class TechnicalPlanTest extends TestCase
             'performer' => $upcoming->show->team->name,
         ]);
         $response->assertJsonMissing(['showName' => 'Möödunud etendus']);
+    }
+
+    public function test_the_performances_endpoint_always_offers_the_stand_in_performance(): void
+    {
+        // A performer whose night is not on the books still has to be able to
+        // hand a plan in, so the stand-in is offered beside the list rather
+        // than in it — it is not an evening anybody is playing.
+        $upcoming = Performance::factory()->create();
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'results');
+        $response->assertJsonPath('results.0.id', $upcoming->id);
+        $response->assertJsonPath('placeholder.id', Performance::placeholder()->id);
+        $response->assertJsonPath('placeholder.showName', Show::PLACEHOLDER_NAME);
     }
 
     public function test_the_performances_endpoint_leaves_out_the_ones_waiting_to_be_reviewed(): void
@@ -803,9 +860,10 @@ class TechnicalPlanTest extends TestCase
         );
     }
 
-    public function test_a_plan_without_a_performance_is_still_listed_in_lookup(): void
+    public function test_a_plan_whose_performance_was_put_aside_is_still_listed_in_lookup(): void
     {
-        TechnicalPlan::factory()->for($this->user)->submitted()->create(['performance_id' => null]);
+        $plan = TechnicalPlan::factory()->for($this->user)->submitted()->create();
+        $plan->performance->delete();
 
         $response = $this->postJson(route('technical-plan.lookup'));
 

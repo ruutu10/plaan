@@ -39,13 +39,14 @@ class StoreTechnicalPlanRequest extends FormRequest
             'token' => ['nullable', 'string', 'exists:technical_plans,token'],
             'submit' => ['boolean'],
 
+            // The night is the only thing the wizard's first block contributes:
+            // the show, the group, the date and the running time are read off
+            // the performance rather than taken from the client, so whatever
+            // else `meta` arrives with is ignored. A performer whose evening is
+            // not on the books picks the stand-in performance — see
+            // App\Models\Performance::placeholder().
             'meta' => ['required', 'array'],
-            'meta.performanceId' => ['nullable', 'integer', 'exists:performances,id'],
-            'meta.performer' => ['nullable', 'string', 'max:255'],
-            'meta.showName' => ['nullable', 'string', 'max:255'],
-            'meta.showDate' => ['nullable', 'date'],
-            'meta.duration' => ['nullable', 'integer', 'min:1', 'max:240'],
-            'meta.description' => ['nullable', 'string', 'max:5000'],
+            'meta.performanceId' => ['required', 'integer', 'exists:performances,id'],
 
             'sound' => ['required', 'array'],
             'sound.micsMode' => ['nullable', 'string', 'max:20'],
@@ -80,6 +81,19 @@ class StoreTechnicalPlanRequest extends FormRequest
             'extra.files.*.id' => ['required', 'string', 'max:64'],
             'extra.files.*.name' => ['nullable', 'string', 'max:255'],
             'extra.files.*.size' => ['nullable', 'integer', 'min:0'],
+        ];
+    }
+
+    /**
+     * Get the error messages for the defined validation rules.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'meta.performanceId.required' => 'Vali etendus, mille kohta plaan käib.',
+            'meta.performanceId.exists' => 'Valitud etendust ei leitud. Vali etendus uuesti.',
         ];
     }
 

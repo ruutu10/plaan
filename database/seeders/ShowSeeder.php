@@ -25,10 +25,14 @@ class ShowSeeder extends Seeder
     ];
 
     /**
-     * Seed the example shows for the seeded performing groups.
+     * Seed the example shows for the seeded performing groups, along with the
+     * stand-in show every environment needs — it is not example data but part
+     * of how plans are filed, so it is registered whatever else is seeded.
      */
     public function run(): void
     {
+        Show::placeholder();
+
         foreach (self::SHOWS as $show) {
             $team = Team::where('name', $show['team'])->first();
 

@@ -90,13 +90,17 @@ class DashboardController extends Controller
     /**
      * The performances still to come. A performance now carries its curtain-up,
      * so tonight's stays ahead until it actually starts rather than until
-     * midnight.
+     * midnight. The stand-in performance is left out: it is where the plans
+     * without a night of their own are filed, not an evening to count or to
+     * chase a plan for.
      *
      * @return Builder<Performance>
      */
     private function upcomingPerformances(): Builder
     {
-        return Performance::query()->where('date', '>=', now());
+        return Performance::query()
+            ->excludingPlaceholder()
+            ->where('date', '>=', now());
     }
 
     /**

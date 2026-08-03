@@ -88,10 +88,11 @@ class ArchiveTechnicalPlansTest extends TestCase
         $this->assertSame(TechnicalPlanStatus::Draft, $draft->refresh()->status);
     }
 
-    public function test_it_leaves_a_plan_without_a_performance_alone(): void
+    public function test_it_leaves_a_plan_whose_performance_was_put_aside_alone(): void
     {
         // No night to have passed, so no moment at which it is done with.
-        $plan = TechnicalPlan::factory()->submitted()->create(['performance_id' => null]);
+        $plan = TechnicalPlan::factory()->submitted()->create();
+        $plan->performance->delete();
 
         $this->artisan('technical-plans:archive')->assertSuccessful();
 

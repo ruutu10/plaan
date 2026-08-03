@@ -35,6 +35,10 @@ export interface PlanFile {
 }
 
 export interface PlanMeta {
+    /**
+     * The performance the plan is for. Null only until one has been picked —
+     * every saved plan names one, the stand-in performance included.
+     */
     performanceId: number | null;
     performer: string;
     showName: string;

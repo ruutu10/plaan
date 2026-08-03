@@ -37,8 +37,9 @@ class ArchiveTechnicalPlans extends Command
         // past rows as the result set shrinks underneath it.
         TechnicalPlan::query()
             ->whereIn('status', TechnicalPlanStatus::delivered())
-            // A plan with no performance has no night to have passed, and
-            // `whereHas` leaves it out by itself.
+            // A plan whose performance has been put aside has no night to have
+            // passed, and `whereHas` leaves it out by itself. So does a plan
+            // filed under the stand-in performance, which is dated years out.
             ->whereHas('performance', fn (Builder $performance) => $performance->where('date', '<', $cutoff))
             ->with('performance.show')
             ->lazyById()

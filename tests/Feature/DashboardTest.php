@@ -229,6 +229,23 @@ class DashboardTest extends TestCase
                 ->where('upcoming.missingPlans', 2));
     }
 
+    public function test_dashboard_does_not_count_the_stand_in_performance(): void
+    {
+        // The night the plans without a performance of their own are filed
+        // under is not an evening the house is playing, so it belongs in
+        // neither tally — nor at the top of "what is next", years out as it is.
+        $performance = Performance::factory()->create(['date' => now()->addWeek()]);
+        Performance::placeholder();
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('upcoming.performances', 1)
+                ->where('upcoming.missingPlans', 1)
+                ->where('upcoming.next.showName', $performance->show->name));
+    }
+
     public function test_the_plan_timeline_lists_the_newest_submissions_first_for_technicians(): void
     {
         $author = User::factory()->create(['name' => 'Mart Naide']);

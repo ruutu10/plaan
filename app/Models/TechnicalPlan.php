@@ -24,7 +24,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property string $token
  * @property TechnicalPlanStatus $status
  * @property int|null $user_id
- * @property int|null $performance_id
+ * @property int $performance_id
  * @property array<string, mixed> $sound
  * @property array<int, array<string, mixed>> $scenes
  * @property array<string, mixed> $equipment
@@ -285,7 +285,11 @@ class TechnicalPlan extends Model implements HasMedia
     }
 
     /**
-     * The performance this plan describes the technical needs of.
+     * The performance this plan describes the technical needs of. Every plan
+     * names one — a performer whose night is not on the books writes under the
+     * stand-in performance, see {@see Performance::placeholder()} — but the
+     * relation still reads as null once a performance has been put aside, which
+     * is why the listings go on asking for it safely.
      *
      * @return BelongsTo<Performance, $this>
      */
