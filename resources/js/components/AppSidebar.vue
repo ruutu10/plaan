@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     CalendarDays,
+    CircleQuestionMark,
     ClipboardList,
     FolderGit2,
     LayoutGrid,
@@ -25,7 +26,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
+import { dashboard, manual } from '@/routes';
 import { index as adminPerformances } from '@/routes/admin/performances';
 import { index as adminTeams } from '@/routes/admin/teams';
 import { index as adminUsers } from '@/routes/admin/users';
@@ -105,7 +106,14 @@ const mainNavItems = computed<NavItem[]>(() => [
         : []),
 ]);
 
+// Reference links, opened in a tab of their own by NavFooter — the manual is
+// read alongside the screen it explains, not instead of it.
 const footerNavItems: NavItem[] = [
+    {
+        title: 'Abi',
+        href: manual().url,
+        icon: CircleQuestionMark,
+    },
     {
         title: 'GitHub',
         href: 'https://github.com/ruutu10/plaan',

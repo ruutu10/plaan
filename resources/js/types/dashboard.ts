@@ -12,7 +12,15 @@ export type UpcomingShow = {
 export type UpcomingSummary = {
     /** Performances that have not started yet. */
     performances: number;
-    /** Those of them nobody has handed a technical plan in for. */
+    /**
+     * Those of them within `planExpectedWithinDays` that nobody has handed a
+     * technical plan in for. Nothing is expected of the nights further out.
+     */
     missingPlans: number;
+    /**
+     * How near a performance has to be before its technical plan is expected
+     * at all.
+     */
+    planExpectedWithinDays: number;
     next: UpcomingShow | null;
 };

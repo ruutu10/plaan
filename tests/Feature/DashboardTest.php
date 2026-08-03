@@ -229,6 +229,26 @@ class DashboardTest extends TestCase
                 ->where('upcoming.missingPlans', 2));
     }
 
+    public function test_dashboard_counts_a_missing_plan_only_once_the_performance_is_near(): void
+    {
+        // A plan is not expected until the night is a fortnight out, so one
+        // booked for the far side of that is owed nothing yet.
+        Performance::factory()->create([
+            'date' => now()->addDays(TechnicalPlan::EXPECTED_WITHIN_DAYS)->subHour(),
+        ]);
+        Performance::factory()->create([
+            'date' => now()->addDays(TechnicalPlan::EXPECTED_WITHIN_DAYS)->addDay(),
+        ]);
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('upcoming.performances', 2)
+                ->where('upcoming.missingPlans', 1)
+                ->where('upcoming.planExpectedWithinDays', TechnicalPlan::EXPECTED_WITHIN_DAYS));
+    }
+
     public function test_dashboard_does_not_count_the_stand_in_performance(): void
     {
         // The night the plans without a performance of their own are filed

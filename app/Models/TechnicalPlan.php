@@ -59,6 +59,14 @@ class TechnicalPlan extends Model implements HasMedia
     public const SOUND_COLLECTION = 'sound';
 
     /**
+     * How near a performance has to be before its plan is expected at all.
+     * Further out than this nothing is owed yet — the evening is still being
+     * put together — so the dashboard leaves those nights out of its count of
+     * missing plans rather than holding people to a plan nobody asked for.
+     */
+    public const EXPECTED_WITHIN_DAYS = 7;
+
+    /**
      * The permission — held by the "technician" role — that opens every plan in
      * the house to its holder, not just the ones they wrote or their teams sent.
      */

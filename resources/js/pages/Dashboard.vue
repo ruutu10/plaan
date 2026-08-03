@@ -127,8 +127,11 @@ defineOptions({
                 >
                     {{ upcoming.missingPlans }}
                 </div>
-                <p class="mt-3 text-sm text-r10-grey-500">
-                    Tulevased etendused, millele pole plaani esitatud.
+
+                <p class="mt-1 text-xs text-r10-grey-500">
+                    Tehnikaplaani oodatakse alates
+                    {{ upcoming.planExpectedWithinDays }} päevast enne etendust
+                    — kaugemaid etendusi siin ei loeta.
                 </p>
             </div>
         </div>

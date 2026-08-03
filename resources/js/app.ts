@@ -18,8 +18,10 @@ createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {
+            // Pages that bring their own (public) layout with them.
             case name === 'Welcome':
             case name === 'TechnicalPlan':
+            case name === 'Manual':
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;

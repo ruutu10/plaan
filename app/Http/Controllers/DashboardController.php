@@ -55,11 +55,13 @@ class DashboardController extends Controller
 
     /**
      * What is still to be played, house-wide: how many performances are ahead, the
-     * next one of them, and how many of them nobody has handed a plan in for.
+     * next one of them, and how many of the near ones nobody has handed a plan in
+     * for.
      *
      * @return array{
      *     performances: int,
      *     missingPlans: int,
+     *     planExpectedWithinDays: int,
      *     next: array{showName: string, teamName: string|null, date: string, startTime: string}|null,
      * }
      */
@@ -73,11 +75,16 @@ class DashboardController extends Controller
         return [
             'performances' => $this->upcomingPerformances()->count(),
             'missingPlans' => $this->upcomingPerformances()
+                // Nothing is expected of a night further out than this, so a
+                // season booked months ahead does not sit on the dashboard as a
+                // standing pile of "missing" work nobody owes yet.
+                ->where('date', '<=', now()->addDays(TechnicalPlan::EXPECTED_WITHIN_DAYS))
                 ->whereDoesntHave(
                     'technicalPlans',
                     fn (Builder $plans) => $plans->whereIn('status', TechnicalPlanStatus::delivered()),
                 )
                 ->count(),
+            'planExpectedWithinDays' => TechnicalPlan::EXPECTED_WITHIN_DAYS,
             'next' => $next ? [
                 'showName' => $next->show->name,
                 'teamName' => $next->performerName(),

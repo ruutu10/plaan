@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
+import { CircleQuestionMark } from '@lucide/vue';
 import { computed } from 'vue';
 import AppFooter from '@/components/AppFooter.vue';
-import { dashboard, login, logout } from '@/routes';
+import { dashboard, login, logout, manual } from '@/routes';
 
 withDefaults(
     defineProps<{
@@ -55,6 +56,15 @@ const dashboardUrl = computed(() =>
 
                 <div class="ml-auto flex items-center gap-3 sm:gap-4">
                     <slot name="actions" />
+
+                    <Link
+                        :href="manual()"
+                        title="Abi"
+                        class="shrink-0 text-white/80 transition hover:text-r10-orange"
+                    >
+                        <CircleQuestionMark class="size-5" />
+                        <span class="sr-only">Abi</span>
+                    </Link>
 
                     <nav v-if="user" class="flex items-center gap-3">
                         <Link

@@ -4,6 +4,7 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ClaudeReasoningLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MagicLoginController;
+use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\ShowController;
 use App\Http\Controllers\ShowPageController;
@@ -22,6 +23,10 @@ use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
+
+// The user manual. Open to everyone: a performer who has not signed in yet is
+// exactly the reader most likely to need it.
+Route::get('abi', ManualController::class)->name('manual');
 
 // Generic, model-agnostic file staging shared by any feature that needs
 // attachments (see App\Concerns\HasAttachments).
