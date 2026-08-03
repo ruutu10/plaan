@@ -51,6 +51,13 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * The permission — held by the "technician" role — that opens the account
+     * management screens: every account in the house, what it is called, and
+     * which roles it holds.
+     */
+    public const MANAGE_PERMISSION = 'users.manage';
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

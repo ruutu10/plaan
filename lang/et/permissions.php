@@ -17,4 +17,7 @@ return [
     'claude' => [
         'view_log' => 'Imporditud kirjete AI-põhjenduste vaatamine',
     ],
+    'users' => [
+        'manage' => 'Kasutajate ja rollide haldamine',
+    ],
 ];

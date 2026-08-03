@@ -7,6 +7,7 @@ import {
     LayoutGrid,
     ListPlus,
     Theater,
+    UserCog,
     Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
@@ -27,6 +28,7 @@ import {
 import { dashboard } from '@/routes';
 import { index as adminPerformances } from '@/routes/admin/performances';
 import { index as adminTeams } from '@/routes/admin/teams';
+import { index as adminUsers } from '@/routes/admin/users';
 import { index as shows } from '@/routes/shows';
 import { index as technicalPlan } from '@/routes/technical-plan';
 import { index as technicalPlans } from '@/routes/technical-plans';
@@ -87,6 +89,17 @@ const mainNavItems = computed<NavItem[]>(() => [
                   title: 'Tiimid',
                   href: adminTeams().url,
                   icon: Users,
+              },
+          ]
+        : []),
+    // The accounts themselves, and the roles they hold. Last of the management
+    // doors and the narrowest: only the technicians hand out rights.
+    ...(page.props.auth?.can?.manageUsers
+        ? [
+              {
+                  title: 'Kasutajad',
+                  href: adminUsers().url,
+                  icon: UserCog,
               },
           ]
         : []),

@@ -12,10 +12,13 @@ use App\Http\Controllers\Teams\TeamAdminMemberController;
 use App\Http\Controllers\Teams\TeamAdminPageController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Controllers\TechnicalPlanController;
+use App\Http\Controllers\Users\UserAdminController;
+use App\Http\Controllers\Users\UserRoleController;
 use App\Http\Middleware\EnsureTeamMembership;
 use App\Models\ClaudeReasoningLog;
 use App\Models\Performance;
 use App\Models\TechnicalPlan;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -161,6 +164,47 @@ Route::prefix('api/teams')
                 Route::post('/', [TeamAdminMemberController::class, 'store'])->name('store');
                 Route::patch('{user}', [TeamAdminMemberController::class, 'update'])->name('update');
                 Route::delete('{user}', [TeamAdminMemberController::class, 'destroy'])->name('destroy');
+            });
+    });
+
+// Inertia-rendered account-management pages, shells like the team ones above.
+// Everything here belongs to the technicians alone: the listing is the whole
+// house, and the roles handed out on it carry every right the application has.
+// Unlike a team, an account has no owner to ask, so the permission decides the
+// whole screen and the guard sits here rather than inside the controller.
+Route::middleware(['auth', 'verified', 'can:'.User::MANAGE_PERMISSION])->group(function () {
+    Route::get('users', [UserAdminController::class, 'overview'])->name('admin.users.index');
+    Route::get('users/{user}/edit', [UserAdminController::class, 'edit'])->name('admin.users.edit');
+});
+
+// JSON API behind those pages, guarded by the same permission rather than by
+// what the reader belongs to — an account is nobody's to keep but the crew's.
+// Handing out a role is a right of its own on top of it; see UserRoleController.
+Route::prefix('api/users')
+    ->name('api.users.')
+    ->middleware(['auth', 'verified', 'can:'.User::MANAGE_PERMISSION, 'throttle:200,1'])
+    ->group(function () {
+        Route::get('/', [UserAdminController::class, 'index'])->name('index');
+        Route::get('{user}', [UserAdminController::class, 'show'])->name('show');
+        Route::patch('{user}', [UserAdminController::class, 'update'])->name('update');
+
+        // Which roles the account holds. The role is named rather than
+        // numbered: the name is what the permission tables are written with,
+        // and what a log line has to be readable by a year from now.
+        Route::prefix('{user}/roles')
+            ->name('roles.')
+            ->group(function () {
+                Route::post('/', [UserRoleController::class, 'store'])->name('store');
+
+                // Naming the role turns on Laravel's implicit scoping, which
+                // would look the role up through the ones the account already
+                // holds — and answer "no such page" for a role it does not.
+                // Taking away a role nobody holds is the state being asked for,
+                // not a mistake, so the role is read on its own and a repeated
+                // click changes nothing. Only a role that exists nowhere 404s.
+                Route::delete('{role:name}', [UserRoleController::class, 'destroy'])
+                    ->withoutScopedBindings()
+                    ->name('destroy');
             });
     });
 
