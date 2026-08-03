@@ -283,6 +283,43 @@ class TechnicalPlan extends Model implements HasMedia
     }
 
     /**
+     * Limit the query to the plans the given user may read in the overview of
+     * plans that have been sent in. Holders of {@see VIEW_ALL_PERMISSION} — the
+     * crew running the shows — are not limited at all; everybody else is shown
+     * their own plans and their groups', whatever state those are in.
+     *
+     * Reading a plan in the listing reaches exactly as far as writing to it, so
+     * this leans on {@see editableBy()} for what makes a plan a group's: the
+     * performance is theirs, or the show staging it is. A team-mate's unfinished
+     * draft counts here for the same reason it counts there — it is a plan the
+     * group still owes, and the overview is where they would go looking for it.
+     *
+     * @param  Builder<TechnicalPlan>  $query
+     */
+    #[Scope]
+    protected function listableBy(Builder $query, User $user): void
+    {
+        if ($user->can(self::VIEW_ALL_PERMISSION)) {
+            return;
+        }
+
+        $query->editableBy($user);
+    }
+
+    /**
+     * Determine whether the user may read this plan in the overview — see
+     * {@see listableBy()}. Answered by the same scope the listing is built
+     * with, so a row that is offered always opens.
+     */
+    public function isListableBy(User $user): bool
+    {
+        return static::query()
+            ->whereKey($this->getKey())
+            ->listableBy($user)
+            ->exists();
+    }
+
+    /**
      * The contact who owns this plan.
      *
      * @return BelongsTo<User, $this>

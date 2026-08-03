@@ -74,9 +74,10 @@ class TechnicalPlanController extends Controller
     }
 
     /**
-     * List every plan in the house — drafts included — for the crew running the
-     * shows. The route is closed to anyone without
-     * {@see TechnicalPlan::VIEW_ALL_PERMISSION}.
+     * List the plans that have been written — drafts included — as far as the
+     * reader reaches: every plan in the house for the crew running the shows,
+     * and otherwise the reader's own plans and their groups'. See
+     * {@see TechnicalPlan::listableBy()}.
      */
     public function overview(Request $request): Response
     {
@@ -86,6 +87,7 @@ class TechnicalPlanController extends Controller
         // where the crew wants them — those are the ones needing a real night.
         $plans = TechnicalPlan::query()
             ->with(['user', 'performance.team', 'performance.show.team'])
+            ->listableBy($request->user())
             ->leftJoin('performances', 'performances.id', '=', 'technical_plans.performance_id')
             ->orderByDesc('performances.date')
             ->orderByDesc('technical_plans.created_at')
@@ -99,12 +101,23 @@ class TechnicalPlanController extends Controller
     }
 
     /**
-     * Show one plan's details to the crew running the shows — the same fields
-     * as the overview's row, plus when it was submitted. The route is closed
-     * to anyone without {@see TechnicalPlan::VIEW_ALL_PERMISSION}.
+     * Show one plan's details — the same fields as the overview's row, plus
+     * when it was submitted. Reaches as far as the overview does, so a row that
+     * was listed always opens; see {@see TechnicalPlan::listableBy()}. Changing
+     * the status from here is a separate right, guarded on its own route.
      */
     public function showDetails(Request $request, TechnicalPlan $plan): Response
     {
+        if (! $plan->isListableBy($request->user())) {
+            Log::warning('Refused the details of a plan the user may not read', [
+                'plan_id' => $plan->id,
+                'user_id' => $request->user()->id,
+                'ip' => $request->ip(),
+            ]);
+
+            abort(403);
+        }
+
         $plan->load(['user', 'performance.team', 'performance.show.team']);
 
         return Inertia::render('technical-plans/Show', [

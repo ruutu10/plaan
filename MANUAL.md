@@ -301,21 +301,35 @@ dokument, mis on koostatud samade reeglite järgi.
 
 ### 5.1 Plaanide ülevaade (`Saadetud plaanid`)
 
-Saadaval kõigile, kes tohivad lugeda kõiki plaane (tehnikud ja majarahvas). See
-loetleb **kõik maja plaanid, mustandid kaasa arvatud**, etenduse kuupäeva järgi,
-kõige hilisem ees - tehnikatiim otsib seda, mis on tulemas või äsja ära
-mängitud, mitte arhiivi. Asendusetenduse („Etendust pole nimekirjas“) alla
-esitatud plaanid on dateeritud aastaid ette ja kogunevad seetõttu tippu, mis on
-täpselt õige koht - just neile on vaja päris õhtut leida.
+Link on nähtav **igal sisselogitud kasutajal**. Kui kaugele see ulatub, sõltub
+lugejast:
+
+- **Tehnikud ja majarahvas** (kellel on õigus lugeda kõiki plaane) näevad **kõiki
+  maja plaane**.
+- **Kõik ülejäänud** näevad oma plaane ja **oma tiimide plaane** - need on
+  plaanid, mille etendus kuulub tiimile või mille lavastus on tiimi oma. Nii
+  hõlmab see ka võõral õhtul mängitavat tiimi enda etteastet („Õppelava“ tüüpi
+  slotti). Teiste tiimide plaanid jäävad nimekirjast välja.
+
+Mõlemal juhul on **mustandid kaasa arvatud** - tiimikaaslase lõpetamata mustand
+on plaan, mille tiim on ikka veel võlgu, ja ülevaade on koht, kust seda otsida.
+
+Nimekiri on etenduse kuupäeva järgi, kõige hilisem ees - tehnikatiim otsib seda,
+mis on tulemas või äsja ära mängitud, mitte arhiivi. Asendusetenduse („Etendust
+pole nimekirjas“) alla esitatud plaanid on dateeritud aastaid ette ja kogunevad
+seetõttu tippu, mis on täpselt õige koht - just neile on vaja päris õhtut leida.
 
 Iga rida avab detailivaate, kus on plaan ise, selle kirjutaja, etendus, mille
-kohta see käib, ja esitamise aeg.
+kohta see käib, ja esitamise aeg. Detailivaade ulatub täpselt sama kaugele kui
+nimekiri: iga rida, mida pakutakse, ka avaneb.
 
 ### 5.2 Plaani staatuse muutmine
 
-Detailivaates saab tehnik viia plaani ükskõik millisesse staatusesse. Kõigi
-plaanide lugemine ja nende staatuse muutmine on **eraldi õigused** - majarahvas
-saab lugeda, aga mitte muuta.
+Detailivaates saab tehnik viia plaani ükskõik millisesse staatusesse. Plaani
+lugemine ja selle staatuse muutmine on **eraldi õigused** - majarahvas saab
+lugeda kõiki plaane, aga mitte muuta, ja tiimiliige näeb oma tiimi plaani, kuid
+staatuse määrab ikka tehnikatiim. Ilma muutmisõiguseta näidatakse staatust
+detailivaates lihtsalt sildina.
 
 Ainus üleminek, millel on tagajärg, on **Esitatud → Tehniku kinnitatud**: plaani
 autorile saadetakse kiri, et tehnikatiim on selle üles võtnud. Plaanil, mille
@@ -326,7 +340,7 @@ muutus logitakse koos muutjaga.
 
 ## 6. Meeldetuletused
 
-Esinejaid tagatakse automaatselt plaanide pärast, mida ei ole üle antud.
+Esinejaid nüksatakse automaatselt plaanide pärast, mida ei ole üle antud.
 
 **Millal.** Kaks meeldetuletust etenduse kohta: **6 päeva** enne ja **30 tundi**
 enne. Mõlemal on sama tekst - teine ei ole karmim kiri, vaid sama kiri, mis
@@ -336,13 +350,13 @@ saabub siis, kui unustamiseks enam aega ei ole.
 enda tiim, muidu lavastuse tiim. Iga esineja saab oma lingi, sest link logib
 hoidja sisse.
 
-**Tehnikatiim** saab oma eraldi koopia, kus on kirjas, keda tagati. See koopia ei
+**Tehnikatiim** saab oma eraldi koopia, kus on kirjas, keda nüksati. See koopia ei
 sisalda meelega ühtki sisselogimislinki.
 
 **Mis need peatab.** Selle etenduse esitatud või kinnitatud plaan. Mustand ei
 loe - seda ei antud kunagi üle.
 
-**Mille pärast kunagi ei tagata:**
+**Mille pärast ei nüksata:**
 - mustandiks märgitud etendused,
 - etendused, millel pole tiimi (pole kellelegi kirjutada),
 - etendused, mille tiimil pole liikmeid - see logitakse hoiatusena ja vaadatakse
@@ -352,15 +366,13 @@ loe - seda ei antud kunagi üle.
   järele jõudev süsteem saadab ainult viimase tähtaja ületanud meeldetuletuse,
   mitte mõlemad korraga.
 
-Iga meeldetuletus saadetakse etenduse kohta **täpselt üks kord**, mis ka
-ajastajaga ei juhtuks. Kogu meeldetuletuste mehhanismi saab kogu majas välja
-lülitada.
+Iga meeldetuletus saadetakse etenduse kohta **täpselt üks kord**.
 
 ---
 
 ## 7. Lavastuste ja etenduste haldamine
 
-### 7.1 Lavastused (`Lavastused`)
+### 7.1 Lavastused
 
 Selle ekraani saab avada iga sisseloginud kasutaja; loetletakse see, milleni sa
 tohid ulatuda:
@@ -369,8 +381,7 @@ tohid ulatuda:
 - lavastused, mille mõnda etendust su tiim üksnes mängib (külalisesinemine
   kellegi teise õhtul).
 
-Tehnikud näevad kõiki maja lavastusi, sealhulgas neid, millel pole omanikutiimi -
-teisiti nendeni ei jõuagi.
+Tehnikud näevad kõiki maja lavastusi, sealhulgas neid, millel pole omanikutiimi.
 
 Sa saad luua lavastuse (valides omaniku nende tiimide seast, kuhu ise kuulud;
 tehnik võib valida ükskõik millise tiimi), selle ümber nimetada, kirjeldust muuta
@@ -408,7 +419,7 @@ mida keegi pole veel üle vaadanud - kuupäev võib olla vale või õhtut ei pru
 üldse tulla. Kuni admin märke maha ei võta, on see:
 
 - tehnikaplaani vormi etenduste valikust välja jäetud,
-- puuduva plaani pärast kunagi tagamata.
+- märgistatud ülevaatamata etendusena
 
 Haldusekraanidel on see endiselt näha, üle vaatamata märkega.
 
@@ -428,14 +439,13 @@ Lavastuste kaudu.
 - Vaheta, millises tiimis sa parajasti töötad - töölaud ja külgmenüü järgivad
   seda.
 - Kutsu inimesi e-postiga. **Kutsed aeguvad 3 päeva pärast** ja neid saab ootel
-  olles tühistada. Aegunud kutsed koristatakse öösel ära.
+  olles tühistada. Aegunud kutsed koristatakse ära.
 - Võta kutseid vastu või lükka neid tagasi oma töölaual. Vastuvõtmine lülitab su
   sellesse tiimi. Kutse vastuvõtmine tiimi, kus sa juba oled, ei muuda midagi -
   senine roll jääb alles.
 - Lahku tiimist (omanikud oma tiimist lahkuda ei saa). Kui lahkud, sind
   eemaldatakse või tiim kustutatakse, viiakse sind sellesse ülejäänud tiimidest,
-  mis on tähestikus esimene. Kui ühtki ei jää, jääd ilma aktiivse tiimita ja
-  ekraanid saavad sellega hakkama.
+  mis on tähestikus esimene. Kui ühtki ei jää, jääd ilma aktiivse tiimita.
 - Tiimi nimest saab selle URL-i osa, seega **tiimi ümber nimetamine muudab kõiki
   linke, mis seda nime sisaldavad**. Osa nimesid on reserveeritud ja neid ei
   lubata.
@@ -454,8 +464,7 @@ Omanikuks ei saa kedagi määrata - see roll kuulub tiimi loojale.
 
 Tehnikud haldavad siit kõiki maja tiime: loovad, nimetavad ümber, kustutavad ning
 lisavad, muudavad rolli või eemaldavad liikmeid otse. Tavaline liige näeb seda
-ekraani avades oma tiime ja talle öeldakse kohe ette, mida ta muuta ei saa -
-selle asemel et seda keeldumise kaudu teada saada.
+ekraani avades oma tiime.
 
 ---
 
@@ -497,7 +506,7 @@ saab otse plaani sisse minna.
 
 | Töö | Millal | Mida ta teeb |
 | --- | --- | --- |
-| **Planka import** | Iga päev | Loeb tootmistahvli kaarte ja registreerib lavastused ja etendused, mida need kuulutavad. Uued etendused saabuvad **mustanditena**, mis ootavad ülevaatamist. Lavastusi, mille admin on siin kustutanud, ei äratata kunagi ellu. Kaarte saab sildi järgi välja jätta. |
+| **Planka import** | Iga päev | Loeb projektide kaarte ja registreerib lavastused ja etendused, mille kohta on kaart. Uued etendused saabuvad **mustanditena**, mis ootavad ülevaatamist. Lavastusi, mille admin on siin kustutanud, ei äratata kunagi ellu. Kaarte saab sildi järgi välja jätta. |
 | **Meeldetuletused** | Iga tund | Saadab välja iga tehnikaplaani meeldetuletuse, mille aeg on äsja kätte jõudnud (§6). Enamikul tundidel vaikne. |
 | **Arhiveerimine** | Iga päev | Viib esitatud ja kinnitatud plaanid staatusesse **Arhiveeritud**, kui nende etendus mängiti ära rohkem kui 24 tundi tagasi. Esineja enda mustandit ei arhiveerita kunagi - seda ei antud kunagi üle. |
 | **Kutsete koristus** | Iga päev | Kustutab aegunud tiimikutsed. |
@@ -555,5 +564,4 @@ Veel kaks märkust piiride kohta:
 - **Tiimi ümber nimetamine lõhub lingid, mis selle nime sisaldavad.**
 - **Etenduse kustutamine jätab selle plaanid alles**; lavastuse kustutamine võtab
   selle etendused kaasa.
-- **Majarahva rolli eemaldamine teatri aadressilt ei jää püsima** - see antakse
-  uuesti, kui aadress järgmine kord tõendatakse.
+

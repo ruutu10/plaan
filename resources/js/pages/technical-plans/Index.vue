@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import { ExternalLink, Info } from '@lucide/vue';
+import { computed } from 'vue';
 import { statusTone } from '@/components/technical-plan/presentPlan';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
@@ -12,6 +13,22 @@ import { index, show } from '@/routes/technical-plans';
 import type { AdminPlanRow } from '@/types/technicalPlan';
 
 defineProps<{ plans: AdminPlanRow[] }>();
+
+const page = usePage();
+
+// The listing reaches as far as the reader does, so say which listing this is
+// rather than promising the whole house to somebody shown one corner of it.
+const lead = computed(() =>
+    page.props.auth?.can?.viewAllTechnicalPlans
+        ? 'Kõik esitatud tehnilised plaanid, olenemata staatusest.'
+        : 'Sinu ja sinu tiimide tehnilised plaanid, olenemata staatusest.',
+);
+
+const emptyText = computed(() =>
+    page.props.auth?.can?.viewAllTechnicalPlans
+        ? 'Ühtegi tehnilist plaani pole veel esitatud.'
+        : 'Sinul ja sinu tiimidel pole veel ühtegi tehnilist plaani.',
+);
 
 defineOptions({
     layout: {
@@ -29,11 +46,7 @@ defineOptions({
     <Head title="Tehnilised plaanid" />
 
     <R10Page>
-        <StepHeader
-            eyebrow="Tehnika"
-            title="Tehnilised plaanid"
-            lead="Kõik esitatud tehnilised plaanid, olenemata staatusest."
-        />
+        <StepHeader eyebrow="Tehnika" title="Tehnilised plaanid" :lead="lead" />
 
         <R10Table
             :columns="[
@@ -46,7 +59,7 @@ defineOptions({
             ]"
             :rows="plans"
             row-test-id="technical-plan-row"
-            empty-text="Ühtegi tehnilist plaani pole veel esitatud."
+            :empty-text="emptyText"
             error-text="Plaanide laadimine ebaõnnestus. Proovi lehte värskendada."
         >
             <template #row="{ row: plan }">

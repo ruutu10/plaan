@@ -26,11 +26,129 @@ class TechnicalPlanAdminTest extends TestCase
             ->assertRedirect(route('login'));
     }
 
-    public function test_users_without_the_technician_role_are_forbidden(): void
+    public function test_users_without_the_technician_role_may_open_the_overview(): void
     {
         $this->actingAs(User::factory()->create())
             ->get(route('technical-plans.index'))
-            ->assertForbidden();
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('technical-plans/Index')
+                ->has('plans', 0));
+    }
+
+    public function test_the_overview_shows_a_plain_user_their_own_plan(): void
+    {
+        $user = User::factory()->create();
+
+        // Filed under somebody else's night: it is theirs by having written it.
+        $own = TechnicalPlan::factory()->submitted()->create([
+            'user_id' => $user->id,
+            'performance_id' => Performance::factory()->create(['date' => '2026-03-01']),
+        ]);
+
+        TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => Performance::factory()->create(['date' => '2026-04-01']),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('technical-plans.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('plans', 1)
+                ->where('plans.0.token', $own->token));
+    }
+
+    public function test_the_overview_shows_a_plain_user_the_plans_of_their_teams_shows(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user, 'Märold');
+        $show = Show::factory()->create(['team_id' => $team->id]);
+
+        $ours = TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => Performance::factory()->create([
+                'show_id' => $show->id,
+                'date' => '2026-05-01',
+            ]),
+        ]);
+
+        // Another group's evening entirely.
+        TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => Performance::factory()->create(['date' => '2026-06-01']),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('technical-plans.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('plans', 1)
+                ->where('plans.0.token', $ours->token));
+    }
+
+    public function test_the_overview_shows_a_plain_user_their_teams_own_slot_on_someone_elses_evening(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user, 'Märold');
+
+        // An Õppelava slot: the show belongs to the house, the act to the team.
+        $ours = TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => Performance::factory()->create([
+                'team_id' => $team->id,
+                'date' => '2026-05-01',
+            ]),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('technical-plans.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('plans', 1)
+                ->where('plans.0.token', $ours->token));
+    }
+
+    public function test_the_overview_shows_a_plain_user_their_teams_unfinished_drafts(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user, 'Märold');
+        $show = Show::factory()->create(['team_id' => $team->id]);
+
+        // Written by a team-mate and never handed in: the group still owes it,
+        // so the overview is exactly where they would go looking for it.
+        $draft = TechnicalPlan::factory()->create([
+            'status' => TechnicalPlanStatus::Draft,
+            'user_id' => User::factory()->create()->id,
+            'performance_id' => Performance::factory()->create([
+                'show_id' => $show->id,
+                'date' => '2026-05-01',
+            ]),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('technical-plans.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('plans', 1)
+                ->where('plans.0.token', $draft->token));
+    }
+
+    public function test_the_overview_hides_another_teams_plans_from_a_plain_user(): void
+    {
+        $user = User::factory()->create();
+        $this->teamOf($user, 'Märold');
+
+        $theirTeam = Team::factory()->create(['name' => 'Improteater']);
+        $theirShow = Show::factory()->create(['team_id' => $theirTeam->id]);
+
+        TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => Performance::factory()->create([
+                'show_id' => $theirShow->id,
+                'date' => '2026-05-01',
+            ]),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('technical-plans.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->has('plans', 0));
     }
 
     public function test_technicians_can_open_the_overview(): void
@@ -146,13 +264,47 @@ class TechnicalPlanAdminTest extends TestCase
             ->assertRedirect(route('login'));
     }
 
-    public function test_users_without_the_technician_role_cannot_open_a_plans_details(): void
+    public function test_a_plain_user_cannot_open_the_details_of_a_plan_that_is_not_theirs(): void
     {
         $plan = TechnicalPlan::factory()->submitted()->create();
 
         $this->actingAs(User::factory()->create())
             ->get(route('technical-plans.show', $plan))
             ->assertForbidden();
+    }
+
+    public function test_a_plain_user_can_open_the_details_of_their_own_plan(): void
+    {
+        $user = User::factory()->create();
+        $plan = TechnicalPlan::factory()->submitted()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->get(route('technical-plans.show', $plan))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('technical-plans/Show')
+                ->where('plan.token', $plan->token));
+    }
+
+    public function test_a_plain_user_can_open_the_details_of_their_teams_plan(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user, 'Märold');
+        $show = Show::factory()->create(['team_id' => $team->id]);
+
+        // A team-mate's plan, not their own: every row the overview offers has
+        // to open, or the listing sends people at a door that shuts.
+        $plan = TechnicalPlan::factory()->submitted()->create([
+            'user_id' => User::factory()->create()->id,
+            'performance_id' => Performance::factory()->create(['show_id' => $show->id]),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('technical-plans.show', $plan))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('technical-plans/Show')
+                ->where('plan.token', $plan->token));
     }
 
     public function test_technicians_can_open_a_plans_details(): void
@@ -199,6 +351,25 @@ class TechnicalPlanAdminTest extends TestCase
         $plan = TechnicalPlan::factory()->submitted()->create();
 
         $this->actingAs(User::factory()->create())
+            ->patch(route('technical-plans.update-status', $plan), ['status' => TechnicalPlanStatus::Received->value])
+            ->assertForbidden();
+
+        $this->assertSame(TechnicalPlanStatus::Submitted, $plan->fresh()->status);
+    }
+
+    public function test_a_team_member_who_may_read_a_plan_still_cannot_change_its_status(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user, 'Märold');
+        $show = Show::factory()->create(['team_id' => $team->id]);
+
+        $plan = TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => Performance::factory()->create(['show_id' => $show->id]),
+        ]);
+
+        // Reading the plan and moving it along are separate rights: the group
+        // reaches its own plans, the crew alone says where one has got to.
+        $this->actingAs($user)
             ->patch(route('technical-plans.update-status', $plan), ['status' => TechnicalPlanStatus::Received->value])
             ->assertForbidden();
 

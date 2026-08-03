@@ -49,16 +49,19 @@ Route::prefix('tehnikaplaan')->name('technical-plan.')->group(function () {
     Route::get('p/{plan:token}', [TechnicalPlanController::class, 'public'])->name('public');
 });
 
-// The technical crew's overview of every plan that has been written, whatever
-// state it is in. Closed to everyone but the holders of the view-all permission
-// (the "technician" role).
+// The overview of the plans that have been written, whatever state they are in.
+// Open to every signed-in user, because how far it reaches is the listing's own
+// question rather than the door's: holders of the view-all permission (the
+// "technician" role) are shown the whole house, everybody else their own plans
+// and their groups' — see App\Models\TechnicalPlan::listableBy().
 Route::get('technical-plans', [TechnicalPlanController::class, 'overview'])
-    ->middleware(['auth', 'can:'.TechnicalPlan::VIEW_ALL_PERMISSION])
+    ->middleware(['auth'])
     ->name('technical-plans.index');
 
-// A single plan's details, opened from a row of the overview above.
+// A single plan's details, opened from a row of the overview above. Guarded by
+// the same reach as the listing, checked in the controller against the plan.
 Route::get('technical-plans/{plan:token}', [TechnicalPlanController::class, 'showDetails'])
-    ->middleware(['auth', 'can:'.TechnicalPlan::VIEW_ALL_PERMISSION])
+    ->middleware(['auth'])
     ->name('technical-plans.show');
 
 // Changing a plan's status from its details page is a right of its own — held

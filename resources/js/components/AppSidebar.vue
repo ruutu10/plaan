@@ -59,17 +59,14 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: shows().url,
         icon: Theater,
     },
-    // The plan overview belongs to the technical crew; everyone else is not
-    // shown a door the server would shut anyway.
-    ...(page.props.auth?.can?.viewAllTechnicalPlans
-        ? [
-              {
-                  title: 'Saadetud plaanid',
-                  href: technicalPlans().url,
-                  icon: ClipboardList,
-              },
-          ]
-        : []),
+    // The plan overview is everybody's door: the technical crew find the whole
+    // house behind it, everyone else their own plans and their groups'. Nobody
+    // is shut out, so nothing is hidden here.
+    {
+        title: 'Saadetud plaanid',
+        href: technicalPlans().url,
+        icon: ClipboardList,
+    },
     // The house-wide performance overview, next to the plans it feeds. A user
     // without the permission reaches their own groups' dates through Lavastused
     // and is not shown a door the server would shut.
