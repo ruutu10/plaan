@@ -194,7 +194,7 @@ function onDrop(targetId: string): void {
                 @drop.prevent="onDrop(scene.id)"
             >
                 <div
-                    class="flex items-center gap-3 bg-r10-navy px-4 py-3 text-white"
+                    class="flex items-center gap-2 bg-r10-navy px-3 py-3 text-white sm:gap-3 sm:px-4"
                 >
                     <span
                         draggable="true"
@@ -219,7 +219,7 @@ function onDrop(targetId: string): void {
                     <button
                         type="button"
                         title="Ava/sulge"
-                        class="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 border-none bg-transparent p-0 text-left text-white"
+                        class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0 text-left text-white sm:gap-2.5"
                         @click="toggle(scene)"
                     >
                         <svg

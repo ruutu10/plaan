@@ -98,8 +98,12 @@ onBeforeUnmount(destroy);
 </script>
 
 <template>
-    <div class="rounded-[12px] border border-white/15 bg-r10-navy-900 p-4">
-        <div class="flex items-center gap-4">
+    <div
+        class="rounded-[12px] border border-white/15 bg-r10-navy-900 p-3 sm:p-4"
+    >
+        <!-- The waveform needs room the transport controls leave it: on a phone
+             it drops to a line of its own instead of being squeezed to nothing. -->
+        <div class="flex flex-wrap items-center gap-3 sm:flex-nowrap sm:gap-4">
             <button
                 type="button"
                 :disabled="!ready"
@@ -112,7 +116,9 @@ onBeforeUnmount(destroy);
                 <Play v-else class="h-5 w-5" />
             </button>
 
-            <div class="min-w-0 flex-1">
+            <div
+                class="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1"
+            >
                 <!-- Wavesurfer draws into this element; it must stay in the
                      DOM for the lifetime of the instance. -->
                 <div ref="waveformRef" class="w-full" />
@@ -145,7 +151,7 @@ onBeforeUnmount(destroy);
                 type="button"
                 title="Algusesse"
                 aria-label="Algusesse"
-                class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-white/30 bg-transparent text-white transition hover:border-r10-orange hover:text-r10-orange"
+                class="ml-auto flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-white/30 bg-transparent text-white transition hover:border-r10-orange hover:text-r10-orange sm:ml-0"
                 @click="restart"
             >
                 <RotateCcw class="h-4 w-4" />

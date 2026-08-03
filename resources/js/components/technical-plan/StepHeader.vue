@@ -19,13 +19,13 @@ defineProps<{
             </span>
         </div>
         <h1
-            class="m-0 font-r10-display text-[34px] leading-[1.05] font-bold tracking-[0.02em] text-r10-ink uppercase"
+            class="m-0 font-r10-display text-[26px] leading-[1.05] font-bold tracking-[0.02em] break-words text-r10-ink uppercase sm:text-[34px]"
         >
             {{ title }}
         </h1>
         <p
             v-if="lead"
-            class="mt-2.5 mb-7 font-r10-body text-[17px] leading-relaxed font-light text-r10-grey-700"
+            class="mt-2.5 mb-7 font-r10-body text-[15px] leading-relaxed font-light text-r10-grey-700 sm:text-[17px]"
         >
             {{ lead }}
         </p>

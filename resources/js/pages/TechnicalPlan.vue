@@ -486,7 +486,7 @@ watch(
 
     <R10Layout title="Etenduse tehnikaplaan" :no-print-header="true">
         <div
-            class="mx-auto flex max-w-[1160px] flex-wrap items-start gap-[30px] px-6 pt-9 pb-16"
+            class="mx-auto flex max-w-[1160px] flex-wrap items-start gap-6 px-4 pt-6 pb-12 sm:px-6 sm:pt-9 sm:pb-16 lg:gap-[30px]"
         >
             <Stepper
                 :step="step"
@@ -501,7 +501,7 @@ watch(
             />
 
             <main
-                class="min-w-0 flex-1 basis-[520px] rounded-[22px] border border-r10-grey-200 bg-white p-6 shadow-[0_6px_18px_rgba(10,14,23,0.1)] sm:p-10"
+                class="min-w-0 flex-1 basis-[520px] rounded-[22px] border border-r10-grey-200 bg-white p-4 shadow-[0_6px_18px_rgba(10,14,23,0.1)] sm:p-6 lg:p-10"
             >
                 <LoginScreen
                     v-if="showLogin"
@@ -538,20 +538,23 @@ watch(
                         @ai-review="aiReview"
                     />
 
+                    <!-- Both buttons and the counter rarely fit one phone-width
+                         line, so the counter takes its own line above them. -->
                     <div
                         v-if="canEdit"
-                        class="r10-no-print mt-9 flex items-center gap-4 border-t border-r10-grey-200 pt-6"
+                        class="r10-no-print mt-9 flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-r10-grey-200 pt-6"
                     >
                         <R10Button
                             v-if="step > 0"
                             variant="outline"
                             size="md"
+                            class="order-2 sm:order-none"
                             @click="goBack"
                         >
                             Tagasi
                         </R10Button>
                         <span
-                            class="ml-auto text-xs font-bold tracking-[0.1em] text-r10-grey-500 uppercase"
+                            class="order-1 w-full text-center text-xs font-bold tracking-[0.1em] text-r10-grey-500 uppercase sm:order-none sm:ml-auto sm:w-auto sm:text-left"
                         >
                             Samm {{ step + 1 }} / 7
                         </span>
@@ -559,6 +562,7 @@ watch(
                             v-if="step < 6"
                             variant="primary"
                             size="md"
+                            class="order-3 ml-auto sm:order-none sm:ml-0"
                             @click="goNext"
                         >
                             {{ nextLabel }}

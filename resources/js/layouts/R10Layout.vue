@@ -29,27 +29,31 @@ const dashboardUrl = computed(() =>
             :class="{ 'r10-no-print': noPrintHeader }"
         >
             <div
-                class="mx-auto flex max-w-[1160px] items-center gap-5 px-6 py-3.5"
+                class="mx-auto flex max-w-[1160px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:gap-x-5 sm:px-6 sm:py-3.5"
             >
                 <Link
                     href="/"
-                    class="font-r10-display text-xl font-black tracking-[0.06em] text-white"
+                    class="shrink-0 font-r10-display text-xl font-black tracking-[0.06em] text-white"
                 >
                     RUUTU<span class="text-r10-orange">10</span>
                 </Link>
 
                 <template v-if="title">
-                    <div class="h-6 w-px bg-white/15" />
-                    <div class="flex min-w-0 flex-col gap-0.5">
+                    <div class="hidden h-6 w-px bg-white/15 sm:block" />
+                    <!-- Too little room for logo, title and menu on one line:
+                         the title takes a line of its own on a phone. -->
+                    <div
+                        class="order-last flex w-full min-w-0 flex-col gap-0.5 sm:order-none sm:w-auto"
+                    >
                         <span
-                            class="font-r10-display text-[15px] leading-none font-semibold tracking-[0.03em] text-white uppercase"
+                            class="truncate font-r10-display text-[15px] leading-none font-semibold tracking-[0.03em] text-white uppercase"
                         >
                             {{ title }}
                         </span>
                     </div>
                 </template>
 
-                <div class="ml-auto flex items-center gap-4">
+                <div class="ml-auto flex items-center gap-3 sm:gap-4">
                     <slot name="actions" />
 
                     <nav v-if="user" class="flex items-center gap-3">

@@ -51,7 +51,7 @@ function submit(): void {
         <!-- Confirmation: the magic link has been e-mailed. -->
         <div
             v-if="props.sent"
-            class="rounded-[22px] border border-r10-grey-200 bg-r10-grey-100 p-[26px]"
+            class="rounded-[22px] border border-r10-grey-200 bg-r10-grey-100 p-5 sm:p-[26px]"
         >
             <div class="flex items-start gap-3.5">
                 <span
@@ -67,7 +67,7 @@ function submit(): void {
                     </div>
                     <p class="m-0 text-sm leading-relaxed text-r10-grey-700">
                         Saatsime sisselogimislingi aadressile
-                        <span class="font-bold text-r10-ink">{{
+                        <span class="font-bold break-all text-r10-ink">{{
                             props.sentTo
                         }}</span
                         >. Ava kiri ja vajuta lingil — suuname su siia tagasi ja
@@ -80,7 +80,7 @@ function submit(): void {
         <!-- E-mail entry form. -->
         <form v-else @submit.prevent="submit">
             <div
-                class="rounded-[22px] border border-r10-grey-200 bg-white p-[26px]"
+                class="rounded-[22px] border border-r10-grey-200 bg-white p-5 sm:p-[26px]"
             >
                 <label class="flex flex-col gap-1.5">
                     <span

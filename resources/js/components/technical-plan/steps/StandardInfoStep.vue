@@ -21,7 +21,9 @@ const points = [
             lead="Järgnev kehtib tüüpilise improetenduse kohta, ning ka siis, kui sa ei esita tehnikaplaani. Kirjelda erisoovid tehnikaplaanis!"
         />
 
-        <div class="rounded-[22px] bg-r10-navy px-8 py-[30px] text-white">
+        <div
+            class="rounded-[22px] bg-r10-navy px-5 py-6 text-white sm:px-8 sm:py-[30px]"
+        >
             <ul class="m-0 flex list-none flex-col gap-4 p-0">
                 <li
                     v-for="(point, index) in points"

@@ -122,6 +122,14 @@ function labelClasses(node: StepNode): string {
     return state === 'todo' ? 'text-r10-grey-500' : 'text-r10-ink';
 }
 
+/** The step the compact phone strip names beneath its row of numbers. */
+const activeLabel = computed(
+    () => nodes.value[activePosition.value]?.label ?? '',
+);
+
+const resetClass =
+    'cursor-pointer border-none bg-transparent py-1.5 font-r10-body text-xs font-bold tracking-[0.06em] text-r10-grey-500 uppercase underline';
+
 function onNodeClick(node: StepNode): void {
     if (!node.clickable) {
         return;
@@ -139,7 +147,7 @@ function onNodeClick(node: StepNode): void {
 
 <template>
     <aside
-        class="r10-no-print sticky top-24 flex w-full flex-col gap-0 lg:w-[190px] lg:shrink-0"
+        class="r10-no-print flex w-full flex-col gap-0 lg:sticky lg:top-24 lg:w-[190px] lg:shrink-0"
     >
         <div class="mb-3.5">
             <div class="h-[5px] overflow-hidden rounded-full bg-r10-grey-200">
@@ -155,13 +163,67 @@ function onNodeClick(node: StepNode): void {
             </div>
         </div>
 
+        <!-- On a phone the rail would push the step itself off the screen, so
+             the same nodes become a row of numbers with the current step named
+             underneath. Every node still navigates. -->
+        <div class="lg:hidden">
+            <div class="flex items-center overflow-x-auto pb-1">
+                <template v-for="node in nodes" :key="node.pos">
+                    <span
+                        v-if="node.pos > 0"
+                        class="h-0.5 w-2 shrink-0 sm:w-4"
+                        :class="
+                            node.pos <= activePosition
+                                ? 'bg-r10-navy'
+                                : 'bg-r10-grey-200'
+                        "
+                    />
+                    <button
+                        type="button"
+                        :disabled="!node.clickable"
+                        :title="node.label"
+                        :aria-label="node.label"
+                        :aria-current="
+                            node.pos === activePosition ? 'step' : undefined
+                        "
+                        :class="[
+                            'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 font-r10-display text-[13px] font-extrabold transition-colors',
+                            node.clickable
+                                ? 'cursor-pointer'
+                                : 'cursor-default',
+                            circleClasses(node),
+                        ]"
+                        @click="onNodeClick(node)"
+                    >
+                        {{ node.display }}
+                    </button>
+                </template>
+            </div>
+
+            <div class="mt-2 flex items-center justify-between gap-3">
+                <span
+                    class="min-w-0 font-r10-body text-sm font-bold tracking-[0.02em] text-r10-ink"
+                >
+                    {{ activeLabel }}
+                </span>
+                <button
+                    v-if="showReset"
+                    type="button"
+                    :class="[resetClass, 'shrink-0 px-0']"
+                    @click="emit('reset')"
+                >
+                    Alusta otsast
+                </button>
+            </div>
+        </div>
+
         <button
             v-for="node in nodes"
             :key="node.pos"
             type="button"
             :disabled="!node.clickable"
             :class="[
-                'flex min-h-[46px] w-full items-stretch gap-3 rounded-[10px] border-none px-2.5 py-0.5 text-left transition-colors',
+                'hidden min-h-[46px] w-full items-stretch gap-3 rounded-[10px] border-none px-2.5 py-0.5 text-left transition-colors lg:flex',
                 stateOf(node.pos) === 'active'
                     ? 'bg-r10-orange-100'
                     : 'bg-transparent',
@@ -213,7 +275,7 @@ function onNodeClick(node: StepNode): void {
         <button
             v-if="showReset"
             type="button"
-            class="mt-4 cursor-pointer self-start border-none bg-transparent px-0 py-1.5 font-r10-body text-xs font-bold tracking-[0.06em] text-r10-grey-500 uppercase underline"
+            :class="[resetClass, 'mt-4 hidden self-start px-0 lg:block']"
             @click="emit('reset')"
         >
             Alusta otsast

@@ -126,7 +126,7 @@ const clockDateTime = computed(() => now.value.toISOString());
 const cueLabelClass =
     'font-r10-body text-[11px] font-bold tracking-[0.18em] text-r10-orange uppercase';
 const cueBodyClass =
-    'mt-2 font-r10-body text-lg leading-relaxed whitespace-pre-line text-white';
+    'mt-2 font-r10-body text-lg leading-relaxed break-words whitespace-pre-line text-white';
 const cueLinkClass =
     'text-r10-orange underline decoration-r10-orange/40 transition hover:decoration-r10-orange';
 </script>
@@ -139,7 +139,7 @@ const cueLinkClass =
         aria-label="Tehniku vaade"
     >
         <header
-            class="flex shrink-0 items-center gap-4 border-b border-white/15 bg-r10-navy px-5 py-3.5"
+            class="flex shrink-0 items-center gap-3 border-b border-white/15 bg-r10-navy px-4 py-3.5 sm:gap-4 sm:px-5"
         >
             <div class="flex min-w-0 items-center gap-2.5">
                 <Diamond :size="11" />
@@ -156,7 +156,7 @@ const cueLinkClass =
             </span>
             <button
                 type="button"
-                class="ml-auto shrink-0 cursor-pointer rounded-full border-2 border-white/30 bg-transparent px-5 py-2 font-r10-body text-xs font-bold tracking-[0.06em] text-white uppercase transition hover:border-r10-orange hover:text-r10-orange"
+                class="ml-auto shrink-0 cursor-pointer rounded-full border-2 border-white/30 bg-transparent px-4 py-2 font-r10-body text-xs font-bold tracking-[0.06em] text-white uppercase transition hover:border-r10-orange hover:text-r10-orange sm:px-5"
                 @click="emit('close')"
             >
                 Sulge vaade
@@ -232,7 +232,7 @@ const cueLinkClass =
             <main
                 v-if="activeScene"
                 ref="mainRef"
-                class="min-h-0 min-w-0 flex-1 overflow-y-auto px-6 py-7 sm:px-10"
+                class="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-10 sm:py-7"
             >
                 <div
                     :key="activeScene.num"
@@ -251,7 +251,7 @@ const cueLinkClass =
 
                     <div class="mt-8 flex flex-col gap-6">
                         <section
-                            class="rounded-[14px] border border-white/15 bg-r10-navy px-5 py-4"
+                            class="rounded-[14px] border border-white/15 bg-r10-navy px-4 py-4 sm:px-5"
                         >
                             <div :class="cueLabelClass">Valgus</div>
                             <div :class="cueBodyClass">
@@ -263,7 +263,7 @@ const cueLinkClass =
                         </section>
 
                         <section
-                            class="rounded-[14px] border border-white/15 bg-r10-navy px-5 py-4"
+                            class="rounded-[14px] border border-white/15 bg-r10-navy px-4 py-4 sm:px-5"
                         >
                             <div :class="cueLabelClass">Heli</div>
 
@@ -320,7 +320,7 @@ const cueLinkClass =
                         </section>
 
                         <section
-                            class="rounded-[14px] border border-white/15 bg-r10-navy px-5 py-4"
+                            class="rounded-[14px] border border-white/15 bg-r10-navy px-4 py-4 sm:px-5"
                         >
                             <div :class="cueLabelClass">Märkmed</div>
                             <div :class="cueBodyClass">
@@ -336,25 +336,25 @@ const cueLinkClass =
         </div>
 
         <footer
-            class="flex shrink-0 items-center gap-4 border-t border-white/15 bg-r10-navy px-5 py-3.5"
+            class="flex shrink-0 items-center gap-2 border-t border-white/15 bg-r10-navy px-4 py-3 sm:gap-4 sm:px-5 sm:py-3.5"
         >
             <button
                 type="button"
                 :disabled="!hasPrevious"
-                class="cursor-pointer rounded-full border-2 border-white/30 bg-transparent px-6 py-2.5 font-r10-body text-sm font-bold tracking-[0.04em] text-white uppercase transition hover:border-r10-orange hover:text-r10-orange disabled:pointer-events-none disabled:opacity-35"
+                class="shrink-0 cursor-pointer rounded-full border-2 border-white/30 bg-transparent px-4 py-2.5 font-r10-body text-sm font-bold tracking-[0.04em] text-white uppercase transition hover:border-r10-orange hover:text-r10-orange disabled:pointer-events-none disabled:opacity-35 sm:px-6"
                 @click="previous"
             >
                 Eelmine
             </button>
             <span
-                class="mx-auto font-r10-body text-xs font-bold tracking-[0.1em] text-r10-navy-300 uppercase"
+                class="mx-auto text-center font-r10-body text-[11px] font-bold tracking-[0.1em] text-r10-navy-300 uppercase sm:text-xs"
             >
                 Stseen {{ active + 1 }} / {{ scenes.length }}
             </span>
             <button
                 type="button"
                 :disabled="!hasNext"
-                class="cursor-pointer rounded-full border-none bg-r10-orange px-6 py-2.5 font-r10-body text-sm font-bold tracking-[0.04em] text-r10-navy uppercase transition hover:bg-r10-orange-600 disabled:pointer-events-none disabled:opacity-35"
+                class="shrink-0 cursor-pointer rounded-full border-none bg-r10-orange px-4 py-2.5 font-r10-body text-sm font-bold tracking-[0.04em] text-r10-navy uppercase transition hover:bg-r10-orange-600 disabled:pointer-events-none disabled:opacity-35 sm:px-6"
                 @click="next"
             >
                 Järgmine

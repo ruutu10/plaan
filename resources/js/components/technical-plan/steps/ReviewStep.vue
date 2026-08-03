@@ -143,7 +143,9 @@ const playbackOpen = ref(false);
             v-if="aiResult"
             class="r10-no-print mt-4 overflow-hidden rounded-[14px] border border-r10-grey-200"
         >
-            <div class="flex items-center gap-2.5 bg-r10-navy px-5 py-3.5">
+            <div
+                class="flex flex-wrap items-center gap-2.5 bg-r10-navy px-4 py-3.5 sm:px-5"
+            >
                 <Diamond :size="10" />
                 <span
                     class="font-r10-display text-sm font-semibold tracking-[0.04em] text-white uppercase"
@@ -152,17 +154,19 @@ const playbackOpen = ref(false);
                 </span>
                 <button
                     type="button"
-                    class="ml-auto cursor-pointer rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 font-r10-body text-[11px] font-bold tracking-[0.06em] text-white uppercase"
+                    class="ml-auto shrink-0 cursor-pointer rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 font-r10-body text-[11px] font-bold tracking-[0.06em] text-white uppercase"
                     @click="$emit('ai-review')"
                 >
                     Kontrolli uuesti
                 </button>
             </div>
             <div
-                class="markdown bg-white px-[22px] py-5 font-r10-body text-sm leading-relaxed text-r10-ink"
+                class="markdown bg-white px-4 py-5 font-r10-body text-sm leading-relaxed break-words text-r10-ink sm:px-[22px]"
                 v-html="aiResult"
             ></div>
-            <div class="bg-white px-[22px] pb-4 text-xs text-r10-grey-500">
+            <div
+                class="bg-white px-4 pb-4 text-xs text-r10-grey-500 sm:px-[22px]"
+            >
                 See on AI-genereeritud soovitus ja ei pruugi olla täpne. AI
                 soovitused ei ole kohustus plaani muuta.
             </div>
@@ -187,7 +191,7 @@ const playbackOpen = ref(false);
 
         <div
             v-if="publicLink"
-            class="r10-no-print mt-4 rounded-[14px] border border-r10-grey-200 bg-r10-grey-100 px-[22px] py-5"
+            class="r10-no-print mt-4 rounded-[14px] border border-r10-grey-200 bg-r10-grey-100 px-4 py-5 sm:px-[22px]"
         >
             <div class="mb-2 flex items-center gap-2">
                 <Diamond :size="9" />
@@ -206,7 +210,7 @@ const playbackOpen = ref(false);
                     type="text"
                     readonly
                     :value="publicLink"
-                    class="min-w-0 flex-1 rounded-lg border-2 border-r10-grey-200 bg-white px-3.5 py-2.5 font-mono text-xs text-r10-ink outline-none"
+                    class="min-w-0 shrink grow basis-full rounded-lg border-2 border-r10-grey-200 bg-white px-3.5 py-2.5 font-mono text-xs text-r10-ink outline-none sm:basis-0"
                 />
                 <button
                     type="button"
