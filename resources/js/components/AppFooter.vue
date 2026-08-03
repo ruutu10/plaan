@@ -11,7 +11,7 @@ const contactEmail = computed(() => page.props.contactEmail);
     <footer
         class="border-t border-r10-grey-200 py-4 text-center font-r10-body text-xs text-r10-grey-500"
     >
-        versioon v{{ appVersion }} | probleemid ja tagasiside - ‮{{
+        versioon v{{ appVersion }} | <a href="https://github.com/ruutu10/plaan" target="_blank">GitHub</a> | ‮{{
             contactEmail
         }}‮
     </footer>
