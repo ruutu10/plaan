@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsModelActivity;
 use App\Enums\TeamRole;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +22,8 @@ use Illuminate\Support\Carbon;
 #[Fillable(['team_id', 'user_id', 'role'])]
 class Membership extends Pivot
 {
+    use LogsModelActivity;
+
     /**
      * The table associated with the model.
      *
@@ -65,5 +68,15 @@ class Membership extends Pivot
         return [
             'role' => TeamRole::class,
         ];
+    }
+
+    /**
+     * The properties worth an audit trail.
+     *
+     * @return array<int, string>
+     */
+    protected function activityLogAttributes(): array
+    {
+        return ['team_id', 'user_id', 'role'];
     }
 }

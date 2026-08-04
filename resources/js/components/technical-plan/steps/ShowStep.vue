@@ -241,7 +241,7 @@ onMounted(loadPerformances);
                         >
                             Plaan jõuab tehnikuni ka nii. Kirjuta etenduse nimi,
                             kuupäev ja kellaaeg viimase sammu lisainfo lahtrisse
-                            — tehnik seob plaani õige etendusega.
+                            — tehnik seob plaani hiljem õige etendusega.
                         </span>
                     </span>
                 </button>

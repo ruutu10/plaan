@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsModelActivity;
 use App\Enums\TeamRole;
+use App\Http\Controllers\Teams\TeamInvitationController;
 use Database\Factories\TeamInvitationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -31,7 +33,7 @@ use Illuminate\Support\Str;
 class TeamInvitation extends Model
 {
     /** @use HasFactory<TeamInvitationFactory> */
-    use HasFactory;
+    use HasFactory, LogsModelActivity;
 
     /**
      * Bootstrap the model and its traits.
@@ -129,5 +131,17 @@ class TeamInvitation extends Model
     public function getRouteKeyName(): string
     {
         return 'code';
+    }
+
+    /**
+     * The properties worth an audit trail. The invited address and the
+     * acceptance code stay out, for the same reason the plain log does not
+     * carry them — see {@see TeamInvitationController::store()}.
+     *
+     * @return array<int, string>
+     */
+    protected function activityLogAttributes(): array
+    {
+        return ['team_id', 'role', 'invited_by', 'accepted_at'];
     }
 }

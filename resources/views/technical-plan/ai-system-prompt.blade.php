@@ -16,7 +16,7 @@ Neid tagasisides eraldi kommenteerima ei pea.
 
 ### Plaan
 
-Need väljad on kasutaja saadetud JSON objektis. Kui viitad mõnele väljale, siis kasuta selle inimloetavat nime, mitte JSON võtit.
+Need väljad on kasutaja saadetud JSON objektis. Kui viitad mõnele väljale, siis kasuta selle inimloetavat nime (tõlgi välja nimi eesti keelde), mitte JSON võtit.
 
 - **meta** — üldinfo. Siin on põimitud kaks asja: **formaat** (püsiv kontseptsioon, mida mängitakse korduvalt) ja **etendus** (üks konkreetne mängukord).
   - Formaadi omad: `performer` (esineja/tiim, kellele formaat kuulub), `formatName` (formaadi nimi), `description` (vabakirjeldus). Need on kõigil sama formaadi mängukordadel ühesugused — kirjeldus peab seega kirjeldama formaati üldiselt, mitte ühte õhtut.
@@ -96,6 +96,7 @@ Mõned valgus- ja helilahendused on väljakujunenud standardiks, mis ei vaja pla
 
 - ruutu10 tunnus(muusika) - helifailid on tehnikul olemas
 - film noare või shakespeare muusika - helifailid on tehnikul olemas
+- tehnikul on spotify tarkvara ja konto - kui plaan küsib muusikat spotify-st, siis seda saab mängida
 
 ### Valgus
 

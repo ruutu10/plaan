@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\GeneratesUniqueTeamSlugs;
+use App\Concerns\LogsModelActivity;
 use App\Concerns\ScopedByTeamAccess;
 use App\Enums\TeamRole;
 use Database\Factories\TeamFactory;
@@ -35,7 +36,7 @@ use Illuminate\Support\Carbon;
 class Team extends Model
 {
     /** @use HasFactory<TeamFactory> */
-    use GeneratesUniqueTeamSlugs, HasFactory, ScopedByTeamAccess, SoftDeletes;
+    use GeneratesUniqueTeamSlugs, HasFactory, LogsModelActivity, ScopedByTeamAccess, SoftDeletes;
 
     /**
      * Bootstrap the model and its traits.
@@ -139,5 +140,15 @@ class Team extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    /**
+     * The properties worth an audit trail.
+     *
+     * @return array<int, string>
+     */
+    protected function activityLogAttributes(): array
+    {
+        return ['name'];
     }
 }

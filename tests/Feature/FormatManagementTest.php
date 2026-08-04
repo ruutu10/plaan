@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\CreatedBy;
-use App\Models\Performance;
 use App\Models\Format;
+use App\Models\Performance;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

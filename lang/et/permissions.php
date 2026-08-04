@@ -20,4 +20,7 @@ return [
     'users' => [
         'manage' => 'Kasutajate ja rollide haldamine',
     ],
+    'audit_log' => [
+        'view' => 'Tegevuslogi vaatamine',
+    ],
 ];

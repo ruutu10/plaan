@@ -5,6 +5,7 @@ import {
     CircleQuestionMark,
     ClipboardList,
     FolderGit2,
+    History,
     LayoutGrid,
     ListPlus,
     Theater,
@@ -27,6 +28,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard, manual } from '@/routes';
+import { index as adminAuditLog } from '@/routes/admin/audit-log';
 import { index as adminPerformances } from '@/routes/admin/performances';
 import { index as adminTeams } from '@/routes/admin/teams';
 import { index as adminUsers } from '@/routes/admin/users';
@@ -90,14 +92,25 @@ const mainNavItems = computed<NavItem[]>(() => [
               },
           ]
         : []),
-    // The accounts themselves, and the roles they hold. Last of the management
-    // doors and the narrowest: only the technicians hand out rights.
+    // The accounts themselves, and the roles they hold. Only the technicians
+    // hand out rights.
     ...(page.props.auth?.can?.manageUsers
         ? [
               {
                   title: 'Kasutajad',
                   href: adminUsers().url,
                   icon: UserCog,
+              },
+          ]
+        : []),
+    // The audit trail: every creation and state change the house keeps a
+    // record of. The narrowest door of all, and the last.
+    ...(page.props.auth?.can?.viewAuditLog
+        ? [
+              {
+                  title: 'Tegevuslogi',
+                  href: adminAuditLog().url,
+                  icon: History,
               },
           ]
         : []),
