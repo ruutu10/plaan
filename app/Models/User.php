@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\HasTeams;
+use App\Concerns\LogsModelActivity;
 use App\Enums\SignupSource;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -43,7 +44,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasFactory, LogsModelActivity, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     use HasRoles, HasTeams {
         HasTeams::teams insteadof HasRoles;
@@ -70,5 +71,16 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'signup_source' => SignupSource::class,
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * The properties worth an audit trail. Credentials and two-factor secrets
+     * are left out on purpose — they change often and never need explaining.
+     *
+     * @return array<int, string>
+     */
+    protected function activityLogAttributes(): array
+    {
+        return ['name', 'email'];
     }
 }

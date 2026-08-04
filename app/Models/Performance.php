@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\HasClaudeReasoningLog;
+use App\Concerns\LogsModelActivity;
 use App\Concerns\ScopedByTeamAccess;
 use App\Enums\CreatedBy;
 use App\Enums\ReminderSchedule;
@@ -70,7 +71,7 @@ use Illuminate\Support\Facades\Date;
 class Performance extends Model
 {
     /** @use HasFactory<PerformanceFactory> */
-    use HasClaudeReasoningLog, HasFactory, ScopedByTeamAccess, SoftDeletes;
+    use HasClaudeReasoningLog, HasFactory, LogsModelActivity, ScopedByTeamAccess, SoftDeletes;
 
     /**
      * The permission — held by the "technician" role — that opens the performances
@@ -370,5 +371,15 @@ class Performance extends Model
                 $performance->title = null;
             }
         });
+    }
+
+    /**
+     * The properties worth an audit trail.
+     *
+     * @return array<int, string>
+     */
+    protected function activityLogAttributes(): array
+    {
+        return ['format_id', 'team_id', 'title', 'date', 'duration', 'is_draft', 'created_by', 'planka_card_id'];
     }
 }

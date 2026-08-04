@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\AuditLogController;
 use App\Models\Performance;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
@@ -57,6 +58,7 @@ class HandleInertiaRequests extends Middleware
                     'manageAllTeams' => (bool) $user?->can(Team::EDIT_ALL_PERMISSION),
                     'manageAllPerformances' => (bool) $user?->can(Performance::EDIT_ALL_PERMISSION),
                     'manageUsers' => (bool) $user?->can(User::MANAGE_PERMISSION),
+                    'viewAuditLog' => (bool) $user?->can(AuditLogController::VIEW_PERMISSION),
                 ],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',

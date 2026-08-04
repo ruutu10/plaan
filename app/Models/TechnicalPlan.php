@@ -3,7 +3,10 @@
 namespace App\Models;
 
 use App\Concerns\HasAttachments;
+use App\Concerns\LogsModelActivity;
 use App\Enums\TechnicalPlanStatus;
+use App\Listeners\LogTechnicalPlanStatusChanged;
+use App\Listeners\LogTechnicalPlanSubmitted;
 use App\Rules\AllowedAttachment;
 use Database\Factories\TechnicalPlanFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -47,10 +50,22 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 ])]
 class TechnicalPlan extends Model implements HasMedia
 {
-    use HasAttachments;
+    use HasAttachments, LogsModelActivity;
 
     /** @use HasFactory<TechnicalPlanFactory> */
     use HasFactory;
+
+    /**
+     * Only a plan's creation is worth an automatic entry — the wizard saves a
+     * draft on every step, and logging each of those would drown out the
+     * events actually worth reading. Submitting a plan and moving it through
+     * its statuses are significant enough to log in their own right instead;
+     * see {@see LogTechnicalPlanSubmitted} and
+     * {@see LogTechnicalPlanStatusChanged}.
+     *
+     * @var array<int, string>
+     */
+    protected static array $doNotRecordEvents = ['updated'];
 
     /**
      * The media collection holding the scenes' sound files. A scene keeps only
@@ -393,5 +408,17 @@ class TechnicalPlan extends Model implements HasMedia
             'extra' => 'array',
             'submitted_at' => 'datetime',
         ];
+    }
+
+    /**
+     * The properties worth an audit trail. The plan's content — scenes, sound,
+     * equipment — is left out: it is what the plan *is*, not a fact about it,
+     * and the wizard already keeps every draft as it was last saved.
+     *
+     * @return array<int, string>
+     */
+    protected function activityLogAttributes(): array
+    {
+        return ['status', 'user_id', 'performance_id', 'submitted_at'];
     }
 }

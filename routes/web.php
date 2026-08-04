@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\ClaudeReasoningLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FormatController;
@@ -142,6 +143,12 @@ Route::prefix('api/formats')
 Route::get('performances', [PerformanceController::class, 'overview'])
     ->middleware(['auth', 'verified', 'can:'.Performance::EDIT_ALL_PERMISSION])
     ->name('admin.performances.index');
+
+// The audit trail every state change in the house is kept in — see
+// App\Concerns\LogsModelActivity. Open to the technicians alone.
+Route::get('audit-log', [AuditLogController::class, 'index'])
+    ->middleware(['auth', 'verified', 'can:'.AuditLogController::VIEW_PERMISSION])
+    ->name('admin.audit-log.index');
 
 // Inertia-rendered team-management pages, shells like the show ones above.
 // These are the admin's view of the groups themselves; a user's own team

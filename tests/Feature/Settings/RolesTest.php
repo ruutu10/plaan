@@ -49,6 +49,7 @@ class RolesTest extends TestCase
                     __('permissions.claude.view_log', locale: 'et'),
                     __('permissions.technical_plans.edit_all', locale: 'et'),
                     __('permissions.users.manage', locale: 'et'),
+                    __('permissions.audit_log.view', locale: 'et'),
                 ])
             );
     }

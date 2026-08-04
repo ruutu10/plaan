@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\HasClaudeReasoningLog;
+use App\Concerns\LogsModelActivity;
 use App\Concerns\ScopedByTeamAccess;
 use App\Enums\CreatedBy;
 use Database\Factories\FormatFactory;
@@ -45,7 +46,7 @@ use Illuminate\Support\Carbon;
 class Format extends Model
 {
     /** @use HasFactory<FormatFactory> */
-    use HasClaudeReasoningLog, HasFactory, ScopedByTeamAccess, SoftDeletes;
+    use HasClaudeReasoningLog, HasFactory, LogsModelActivity, ScopedByTeamAccess, SoftDeletes;
 
     /**
      * A format nobody said otherwise about was entered by hand: only the Planka
@@ -218,5 +219,15 @@ class Format extends Model
     public function performances(): HasMany
     {
         return $this->hasMany(Performance::class);
+    }
+
+    /**
+     * The properties worth an audit trail.
+     *
+     * @return array<int, string>
+     */
+    protected function activityLogAttributes(): array
+    {
+        return ['team_id', 'name', 'description', 'created_by'];
     }
 }

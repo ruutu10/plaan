@@ -1,3 +1,4 @@
+export * from './auditLog';
 export * from './auth';
 export * from './formats';
 export * from './navigation';
