@@ -13,6 +13,7 @@ import type { Team } from '@/types';
 
 defineProps<{ teams: Team[] }>();
 
+const createTeamDialogOpen = ref(false);
 const leaveTeamDialogOpen = ref(false);
 const teamLeaving = ref<Team | null>(null);
 
@@ -47,13 +48,16 @@ defineOptions({
                 lead="Tiimid, kuhu sa kuulud. Ava tiim, et näha selle liikmeid."
             />
 
-            <CreateTeamModal>
-                <R10Button data-test="teams-new-team-button">
-                    <Plus class="h-4 w-4" />
-                    Uus tiim
-                </R10Button>
-            </CreateTeamModal>
+            <R10Button
+                data-test="teams-new-team-button"
+                @click="createTeamDialogOpen = true"
+            >
+                <Plus class="h-4 w-4" />
+                Uus tiim
+            </R10Button>
         </div>
+
+        <CreateTeamModal v-model:open="createTeamDialogOpen" />
 
         <R10Table
             :columns="[

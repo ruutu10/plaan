@@ -33,6 +33,17 @@ const updateIsMobile = () => {
     }
 };
 
+const showCreateTeamModal = ref(false);
+
+function openCreateTeamModal(): void {
+    // Wait for the dropdown to finish closing before opening the dialog —
+    // both are Reka UI portals that trap focus and lock body pointer-events
+    // while open, and mounting the dialog mid-teardown lets the two race.
+    requestAnimationFrame(() => {
+        showCreateTeamModal.value = true;
+    });
+}
+
 const currentTeam = computed(() => page.props.currentTeam);
 const teams = computed(() => page.props.teams ?? []);
 const menuContentClass = computed(() =>
@@ -155,16 +166,16 @@ onUnmounted(() => {
                 />
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <CreateTeamModal>
-                <DropdownMenuItem
-                    data-test="team-switcher-new-team"
-                    :class="teamItemClass"
-                    @select.prevent
-                >
-                    <Plus :class="plusIconClass" />
-                    <span class="text-muted-foreground">New team</span>
-                </DropdownMenuItem>
-            </CreateTeamModal>
+            <DropdownMenuItem
+                data-test="team-switcher-new-team"
+                :class="teamItemClass"
+                @select="openCreateTeamModal"
+            >
+                <Plus :class="plusIconClass" />
+                <span class="text-muted-foreground">New team</span>
+            </DropdownMenuItem>
         </DropdownMenuContent>
+
+        <CreateTeamModal v-model:open="showCreateTeamModal" />
     </DropdownMenu>
 </template>

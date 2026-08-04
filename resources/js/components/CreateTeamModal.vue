@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Input from '@/components/technical-plan/R10Input.vue';
 import {
@@ -9,28 +9,23 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import { store } from '@/routes/teams';
 
-const open = ref(false);
+const open = defineModel<boolean>('open', { required: true });
+
 /** Bumped to remount the form, which is how a closed dialog forgets what was typed. */
 const formKey = ref(0);
 
-function change(value: boolean): void {
-    open.value = value;
-
+watch(open, (value) => {
     if (!value) {
         formKey.value++;
     }
-}
+});
 </script>
 
 <template>
-    <Dialog :open="open" @update:open="change">
-        <DialogTrigger as-child>
-            <slot />
-        </DialogTrigger>
+    <Dialog v-model:open="open">
         <DialogContent class="bg-r10-paper font-r10-body text-r10-grey-700">
             <Form
                 :key="formKey"
@@ -61,7 +56,7 @@ function change(value: boolean): void {
                 />
 
                 <div class="flex items-center justify-end gap-3">
-                    <R10Button variant="outline" @click="change(false)">
+                    <R10Button variant="outline" @click="open = false">
                         Loobu
                     </R10Button>
 
