@@ -6,12 +6,12 @@ import { formatEstonianTimestamp } from '@/lib/date';
 import type { CreatedBy } from '@/types';
 
 /**
- * Where a show or a performance came from and when — the two facts about a
+ * Where a format or a performance came from and when — the two facts about a
  * record that nobody sets and everybody eventually asks about. Read-only by
  * nature: the server decides both, and there is no field to correct because
  * there is nothing here anyone should be able to rewrite.
  *
- * Shared by the show page and the performance dialog so the two never say the
+ * Shared by the format page and the performance dialog so the two never say the
  * same thing in two different ways.
  */
 const props = defineProps<{

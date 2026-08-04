@@ -1,7 +1,7 @@
 # Plaan - kasutusjuhend
 
 Plaan on Ruutu10 improteatri tehnikaplaneerimise süsteem. Esinevad trupid
-kirjeldavad, mida nende lavastus valgus- ja helipuldilt vajab; tehnikatiim kogub
+kirjeldavad, mida nende formaat valgus- ja helipuldilt vajab; tehnikatiim kogub
 need kirjeldused kokku, kinnitab need ja juhib nende järgi õhtut.
 
 See dokument kirjeldab, kuidas süsteem oma kasutajate jaoks käitub: mida saab
@@ -15,9 +15,9 @@ Ekraanide ja nuppude nimed on tekstis toodud nii, nagu need liideses paistavad.
 
 | Inimene | Mida ta teeb |
 | --- | --- |
-| **Esineja** | Täidab tehnikaplaani lavastusele, mida ta peagi mängib. Teavitus jõuab kohale tavaliselt e-kirja lingiga ja tal pole vaja süsteemi ülejäänud osa tundma õppida. |
-| **Tiimi liige** | Kuulub ühte või mitmesse esinevasse truppi (tiimi). Hoiab korras tiimi lavastused, etenduste kuupäevad ja liikmeskonna. |
-| **Tehnik** (roll `Tehnik`) | Viib etendused läbi. Loeb kõiki tehnikaplaane, kinnitab need ja hoiab korras kõik lavastused, etendused, tiimid ja kasutajakontod. |
+| **Esineja** | Täidab tehnikaplaani formaadile, mida ta peagi mängib. Teavitus jõuab kohale tavaliselt e-kirja lingiga ja tal pole vaja süsteemi ülejäänud osa tundma õppida. |
+| **Tiimi liige** | Kuulub ühte või mitmesse esinevasse truppi (tiimi). Hoiab korras tiimi formaadid, etenduste kuupäevad ja liikmeskonna. |
+| **Tehnik** (roll `Tehnik`) | Viib etendused läbi. Loeb kõiki tehnikaplaane, kinnitab need ja hoiab korras kõik formaadid, etendused, tiimid ja kasutajakontod. |
 | **Majarahvas** (roll `Ruutu10 tiim`) | Teatri e-posti aadressiga inimesed. Võivad lugeda kõiki esitatud plaane. |
 
 Rollid antakse konto kaupa. Vaikimisi pole kellelgi ühtki rolli - välja arvatud
@@ -82,20 +82,20 @@ sind vormi juurde. Muul juhul jõuad oma töölauale.
 ## 3. Mille üle süsteem arvet peab
 
 **Tiim (trupp)** - esinev trupp. Inimesed kuuluvad tiimidesse; tiimidele
-kuuluvad lavastused.
+kuuluvad formaadid.
 
-**Lavastus** - produktsioon kui mõiste: selle nimi ja kirjeldus.
+**Formaat** - produktsioon kui mõiste: selle nimi ja kirjeldus.
 
-**Etendus** - lavastuse üks kuupäevaga mängimine, algusaja ja valikulise
-kestusega. Kõik, mis on lavastuse mängimistel ühine, elab lavastuse küljes;
+**Etendus** - formaadi üks kuupäevaga mängimine, algusaja ja valikulise
+kestusega. Kõik, mis on formaadi mängimistel ühine, elab formaadi küljes;
 etendus hoiab ainult seda, mis võib erineda.
 
-- Lavastusel, mida täidab üks trupp, on tiim *lavastuse* küljes ja iga etendus
+- Formaadil, mida täidab üks trupp, on tiim *formaadi* küljes ja iga etendus
   pärib selle.
-- Õhtu, mida jagab mitu tiimi (Õppelava, gala), on **üks lavastus, mida
+- Õhtu, mida jagab mitu tiimi (Õppelava, gala), on **üks formaat, mida
   mängitakse korra, ja iga etteaste on oma etendus** - igaüks oma tiimi ja oma
   pealkirjaga. Etteastet mängiv tiim on alati etteaste enda oma, kui see on
-  määratud, ja muidu lavastuse oma.
+  määratud, ja muidu formaadi oma.
 - Kellaajad näidatakse alati teatri kella järgi (Europe/Tallinn). Kellaajata
   etendus algab vaikimisi kell 19:00.
 - Etenduse võib märkida **mustandiks** (üle vaatamata). Mustandid on
@@ -117,7 +117,7 @@ püsiv jagamistunnus kujul `R10-2026-XXXXXXXXXXXX`.
 Esitatud ja kinnitatud plaanid on need, mille järgi tehnikatiim töötab - neid
 loeb töölaud kokku ja need peatavad meeldetuletuskirjad. Arhiveeritud plaane ei
 peideta: need on tehnikatiimi ülevaates endiselt näha ja neid pakutakse endiselt
-sama lavastuse järgmise plaani lähtekohaks.
+sama formaadi järgmise plaani lähtekohaks.
 
 ---
 
@@ -149,17 +149,17 @@ käib: sellest sammust edasi ei avane midagi enne, kui see on tehtud.
 
 Kui sinu õhtut nimekirjas ei ole, vali **„Etendust pole nimekirjas“** -
 asendusetendus, mida pakutakse nimekirja all punktiirkastina. Plaan jõuab
-tehnikatiimini täpselt samamoodi nagu iga teine; kirjuta lavastuse nimi, kuupäev
+tehnikatiimini täpselt samamoodi nagu iga teine; kirjuta formaadi nimi, kuupäev
 ja kellaaeg viimase sammu Lisainfo lahtrisse ning tehnikatiim registreerib
 etenduse ja tõstab plaani hiljem selle peale.
 
 Valiku järel valid ka, **millest alustad**:
 - tühi plaan või
-- koopia plaanist, mis on juba esitatud sama lavastuse mõnele teisele etendusele.
+- koopia plaanist, mis on juba esitatud sama formaadi mõnele teisele etendusele.
 
-Lavastuse kohta pakutakse kuni 5 varasemat plaani. Need ei ole ainult sinu enda
+Formaadi kohta pakutakse kuni 5 varasemat plaani. Need ei ole ainult sinu enda
 omad: arvesse läheb iga esitatud, kinnitatud või arhiveeritud plaan etendusele,
-mida sinu tiimid mängivad, nii et lavastuse järgmise plaani võib kirjutada mõni
+mida sinu tiimid mängivad, nii et formaadi järgmise plaani võib kirjutada mõni
 teine tiimi liige kui see, kes eelmise saatis. Kopeerimine teeb ka manustest ja
 stseenide helifailidest uued koopiad - plaan, millest kopeerisid, jääb puutumata.
 
@@ -182,7 +182,7 @@ juhtmevaba käsimikrofon) ja kas trupp toob kaasa oma muusiku (pill, kas ühenda
 helisüsteemiga, toide ja kaabeldus, paigutus).
 
 **4. Stseenid.**
-Plaani tuum. Stseen on lavastuse sisuline või tehniline lõik, kus valgus- või
+Plaani tuum. Stseen on formaadi sisuline või tehniline lõik, kus valgus- või
 helilahendus muutub. Iga plaan algab kolme eeltäidetud stseeniga (sissetulek,
 stseenid ise, väljaminek) ja vähemalt üks stseen peab alles jääma.
 
@@ -242,7 +242,7 @@ Sa võid plaani muuta, kui vähemalt üks järgnevast kehtib:
 
 - sinu käes on selle jagamislink (nii annab autor muutmisõiguse edasi),
 - sina kirjutasid selle,
-- sinu tiim mängib etendust, mille kohta plaan käib (või tiimile kuulub lavastus,
+- sinu tiim mängib etendust, mille kohta plaan käib (või tiimile kuulub formaat,
   mille juurde etendus kuulub) - sealhulgas kolleegi lõpetamata mustandit, mis on
   just see, mida on vaja parandada,
 - sa oled tehnik.
@@ -291,7 +291,7 @@ dokument, mis on koostatud samade reeglite järgi.
 - **Manused:** kuni 20 MB faili kohta. Lubatud tüübid: doc, docx, pdf, jpg, jpeg,
   png, gif, mp4, mov, avi, mkv, mp3, wav, ogg, qlc, txt, webp.
 - **Stseeni helifailid:** ainult mp3, wav, ogg.
-- Väljade pikkused: lavastuse kirjeldus 5000 märki; stseeni valgus/heli/märkused
+- Väljade pikkused: formaadi kirjeldus 5000 märki; stseeni valgus/heli/märkused
   ja heli täpsustusväljad 2000 igaüks; erivahendi kasutus 1000; vaba tekst
   10 000; kestus 1–240 minutit.
 
@@ -307,7 +307,7 @@ lugejast:
 - **Tehnikud ja majarahvas** (kellel on õigus lugeda kõiki plaane) näevad **kõiki
   maja plaane**.
 - **Kõik ülejäänud** näevad oma plaane ja **oma tiimide plaane** - need on
-  plaanid, mille etendus kuulub tiimile või mille lavastus on tiimi oma. Nii
+  plaanid, mille etendus kuulub tiimile või mille formaat on tiimi oma. Nii
   hõlmab see ka võõral õhtul mängitavat tiimi enda etteastet („Õppelava“ tüüpi
   slotti). Teiste tiimide plaanid jäävad nimekirjast välja.
 
@@ -347,7 +347,7 @@ enne. Mõlemal on sama tekst - teine ei ole karmim kiri, vaid sama kiri, mis
 saabub siis, kui unustamiseks enam aega ei ole.
 
 **Kes need saavad.** Iga etendust mängiva tiimi liige - jagatud õhtul etteaste
-enda tiim, muidu lavastuse tiim. Iga esineja saab oma lingi, sest link logib
+enda tiim, muidu formaadi tiim. Iga esineja saab oma lingi, sest link logib
 hoidja sisse.
 
 **Tehnikatiim** saab oma eraldi koopia, kus on kirjas, keda nüksati. See koopia ei
@@ -370,45 +370,45 @@ Iga meeldetuletus saadetakse etenduse kohta **täpselt üks kord**.
 
 ---
 
-## 7. Lavastuste ja etenduste haldamine
+## 7. Formaatide ja etenduste haldamine
 
-### 7.1 Lavastused
+### 7.1 Formaadid
 
 Selle ekraani saab avada iga sisseloginud kasutaja; loetletakse see, milleni sa
 tohid ulatuda:
 
-- lavastused, mis kuuluvad tiimile, kuhu sa kuulud, **ja**
-- lavastused, mille mõnda etendust su tiim üksnes mängib (külalisesinemine
+- formaadid, mis kuuluvad tiimile, kuhu sa kuulud, **ja**
+- formaadid, mille mõnda etendust su tiim üksnes mängib (külalisesinemine
   kellegi teise õhtul).
 
-Tehnikud näevad kõiki maja lavastusi, sealhulgas neid, millel pole omanikutiimi.
+Tehnikud näevad kõiki maja formaate, sealhulgas neid, millel pole omanikutiimi.
 
-Sa saad luua lavastuse (valides omaniku nende tiimide seast, kuhu ise kuulud;
+Sa saad luua formaadi (valides omaniku nende tiimide seast, kuhu ise kuulud;
 tehnik võib valida ükskõik millise tiimi), selle ümber nimetada, kirjeldust muuta
-ja anda selle teisele tiimile. Lavastust ei liigutata kunagi sinna, kuhu selle
+ja anda selle teisele tiimile. Formaati ei liigutata kunagi sinna, kuhu selle
 muutja järele ei pääse.
 
 **Kaks õigust on meelega erinevad.** Külalistrupp pääseb õhtule, mida ta mängib,
-et parandada *oma* etendust, kuid lavastus ise - selle nimi, omanik,
-kustutamine - jääb lavastuse tiimi kätte.
+et parandada *oma* etendust, kuid formaat ise - selle nimi, omanik,
+kustutamine - jääb formaadi tiimi kätte.
 
-**Lavastuse kustutamine** paneb selle kõrvale (pehme kustutus) ja võtab etendused
-kaasa, nii et miski ei jää osutama lavastusele, mida rakendus mujal enam ei
+**Formaadi kustutamine** paneb selle kõrvale (pehme kustutus) ja võtab etendused
+kaasa, nii et miski ei jää osutama formaadile, mida rakendus mujal enam ei
 näita. Nendele etendustele kirjutatud plaanid säilitavad oma jälje.
 
 ### 7.2 Etendused
 
-Neid hallatakse lavastuse muutmislehel. Etendusel on kuupäev ja algusaeg,
+Neid hallatakse formaadi muutmislehel. Etendusel on kuupäev ja algusaeg,
 valikuliselt kestus, valikuliselt oma pealkiri ja oma esinev tiim (jagatud
 õhtute jaoks) ning mustandi märge.
 
-- **Etenduse lisamine** on ainuüksi lavastuse tiimi õigus - külalistrupp võib oma
+- **Etenduse lisamine** on ainuüksi formaadi tiimi õigus - külalistrupp võib oma
   lõiku parandada, kuid mitte kavva enda omi juurde panna.
-- **Etenduse muutmine ja kustutamine** on lubatud lavastuse tiimile, seda
+- **Etenduse muutmine ja kustutamine** on lubatud formaadi tiimile, seda
   etendust mängivale tiimile ja tehnikutele.
 - **Etenduse kustutamine ei kustuta sellele kirjutatud plaane.** Need osutavad
   sellele edasi - etendus on üksnes peidetud, nii et taastamine seob need kaks
-  uuesti kokku - kuid seni loetakse neid plaanidena, millel pole lavastust, tiimi
+  uuesti kokku - kuid seni loetakse neid plaanidena, millel pole formaati, tiimi
   ega kuupäeva. Ekraan hoiatab, kui neid on; tagasitee on etendus taastada või
   plaan avada ja esimesest sammust mõne teise etenduse peale tõsta.
 
@@ -427,7 +427,7 @@ Haldusekraanidel on see endiselt näha, üle vaatamata märkega.
 
 Tehnikud saavad ühe nimekirja kõigist maja etendustest, uuemad ees, koos
 sellega, mitu plaani igaühel on. Kõik teised jõuavad oma tiimide kuupäevadeni
-Lavastuste kaudu.
+Formaatide kaudu.
 
 ---
 
@@ -470,7 +470,7 @@ ekraani avades oma tiime.
 
 ## 9. Kasutajakontod (`Kasutajad`)
 
-Avatud ainult tehnikutele. Erinevalt lavastustest ja tiimidest ei sõltu siin
+Avatud ainult tehnikutele. Erinevalt formaatidest ja tiimidest ei sõltu siin
 miski sellest, kuhu sa kuulud - kas näed kõiki maja kontosid või sind ei lasta
 sisse.
 
@@ -506,7 +506,7 @@ saab otse plaani sisse minna.
 
 | Töö | Millal | Mida ta teeb |
 | --- | --- | --- |
-| **Planka import** | Iga päev | Loeb projektide kaarte ja registreerib lavastused ja etendused, mille kohta on kaart. Uued etendused saabuvad **mustanditena**, mis ootavad ülevaatamist. Lavastusi, mille admin on siin kustutanud, ei äratata kunagi ellu. Kaarte saab sildi järgi välja jätta. |
+| **Planka import** | Iga päev | Loeb projektide kaarte ja registreerib formaadid ja etendused, mille kohta on kaart. Uued etendused saabuvad **mustanditena**, mis ootavad ülevaatamist. Formaate, mille admin on siin kustutanud, ei äratata kunagi ellu. Kaarte saab sildi järgi välja jätta. |
 | **Meeldetuletused** | Iga tund | Saadab välja iga tehnikaplaani meeldetuletuse, mille aeg on äsja kätte jõudnud (§6). Enamikul tundidel vaikne. |
 | **Arhiveerimine** | Iga päev | Viib esitatud ja kinnitatud plaanid staatusesse **Arhiveeritud**, kui nende etendus mängiti ära rohkem kui 24 tundi tagasi. Esineja enda mustandit ei arhiveerita kunagi - seda ei antud kunagi üle. |
 | **Kutsete koristus** | Iga päev | Kustutab aegunud tiimikutsed. |
@@ -515,13 +515,13 @@ saab otse plaani sisse minna.
 ### 11.1 Kuidas import kaarti loeb
 
 Kaart kuulutab ühe või mitu õhtut ja õhtu ühe või mitu etteastet. Õhtust, mille
-täidab üks trupp, saab korra mängitav lavastus; Õppelavast saab üks korra
-mängitav lavastus, millel on iga tiimi kohta üks etendus. Sobitamine käib nime
-(lavastus), lavastuse + kuupäeva (õhtu) ja õhtusisese nime (etteaste) järgi, nii
+täidab üks trupp, saab korra mängitav formaat; Õppelavast saab üks korra
+mängitav formaat, millel on iga tiimi kohta üks etendus. Sobitamine käib nime
+(formaat), formaadi + kuupäeva (õhtu) ja õhtusisese nime (etteaste) järgi, nii
 et sama kaardi uuesti importimine ei lisa midagi.
 
 Kuna lugemist teeb AI, **säilitatakse iga imporditud kirje taga olev
-arutluskäik** ning tehnikud ja majarahvas saavad selle lavastuse ja etenduse
+arutluskäik** ning tehnikud ja majarahvas saavad selle formaadi ja etenduse
 ekraanidelt lahti teha - nii jõuab vale kuupäev tagasi kaardini, kust see tuli.
 Kirjed näitavad, kas need sisestati käsitsi või impordiga.
 
@@ -529,7 +529,7 @@ Kirjed näitavad, kas need sisestati käsitsi või impordiga.
 
 ## 12. Kes mida näeb - kokkuvõte
 
-| | Oma plaanid | Oma tiimi plaanid | Kõik plaanid | Plaani staatuse muutmine | Oma tiimi lavastused | Kõik lavastused / etendused / tiimid | Kasutajakontod ja rollid |
+| | Oma plaanid | Oma tiimi plaanid | Kõik plaanid | Plaani staatuse muutmine | Oma tiimi formaadid | Kõik formaadid / etendused / tiimid | Kasutajakontod ja rollid |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Esineja (rollita) | ✅ | ✅ | - | - | ✅ | - | - |
 | Majarahvas | ✅ | ✅ | ✅ lugeda | - | ✅ | - | - |
@@ -562,6 +562,6 @@ Veel kaks märkust piiride kohta:
   etendus, mille see nimetas, on vahepeal ära mängitud või mustandiks tagasi
   pandud; vorm lihtsalt avaneb algusest koos valikunimekirjaga.
 - **Tiimi ümber nimetamine lõhub lingid, mis selle nime sisaldavad.**
-- **Etenduse kustutamine jätab selle plaanid alles**; lavastuse kustutamine võtab
+- **Etenduse kustutamine jätab selle plaanid alles**; formaadi kustutamine võtab
   selle etendused kaasa.
 

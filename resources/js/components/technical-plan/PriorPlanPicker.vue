@@ -3,7 +3,7 @@ import type { PriorPlan } from '@/types/technicalPlan';
 
 /**
  * Where a new plan starts from, once its night has been chosen: a blank slate,
- * or a copy of a plan already handed in for the same show. Offered under the
+ * or a copy of a plan already handed in for the same format. Offered under the
  * selected performance in the first step, the stand-in performance included —
  * a group that has filed a plan without a night before is exactly the one
  * likely to be doing it again.

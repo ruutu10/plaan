@@ -9,7 +9,7 @@ use App\Models\Performance;
  * and for how long. Several of these make up an {@see ImportedNight} — a card
  * announcing an Õppelava lists three or four, one after the other.
  *
- * The title is the act as the board writes it, and is empty when the show's own
+ * The title is the act as the board writes it, and is empty when the format's own
  * name already says who is playing. The start time is kept apart from the
  * night's date because that is how a card gives them, and because most cards
  * give no time at all; folding the two into the stored moment is

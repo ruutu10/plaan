@@ -59,10 +59,10 @@ class TechnicalPlan extends JsonResource
             'meta' => [
                 'performanceId' => $plan->performance_id,
                 'performer' => $plan->performance?->performerName() ?? '',
-                'showName' => $plan->performance?->show->name ?? '',
-                'showDate' => $plan->performance?->startDate() ?? '',
+                'formatName' => $plan->performance?->format->name ?? '',
+                'performanceDate' => $plan->performance?->startDate() ?? '',
                 'duration' => $plan->performance?->duration,
-                'description' => $plan->performance?->show->description ?? '',
+                'description' => $plan->performance?->format->description ?? '',
             ],
             'sound' => $this->sound(),
             'scenes' => PlanScene::forPlan($plan, $request, $this->stagedCopy['sceneSoundFiles'] ?? null),

@@ -23,7 +23,7 @@ class Team extends JsonResource
      *     name: string,
      *     slug: string,
      *     memberCount: int|null,
-     *     showCount: int|null,
+     *     formatCount: int|null,
      *     members: mixed,
      * }
      */
@@ -36,7 +36,7 @@ class Team extends JsonResource
             'name' => $team->name,
             'slug' => $team->slug,
             'memberCount' => $team->members_count,
-            'showCount' => $team->shows_count,
+            'formatCount' => $team->formats_count,
             'members' => TeamMember::collection($this->whenLoaded('members')),
         ];
     }

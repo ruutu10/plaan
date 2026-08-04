@@ -5,7 +5,7 @@ namespace App\Models;
 use App\Concerns\HasClaudeReasoningLog;
 use App\Concerns\ScopedByTeamAccess;
 use App\Enums\CreatedBy;
-use Database\Factories\ShowFactory;
+use Database\Factories\FormatFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,9 +18,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
- * The show as a concept: what it is called and what it is about. A show is
+ * The format as a concept: what it is called and what it is about. A format is
  * played one or more times, and every {@see Performance} is one of those times,
- * with its own date. The team owning the show owns its performances by
+ * with its own date. The team owning the format owns its performances by
  * implication.
  *
  * @property int $id
@@ -42,15 +42,15 @@ use Illuminate\Support\Carbon;
     'description',
     'created_by',
 ])]
-class Show extends Model
+class Format extends Model
 {
-    /** @use HasFactory<ShowFactory> */
+    /** @use HasFactory<FormatFactory> */
     use HasClaudeReasoningLog, HasFactory, ScopedByTeamAccess, SoftDeletes;
 
     /**
-     * A show nobody said otherwise about was entered by hand: only the Planka
+     * A format nobody said otherwise about was entered by hand: only the Planka
      * import says where else it came from. Spelt out here as well as in the
-     * column default so a show just created reads as manual rather than as an
+     * column default so a format just created reads as manual rather than as an
      * attribute that has not come back from the database yet.
      *
      * @var array<string, mixed>
@@ -76,24 +76,24 @@ class Show extends Model
      */
     protected static function booted(): void
     {
-        // A show put aside takes its performances with it, so nothing is left
-        // pointing at a show the rest of the app no longer sees. A hard delete
+        // A format put aside takes its performances with it, so nothing is left
+        // pointing at a format the rest of the app no longer sees. A hard delete
         // needs no help — the database cascades that one itself.
-        static::deleting(function (Show $show): void {
-            if (! $show->isForceDeleting()) {
-                $show->performances()->delete();
+        static::deleting(function (Format $format): void {
+            if (! $format->isForceDeleting()) {
+                $format->performances()->delete();
             }
         });
     }
 
     /**
-     * The permission — held by the "technician" role — that opens every show in
+     * The permission — held by the "technician" role — that opens every format in
      * the house to its holder, not just the ones their own groups staged.
      */
-    public const EDIT_ALL_PERMISSION = 'shows.edit_all';
+    public const EDIT_ALL_PERMISSION = 'formats.edit_all';
 
     /**
-     * The name of the stand-in show, under which the plans for nights that are
+     * The name of the stand-in format, under which the plans for nights that are
      * not on the books are filed. Every plan names the performance it is for,
      * so a performer whose evening nobody has registered yet still needs one to
      * name; the crew move the plan onto the real performance once it exists.
@@ -104,26 +104,26 @@ class Show extends Model
     public const PLACEHOLDER_NAME = 'Etendust pole nimekirjas';
 
     /**
-     * The stand-in show itself, registered the first time it is asked for.
-     * One brought back rather than a second one created: two shows under this
+     * The stand-in format itself, registered the first time it is asked for.
+     * One brought back rather than a second one created: two formats under this
      * name would split the plans that belong to no performance between them.
      */
     public static function placeholder(): self
     {
-        $show = static::withTrashed()->firstOrCreate(
+        $format = static::withTrashed()->firstOrCreate(
             ['name' => self::PLACEHOLDER_NAME, 'team_id' => null],
             ['description' => 'Kohatäide plaanidele, mille etendust pole veel registreeritud. Tehnik tõstab plaani õige etenduse alla, kui see on kirjas.'],
         );
 
-        if ($show->trashed()) {
-            $show->restore();
+        if ($format->trashed()) {
+            $format->restore();
         }
 
-        return $show;
+        return $format;
     }
 
     /**
-     * Whether this is the stand-in show — see {@see PLACEHOLDER_NAME}.
+     * Whether this is the stand-in format — see {@see PLACEHOLDER_NAME}.
      */
     public function isPlaceholder(): bool
     {
@@ -131,12 +131,12 @@ class Show extends Model
     }
 
     /**
-     * Limit the query to the shows the given user may see and edit: the ones
+     * Limit the query to the formats the given user may see and edit: the ones
      * owned by a team they belong to. Holders of {@see EDIT_ALL_PERMISSION} are
-     * not limited at all — shows without an owning team included, as those are
+     * not limited at all — formats without an owning team included, as those are
      * reachable no other way.
      *
-     * @param  Builder<Show>  $query
+     * @param  Builder<Format>  $query
      */
     #[Scope]
     protected function editableBy(Builder $query, User $user): void
@@ -149,15 +149,15 @@ class Show extends Model
     }
 
     /**
-     * Limit the query to the shows the given user may open: the ones their
+     * Limit the query to the formats the given user may open: the ones their
      * groups own, plus the ones their groups merely play a performance of.
      *
      * The two are deliberately not the same right. A guest troupe with a slot
      * on somebody else's evening has to be able to reach that evening to
-     * correct its own performance, but the show is not theirs to rename, hand
+     * correct its own performance, but the format is not theirs to rename, hand
      * over or put aside — that stays with {@see editableBy()}.
      *
-     * @param  Builder<Show>  $query
+     * @param  Builder<Format>  $query
      */
     #[Scope]
     protected function visibleTo(Builder $query, User $user): void
@@ -168,13 +168,13 @@ class Show extends Model
 
         $teamIds = $user->teamIds();
 
-        $query->where(fn (Builder $show) => $show
-            ->whereIn('shows.team_id', $teamIds)
+        $query->where(fn (Builder $format) => $format
+            ->whereIn('formats.team_id', $teamIds)
             ->orWhereHas('performances', fn (Builder $performance) => $performance->whereIn('performances.team_id', $teamIds)));
     }
 
     /**
-     * Whether the user may open this show — see {@see visibleTo()}.
+     * Whether the user may open this format — see {@see visibleTo()}.
      */
     public function isVisibleTo(User $user): bool
     {
@@ -185,9 +185,9 @@ class Show extends Model
     }
 
     /**
-     * The teams the given user may hand a show to: the ones they belong to, or
+     * The teams the given user may hand a format to: the ones they belong to, or
      * every group in the house for the holders of {@see EDIT_ALL_PERMISSION}.
-     * A show is never moved somewhere its editor cannot follow it.
+     * A format is never moved somewhere its editor cannot follow it.
      *
      * @return Collection<int, Team>
      */
@@ -201,7 +201,7 @@ class Show extends Model
     }
 
     /**
-     * The performing group (team) whose show this is.
+     * The performing group (team) whose format this is.
      *
      * @return BelongsTo<Team, $this>
      */
@@ -211,7 +211,7 @@ class Show extends Model
     }
 
     /**
-     * The dated performances of this show.
+     * The dated performances of this format.
      *
      * @return HasMany<Performance, $this>
      */

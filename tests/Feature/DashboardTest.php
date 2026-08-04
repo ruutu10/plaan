@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Enums\TeamRole;
 use App\Enums\TechnicalPlanStatus;
+use App\Models\Format;
 use App\Models\Performance;
-use App\Models\Show;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\TechnicalPlan;
@@ -173,10 +173,10 @@ class DashboardTest extends TestCase
     public function test_dashboard_names_the_next_performance_still_to_come(): void
     {
         $team = Team::factory()->create(['name' => 'Märold']);
-        $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
+        $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
 
         Performance::factory()->create([
-            'show_id' => $show->id,
+            'format_id' => $format->id,
             'date' => now()->addDays(3)->toDateString(),
         ]);
         Performance::factory()->create(['date' => now()->addMonth()->toDateString()]);
@@ -186,7 +186,7 @@ class DashboardTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('upcoming.next.showName', 'Festival 2026')
+                ->where('upcoming.next.formatName', 'Festival 2026')
                 ->where('upcoming.next.teamName', 'Märold')
                 ->where('upcoming.next.date', now()->addDays(3)->toDateString()));
     }
@@ -263,21 +263,21 @@ class DashboardTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('upcoming.performances', 1)
                 ->where('upcoming.missingPlans', 1)
-                ->where('upcoming.next.showName', $performance->show->name));
+                ->where('upcoming.next.formatName', $performance->format->name));
     }
 
     public function test_the_plan_timeline_lists_the_newest_submissions_first_for_technicians(): void
     {
         $author = User::factory()->create(['name' => 'Mart Naide']);
         $team = Team::factory()->create(['name' => 'Märold']);
-        $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
+        $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
 
         $older = TechnicalPlan::factory()->submitted()->create([
             'submitted_at' => now()->subWeek(),
         ]);
         $newer = TechnicalPlan::factory()->submitted()->create([
             'user_id' => $author->id,
-            'performance_id' => Performance::factory()->create(['show_id' => $show->id]),
+            'performance_id' => Performance::factory()->create(['format_id' => $format->id]),
             'submitted_at' => now()->subDay(),
         ]);
 
@@ -290,7 +290,7 @@ class DashboardTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->has('latestPlans', 2)
                 ->where('latestPlans.0.token', $newer->token)
-                ->where('latestPlans.0.showName', 'Festival 2026')
+                ->where('latestPlans.0.formatName', 'Festival 2026')
                 ->where('latestPlans.0.teamName', 'Märold')
                 ->where('latestPlans.0.submittedBy', 'Mart Naide')
                 ->where('latestPlans.0.url', route('technical-plan.public', $newer))

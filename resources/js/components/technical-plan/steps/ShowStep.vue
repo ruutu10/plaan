@@ -72,8 +72,8 @@ function selectPerformance(performance: UpcomingPerformance): void {
 
     plan.meta.performanceId = performance.id;
     plan.meta.performer = performance.performer;
-    plan.meta.showName = performance.showName;
-    plan.meta.showDate = performance.showDate;
+    plan.meta.formatName = performance.formatName;
+    plan.meta.performanceDate = performance.performanceDate;
     plan.meta.duration = performance.duration;
     plan.meta.description = performance.description;
     freshStart();
@@ -171,7 +171,7 @@ onMounted(loadPerformances);
                         <span
                             class="block font-r10-display text-base font-semibold text-r10-ink"
                         >
-                            {{ performance.showName }}
+                            {{ performance.formatName }}
                             <!-- An evening several groups share would otherwise
                                  offer three identical rows to choose between. -->
                             <template v-if="performance.title">
@@ -183,7 +183,7 @@ onMounted(loadPerformances);
                         >
                             {{
                                 formatEstonianDateTime(
-                                    performance.showDate,
+                                    performance.performanceDate,
                                     performance.startTime,
                                 )
                             }}

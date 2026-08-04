@@ -1,34 +1,34 @@
 <?php
 
-namespace App\Http\Requests\Shows;
+namespace App\Http\Requests\Formats;
 
-use App\Models\Show;
+use App\Models\Format;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
-class SaveShowRequest extends FormRequest
+class SaveFormatRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request. The same rules
-     * cover entering a show and correcting one, so which right is asked for
-     * turns on whether the route names a show at all.
+     * cover entering a format and correcting one, so which right is asked for
+     * turns on whether the route names a format at all.
      */
     public function authorize(): bool
     {
-        $show = $this->route('show');
+        $format = $this->route('format');
 
-        return $show instanceof Show
-            ? Gate::allows('update', $show)
-            : Gate::allows('create', Show::class);
+        return $format instanceof Format
+            ? Gate::allows('update', $format)
+            : Gate::allows('create', Format::class);
     }
 
     /**
      * Get the validation rules that apply to the request.
      *
-     * The owning group is held to the ones the user may assign: handing a show
-     * to a group they do not belong to would give somebody else's group a show
+     * The owning group is held to the ones the user may assign: handing a format
+     * to a group they do not belong to would give somebody else's group a format
      * and lock the editor out of what they just saved.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
@@ -36,7 +36,7 @@ class SaveShowRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'team_id' => ['required', 'integer', Rule::in(Show::assignableTeams($this->user())->modelKeys())],
+            'team_id' => ['required', 'integer', Rule::in(Format::assignableTeams($this->user())->modelKeys())],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:10000'],
         ];
@@ -50,7 +50,7 @@ class SaveShowRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'team_id.in' => __('Lavastuse saab anda ainult tiimile, kuhu sa ise kuulud.'),
+            'team_id.in' => __('Formaadi saab anda ainult tiimile, kuhu sa ise kuulud.'),
         ];
     }
 }

@@ -24,7 +24,7 @@ const action = computed(() =>
         <template #description>
             Kas soovid kindlasti lahkuda tiimist
             <strong>{{ team?.name }}</strong
-            >? Tiimi lavastused ja plaanid jäävad alles.
+            >? Tiimi formaadid ja plaanid jäävad alles.
         </template>
     </R10ConfirmVisit>
 </template>

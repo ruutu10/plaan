@@ -259,7 +259,7 @@ class StaffProvisioningTest extends TestCase
         $user = User::factory()->unverified()->create();
 
         $this->actingAs($user)
-            ->get(route('shows.index'))
+            ->get(route('formats.index'))
             ->assertRedirect(route('verification.notice'));
     }
 

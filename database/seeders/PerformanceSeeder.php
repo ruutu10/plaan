@@ -2,17 +2,17 @@
 
 namespace Database\Seeders;
 
+use App\Models\Format;
 use App\Models\Performance;
-use App\Models\Show;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 
 class PerformanceSeeder extends Seeder
 {
     /**
-     * The example performances of each seeded show, keyed by the show's name.
+     * The example performances of each seeded format, keyed by the format's name.
      * Positive day offsets are upcoming (and therefore selectable in the
-     * wizard); negative offsets are in the past. A show staged more than once is
+     * wizard); negative offsets are in the past. A format staged more than once is
      * what lets the wizard offer an earlier performance's plan as the basis for the
      * next one.
      *
@@ -32,25 +32,25 @@ class PerformanceSeeder extends Seeder
     ];
 
     /**
-     * Seed the example performances for the seeded shows, plus the stand-in
-     * show's own — the night a performer picks when theirs is not on the books,
+     * Seed the example performances for the seeded formats, plus the stand-in
+     * format's own — the night a performer picks when theirs is not on the books,
      * dated years ahead so it never leaves the picker. The example dates are
-     * relative to the day of seeding, so a show that already has its performances
+     * relative to the day of seeding, so a format that already has its performances
      * is left alone rather than given a second set a few days apart.
      */
     public function run(): void
     {
         Performance::placeholder();
 
-        foreach (self::PERFORMANCES as $showName => $performances) {
-            $show = Show::where('name', $showName)->first();
+        foreach (self::PERFORMANCES as $formatName => $performances) {
+            $format = Format::where('name', $formatName)->first();
 
-            if ($show === null || $show->performances()->exists()) {
+            if ($format === null || $format->performances()->exists()) {
                 continue;
             }
 
             foreach ($performances as $performance) {
-                $show->performances()->create([
+                $format->performances()->create([
                     'date' => Performance::momentFrom(
                         Carbon::today(Performance::venueTimezone())
                             ->addDays($performance['days'])

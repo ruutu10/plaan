@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Who put the record on the books: a person at the screen, or the weekly Planka
- * import. Nothing said so until now — a show that turned up on its own and one
+ * import. Nothing said so until now — a format that turned up on its own and one
  * somebody entered read exactly alike, which is the first question asked when a
  * date looks wrong.
  *
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Schema;
  * "manual" and everything already on the books reads that way. The performances
  * carrying a card id are the exception: those demonstrably came off the board,
  * so they are set straight here rather than left claiming to have been typed in.
- * Shows keep no card id of their own, so they cannot be told apart in
+ * Formats keep no card id of their own, so they cannot be told apart in
  * retrospect and stay at the default.
  */
 return new class extends Migration
@@ -26,7 +26,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('shows', function (Blueprint $table) {
+        Schema::table('formats', function (Blueprint $table) {
             $table->enum('created_by', CreatedBy::values())
                 ->default(CreatedBy::Manual->value)
                 ->after('description');
@@ -48,7 +48,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('shows', function (Blueprint $table) {
+        Schema::table('formats', function (Blueprint $table) {
             $table->dropColumn('created_by');
         });
 

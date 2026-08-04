@@ -152,7 +152,7 @@ const cueLinkClass =
             <span
                 class="hidden min-w-0 truncate font-r10-display text-[15px] font-semibold tracking-[0.03em] text-white uppercase sm:block"
             >
-                {{ plan.meta.showName || 'Nimeta etendus' }}
+                {{ plan.meta.formatName || 'Nimeta etendus' }}
             </span>
             <button
                 type="button"

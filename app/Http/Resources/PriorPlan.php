@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * A past plan for the same show offered as the basis for a new one, labelled by
+ * A past plan for the same format offered as the basis for a new one, labelled by
  * the date of the performance it was written for and that performance's own title,
  * when it has one — several acts of a shared evening would otherwise be told apart
  * by their date alone. A plan handed in by a team-mate also names its author — the

@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\ClaudeReasoningLog;
+use App\Models\Format;
 use App\Models\Performance;
-use App\Models\Show;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -20,17 +20,17 @@ class ClaudeReasoningLogTest extends TestCase
 
     public function test_a_technician_reads_what_the_ai_made_of_the_card(): void
     {
-        $show = Show::factory()->create();
+        $format = Format::factory()->create();
 
         $log = ClaudeReasoningLog::factory()->create([
             'card_id' => 'card-1',
             'card_name' => 'Õppelava 9.10',
             'notes' => ['Kuupäev real "Toimumise kuupäev: 9.10.2025".'],
         ]);
-        $log->link($show);
+        $log->link($format);
 
         $this->actingAs($this->technician())
-            ->getJson(route('api.shows.claude-logs', $show))
+            ->getJson(route('api.formats.claude-logs', $format))
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $log->id)
@@ -39,12 +39,12 @@ class ClaudeReasoningLogTest extends TestCase
             ->assertJsonPath('data.0.notes', ['Kuupäev real "Toimumise kuupäev: 9.10.2025".']);
     }
 
-    public function test_a_show_built_card_by_card_shows_every_reading_newest_first(): void
+    public function test_a_format_built_card_by_card_shows_every_reading_newest_first(): void
     {
-        // The Õppelava case: one show, made by one card and given a night by
+        // The Õppelava case: one format, made by one card and given a night by
         // the next. Reading only the first would explain an evening months ago
         // and say nothing about the one that looks wrong.
-        $show = Show::factory()->create();
+        $format = Format::factory()->create();
 
         $october = ClaudeReasoningLog::factory()->create([
             'card_name' => 'Õppelava 9.10',
@@ -55,11 +55,11 @@ class ClaudeReasoningLogTest extends TestCase
             'created_at' => '2025-11-01 10:00:00',
         ]);
 
-        $october->link($show);
-        $november->link($show);
+        $october->link($format);
+        $november->link($format);
 
         $this->actingAs($this->technician())
-            ->getJson(route('api.shows.claude-logs', $show))
+            ->getJson(route('api.formats.claude-logs', $format))
             ->assertOk()
             ->assertJsonCount(2, 'data')
             ->assertJsonPath('data.0.cardName', 'TLN õppelava 15.11')
@@ -68,14 +68,14 @@ class ClaudeReasoningLogTest extends TestCase
 
     public function test_a_performance_is_answered_in_the_same_shape(): void
     {
-        $show = Show::factory()->create();
-        $performance = Performance::factory()->create(['show_id' => $show->id]);
+        $format = Format::factory()->create();
+        $performance = Performance::factory()->create(['format_id' => $format->id]);
 
         $log = ClaudeReasoningLog::factory()->create(['card_name' => 'Õppelava 9.10']);
         $log->link($performance);
 
         $this->actingAs($this->technician())
-            ->getJson(route('api.shows.performances.claude-logs', [$show, $performance]))
+            ->getJson(route('api.formats.performances.claude-logs', [$format, $performance]))
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.cardName', 'Õppelava 9.10');
@@ -83,10 +83,10 @@ class ClaudeReasoningLogTest extends TestCase
 
     public function test_a_record_nobody_imported_has_nothing_to_read(): void
     {
-        $show = Show::factory()->create();
+        $format = Format::factory()->create();
 
         $this->actingAs($this->technician())
-            ->getJson(route('api.shows.claude-logs', $show))
+            ->getJson(route('api.formats.claude-logs', $format))
             ->assertOk()
             ->assertJsonCount(0, 'data');
     }
@@ -95,11 +95,11 @@ class ClaudeReasoningLogTest extends TestCase
     {
         config()->set('services.planka.url', 'https://planka.test/');
 
-        $show = Show::factory()->create();
-        ClaudeReasoningLog::factory()->create(['card_id' => 'card-1'])->link($show);
+        $format = Format::factory()->create();
+        ClaudeReasoningLog::factory()->create(['card_id' => 'card-1'])->link($format);
 
         $this->actingAs($this->technician())
-            ->getJson(route('api.shows.claude-logs', $show))
+            ->getJson(route('api.formats.claude-logs', $format))
             ->assertOk()
             ->assertJsonPath('data.0.cardUrl', 'https://planka.test/cards/card-1');
     }
@@ -108,46 +108,46 @@ class ClaudeReasoningLogTest extends TestCase
     {
         config()->set('services.planka.url', 'https://planka.test');
 
-        $show = Show::factory()->create();
-        ClaudeReasoningLog::factory()->create(['card_id' => null])->link($show);
+        $format = Format::factory()->create();
+        ClaudeReasoningLog::factory()->create(['card_id' => null])->link($format);
 
         $this->actingAs($this->technician())
-            ->getJson(route('api.shows.claude-logs', $show))
+            ->getJson(route('api.formats.claude-logs', $format))
             ->assertOk()
             ->assertJsonPath('data.0.cardUrl', null);
     }
 
     public function test_the_house_staff_read_it_too(): void
     {
-        $show = Show::factory()->create();
-        ClaudeReasoningLog::factory()->create()->link($show);
+        $format = Format::factory()->create();
+        ClaudeReasoningLog::factory()->create()->link($format);
 
         $staff = User::factory()->create()->assignRole('staff');
 
         $this->actingAs($staff)
-            ->getJson(route('api.shows.claude-logs', $show))
+            ->getJson(route('api.formats.claude-logs', $format))
             ->assertOk();
     }
 
     public function test_a_group_of_the_house_is_refused(): void
     {
-        // Even the group whose own show the reading created: the notes are a
-        // debugging aid, not something a show says about itself.
+        // Even the group whose own format the reading created: the notes are a
+        // debugging aid, not something a format says about itself.
         $user = User::factory()->create();
-        $show = Show::factory()->create(['team_id' => $this->teamOf($user)->id]);
+        $format = Format::factory()->create(['team_id' => $this->teamOf($user)->id]);
 
-        ClaudeReasoningLog::factory()->create()->link($show);
+        ClaudeReasoningLog::factory()->create()->link($format);
 
         $this->actingAs($user)
-            ->getJson(route('api.shows.claude-logs', $show))
+            ->getJson(route('api.formats.claude-logs', $format))
             ->assertForbidden();
     }
 
     public function test_reading_it_requires_signing_in(): void
     {
-        $show = Show::factory()->create();
+        $format = Format::factory()->create();
 
-        $this->getJson(route('api.shows.claude-logs', $show))
+        $this->getJson(route('api.formats.claude-logs', $format))
             ->assertUnauthorized();
     }
 
@@ -155,23 +155,23 @@ class ClaudeReasoningLogTest extends TestCase
     {
         $technician = $this->technician();
 
-        $show = Show::factory()->create(['team_id' => $this->teamOf($technician)->id]);
-        $performance = Performance::factory()->create(['show_id' => $show->id]);
+        $format = Format::factory()->create(['team_id' => $this->teamOf($technician)->id]);
+        $performance = Performance::factory()->create(['format_id' => $format->id]);
 
         $first = ClaudeReasoningLog::factory()->create();
         $second = ClaudeReasoningLog::factory()->create();
 
-        $first->link($show);
-        $second->link($show);
+        $first->link($format);
+        $second->link($format);
         $first->link($performance);
 
         $this->actingAs($technician)
-            ->getJson(route('api.shows.index'))
+            ->getJson(route('api.formats.index'))
             ->assertOk()
             ->assertJsonPath('data.0.reasoningLogCount', 2);
 
         $this->actingAs($technician)
-            ->getJson(route('api.shows.performances.index', $show))
+            ->getJson(route('api.formats.performances.index', $format))
             ->assertOk()
             ->assertJsonPath('data.0.reasoningLogCount', 1);
     }
@@ -180,22 +180,22 @@ class ClaudeReasoningLogTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $show = Show::factory()->create(['team_id' => $this->teamOf($user)->id]);
-        $performance = Performance::factory()->create(['show_id' => $show->id]);
+        $format = Format::factory()->create(['team_id' => $this->teamOf($user)->id]);
+        $performance = Performance::factory()->create(['format_id' => $format->id]);
 
         $log = ClaudeReasoningLog::factory()->create();
-        $log->link($show);
+        $log->link($format);
         $log->link($performance);
 
         // Zero rather than absent: the screens hide the button on the count
         // itself, so there is nothing to press and nothing to be refused.
         $this->actingAs($user)
-            ->getJson(route('api.shows.index'))
+            ->getJson(route('api.formats.index'))
             ->assertOk()
             ->assertJsonPath('data.0.reasoningLogCount', 0);
 
         $this->actingAs($user)
-            ->getJson(route('api.shows.performances.index', $show))
+            ->getJson(route('api.formats.performances.index', $format))
             ->assertOk()
             ->assertJsonPath('data.0.reasoningLogCount', 0);
     }
@@ -203,23 +203,23 @@ class ClaudeReasoningLogTest extends TestCase
     public function test_a_record_entered_by_hand_has_no_reading(): void
     {
         $technician = $this->technician();
-        $show = Show::factory()->create(['team_id' => $this->teamOf($technician)->id]);
+        $format = Format::factory()->create(['team_id' => $this->teamOf($technician)->id]);
 
         $this->actingAs($technician)
-            ->getJson(route('api.shows.index'))
+            ->getJson(route('api.formats.index'))
             ->assertOk()
             ->assertJsonPath('data.0.reasoningLogCount', 0);
     }
 
     public function test_the_same_reading_is_never_attached_to_a_record_twice(): void
     {
-        $show = Show::factory()->create();
+        $format = Format::factory()->create();
         $log = ClaudeReasoningLog::factory()->create();
 
-        $log->link($show);
-        $log->link($show);
+        $log->link($format);
+        $log->link($format);
 
         $this->assertDatabaseCount('claude_reasoning_log_subjects', 1);
-        $this->assertSame([$log->id], $show->fresh()?->reasoningLogs->pluck('id')->all());
+        $this->assertSame([$log->id], $format->fresh()?->reasoningLogs->pluck('id')->all());
     }
 }

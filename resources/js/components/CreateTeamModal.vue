@@ -46,7 +46,7 @@ function change(value: boolean): void {
                         Uus tiim
                     </DialogTitle>
                     <DialogDescription class="text-[15px] text-r10-grey-500">
-                        Loo tiim, millega koos lavastusi hallata. Tiimi omanik
+                        Loo tiim, millega koos formaate hallata. Tiimi omanik
                         oled sina.
                     </DialogDescription>
                 </DialogHeader>

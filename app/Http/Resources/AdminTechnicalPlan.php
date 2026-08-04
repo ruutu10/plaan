@@ -22,7 +22,7 @@ class AdminTechnicalPlan extends JsonResource
      *
      * @return array{
      *     token: string,
-     *     showName: string|null,
+     *     formatName: string|null,
      *     teamName: string|null,
      *     performanceDate: string|null,
      *     submittedBy: string|null,
@@ -36,11 +36,11 @@ class AdminTechnicalPlan extends JsonResource
     public function toArray(Request $request): array
     {
         $plan = $this->resource;
-        $show = $plan->performance?->show;
+        $format = $plan->performance?->format;
 
         return [
             'token' => $plan->token,
-            'showName' => $show?->name,
+            'formatName' => $format?->name,
             'teamName' => $plan->performance?->performerName(),
             'performanceDate' => $plan->performance?->startDate(),
             'submittedBy' => $plan->user?->name,

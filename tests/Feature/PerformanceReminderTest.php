@@ -5,8 +5,8 @@ namespace Tests\Feature;
 use App\Enums\ReminderSchedule;
 use App\Enums\TeamRole;
 use App\Enums\TechnicalPlanStatus;
+use App\Models\Format;
 use App\Models\Performance;
-use App\Models\Show;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
@@ -288,7 +288,7 @@ class PerformanceReminderTest extends TestCase
                 ->component('TechnicalPlan')
                 ->where('initialStep', 1)
                 ->where('initialPerformance.performanceId', $performance->id)
-                ->where('initialPerformance.showName', 'Öine impro'));
+                ->where('initialPerformance.formatName', 'Öine impro'));
     }
 
     public function test_a_link_naming_a_performance_that_has_been_played_opens_at_the_beginning(): void
@@ -379,14 +379,14 @@ class PerformanceReminderTest extends TestCase
         Notification::assertNothingSent();
     }
 
-    public function test_a_show_without_an_owning_group_is_not_chased(): void
+    public function test_a_format_without_an_owning_group_is_not_chased(): void
     {
         Notification::fake();
 
-        $show = Show::factory()->create(['team_id' => null]);
+        $format = Format::factory()->create(['team_id' => null]);
 
         Performance::factory()->create([
-            'show_id' => $show->id,
+            'format_id' => $format->id,
             'date' => now()->addDays(6)->subMinute(),
             'created_at' => now()->subMonths(3),
         ]);
@@ -397,7 +397,7 @@ class PerformanceReminderTest extends TestCase
         $this->assertDatabaseCount('performance_reminders', 0);
     }
 
-    public function test_the_group_playing_an_act_is_chased_rather_than_the_shows_owner(): void
+    public function test_the_group_playing_an_act_is_chased_rather_than_the_formats_owner(): void
     {
         Notification::fake();
 
@@ -424,7 +424,7 @@ class PerformanceReminderTest extends TestCase
         ]);
     }
 
-    public function test_an_act_of_an_ownerless_show_is_still_chased_through_its_own_group(): void
+    public function test_an_act_of_an_ownerless_format_is_still_chased_through_its_own_group(): void
     {
         Notification::fake();
 
@@ -435,7 +435,7 @@ class PerformanceReminderTest extends TestCase
         $guest->members()->attach($guestMember, ['role' => TeamRole::Owner->value]);
 
         $performance = Performance::factory()
-            ->for(Show::factory()->state(['team_id' => null, 'name' => 'Õppelava']))
+            ->for(Format::factory()->state(['team_id' => null, 'name' => 'Õppelava']))
             ->performedBy($guest, 'Märtu10')
             ->create([
                 'date' => now()->addDays(6)->subMinute(),
@@ -529,10 +529,10 @@ class PerformanceReminderTest extends TestCase
         Log::spy();
 
         $team = Team::factory()->create();
-        $show = Show::factory()->create(['team_id' => $team->id]);
+        $format = Format::factory()->create(['team_id' => $team->id]);
 
         $performance = Performance::factory()->create([
-            'show_id' => $show->id,
+            'format_id' => $format->id,
             'date' => now()->addDays(6)->subMinute(),
             'created_at' => now()->subMonths(3),
         ]);
@@ -641,10 +641,10 @@ class PerformanceReminderTest extends TestCase
             ]);
         }
 
-        $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Öine impro']);
+        $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Öine impro']);
 
         $performance = Performance::factory()->when($draft, fn ($factory) => $factory->draft())->create([
-            'show_id' => $show->id,
+            'format_id' => $format->id,
             // A minute inside the window, so "six days out" is due rather than
             // due in a moment.
             'date' => now()->add($interval)->subMinute(),

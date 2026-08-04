@@ -2,11 +2,11 @@
 import { computed } from 'vue';
 import R10ConfirmDelete from '@/components/technical-plan/R10ConfirmDelete.vue';
 import { formatEstonianDate } from '@/lib/date';
-import { destroy } from '@/routes/api/shows/performances';
+import { destroy } from '@/routes/api/formats/performances';
 import type { Performance } from '@/types';
 
 const props = defineProps<{
-    showId: number;
+    formatId: number;
     performance: Performance | null;
 }>();
 
@@ -15,7 +15,7 @@ const emit = defineEmits<{ deleted: [] }>();
 const open = defineModel<boolean>('open', { required: true });
 
 const action = computed(() =>
-    props.performance ? destroy([props.showId, props.performance.id]) : null,
+    props.performance ? destroy([props.formatId, props.performance.id]) : null,
 );
 
 const planCount = computed(() => props.performance?.technicalPlanCount ?? 0);

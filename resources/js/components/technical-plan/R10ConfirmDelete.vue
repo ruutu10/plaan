@@ -7,7 +7,7 @@ import R10Button from './R10Button.vue';
 import R10Dialog from './R10Dialog.vue';
 
 /**
- * "Are you sure?" — the same dialog for deleting a show, a performance, a team
+ * "Are you sure?" — the same dialog for deleting a format, a performance, a team
  * or a member. Each of those had its own copy of this file with three strings
  * swapped, which is how one of them came to be missing its warning.
  *

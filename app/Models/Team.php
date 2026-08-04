@@ -27,9 +27,9 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, TeamInvitation> $invitations
  * @property-read Collection<int, Membership> $memberships
  * @property-read Collection<int, User> $members
- * @property-read Collection<int, Show> $shows
+ * @property-read Collection<int, Format> $formats
  * @property-read int|null $members_count
- * @property-read int|null $shows_count
+ * @property-read int|null $formats_count
  */
 #[Fillable(['name', 'slug'])]
 class Team extends Model
@@ -114,13 +114,13 @@ class Team extends Model
     }
 
     /**
-     * The shows this team has staged.
+     * The formats this team has staged.
      *
-     * @return HasMany<Show, $this>
+     * @return HasMany<Format, $this>
      */
-    public function shows(): HasMany
+    public function formats(): HasMany
     {
-        return $this->hasMany(Show::class);
+        return $this->hasMany(Format::class);
     }
 
     /**

@@ -9,20 +9,20 @@ namespace App\Data;
  */
 class ImportSummary
 {
-    public int $showsCreated = 0;
+    public int $formatsCreated = 0;
 
-    public int $showsAdopted = 0;
+    public int $formatsAdopted = 0;
 
     public int $performancesCreated = 0;
 
-    /** Performances already on the books, or belonging to a deleted show. */
+    /** Performances already on the books, or belonging to a deleted format. */
     public int $skipped = 0;
 
     /** Cards left alone because of a label. */
     public int $passedOver = 0;
 
     /**
-     * The nights this run has already dealt with, by fingerprint. The same show
+     * The nights this run has already dealt with, by fingerprint. The same format
      * on the same date can be named on two cards, or twice on one; either way
      * it is one night, with the acts the first reading of it gave.
      *
@@ -53,11 +53,11 @@ class ImportSummary
     public function sentence(bool $dryRun): string
     {
         return sprintf(
-            '%s %d show(s) and %d performance(s); %d show(s) handed to a group, %d already known, %d card(s) passed over by label.',
+            '%s %d format(s) and %d performance(s); %d format(s) handed to a group, %d already known, %d card(s) passed over by label.',
             $dryRun ? 'Would import' : 'Imported',
-            $this->showsCreated,
+            $this->formatsCreated,
             $this->performancesCreated,
-            $this->showsAdopted,
+            $this->formatsAdopted,
             $this->skipped,
             $this->passedOver,
         );
@@ -71,8 +71,8 @@ class ImportSummary
     public function context(): array
     {
         return [
-            'shows_created' => $this->showsCreated,
-            'shows_adopted' => $this->showsAdopted,
+            'formats_created' => $this->formatsCreated,
+            'formats_adopted' => $this->formatsAdopted,
             'performances_created' => $this->performancesCreated,
             'skipped' => $this->skipped,
             'passed_over' => $this->passedOver,

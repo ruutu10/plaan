@@ -13,9 +13,9 @@ import { ref } from 'vue';
 import { toast } from 'vue-sonner';
 import ClaudeReasoningLogModal from '@/components/ClaudeReasoningLogModal.vue';
 import DeletePerformanceModal from '@/components/DeletePerformanceModal.vue';
+import FormatFormFields from '@/components/FormatFormFields.vue';
 import PerformanceModal from '@/components/PerformanceModal.vue';
 import RecordOriginFields from '@/components/RecordOriginFields.vue';
-import ShowFormFields from '@/components/ShowFormFields.vue';
 import R10BackLink from '@/components/technical-plan/R10BackLink.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
@@ -26,26 +26,31 @@ import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { useResource } from '@/composables/useResource';
 import { useTrailingCrumb } from '@/composables/useTrailingCrumb';
 import { formatEstonianDate } from '@/lib/date';
-import { show as showApi, update } from '@/routes/api/shows';
+import { show as formatApi, update } from '@/routes/api/formats';
 import {
     claudeLogs as reasoningLogsApi,
     index as performancesApi,
-} from '@/routes/api/shows/performances';
-import { edit, index } from '@/routes/shows';
-import type { Performance, Show, ShowFormData, ShowTeamOption } from '@/types';
+} from '@/routes/api/formats/performances';
+import { edit, index } from '@/routes/formats';
+import type {
+    Format,
+    FormatFormData,
+    FormatTeamOption,
+    Performance,
+} from '@/types';
 
-const props = defineProps<{ showId: number }>();
+const props = defineProps<{ formatId: number }>();
 
-const teams = ref<ShowTeamOption[]>([]);
-/** The groups a performance may be handed to; wider than the show's own. */
-const performanceTeams = ref<ShowTeamOption[]>([]);
+const teams = ref<FormatTeamOption[]>([]);
+/** The groups a performance may be handed to; wider than the format's own. */
+const performanceTeams = ref<FormatTeamOption[]>([]);
 
 /**
- * Whether the user may correct the show itself. A group that only plays a
+ * Whether the user may correct the format itself. A group that only plays a
  * performance on this evening reaches the page to correct its own slot and
- * finds the show's own details read-only.
+ * finds the format's own details read-only.
  */
-const canEditShow = ref(true);
+const canEditFormat = ref(true);
 
 const performanceModalOpen = ref(false);
 const deleteModalOpen = ref(false);
@@ -58,7 +63,7 @@ const logOpen = ref(false);
 const loader = useHttp();
 const performanceLoader = useHttp();
 
-const form = useHttp<ShowFormData>({
+const form = useHttp<FormatFormData>({
     team_id: null,
     name: '',
     description: '',
@@ -68,7 +73,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Lavastused',
+                title: 'Formaadid',
                 href: index(),
             },
         ],
@@ -76,20 +81,20 @@ defineOptions({
 });
 
 const nameTheTrail = useTrailingCrumb(
-    { title: 'Lavastused', href: index() },
-    edit(props.showId),
+    { title: 'Formaadid', href: index() },
+    edit(props.formatId),
 );
 
-// The show and its performances are separate resources, so they are fetched
+// The format and its performances are separate resources, so they are fetched
 // side by side rather than one after the other.
-const { data: show, loadFailed } = useResource(async () => {
-    const response = (await loader.submit(showApi(props.showId))) as {
-        data: Show;
-        teams: ShowTeamOption[];
+const { data: format, loadFailed } = useResource(async () => {
+    const response = (await loader.submit(formatApi(props.formatId))) as {
+        data: Format;
+        teams: FormatTeamOption[];
     };
 
     teams.value = response.teams;
-    canEditShow.value = response.data.canEdit;
+    canEditFormat.value = response.data.canEdit;
 
     form.team_id = response.data.teamId;
     form.name = response.data.name;
@@ -107,8 +112,8 @@ const {
     reload: reloadPerformances,
 } = useResource(async () => {
     const response = (await performanceLoader.submit(
-        performancesApi(props.showId),
-    )) as { data: Performance[]; teams: ShowTeamOption[] };
+        performancesApi(props.formatId),
+    )) as { data: Performance[]; teams: FormatTeamOption[] };
 
     performanceTeams.value = response.teams;
 
@@ -131,22 +136,22 @@ function openDeletePerformance(performance: Performance): void {
 }
 
 function openReasoningLog(performance: Performance): void {
-    chosenLogSource.value = reasoningLogsApi([props.showId, performance.id]);
+    chosenLogSource.value = reasoningLogsApi([props.formatId, performance.id]);
     logOpen.value = true;
 }
 
 async function save(): Promise<void> {
     try {
-        const { data } = (await form.submit(update(props.showId))) as {
-            data: Show;
+        const { data } = (await form.submit(update(props.formatId))) as {
+            data: Format;
         };
 
-        show.value = data;
+        format.value = data;
         form.defaults();
 
         nameTheTrail(data.name);
 
-        toast.success('Lavastus salvestatud.');
+        toast.success('Formaat salvestatud.');
     } catch {
         // A refused save leaves its field errors on the form; anything else is
         // shown as a plain failure rather than passed on as a broken promise.
@@ -158,26 +163,26 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-    <Head :title="show?.name ?? 'Lavastus'" />
+    <Head :title="format?.name ?? 'Formaat'" />
 
     <R10Page>
         <StepHeader
             eyebrow="Haldus"
-            :title="show?.name ?? 'Lavastus'"
-            lead="Muuda lavastuse andmeid. Muudatused kehtivad kõigile selle lavastuse etendustele."
+            :title="format?.name ?? 'Formaat'"
+            lead="Muuda formaadi andmeid. Muudatused kehtivad kõigile selle formaadi etendustele."
         />
 
         <p
             v-if="loadFailed"
             class="max-w-2xl rounded-xl border-2 border-r10-grey-200 bg-white p-5 text-[15px] text-r10-orange-700 md:p-7"
         >
-            Lavastuse laadimine ebaõnnestus. Proovi lehte värskendada.
+            Formaadi laadimine ebaõnnestus. Proovi lehte värskendada.
         </p>
 
         <!-- Nothing has arrived yet: stand-ins the shape of the three fields. -->
         <div
-            v-else-if="show === null"
-            data-test="show-form-skeleton"
+            v-else-if="format === null"
+            data-test="format-form-skeleton"
             class="flex max-w-2xl flex-col gap-6 rounded-xl border-2 border-r10-grey-200 bg-white p-5 md:p-7"
         >
             <div v-for="field in 3" :key="field" class="flex flex-col gap-2">
@@ -197,39 +202,39 @@ async function save(): Promise<void> {
             @submit.prevent="save"
         >
             <p
-                v-if="!canEditShow"
-                data-test="show-read-only-notice"
+                v-if="!canEditFormat"
+                data-test="format-read-only-notice"
                 class="rounded-lg border-2 border-r10-grey-200 bg-r10-grey-100 px-4 py-3 text-[13px] text-r10-grey-700"
             >
-                See lavastus kuulub teisele tiimile. Sa saad muuta ainult oma
+                See formaat kuulub teisele tiimile. Sa saad muuta ainult oma
                 tiimi etteastet allpool.
             </p>
 
-            <ShowFormFields
+            <FormatFormFields
                 v-model:team-id="form.team_id"
                 v-model:name="form.name"
                 v-model:description="form.description"
                 :teams="teams"
                 :errors="form.errors"
-                :disabled="!canEditShow"
+                :disabled="!canEditFormat"
             />
 
             <!-- Below the fields, and outside them: nothing here is saved with
                  the form, and the read-only pair reads as a footnote to the
-                 show rather than as two more things to fill in. -->
+                 format rather than as two more things to fill in. -->
             <RecordOriginFields
-                :created-by="show.createdBy"
-                :created-at="show.createdAt"
+                :created-by="format.createdBy"
+                :created-at="format.createdAt"
             />
 
             <div class="flex items-center justify-between gap-3">
                 <R10BackLink :href="index()" />
 
                 <R10Button
-                    v-if="canEditShow"
+                    v-if="canEditFormat"
                     type="submit"
                     :disabled="form.processing"
-                    data-test="show-save-button"
+                    data-test="format-save-button"
                 >
                     Salvesta
                 </R10Button>
@@ -239,12 +244,12 @@ async function save(): Promise<void> {
         <section class="mt-9">
             <R10SectionHeader
                 title="Etendused"
-                lead="Selle lavastuse kuupäevad. Iga kuupäeva külge käib eraldi tehnikaplaan."
+                lead="Selle formaadi kuupäevad. Iga kuupäeva külge käib eraldi tehnikaplaan."
                 class="mb-4"
             >
                 <template #action>
                     <R10Button
-                        v-if="canEditShow"
+                        v-if="canEditFormat"
                         size="sm"
                         data-test="add-performance-button"
                         @click="openAddPerformance"
@@ -270,7 +275,7 @@ async function save(): Promise<void> {
                 :skeleton-widths="['w-24', 'w-12']"
                 row-test-id="performance-row"
                 skeleton-test-id="performance-skeleton-row"
-                empty-text="Sellel lavastusel pole veel ühtegi etendust."
+                empty-text="Sellel formaadil pole veel ühtegi etendust."
                 error-text="Etenduste laadimine ebaõnnestus. Proovi lehte värskendada."
             >
                 <template #row="{ row: performance }">
@@ -294,7 +299,9 @@ async function save(): Promise<void> {
                             class="block text-r10-grey-500"
                             data-test="performance-team"
                         >
-                            {{ performance.teamName ?? show?.teamName ?? '—' }}
+                            {{
+                                performance.teamName ?? format?.teamName ?? '—'
+                            }}
                         </span>
                     </td>
                     <td class="px-5 py-4 whitespace-nowrap">
@@ -383,7 +390,7 @@ async function save(): Promise<void> {
 
         <PerformanceModal
             v-model:open="performanceModalOpen"
-            :show-id="showId"
+            :format-id="formatId"
             :performance="chosenPerformance"
             :teams="performanceTeams"
             @saved="reloadPerformances"
@@ -391,7 +398,7 @@ async function save(): Promise<void> {
 
         <DeletePerformanceModal
             v-model:open="deleteModalOpen"
-            :show-id="showId"
+            :format-id="formatId"
             :performance="chosenPerformance"
             @deleted="reloadPerformances"
         />

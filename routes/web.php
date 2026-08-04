@@ -3,11 +3,11 @@
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ClaudeReasoningLogController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FormatController;
+use App\Http\Controllers\FormatPageController;
 use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PerformanceController;
-use App\Http\Controllers\ShowController;
-use App\Http\Controllers\ShowPageController;
 use App\Http\Controllers\Teams\TeamAdminController;
 use App\Http\Controllers\Teams\TeamAdminMemberController;
 use App\Http\Controllers\Teams\TeamAdminPageController;
@@ -90,37 +90,37 @@ Route::prefix('api/tehnikaplaan')
             });
     });
 
-// Inertia-rendered show-management pages. Each is a shell: what it lists and
+// Inertia-rendered format-management pages. Each is a shell: what it lists and
 // what it saves travels over the JSON API below, so the browser is served by
 // the same endpoints as any other client.
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('shows', [ShowPageController::class, 'index'])->name('shows.index');
-    Route::get('shows/{show}/edit', [ShowPageController::class, 'edit'])->name('shows.edit');
+    Route::get('formats', [FormatPageController::class, 'index'])->name('formats.index');
+    Route::get('formats/{format}/edit', [FormatPageController::class, 'edit'])->name('formats.edit');
 });
 
-// JSON API for show management. A user reaches the shows of the groups they
-// belong to and no others; holders of App\Models\Show::EDIT_ALL_PERMISSION
-// reach every show in the house.
-Route::prefix('api/shows')
-    ->name('api.shows.')
+// JSON API for format management. A user reaches the formats of the groups they
+// belong to and no others; holders of App\Models\Format::EDIT_ALL_PERMISSION
+// reach every format in the house.
+Route::prefix('api/formats')
+    ->name('api.formats.')
     ->middleware(['auth', 'verified', 'throttle:200,1'])
     ->group(function () {
-        Route::get('/', [ShowController::class, 'index'])->name('index');
-        Route::post('/', [ShowController::class, 'store'])->name('store');
-        Route::get('{show}', [ShowController::class, 'show'])->name('show');
-        Route::patch('{show}', [ShowController::class, 'update'])->name('update');
-        Route::delete('{show}', [ShowController::class, 'destroy'])->name('destroy');
+        Route::get('/', [FormatController::class, 'index'])->name('index');
+        Route::post('/', [FormatController::class, 'store'])->name('store');
+        Route::get('{format}', [FormatController::class, 'show'])->name('show');
+        Route::patch('{format}', [FormatController::class, 'update'])->name('update');
+        Route::delete('{format}', [FormatController::class, 'destroy'])->name('destroy');
 
-        // What the AI made of the cards this show was built from. A debugging
+        // What the AI made of the cards this format was built from. A debugging
         // aid for the house's own people, so the permission alone governs it —
-        // the listings decide which shows a user is offered it on.
-        Route::get('{show}/claude-logs', [ClaudeReasoningLogController::class, 'forShow'])
+        // the listings decide which formats a user is offered it on.
+        Route::get('{format}/claude-logs', [ClaudeReasoningLogController::class, 'forFormat'])
             ->middleware('can:'.ClaudeReasoningLog::VIEW_PERMISSION)
             ->name('claude-logs');
 
-        // A show's dated performances. Scoped bindings tie the performance to the show
-        // in the URL, so one show's id can never reach another's performance.
-        Route::prefix('{show}/performances')
+        // A format's dated performances. Scoped bindings tie the performance to the format
+        // in the URL, so one format's id can never reach another's performance.
+        Route::prefix('{format}/performances')
             ->name('performances.')
             ->scopeBindings()
             ->group(function () {
@@ -135,10 +135,10 @@ Route::prefix('api/shows')
             });
     });
 
-// The crew's overview of every performance in the house, whatever show it
+// The crew's overview of every performance in the house, whatever format it
 // belongs to and whichever group plays it. Opened by the performance edit-all
 // permission (the "technician" role), which is also what decides how far the
-// listing itself reaches; everybody else keeps to their own groups' shows above.
+// listing itself reaches; everybody else keeps to their own groups' formats above.
 Route::get('performances', [PerformanceController::class, 'overview'])
     ->middleware(['auth', 'verified', 'can:'.Performance::EDIT_ALL_PERMISSION])
     ->name('admin.performances.index');

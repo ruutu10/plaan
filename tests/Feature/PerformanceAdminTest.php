@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Format;
 use App\Models\Performance;
-use App\Models\Show;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
@@ -42,7 +42,7 @@ class PerformanceAdminTest extends TestCase
         $team = $this->teamOf($user);
 
         Performance::factory()->create([
-            'show_id' => Show::factory()->create(['team_id' => $team->id]),
+            'format_id' => Format::factory()->create(['team_id' => $team->id]),
         ]);
 
         $this->actingAs($user)
@@ -62,23 +62,23 @@ class PerformanceAdminTest extends TestCase
 
     public function test_the_overview_lists_every_performance_of_every_team(): void
     {
-        $ours = Show::factory()->create([
+        $ours = Format::factory()->create([
             'team_id' => Team::factory()->create(['name' => 'Märold']),
             'name' => 'Festival 2026',
         ]);
-        $theirs = Show::factory()->create([
+        $theirs = Format::factory()->create([
             'team_id' => Team::factory()->create(['name' => 'Teine tiim']),
         ]);
 
         $performance = Performance::factory()
             ->startingAt('2026-09-01', '19:30')
-            ->create(['show_id' => $ours->id, 'duration' => 75]);
+            ->create(['format_id' => $ours->id, 'duration' => 75]);
 
         TechnicalPlan::factory()->submitted()->create(['performance_id' => $performance->id]);
 
         // Another group's night, dated before the one asserted on so the order
         // of the two rows is the sorting's doing rather than the factory's.
-        Performance::factory()->startingAt('2026-08-01')->create(['show_id' => $theirs->id]);
+        Performance::factory()->startingAt('2026-08-01')->create(['format_id' => $theirs->id]);
 
         $this->actingAs($this->technician())
             ->get(route('admin.performances.index'))
@@ -87,8 +87,8 @@ class PerformanceAdminTest extends TestCase
                 ->has('performances', 2)
                 ->has('performances', fn (Assert $rows) => $rows
                     ->where('0.id', $performance->id)
-                    ->where('0.showId', $ours->id)
-                    ->where('0.showName', 'Festival 2026')
+                    ->where('0.formatId', $ours->id)
+                    ->where('0.formatName', 'Festival 2026')
                     ->where('0.teamName', 'Märold')
                     ->where('0.date', '2026-09-01')
                     ->where('0.startTime', '19:30')
@@ -101,19 +101,19 @@ class PerformanceAdminTest extends TestCase
 
     /**
      * An act on an evening several groups share is announced under its own
-     * group and its own name, not the show owner's — the same rule the rest of
+     * group and its own name, not the format owner's — the same rule the rest of
      * the app follows.
      */
     public function test_an_act_on_a_shared_evening_carries_its_own_team_and_title(): void
     {
-        $show = Show::factory()->create([
+        $format = Format::factory()->create([
             'team_id' => Team::factory()->create(['name' => 'Korraldaja']),
         ]);
         $guest = Team::factory()->create(['name' => 'Külaline']);
 
         Performance::factory()
             ->performedBy($guest, 'Improkava')
-            ->create(['show_id' => $show->id]);
+            ->create(['format_id' => $format->id]);
 
         $this->actingAs($this->technician())
             ->get(route('admin.performances.index'))

@@ -3,7 +3,7 @@
 namespace Tests\Feature\Teams;
 
 use App\Enums\TeamRole;
-use App\Models\Show;
+use App\Models\Format;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,13 +67,13 @@ class TeamAdminTest extends TestCase
             'name' => 'Improteater Ruutu10',
             'slug' => $own->slug,
             'memberCount' => 1,
-            'showCount' => 0,
+            'formatCount' => 0,
         ], $rows->get($own->id));
 
         $this->assertNull($rows->get($somebodyElses->id));
     }
 
-    public function test_the_listing_counts_the_members_and_shows_and_sorts_by_name(): void
+    public function test_the_listing_counts_the_members_and_formats_and_sorts_by_name(): void
     {
         $user = User::factory()->create(['name' => 'Öö']);
 
@@ -81,7 +81,7 @@ class TeamAdminTest extends TestCase
         $first = $this->teamOf($user, 'Avatrupp');
 
         $first->members()->attach(User::factory()->create(), ['role' => TeamRole::Member->value]);
-        Show::factory()->count(2)->create(['team_id' => $first->id]);
+        Format::factory()->count(2)->create(['team_id' => $first->id]);
 
         $this->actingAs($user)
             ->getJson(route('api.teams.index'))
@@ -89,7 +89,7 @@ class TeamAdminTest extends TestCase
             ->assertJsonCount(3, 'data')
             ->assertJsonPath('data.0.name', 'Avatrupp')
             ->assertJsonPath('data.0.memberCount', 2)
-            ->assertJsonPath('data.0.showCount', 2)
+            ->assertJsonPath('data.0.formatCount', 2)
             ->assertJsonPath('data.1.name', 'Öine trupp')
             ->assertJsonPath('data.2.name', "Öö's Team");
     }
@@ -136,7 +136,7 @@ class TeamAdminTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.id', $team->id)
             ->assertJsonPath('data.name', 'Jaanuar')
-            ->assertJsonPath('data.showCount', 0)
+            ->assertJsonPath('data.formatCount', 0)
             ->assertJsonCount(1, 'data.members')
             ->assertJsonPath('data.members.0.id', $user->id)
             ->assertJsonPath('data.members.0.email', $user->email)
@@ -305,16 +305,16 @@ class TeamAdminTest extends TestCase
         $this->assertSame($ownTeam->id, $user->fresh()->current_team_id);
     }
 
-    public function test_deleting_a_team_leaves_its_shows_alone(): void
+    public function test_deleting_a_team_leaves_its_formats_alone(): void
     {
         $team = Team::factory()->create();
-        $show = Show::factory()->create(['team_id' => $team->id]);
+        $format = Format::factory()->create(['team_id' => $team->id]);
 
         $this->actingAs($this->technician())
             ->deleteJson(route('api.teams.destroy', $team))
             ->assertNoContent();
 
-        $this->assertNotSoftDeleted($show);
+        $this->assertNotSoftDeleted($format);
     }
 
     public function test_a_plain_member_cannot_delete_the_team(): void

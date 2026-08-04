@@ -56,10 +56,10 @@ class PlanDocument extends JsonResource
             'token' => $plan['token'] ?? null,
             'statusLabel' => self::statusLabel($plan['status'] ?? null),
 
-            'showName' => self::dash($meta['showName'] ?? null),
+            'formatName' => self::dash($meta['formatName'] ?? null),
             'performer' => self::dash($meta['performer'] ?? null),
             'contact' => self::dash($this->contact),
-            'showDate' => self::dash($meta['showDate'] ?? null),
+            'performanceDate' => self::dash($meta['performanceDate'] ?? null),
             'durationLabel' => self::duration($meta['duration'] ?? null),
             'description' => self::dash($meta['description'] ?? null),
 

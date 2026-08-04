@@ -3,8 +3,8 @@
 namespace Database\Factories;
 
 use App\Enums\CreatedBy;
+use App\Models\Format;
 use App\Models\Performance;
-use App\Models\Show;
 use App\Models\Team;
 use Carbon\CarbonInterval;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -22,8 +22,8 @@ class PerformanceFactory extends Factory
     public function definition(): array
     {
         return [
-            'show_id' => Show::factory(),
-            // The show's own group plays it, under the show's own name — the
+            'format_id' => Format::factory(),
+            // The format's own group plays it, under the format's own name — the
             // ordinary case. A shared evening says otherwise; see performedBy().
             'team_id' => null,
             'title' => null,
@@ -62,7 +62,7 @@ class PerformanceFactory extends Factory
 
     /**
      * Put a group of its own on the performance, as an act on an evening the
-     * show's owner shares with others — optionally under the name the board
+     * format's owner shares with others — optionally under the name the board
      * gives the act.
      */
     public function performedBy(Team $team, ?string $title = null): static

@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Log;
 class PlankaPerformanceExtractor
 {
     /**
-     * The groups a show can be handed to, by id, read once per run rather than
+     * The groups a format can be handed to, by id, read once per run rather than
      * once per card.
      *
      * @var array<int, string>|null
@@ -112,7 +112,7 @@ class PlankaPerformanceExtractor
     {
         $decoded = json_decode($aiResponse, true);
 
-        if (! is_array($decoded) || ! is_array($decoded['shows'] ?? null)) {
+        if (! is_array($decoded) || ! is_array($decoded['formats'] ?? null)) {
             Log::warning('AI returned no readable performances for a Planka card', [
                 'aiOutput' => $aiResponse,
             ]);
@@ -122,12 +122,12 @@ class PlankaPerformanceExtractor
 
         $nights = [];
 
-        foreach ($decoded['shows'] as $entry) {
+        foreach ($decoded['formats'] as $entry) {
             if (! is_array($entry)) {
                 continue;
             }
 
-            $name = trim((string) ($entry['show_name'] ?? ''));
+            $name = trim((string) ($entry['format_name'] ?? ''));
             $date = trim((string) ($entry['date'] ?? ''));
 
             if ($name === '' || ! Carbon::hasFormat($date, 'Y-m-d')) {
@@ -137,7 +137,7 @@ class PlankaPerformanceExtractor
             $teamId = $this->readTeamId($entry['team_id'] ?? null);
 
             $nights[] = new ImportedNight(
-                showName: $name,
+                formatName: $name,
                 date: Carbon::createFromFormat('Y-m-d', $date)->startOfDay(),
                 teamId: $teamId,
                 performances: $this->readPerformances($entry['performances'] ?? null, $name, $teamId),
@@ -153,13 +153,13 @@ class PlankaPerformanceExtractor
      * A night the model gave no acts for is still a night: the card names an
      * evening without breaking it down, so it gets the one performance the
      * import has always made of such a card. And an act that is the night's
-     * only one is stripped of its title when that title is the show's name
-     * again — the show already says who is playing, and every performance
+     * only one is stripped of its title when that title is the format's name
+     * again — the format already says who is playing, and every performance
      * already on the books was registered that way.
      *
      * @return list<ImportedPerformance>
      */
-    protected function readPerformances(mixed $entries, string $showName, ?int $nightTeamId): array
+    protected function readPerformances(mixed $entries, string $formatName, ?int $nightTeamId): array
     {
         $performances = [];
 
@@ -185,7 +185,7 @@ class PlankaPerformanceExtractor
             return [new ImportedPerformance(teamId: $nightTeamId)];
         }
 
-        if (count($performances) === 1 && mb_strtolower((string) $performances[0]->title) === mb_strtolower($showName)) {
+        if (count($performances) === 1 && mb_strtolower((string) $performances[0]->title) === mb_strtolower($formatName)) {
             $performances[0] = new ImportedPerformance(
                 title: null,
                 startTime: $performances[0]->startTime,
@@ -256,7 +256,7 @@ class PlankaPerformanceExtractor
     }
 
     /**
-     * The groups a show can be handed to.
+     * The groups a format can be handed to.
      *
      * @return array<int, string>
      */
@@ -278,15 +278,15 @@ class PlankaPerformanceExtractor
         return [
             'type' => 'object',
             'properties' => [
-                'shows' => [
+                'formats' => [
                     'type' => 'array',
-                    'description' => 'Every night the card announces: one entry per show played on one date.',
+                    'description' => 'Every night the card announces: one entry per format played on one date.',
                     'items' => [
                         'type' => 'object',
                         'properties' => [
-                            'show_name' => [
+                            'format_name' => [
                                 'type' => 'string',
-                                'description' => 'The show played that night: the act\'s name when one act fills the evening, otherwise the name of the evening itself.',
+                                'description' => 'The format played that night: the act\'s name when one act fills the evening, otherwise the name of the evening itself.',
                             ],
                             'date' => [
                                 'type' => 'string',
@@ -297,7 +297,7 @@ class PlankaPerformanceExtractor
                                     ['type' => 'integer'],
                                     ['type' => 'null'],
                                 ],
-                                'description' => 'Id of the group that owns the show, from the list given, or null when no group is a clear match.',
+                                'description' => 'Id of the group that owns the format, from the list given, or null when no group is a clear match.',
                             ],
                             'performances' => [
                                 'type' => 'array',
@@ -310,7 +310,7 @@ class PlankaPerformanceExtractor
                                                 ['type' => 'string'],
                                                 ['type' => 'null'],
                                             ],
-                                            'description' => 'The act as the card names it, without its members and without any duration note, or null when the show\'s own name already names it.',
+                                            'description' => 'The act as the card names it, without its members and without any duration note, or null when the format\'s own name already names it.',
                                         ],
                                         'start_time' => [
                                             'anyOf' => [
@@ -339,7 +339,7 @@ class PlankaPerformanceExtractor
                                 ],
                             ],
                         ],
-                        'required' => ['show_name', 'date', 'team_id', 'performances'],
+                        'required' => ['format_name', 'date', 'team_id', 'performances'],
                         'additionalProperties' => false,
                     ],
                 ],
@@ -349,7 +349,7 @@ class PlankaPerformanceExtractor
                     'items' => ['type' => 'string'],
                 ],
             ],
-            'required' => ['shows', 'reasoningNotes'],
+            'required' => ['formats', 'reasoningNotes'],
             'additionalProperties' => false,
         ];
     }
@@ -363,7 +363,7 @@ class PlankaPerformanceExtractor
     }
 
     /**
-     * The card itself. The title carries the show's name when the description
+     * The card itself. The title carries the format's name when the description
      * names no acts, and the due date supplies the year for the many dates
      * written on the board as a bare day and month. The groups are listed here
      * rather than in the system prompt because they are the app's own, and

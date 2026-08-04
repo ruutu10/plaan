@@ -14,14 +14,14 @@ import type { ClaudeReasoningLog } from '@/types';
  * for the house's own people — the button that opens it is only rendered for
  * users the server told there was something to read.
  *
- * A performance has one reading. A show may have many, one per card that made it
+ * A performance has one reading. A format may have many, one per card that made it
  * or added a night to it, and they are shown newest first: an Õppelava is built
  * a card at a time, and the card that explains a wrong date is rarely the one
- * the show was created with.
+ * the format was created with.
  */
 const props = defineProps<{
     /**
-     * The route the readings are fetched from — the show's or the performance's.
+     * The route the readings are fetched from — the format's or the performance's.
      * Null while the dialog has no subject yet, since it is mounted with the
      * page rather than with the row.
      */
@@ -101,7 +101,7 @@ watch([open, () => props.source], async ([isOpen, source]) => {
                 Selle kirje kohta pole põhjendusi.
             </p>
 
-            <!-- One block per card the record was read off. A show built card by
+            <!-- One block per card the record was read off. A format built card by
                  card gets one of these per card that added a night to it. -->
             <template v-else>
                 <section

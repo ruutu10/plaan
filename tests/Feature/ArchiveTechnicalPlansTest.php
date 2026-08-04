@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\TechnicalPlanStatus;
+use App\Models\Format;
 use App\Models\Performance;
-use App\Models\Show;
 use App\Models\TechnicalPlan;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Event;
@@ -39,7 +39,7 @@ class ArchiveTechnicalPlansTest extends TestCase
     private function planFor(TechnicalPlanStatus $status, int $startedHoursAgo): TechnicalPlan
     {
         $performance = Performance::factory()
-            ->for(Show::factory())
+            ->for(Format::factory())
             ->create(['date' => now()->subHours($startedHoursAgo)]);
 
         return TechnicalPlan::factory()
@@ -60,7 +60,7 @@ class ArchiveTechnicalPlansTest extends TestCase
 
     public function test_it_leaves_a_plan_alone_within_the_grace_period(): void
     {
-        // Last night's show is still the crew's business the morning after.
+        // Last night's performance is still the crew's business the morning after.
         $plan = $this->planFor(TechnicalPlanStatus::Submitted, startedHoursAgo: 2);
 
         $this->artisan('technical-plans:archive')->assertSuccessful();

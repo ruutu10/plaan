@@ -73,7 +73,7 @@ function openDelete(team: ManagedTeam): void {
             :columns="[
                 { label: 'Tiim' },
                 { label: 'Liikmeid' },
-                { label: 'Lavastusi' },
+                { label: 'Formaate' },
                 { label: 'Tegevused', align: 'right', srOnly: true },
             ]"
             :rows="teams"
@@ -95,7 +95,7 @@ function openDelete(team: ManagedTeam): void {
                     {{ team.memberCount ?? 0 }}
                 </td>
                 <td class="px-5 py-4 align-top whitespace-nowrap tabular-nums">
-                    {{ team.showCount ?? 0 }}
+                    {{ team.formatCount ?? 0 }}
                 </td>
                 <td class="px-5 py-4 text-right align-top">
                     <div class="inline-flex items-center justify-end gap-2">

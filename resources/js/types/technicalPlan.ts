@@ -41,8 +41,8 @@ export interface PlanMeta {
      */
     performanceId: number | null;
     performer: string;
-    showName: string;
-    showDate: string;
+    formatName: string;
+    performanceDate: string;
     duration: number | null;
     description: string;
 }
@@ -59,19 +59,19 @@ export interface PriorPlan {
 export interface UpcomingPerformance {
     id: number;
     performer: string;
-    showName: string;
+    formatName: string;
     /**
-     * The act's own name, when the evening is shared and the show's name alone
+     * The act's own name, when the evening is shared and the format's name alone
      * would leave several identical rows to choose between.
      */
     title: string | null;
     /** ISO date (YYYY-MM-DD), on the venue's clock. */
-    showDate: string;
+    performanceDate: string;
     /** Curtain-up as "19:00", on the venue's clock. */
     startTime: string;
     duration: number | null;
     description: string;
-    /** Plans handed in for other performances of the same show, by the user or their teams. */
+    /** Plans handed in for other performances of the same format, by the user or their teams. */
     priorPlans: PriorPlan[];
 }
 
@@ -133,10 +133,10 @@ export interface PlanDocumentFile {
 export interface PlanDocument {
     token: string | null;
     statusLabel: string;
-    showName: string;
+    formatName: string;
     performer: string;
     contact: string;
-    showDate: string;
+    performanceDate: string;
     durationLabel: string;
     description: string;
     micsSummary: string;
@@ -169,7 +169,7 @@ export interface LookupResult {
 /** One row of the technical crew's overview of every plan in the house. */
 export interface AdminPlanRow {
     token: string;
-    showName: string | null;
+    formatName: string | null;
     teamName: string | null;
     /** ISO date (YYYY-MM-DD) of the performance, if the plan names one. */
     performanceDate: string | null;

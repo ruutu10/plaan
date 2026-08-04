@@ -5,9 +5,9 @@ namespace Tests\Feature;
 use App\Enums\TeamRole;
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
+use App\Models\Format;
 use App\Models\PendingUpload;
 use App\Models\Performance;
-use App\Models\Show;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
@@ -57,8 +57,8 @@ class TechnicalPlanTest extends TestCase
             'meta' => [
                 'performanceId' => $this->defaultPerformance()->id,
                 'performer' => 'Märold',
-                'showName' => 'Festival 2026',
-                'showDate' => '2026-08-01',
+                'formatName' => 'Festival 2026',
+                'performanceDate' => '2026-08-01',
                 'duration' => 25,
                 'description' => 'Improetendus kolmes osas.',
             ],
@@ -139,7 +139,7 @@ class TechnicalPlanTest extends TestCase
 
     public function test_storing_refuses_a_plan_without_a_performance(): void
     {
-        // Everything naming a plan — the show, the group, the date, the running
+        // Everything naming a plan — the format, the group, the date, the running
         // time — is read off its performance, so a plan without one is a plan
         // nobody can place. A performer whose night is not on the books picks
         // the stand-in performance instead.
@@ -162,7 +162,7 @@ class TechnicalPlanTest extends TestCase
 
         $plan = TechnicalPlan::first();
         $this->assertSame($placeholder->id, $plan->performance_id);
-        $this->assertSame(Show::PLACEHOLDER_NAME, $plan->performance->show->name);
+        $this->assertSame(Format::PLACEHOLDER_NAME, $plan->performance->format->name);
     }
 
     public function test_storing_links_the_selected_performance(): void
@@ -298,7 +298,7 @@ class TechnicalPlanTest extends TestCase
 
     public function test_a_technician_may_write_to_any_plan(): void
     {
-        // The crew running the shows hold technical_plans.edit_all, which
+        // The crew running the formats hold technical_plans.edit_all, which
         // reaches past both the key and the team the plan's night is for.
         $plan = TechnicalPlan::factory()->for(User::factory())->for(Performance::factory())->create();
         $technician = $this->technician();
@@ -314,7 +314,7 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame('Tehniku parandus', $plan->refresh()->extra['notes']);
     }
 
-    public function test_a_plan_is_editable_by_the_team_staging_its_show(): void
+    public function test_a_plan_is_editable_by_the_team_staging_its_format(): void
     {
         $plan = TechnicalPlan::factory()
             ->for(User::factory())
@@ -326,13 +326,13 @@ class TechnicalPlanTest extends TestCase
 
     public function test_a_plan_is_editable_by_the_team_playing_the_slot(): void
     {
-        // An Õppelava slot: the evening is somebody else's show, the act on it
+        // An Õppelava slot: the evening is somebody else's format, the act on it
         // is the user's team's — and so is the plan for it.
         $team = Team::factory()->create();
         $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
 
         $performance = Performance::factory()
-            ->for(Show::factory())
+            ->for(Format::factory())
             ->create(['team_id' => $team->id, 'date' => now()->addWeek()->toDateString()]);
 
         $plan = TechnicalPlan::factory()->for(User::factory())->for($performance)->create();
@@ -370,8 +370,8 @@ class TechnicalPlanTest extends TestCase
             'token' => $plan->token,
             'meta' => [
                 'performanceId' => $plan->performance_id,
-                'performer' => $plan->performance->show->team->name,
-                'showName' => $plan->performance->show->name,
+                'performer' => $plan->performance->format->team->name,
+                'formatName' => $plan->performance->format->name,
             ],
         ]);
     }
@@ -395,8 +395,8 @@ class TechnicalPlanTest extends TestCase
                 // once that night is no longer on the books.
                 'performanceId' => $plan->performance_id,
                 'performer' => '',
-                'showName' => '',
-                'showDate' => '',
+                'formatName' => '',
+                'performanceDate' => '',
             ],
         ]);
     }
@@ -411,7 +411,7 @@ class TechnicalPlanTest extends TestCase
         $response->assertInertia(fn (Assert $page) => $page
             ->component('TechnicalPlan')
             ->where('initialPlan.token', $plan->token)
-            ->where('initialPlan.meta.performer', $plan->performance->show->team->name));
+            ->where('initialPlan.meta.performer', $plan->performance->format->team->name));
     }
 
     public function test_the_public_link_opens_the_wizard_on_the_review_step(): void
@@ -527,8 +527,8 @@ class TechnicalPlanTest extends TestCase
 
     public function test_the_performances_endpoint_returns_only_upcoming_performances(): void
     {
-        $upcoming = Performance::factory()->for(Show::factory()->state(['name' => 'Tulevane etendus']))->create();
-        Performance::factory()->past()->for(Show::factory()->state(['name' => 'Möödunud etendus']))->create();
+        $upcoming = Performance::factory()->for(Format::factory()->state(['name' => 'Tulevane etendus']))->create();
+        Performance::factory()->past()->for(Format::factory()->state(['name' => 'Möödunud etendus']))->create();
 
         $response = $this->getJson(route('technical-plan.performances'));
 
@@ -536,10 +536,10 @@ class TechnicalPlanTest extends TestCase
         $response->assertJsonCount(1, 'results');
         $response->assertJsonFragment([
             'id' => $upcoming->id,
-            'showName' => 'Tulevane etendus',
-            'performer' => $upcoming->show->team->name,
+            'formatName' => 'Tulevane etendus',
+            'performer' => $upcoming->format->team->name,
         ]);
-        $response->assertJsonMissing(['showName' => 'Möödunud etendus']);
+        $response->assertJsonMissing(['formatName' => 'Möödunud etendus']);
     }
 
     public function test_the_performances_endpoint_always_offers_the_stand_in_performance(): void
@@ -555,28 +555,28 @@ class TechnicalPlanTest extends TestCase
         $response->assertJsonCount(1, 'results');
         $response->assertJsonPath('results.0.id', $upcoming->id);
         $response->assertJsonPath('placeholder.id', Performance::placeholder()->id);
-        $response->assertJsonPath('placeholder.showName', Show::PLACEHOLDER_NAME);
+        $response->assertJsonPath('placeholder.formatName', Format::PLACEHOLDER_NAME);
     }
 
     public function test_the_performances_endpoint_leaves_out_the_ones_waiting_to_be_reviewed(): void
     {
-        $reviewed = Performance::factory()->for(Show::factory()->state(['name' => 'Üle vaadatud']))->create();
-        Performance::factory()->draft()->for(Show::factory()->state(['name' => 'Ülevaatamata']))->create();
+        $reviewed = Performance::factory()->for(Format::factory()->state(['name' => 'Üle vaadatud']))->create();
+        Performance::factory()->draft()->for(Format::factory()->state(['name' => 'Ülevaatamata']))->create();
 
         $response = $this->getJson(route('technical-plan.performances'));
 
         $response->assertOk();
         $response->assertJsonCount(1, 'results');
         $response->assertJsonPath('results.0.id', $reviewed->id);
-        $response->assertJsonMissing(['showName' => 'Ülevaatamata']);
+        $response->assertJsonMissing(['formatName' => 'Ülevaatamata']);
     }
 
     public function test_the_performances_endpoint_names_the_group_playing_each_act(): void
     {
-        // An evening several groups share is one show with a row per act, and
+        // An evening several groups share is one format with a row per act, and
         // each row has to say who is playing it — otherwise the picker offers
         // four identical lines.
-        $evening = Show::factory()->create(['name' => 'Õppelava']);
+        $evening = Format::factory()->create(['name' => 'Õppelava']);
         $marturu = Team::factory()->create(['name' => 'Märtu10']);
 
         $act = Performance::factory()->for($evening)->performedBy($marturu, 'Märtu10')->create();
@@ -587,12 +587,12 @@ class TechnicalPlanTest extends TestCase
         $response->assertOk();
         $response->assertJsonFragment([
             'id' => $act->id,
-            'showName' => 'Õppelava',
+            'formatName' => 'Õppelava',
             'title' => 'Märtu10',
             'performer' => 'Märtu10',
         ]);
 
-        // An act with no group of its own is still the show's own.
+        // An act with no group of its own is still the format's own.
         $response->assertJsonFragment([
             'id' => $house->id,
             'title' => null,
@@ -600,13 +600,13 @@ class TechnicalPlanTest extends TestCase
         ]);
     }
 
-    public function test_every_upcoming_performance_of_a_show_is_listed_separately(): void
+    public function test_every_upcoming_performance_of_a_format_is_listed_separately(): void
     {
-        // The picker lists performances, not shows: a show staged twice is two
-        // rows, told apart by their dates, each carrying the show's own details.
-        $show = Show::factory()->create(['name' => 'Kahel õhtul']);
-        Performance::factory()->for($show)->create(['date' => now()->addWeek()->toDateString(), 'duration' => 60]);
-        Performance::factory()->for($show)->create(['date' => now()->addWeeks(2)->toDateString(), 'duration' => 90]);
+        // The picker lists performances, not formats: a format staged twice is two
+        // rows, told apart by their dates, each carrying the format's own details.
+        $format = Format::factory()->create(['name' => 'Kahel õhtul']);
+        Performance::factory()->for($format)->create(['date' => now()->addWeek()->toDateString(), 'duration' => 60]);
+        Performance::factory()->for($format)->create(['date' => now()->addWeeks(2)->toDateString(), 'duration' => 90]);
 
         $response = $this->getJson(route('technical-plan.performances'));
 
@@ -614,33 +614,33 @@ class TechnicalPlanTest extends TestCase
         $response->assertJsonCount(2, 'results');
         $this->assertSame(
             ['Kahel õhtul', 'Kahel õhtul'],
-            array_column($response->json('results'), 'showName'),
+            array_column($response->json('results'), 'formatName'),
         );
         // Ordered by date, and each keeps its own duration.
         $this->assertSame(
             [now()->addWeek()->toDateString(), now()->addWeeks(2)->toDateString()],
-            array_column($response->json('results'), 'showDate'),
+            array_column($response->json('results'), 'performanceDate'),
         );
         $this->assertSame([60, 90], array_column($response->json('results'), 'duration'));
     }
 
-    public function test_performances_surface_the_users_prior_plans_for_the_same_show(): void
+    public function test_performances_surface_the_users_prior_plans_for_the_same_format(): void
     {
-        // One show, staged twice: the upcoming one, and a past one the user
+        // One format, staged twice: the upcoming one, and a past one the user
         // handed a plan in for.
-        $show = Show::factory()->create(['name' => 'Kevadetendus']);
-        $upcoming = Performance::factory()->for($show)->create(['date' => now()->addWeek()->toDateString()]);
-        $past = Performance::factory()->for($show)->past()->create();
+        $format = Format::factory()->create(['name' => 'Kevadetendus']);
+        $upcoming = Performance::factory()->for($format)->create(['date' => now()->addWeek()->toDateString()]);
+        $past = Performance::factory()->for($format)->past()->create();
 
         $ownPlan = TechnicalPlan::factory()->for($this->user)->for($past)->submitted()->create();
 
         // Noise that must NOT be offered as a copy source:
         TechnicalPlan::factory()->for($past)->submitted()->create(); // another team's plan
-        TechnicalPlan::factory()->for($this->user)->submitted()->create([ // different show
+        TechnicalPlan::factory()->for($this->user)->submitted()->create([ // different format
             'performance_id' => Performance::factory()->past()->create(),
         ]);
-        TechnicalPlan::factory()->for($this->user)->create([ // unsubmitted draft, same show
-            'performance_id' => Performance::factory()->for($show)->past()->create(),
+        TechnicalPlan::factory()->for($this->user)->create([ // unsubmitted draft, same format
+            'performance_id' => Performance::factory()->for($format)->past()->create(),
         ]);
         TechnicalPlan::factory()->for($this->user)->for($upcoming)->submitted()->create(); // their own, for this very performance
 
@@ -659,20 +659,20 @@ class TechnicalPlanTest extends TestCase
 
     public function test_a_prior_plans_label_names_the_performance_it_was_written_for(): void
     {
-        // A show staged on evenings shared with other acts: two past performances
-        // on the same show, told apart by the name the board gave each act.
-        $show = Show::factory()->create(['name' => 'Kevadetendus']);
-        Performance::factory()->for($show)->create(['date' => now()->addWeek()->toDateString()]);
+        // A format staged on evenings shared with other acts: two past performances
+        // on the same format, told apart by the name the board gave each act.
+        $format = Format::factory()->create(['name' => 'Kevadetendus']);
+        Performance::factory()->for($format)->create(['date' => now()->addWeek()->toDateString()]);
 
         $team = Team::factory()->create();
         $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
 
         $titled = Performance::factory()
-            ->for($show)
+            ->for($format)
             ->performedBy($team, 'Improgrupp Kolm')
             ->past()
             ->create();
-        $untitled = Performance::factory()->for($show)->past()->create();
+        $untitled = Performance::factory()->for($format)->past()->create();
 
         $titledPlan = TechnicalPlan::factory()->for($this->user)->for($titled)->submitted()->create();
         $untitledPlan = TechnicalPlan::factory()->for($this->user)->for($untitled)->submitted()->create();
@@ -691,14 +691,14 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame($untitled->date->format('d.m.Y'), $labels[$untitledPlan->token]);
     }
 
-    public function test_a_busy_show_does_not_starve_the_other_shows_of_prior_plans(): void
+    public function test_a_busy_format_does_not_starve_the_other_formats_of_prior_plans(): void
     {
-        // One show with a long history, and one with a single past plan. The
+        // One format with a long history, and one with a single past plan. The
         // prior plans used to be taken from one shared list of the most recent
-        // 25, so a show like the first could fill it and leave the second
+        // 25, so a format like the first could fill it and leave the second
         // offering nothing to start from.
-        $busy = Show::factory()->create(['name' => 'Igaõhtune']);
-        $quiet = Show::factory()->create(['name' => 'Harv']);
+        $busy = Format::factory()->create(['name' => 'Igaõhtune']);
+        $quiet = Format::factory()->create(['name' => 'Harv']);
 
         Performance::factory()->for($busy)->create(['date' => now()->addWeek()->toDateString()]);
         Performance::factory()->for($quiet)->create(['date' => now()->addWeeks(2)->toDateString()]);
@@ -721,28 +721,28 @@ class TechnicalPlanTest extends TestCase
 
         $response->assertOk();
 
-        $results = collect($response->json('results'))->keyBy('showName');
+        $results = collect($response->json('results'))->keyBy('formatName');
 
         $this->assertSame(
             [$quietPlan->token],
             array_column($results['Harv']['priorPlans'], 'token'),
         );
 
-        // The busy show is capped rather than listing its whole history.
+        // The busy format is capped rather than listing its whole history.
         $this->assertCount(5, $results['Igaõhtune']['priorPlans']);
     }
 
-    public function test_performances_do_not_surface_plans_of_a_different_show_of_the_same_name(): void
+    public function test_performances_do_not_surface_plans_of_a_different_format_of_the_same_name(): void
     {
-        // Two groups happen to call their show the same thing — they are still
-        // two separate shows, and neither may seed the other's plan.
+        // Two groups happen to call their format the same thing — they are still
+        // two separate formats, and neither may seed the other's plan.
         $upcoming = Performance::factory()
-            ->for(Show::factory()->state(['name' => 'Kevadetendus']))
+            ->for(Format::factory()->state(['name' => 'Kevadetendus']))
             ->create(['date' => now()->addWeek()->toDateString()]);
 
         $namesake = Performance::factory()
             ->past()
-            ->for(Show::factory()->state(['name' => 'Kevadetendus']))
+            ->for(Format::factory()->state(['name' => 'Kevadetendus']))
             ->create();
         TechnicalPlan::factory()->for($this->user)->for($namesake)->submitted()->create();
 
@@ -753,7 +753,7 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame([], $response->json('results.0.priorPlans'));
     }
 
-    public function test_performances_surface_the_plans_of_the_users_teams_for_the_same_show(): void
+    public function test_performances_surface_the_plans_of_the_users_teams_for_the_same_format(): void
     {
         $team = Team::factory()->create();
         $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
@@ -761,20 +761,20 @@ class TechnicalPlanTest extends TestCase
 
         // The team's upcoming performance, and its plan for an earlier one — handed
         // in by somebody else in the group, so the user can take it over.
-        $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Talveetendus']);
-        $upcoming = Performance::factory()->for($show)->create(['date' => now()->addWeek()->toDateString()]);
-        $past = Performance::factory()->for($show)->past()->create();
+        $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Talveetendus']);
+        $upcoming = Performance::factory()->for($format)->create(['date' => now()->addWeek()->toDateString()]);
+        $past = Performance::factory()->for($format)->past()->create();
 
         $teamPlan = TechnicalPlan::factory()->for($teamMate)->for($past)->submitted()->create();
 
         // A team-mate's unfinished draft stays theirs alone.
         TechnicalPlan::factory()->for($teamMate)->for($past)->create();
 
-        // Another group's plan for a show of the same name is not the team's.
+        // Another group's plan for a format of the same name is not the team's.
         TechnicalPlan::factory()->submitted()->create([
             'performance_id' => Performance::factory()
                 ->past()
-                ->for(Show::factory()->state(['name' => 'Talveetendus']))
+                ->for(Format::factory()->state(['name' => 'Talveetendus']))
                 ->create(),
         ]);
 
@@ -791,18 +791,18 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame($upcoming->id, $response->json('results.0.id'));
     }
 
-    public function test_performances_surface_the_archived_plans_of_a_show_already_played(): void
+    public function test_performances_surface_the_archived_plans_of_a_format_already_played(): void
     {
         // A plan is archived once its night has been played — which is exactly
-        // the plan the show's next run is written from, so archiving must not
+        // the plan the format's next run is written from, so archiving must not
         // take it out of the picker.
         $team = Team::factory()->create();
         $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
         $teamMate = User::factory()->create(['name' => 'Kadri Kolleeg']);
 
-        $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Sügisetendus']);
-        Performance::factory()->for($show)->create(['date' => now()->addWeek()->toDateString()]);
-        $past = Performance::factory()->for($show)->past()->create();
+        $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Sügisetendus']);
+        Performance::factory()->for($format)->create(['date' => now()->addWeek()->toDateString()]);
+        $past = Performance::factory()->for($format)->past()->create();
 
         $ownPlan = TechnicalPlan::factory()->for($this->user)->for($past)->archived()->create();
         $teamPlan = TechnicalPlan::factory()->for($teamMate)->for($past)->archived()->create();
@@ -823,7 +823,7 @@ class TechnicalPlanTest extends TestCase
         $teamMate = User::factory()->create();
 
         $upcoming = Performance::factory()
-            ->for(Show::factory()->state(['team_id' => $team->id]))
+            ->for(Format::factory()->state(['team_id' => $team->id]))
             ->create(['date' => now()->addWeek()->toDateString()]);
         $teamPlan = TechnicalPlan::factory()->for($teamMate)->for($upcoming)->submitted()->create();
 
@@ -838,7 +838,7 @@ class TechnicalPlanTest extends TestCase
 
     public function test_lookup_returns_the_authenticated_users_submitted_plans(): void
     {
-        $performance = Performance::factory()->for(Show::factory()->state(['name' => 'Esitatud plaan']))->create();
+        $performance = Performance::factory()->for(Format::factory()->state(['name' => 'Esitatud plaan']))->create();
         TechnicalPlan::factory()->for($this->user)->for($performance)->submitted()->create();
         TechnicalPlan::factory()->for($this->user)->create(); // draft — excluded
         TechnicalPlan::factory()->submitted()->create();       // another user — excluded
@@ -851,9 +851,9 @@ class TechnicalPlanTest extends TestCase
         $response->assertJsonCount(1, 'results');
         $response->assertJsonFragment(['token' => $plan->token]);
 
-        // Each row is labelled by its show and performance, with the submission date.
+        // Each row is labelled by its format and performance, with the submission date.
         $row = $response->json('results.0');
-        $this->assertSame('Esitatud plaan — '.$performance->show->team->name, $row['title']);
+        $this->assertSame('Esitatud plaan — '.$performance->format->team->name, $row['title']);
         $this->assertSame(
             $performance->date->format('d.m.Y').' · esitatud '.$plan->submitted_at->format('d.m.Y'),
             $row['sub'],
@@ -920,9 +920,9 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame($plan->token, $data['token']);
         $this->assertSame($plan->status->value, $data['status']);
 
-        // Meta is drawn from the performance, its show and the show's team.
-        $this->assertSame($plan->performance->show->team->name, $data['meta']['performer']);
-        $this->assertSame($plan->performance->show->name, $data['meta']['showName']);
+        // Meta is drawn from the performance, its format and the format's team.
+        $this->assertSame($plan->performance->format->team->name, $data['meta']['performer']);
+        $this->assertSame($plan->performance->format->name, $data['meta']['formatName']);
 
         // The full plan content is present…
         $this->assertArrayHasKey('sound', $data);
@@ -1260,7 +1260,7 @@ class TechnicalPlanTest extends TestCase
         $team = Team::factory()->create();
         $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
 
-        $performance = Performance::factory()->for(Show::factory()->state(['team_id' => $team->id]))->create();
+        $performance = Performance::factory()->for(Format::factory()->state(['team_id' => $team->id]))->create();
         $plan = TechnicalPlan::factory()->for($performance)->submitted()->create();
 
         $this->postJson(route('technical-plan.copy', $plan))->assertOk();
@@ -1271,7 +1271,7 @@ class TechnicalPlanTest extends TestCase
         $team = Team::factory()->create();
         $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
 
-        $performance = Performance::factory()->for(Show::factory()->state(['team_id' => $team->id]))->past()->create();
+        $performance = Performance::factory()->for(Format::factory()->state(['team_id' => $team->id]))->past()->create();
         $plan = TechnicalPlan::factory()->for($performance)->archived()->create();
 
         $this->postJson(route('technical-plan.copy', $plan))->assertOk();
@@ -1294,7 +1294,7 @@ class TechnicalPlanTest extends TestCase
         $this->postJson(route('technical-plan.copy', $plan))->assertOk();
 
         // The rest of that evening is still none of their business.
-        $othersSlot = Performance::factory()->for($slot->show)->create();
+        $othersSlot = Performance::factory()->for($slot->format)->create();
         $othersPlan = TechnicalPlan::factory()->for($othersSlot)->submitted()->create();
 
         $this->postJson(route('technical-plan.copy', $othersPlan))->assertForbidden();
@@ -1305,7 +1305,7 @@ class TechnicalPlanTest extends TestCase
         $team = Team::factory()->create();
         $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
 
-        $performance = Performance::factory()->for(Show::factory()->state(['team_id' => $team->id]))->create();
+        $performance = Performance::factory()->for(Format::factory()->state(['team_id' => $team->id]))->create();
         $draft = TechnicalPlan::factory()->for($performance)->create();
 
         $this->postJson(route('technical-plan.copy', $draft))->assertForbidden();
@@ -1572,7 +1572,7 @@ class TechnicalPlanTest extends TestCase
         // The mail names the performance the plan is attached to, not the meta
         // the wizard posted, so the duration it prints is this one.
         $performance = Performance::factory()
-            ->for(Show::factory()->state(['name' => 'Festival 2026']))
+            ->for(Format::factory()->state(['name' => 'Festival 2026']))
             ->create(['duration' => 25]);
 
         $this->postJson(route('technical-plan.store'), $this->validPayload([
@@ -1615,7 +1615,7 @@ class TechnicalPlanTest extends TestCase
     }
 
     /**
-     * An upcoming performance of a show put on by a team the signed-in user is a
+     * An upcoming performance of a format put on by a team the signed-in user is a
      * member of — the setting in which a plan is somebody else's but still the
      * user's to see.
      */
@@ -1625,7 +1625,7 @@ class TechnicalPlanTest extends TestCase
         $team->members()->attach($this->user, ['role' => TeamRole::Member->value]);
 
         return Performance::factory()
-            ->for(Show::factory()->state(['team_id' => $team->id]))
+            ->for(Format::factory()->state(['team_id' => $team->id]))
             ->create(['date' => now()->addWeek()->toDateString()]);
     }
 

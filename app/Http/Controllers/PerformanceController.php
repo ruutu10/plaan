@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Performances\SavePerformanceRequest;
 use App\Http\Resources\AdminPerformance as AdminPerformanceResource;
 use App\Http\Resources\Performance as PerformanceResource;
+use App\Models\Format;
 use App\Models\Performance;
-use App\Models\Show;
 use App\Models\Team;
 use App\Policies\PerformancePolicy;
 use Illuminate\Http\JsonResponse;
@@ -20,10 +20,10 @@ use Inertia\Response as InertiaResponse;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
- * Dated performances of a show: the JSON API the management screens read and
+ * Dated performances of a format: the JSON API the management screens read and
  * write them through, and the house-wide overview {@see overview()} renders.
- * Every writing route is nested under the show and its bindings are scoped to
- * it, so a performance is only ever changed through the show it belongs to.
+ * Every writing route is nested under the format and its bindings are scoped to
+ * it, so a performance is only ever changed through the format it belongs to.
  *
  * Who may write here is settled by {@see PerformancePolicy}; how far a reader
  * sees is settled by {@see Performance::scopeEditableBy()}, which hands the
@@ -36,7 +36,7 @@ class PerformanceController extends Controller
      * The overview of the performances the user may manage, newest first.
      *
      * What comes back is decided by permission rather than by the route: a
-     * technician is handed every performance in the house, whatever show it
+     * technician is handed every performance in the house, whatever format it
      * belongs to and whichever group plays it, and anybody else only the nights
      * of their own groups.
      */
@@ -45,7 +45,7 @@ class PerformanceController extends Controller
         // Newest first, like the plan overview: what is coming up — or has just
         // been played — is what the crew looks for, not the archive.
         $performances = Performance::query()
-            ->with(['show.team', 'team'])
+            ->with(['format.team', 'team'])
             ->withCount('technicalPlans')
             ->editableBy($request->user())
             ->orderByDesc('date')
@@ -57,19 +57,19 @@ class PerformanceController extends Controller
     }
 
     /**
-     * List the show's performances, soonest first, together with the groups a
+     * List the format's performances, soonest first, together with the groups a
      * performance may be handed to — the form offering the choice is on the
      * same page, so one round trip is enough for both.
      *
      * @return AnonymousResourceCollection<int, PerformanceResource>
      */
-    public function index(Request $request, Show $show): AnonymousResourceCollection
+    public function index(Request $request, Format $format): AnonymousResourceCollection
     {
-        Gate::authorize('viewAny', [Performance::class, $show]);
+        Gate::authorize('viewAny', [Performance::class, $format]);
 
-        $performances = $show->performances()
+        $performances = $format->performances()
             // The reading that registered each performance rides along, for the
-            // same reason the shows listing carries it: one query, not one a row.
+            // same reason the formats listing carries it: one query, not one a row.
             ->with(['team', 'reasoningLogs'])
             ->withCount('technicalPlans')
             ->orderBy('date')
@@ -83,15 +83,15 @@ class PerformanceController extends Controller
     }
 
     /**
-     * Add a performance to the show.
+     * Add a performance to the format.
      */
-    public function store(SavePerformanceRequest $request, Show $show): JsonResponse
+    public function store(SavePerformanceRequest $request, Format $format): JsonResponse
     {
-        $performance = $show->performances()->create($request->performanceAttributes());
+        $performance = $format->performances()->create($request->performanceAttributes());
 
-        Log::info('Performance added to a show', [
+        Log::info('Performance added to a format', [
             'performance_id' => $performance->id,
-            'show_id' => $show->id,
+            'format_id' => $format->id,
             'starts_at' => $performance->startsAt()->toDateTimeString(),
             'user_id' => $request->user()->id,
         ]);
@@ -102,9 +102,9 @@ class PerformanceController extends Controller
     }
 
     /**
-     * Update one of the show's performances.
+     * Update one of the format's performances.
      */
-    public function update(SavePerformanceRequest $request, Show $show, Performance $performance): PerformanceResource
+    public function update(SavePerformanceRequest $request, Format $format, Performance $performance): PerformanceResource
     {
         $performance->fill($request->performanceAttributes());
 
@@ -114,7 +114,7 @@ class PerformanceController extends Controller
 
         Log::info('Performance updated', [
             'performance_id' => $performance->id,
-            'show_id' => $show->id,
+            'format_id' => $format->id,
             'starts_at' => $performance->startsAt()->toDateTimeString(),
             'user_id' => $request->user()->id,
             'changed' => $changed,
@@ -124,11 +124,11 @@ class PerformanceController extends Controller
     }
 
     /**
-     * Delete one of the show's performances. The technical plans written for it are
+     * Delete one of the format's performances. The technical plans written for it are
      * not deleted with it — they are left without a performance, the column being
      * nulled, which is why the screen warns when there are any.
      */
-    public function destroy(Request $request, Show $show, Performance $performance): Response
+    public function destroy(Request $request, Format $format, Performance $performance): Response
     {
         Gate::authorize('delete', $performance);
 
@@ -140,7 +140,7 @@ class PerformanceController extends Controller
 
         Log::notice('Performance deleted', [
             'performance_id' => $performance->id,
-            'show_id' => $show->id,
+            'format_id' => $format->id,
             'starts_at' => $performance->startsAt()->toDateTimeString(),
             'user_id' => $request->user()->id,
             'orphaned_plans' => $orphanedPlans,

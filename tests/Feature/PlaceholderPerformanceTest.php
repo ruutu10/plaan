@@ -2,32 +2,32 @@
 
 namespace Tests\Feature;
 
+use App\Models\Format;
 use App\Models\Performance;
-use App\Models\Show;
+use Database\Seeders\FormatSeeder;
 use Database\Seeders\PerformanceSeeder;
-use Database\Seeders\ShowSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * The stand-in show and its one performance: where the plans go whose night is
+ * The stand-in format and its one performance: where the plans go whose night is
  * not on the books yet. Every plan names a performance, so this is what makes
- * "the show is not in the list" answerable without leaving a plan nameless.
+ * "the format is not in the list" answerable without leaving a plan nameless.
  */
 class PlaceholderPerformanceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_the_seeders_register_the_stand_in_show_and_its_performance(): void
+    public function test_the_seeders_register_the_stand_in_format_and_its_performance(): void
     {
-        $this->seed([ShowSeeder::class, PerformanceSeeder::class]);
+        $this->seed([FormatSeeder::class, PerformanceSeeder::class]);
 
-        $show = Show::where('name', Show::PLACEHOLDER_NAME)->firstOrFail();
+        $format = Format::where('name', Format::PLACEHOLDER_NAME)->firstOrFail();
 
-        $this->assertNull($show->team_id);
-        $this->assertTrue($show->isPlaceholder());
-        $this->assertSame(1, $show->performances()->count());
-        $this->assertTrue($show->performances()->first()->isPlaceholder());
+        $this->assertNull($format->team_id);
+        $this->assertTrue($format->isPlaceholder());
+        $this->assertSame(1, $format->performances()->count());
+        $this->assertTrue($format->performances()->first()->isPlaceholder());
     }
 
     public function test_the_stand_in_performance_is_dated_far_enough_ahead_to_stay_on_offer(): void
@@ -45,7 +45,7 @@ class PlaceholderPerformanceTest extends TestCase
         $second = Performance::placeholder();
 
         $this->assertTrue($first->is($second));
-        $this->assertSame(1, Show::where('name', Show::PLACEHOLDER_NAME)->count());
+        $this->assertSame(1, Format::where('name', Format::PLACEHOLDER_NAME)->count());
         $this->assertSame(1, Performance::count());
     }
 
@@ -54,13 +54,12 @@ class PlaceholderPerformanceTest extends TestCase
         // A second one under the same name would split the plans filed without
         // a night between two drawers.
         $original = Performance::placeholder();
-        $original->show->delete();
+        $original->format->delete();
 
         $restored = Performance::placeholder();
 
         $this->assertTrue($restored->is($original));
         $this->assertFalse($restored->trashed());
-        $this->assertSame(1, Show::withTrashed()->where('name', Show::PLACEHOLDER_NAME)->count());
+        $this->assertSame(1, Format::withTrashed()->where('name', Format::PLACEHOLDER_NAME)->count());
     }
-
 }

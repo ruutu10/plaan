@@ -62,13 +62,13 @@ class DashboardController extends Controller
      *     performances: int,
      *     missingPlans: int,
      *     planExpectedWithinDays: int,
-     *     next: array{showName: string, teamName: string|null, date: string, startTime: string}|null,
+     *     next: array{formatName: string, teamName: string|null, date: string, startTime: string}|null,
      * }
      */
     private function upcomingSummary(): array
     {
         $next = $this->upcomingPerformances()
-            ->with(['team', 'show.team'])
+            ->with(['team', 'format.team'])
             ->orderBy('date')
             ->first();
 
@@ -86,7 +86,7 @@ class DashboardController extends Controller
                 ->count(),
             'planExpectedWithinDays' => TechnicalPlan::EXPECTED_WITHIN_DAYS,
             'next' => $next ? [
-                'showName' => $next->show->name,
+                'formatName' => $next->format->name,
                 'teamName' => $next->performerName(),
                 'date' => $next->startDate(),
                 'startTime' => $next->startTime(),
@@ -118,7 +118,7 @@ class DashboardController extends Controller
     private function latestSubmittedPlans(): Collection
     {
         return TechnicalPlan::query()
-            ->with(['user', 'performance.team', 'performance.show.team'])
+            ->with(['user', 'performance.team', 'performance.format.team'])
             ->whereIn('status', TechnicalPlanStatus::delivered())
             ->whereNotNull('submitted_at')
             ->latest('submitted_at')
