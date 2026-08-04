@@ -43,6 +43,8 @@ export interface PlanMeta {
     performer: string;
     formatName: string;
     performanceDate: string;
+    /** Curtain-up as "19:00", on the venue's clock. */
+    startTime: string;
     duration: number | null;
     description: string;
 }
@@ -137,6 +139,7 @@ export interface PlanDocument {
     performer: string;
     contact: string;
     performanceDate: string;
+    startTime: string;
     durationLabel: string;
     description: string;
     micsSummary: string;

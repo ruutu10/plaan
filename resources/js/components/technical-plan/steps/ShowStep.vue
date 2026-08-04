@@ -74,6 +74,7 @@ function selectPerformance(performance: UpcomingPerformance): void {
     plan.meta.performer = performance.performer;
     plan.meta.formatName = performance.formatName;
     plan.meta.performanceDate = performance.performanceDate;
+    plan.meta.startTime = performance.startTime;
     plan.meta.duration = performance.duration;
     plan.meta.description = performance.description;
     freshStart();

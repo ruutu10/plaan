@@ -57,7 +57,7 @@ class AddTeamMemberRequest extends FormRequest
                 $user = $this->member();
 
                 if (! $user) {
-                    $validator->errors()->add('email', __('Selle e-postiga kasutajat pole. Kutsu ta tiimi kutsega.'));
+                    $validator->errors()->add('email', __('Selle e-postiga kasutajat pole. '));
 
                     return;
                 }

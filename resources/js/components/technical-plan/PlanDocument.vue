@@ -61,6 +61,10 @@ const linkClass =
                     {{ doc.performanceDate }}
                 </div>
                 <div>
+                    <span class="font-bold text-r10-navy">Algus: </span>
+                    <span class="font-mono text-xs">{{ doc.startTime }}</span>
+                </div>
+                <div>
                     <span class="font-bold text-r10-navy">Kestus: </span>
                     <span class="font-mono text-xs">{{
                         doc.durationLabel

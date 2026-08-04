@@ -66,8 +66,8 @@
             <td style="{{ $cell }}">{{ $doc['contact'] }}</td>
         </tr>
         <tr>
-            <td style="{{ $labelCell }}">Kuupäev</td>
-            <td style="{{ $cell }}">{{ $doc['performanceDate'] }}</td>
+            <td style="{{ $labelCell }}">Etenduse aeg</td>
+            <td style="{{ $cell }}">{{ $doc['performanceDate'] }} {{ $doc['startTime'] }}</td>
         </tr>
         <tr>
             <td style="{{ $labelCell }}">Kestus</td>

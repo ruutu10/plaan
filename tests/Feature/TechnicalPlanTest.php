@@ -923,6 +923,7 @@ class TechnicalPlanTest extends TestCase
         // Meta is drawn from the performance, its format and the format's team.
         $this->assertSame($plan->performance->format->team->name, $data['meta']['performer']);
         $this->assertSame($plan->performance->format->name, $data['meta']['formatName']);
+        $this->assertSame($plan->performance->startTime(), $data['meta']['startTime']);
 
         // The full plan content is present…
         $this->assertArrayHasKey('sound', $data);

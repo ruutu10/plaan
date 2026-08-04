@@ -34,6 +34,7 @@
                     "performer": "Teater Kuu",
                     "formatName": "Öölaul",
                     "performanceDate": "2026-08-14",
+                    "startTime": "19:00",
                     "duration": 90,
                     "description": "Kahevaatuseline  "
                 },
@@ -122,6 +123,7 @@
                 "performer": "Teater Kuu",
                 "contact": "esineja@example.com",
                 "performanceDate": "2026-08-14",
+                "startTime": "19:00",
                 "durationLabel": "90 min",
                 "description": "Kahevaatuseline",
                 "micsSummary": "Jah — Kaks peamikrofoni",
@@ -203,6 +205,7 @@
                     "performer": "",
                     "formatName": "",
                     "performanceDate": "",
+                    "startTime": "",
                     "duration": null,
                     "description": ""
                 },
@@ -228,6 +231,7 @@
                 "performer": "—",
                 "contact": "—",
                 "performanceDate": "—",
+                "startTime": "—",
                 "durationLabel": "—",
                 "description": "—",
                 "micsSummary": "Ei",
@@ -252,6 +256,7 @@
                     "performer": "Trupp",
                     "formatName": "Proov",
                     "performanceDate": "2026-09-01",
+                    "startTime": "20:30",
                     "duration": 0,
                     "description": ""
                 },
@@ -277,6 +282,7 @@
                 "performer": "Trupp",
                 "contact": "tehnik@example.com",
                 "performanceDate": "2026-09-01",
+                "startTime": "20:30",
                 "durationLabel": "—",
                 "description": "—",
                 "micsSummary": "Jah",

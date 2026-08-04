@@ -61,6 +61,7 @@ class TechnicalPlan extends JsonResource
                 'performer' => $plan->performance?->performerName() ?? '',
                 'formatName' => $plan->performance?->format->name ?? '',
                 'performanceDate' => $plan->performance?->startDate() ?? '',
+                'startTime' => $plan->performance?->startTime() ?? '',
                 'duration' => $plan->performance?->duration,
                 'description' => $plan->performance?->format->description ?? '',
             ],

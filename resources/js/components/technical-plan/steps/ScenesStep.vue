@@ -402,6 +402,10 @@ function onDrop(targetId: string): void {
                             label="Märkmed"
                             placeholder="Muu oluline…"
                         />
+                        <p
+                                class="gap-1 text-xs text-r10-grey-500"
+                            >
+                                Kas on selge, mis lõpetab selle stseeni ja alustab järgmist? Kui ei, siis täpsusta märkmete väljas.</p>
                     </div>
                 </div>
             </div>

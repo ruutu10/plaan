@@ -427,6 +427,7 @@ class TechnicalPlanController extends Controller
             'performer' => $performance->performerName() ?? '',
             'formatName' => $performance->format->name,
             'performanceDate' => $performance->startDate(),
+            'startTime' => $performance->startTime(),
             'duration' => $performance->duration,
             'description' => $performance->format->description ?? '',
         ];

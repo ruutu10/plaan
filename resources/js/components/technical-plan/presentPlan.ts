@@ -28,6 +28,7 @@ export function presentPlan(plan: Plan, contact: string | null): PlanDocument {
         performer: dash(plan.meta.performer),
         contact: dash(contact),
         performanceDate: dash(plan.meta.performanceDate),
+        startTime: dash(plan.meta.startTime),
         durationLabel: duration(plan.meta.duration),
         description: dash(plan.meta.description),
 
