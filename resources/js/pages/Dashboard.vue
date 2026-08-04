@@ -94,7 +94,7 @@ defineOptions({
                 <div class="mt-3 text-sm text-r10-grey-500">
                     <template v-if="upcoming.next">
                         <span class="block font-bold text-r10-ink">
-                            {{ upcoming.next.showName }}
+                            {{ upcoming.next.formatName }}
                         </span>
                         <span class="block">
                             Algus {{ upcoming.next.startTime }}
@@ -175,7 +175,7 @@ defineOptions({
                             <span
                                 class="block font-r10-display text-base font-semibold text-r10-ink"
                             >
-                                {{ plan.showName ?? 'Nimeta plaan' }}
+                                {{ plan.formatName ?? 'Nimeta plaan' }}
                             </span>
                             <span class="text-sm text-r10-grey-500">
                                 {{ plan.teamName ?? '—' }}

@@ -23,7 +23,7 @@ defineOptions({
                 href: index(),
             },
             {
-                title: props.plan.showName ?? 'Nimeta plaan',
+                title: props.plan.formatName ?? 'Nimeta plaan',
                 href: show(props.plan.token),
             },
         ],
@@ -57,12 +57,12 @@ function confirmStatus(): void {
 </script>
 
 <template>
-    <Head :title="plan.showName ?? 'Nimeta plaan'" />
+    <Head :title="plan.formatName ?? 'Nimeta plaan'" />
 
     <R10Page>
         <StepHeader
             eyebrow="Tehnika"
-            :title="plan.showName ?? 'Nimeta plaan'"
+            :title="plan.formatName ?? 'Nimeta plaan'"
             lead="Tehnilise plaani detailid."
         />
 

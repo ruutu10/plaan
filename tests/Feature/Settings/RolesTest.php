@@ -43,7 +43,7 @@ class RolesTest extends TestCase
                 ->where('roles', [__('roles.technician', locale: 'et')])
                 ->where('permissions', [
                     __('permissions.technical_plans.view_all', locale: 'et'),
-                    __('permissions.shows.edit_all', locale: 'et'),
+                    __('permissions.formats.edit_all', locale: 'et'),
                     __('permissions.performances.edit_all', locale: 'et'),
                     __('permissions.teams.edit_all', locale: 'et'),
                     __('permissions.claude.view_log', locale: 'et'),

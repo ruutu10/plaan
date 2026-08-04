@@ -8,7 +8,7 @@ import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { formatEstonianDate } from '@/lib/date';
 import { index } from '@/routes/admin/performances';
-import { edit } from '@/routes/shows';
+import { edit } from '@/routes/formats';
 import type { AdminPerformanceRow } from '@/types';
 
 defineProps<{ performances: AdminPerformanceRow[] }>();
@@ -32,13 +32,13 @@ defineOptions({
         <StepHeader
             eyebrow="Haldus"
             title="Etendused"
-            lead="Kõik maja etendused, olenemata lavastusest ja tiimist. Muutmiseks ava lavastus."
+            lead="Kõik maja etendused, olenemata formaadist ja tiimist. Muutmiseks ava formaat."
         />
 
         <R10Table
             :columns="[
                 { label: 'Algus' },
-                { label: 'Lavastus' },
+                { label: 'Formaat' },
                 { label: 'Etteaste' },
                 { label: 'Kestus' },
                 { label: 'Olek' },
@@ -63,7 +63,7 @@ defineOptions({
                     <span
                         class="font-r10-display text-base font-semibold text-r10-ink"
                     >
-                        {{ performance.showName }}
+                        {{ performance.formatName }}
                     </span>
                 </td>
                 <td class="px-5 py-4 align-top">
@@ -110,12 +110,12 @@ defineOptions({
                     {{ performance.technicalPlanCount ?? 0 }}
                 </td>
                 <td class="px-5 py-4 text-right align-top">
-                    <!-- A performance is corrected on the show it hangs off,
+                    <!-- A performance is corrected on the format it hangs off,
                          which is the one page that knows the whole bill. -->
                     <R10Button
                         variant="outline"
                         size="sm"
-                        :href="edit(performance.showId).url"
+                        :href="edit(performance.formatId).url"
                         data-test="admin-performance-edit-link"
                         class="px-4 py-2"
                     >

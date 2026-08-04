@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Notification;
 
 /**
  * Mail a submitted plan out: the performer keeps a copy of what they sent, and
- * the technical team gets the plan they will run the show from. Resubmitting
+ * the technical team gets the plan they will run the format from. Resubmitting
  * notifies again — the plan the team holds has to be the current one.
  */
 class NotifyPlanSubmitted
@@ -29,7 +29,7 @@ class NotifyPlanSubmitted
         }
 
         // A submitted plan the technical team never received is the failure
-        // that costs a show, so who was mailed is recorded either way.
+        // that costs a format, so who was mailed is recorded either way.
         Log::info('Mailed out a submitted plan', [
             'plan_id' => $plan->id,
             'notified_owner' => $plan->user !== null,

@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
  * Only the plans the technical team holds are archived — a performer's own
  * draft stays a draft, however old, since nobody ever handed it in. An
  * archived plan is not a hidden one: it still shows in the crew's overview,
- * and it is still offered as the basis for the next plan for the same show.
+ * and it is still offered as the basis for the next plan for the same format.
  */
 #[Signature('technical-plans:archive
     {--hours=24 : Archive plans whose performance started more than this many hours ago}
@@ -41,14 +41,14 @@ class ArchiveTechnicalPlans extends Command
             // passed, and `whereHas` leaves it out by itself. So does a plan
             // filed under the stand-in performance, which is dated years out.
             ->whereHas('performance', fn (Builder $performance) => $performance->where('date', '<', $cutoff))
-            ->with('performance.show')
+            ->with('performance.format')
             ->lazyById()
             ->each(function (TechnicalPlan $plan) use ($dryRun, &$archived): void {
                 $this->line(sprintf(
                     '  %s %s (%s, %s)',
                     $dryRun ? 'Would archive' : 'Archiving',
                     $plan->token,
-                    $plan->performance->show->name,
+                    $plan->performance->format->name,
                     $plan->performance->startsAt()->format('d.m.Y H:i'),
                 ));
 
@@ -75,7 +75,7 @@ class ArchiveTechnicalPlans extends Command
         ));
 
         // The line the daily run is read by. Nothing to archive is the normal
-        // case between shows; a season where the tally never moves is the thing
+        // case between formats; a season where the tally never moves is the thing
         // worth spotting.
         Log::info('Technical-plan archiving run finished', [
             'dry_run' => $dryRun,

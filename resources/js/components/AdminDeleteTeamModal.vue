@@ -13,7 +13,7 @@ const open = defineModel<boolean>('open', { required: true });
 const action = computed(() => (props.team ? destroy(props.team.id) : null));
 
 const memberCount = computed(() => props.team?.memberCount ?? 0);
-const showCount = computed(() => props.team?.showCount ?? 0);
+const formatCount = computed(() => props.team?.formatCount ?? 0);
 </script>
 
 <template>
@@ -30,10 +30,10 @@ const showCount = computed(() => props.team?.showCount ?? 0);
             jääb andmebaasi alles.
         </template>
 
-        <template v-if="memberCount > 0 || showCount > 0" #warning>
+        <template v-if="memberCount > 0 || formatCount > 0" #warning>
             Tiimi {{ memberCount }} liiget kaotavad ligipääsu ja viiakse üle
-            mõnda teise oma tiimi, kui neil see on. Tiimi {{ showCount }}
-            lavastust jäävad alles, kuid ilma tiimita neid enam ei halda.
+            mõnda teise oma tiimi, kui neil see on. Tiimi {{ formatCount }}
+            formaati jäävad alles, kuid ilma tiimita neid enam ei halda.
         </template>
     </R10ConfirmDelete>
 </template>

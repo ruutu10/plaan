@@ -9,7 +9,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * One row of the crew's overview of every performance in the house: what is
  * played, by whom, when, and how much of it has been planned. A listing row and
- * nothing more — a performance is still corrected on the show it belongs to,
+ * nothing more — a performance is still corrected on the format it belongs to,
  * which is where the row's link leads.
  *
  * @property-read PerformanceModel $resource
@@ -24,8 +24,8 @@ class AdminPerformance extends JsonResource
      *
      * @return array{
      *     id: int,
-     *     showId: int,
-     *     showName: string,
+     *     formatId: int,
+     *     formatName: string,
      *     title: string|null,
      *     teamName: string|null,
      *     date: string,
@@ -41,15 +41,15 @@ class AdminPerformance extends JsonResource
 
         return [
             'id' => $performance->id,
-            // The show is what the row is opened through: the performance is
+            // The format is what the row is opened through: the performance is
             // edited there, not here.
-            'showId' => $performance->show_id,
-            'showName' => $performance->show->name,
+            'formatId' => $performance->format_id,
+            'formatName' => $performance->format->name,
             // The act's own name, for an evening several groups share; empty
-            // when the show's name already says what is played.
+            // when the format's name already says what is played.
             'title' => $performance->title,
-            // Who plays it — its own group, or the show's. Never read off the
-            // show directly; see Performance::performerName().
+            // Who plays it — its own group, or the format's. Never read off the
+            // format directly; see Performance::performerName().
             'teamName' => $performance->performerName(),
             'date' => $performance->startDate(),
             'startTime' => $performance->startTime(),

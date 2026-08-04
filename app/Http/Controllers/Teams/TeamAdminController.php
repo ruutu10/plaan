@@ -38,7 +38,7 @@ class TeamAdminController extends Controller
         Gate::authorize('viewAny', Team::class);
 
         $teams = Team::query()
-            ->withCount(['members', 'shows'])
+            ->withCount(['members', 'formats'])
             ->editableBy($request->user())
             ->orderByRaw('LOWER(teams.name)')
             ->get();
@@ -61,7 +61,7 @@ class TeamAdminController extends Controller
     {
         Gate::authorize('view', $team);
 
-        $team->loadCount('shows');
+        $team->loadCount('formats');
         $team->load(['members' => fn ($query) => $query->orderByRaw('LOWER(users.name)')]);
 
         return TeamResource::make($team)->additional([
@@ -85,7 +85,7 @@ class TeamAdminController extends Controller
     {
         $team = $createTeam->handle($request->user(), $request->validated('name'), switch: false);
 
-        return TeamResource::make($team->loadCount(['members', 'shows']))
+        return TeamResource::make($team->loadCount(['members', 'formats']))
             ->response()
             ->setStatusCode(SymfonyResponse::HTTP_CREATED);
     }
@@ -107,7 +107,7 @@ class TeamAdminController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        return TeamResource::make($team->loadCount(['members', 'shows']));
+        return TeamResource::make($team->loadCount(['members', 'formats']));
     }
 
     /**

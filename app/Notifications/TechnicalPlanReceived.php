@@ -51,7 +51,7 @@ class TechnicalPlanReceived extends Notification implements ShouldQueue
         $mail = (new MailMessage)
             ->subject('Tehnikaplaan kätte saadud · '.$this->planLabel())
             ->view('emails.technical-plan-received', [
-                'showName' => $this->showName($performance),
+                'formatName' => $this->formatName($performance),
                 'performer' => $performance?->performerName(),
                 'startsAt' => $performance?->startsAt(),
                 'statusLabel' => $this->plan->status->label(),
@@ -70,7 +70,7 @@ class TechnicalPlanReceived extends Notification implements ShouldQueue
     }
 
     /**
-     * How the plan is named in the subject line: the show it belongs to, or —
+     * How the plan is named in the subject line: the format it belongs to, or —
      * for a plan filled in ahead of any registered performance — its key.
      */
     private function planLabel(): string
@@ -78,7 +78,7 @@ class TechnicalPlanReceived extends Notification implements ShouldQueue
         $performance = $this->plan->performance;
 
         $parts = array_values(array_filter([
-            $performance?->show->name,
+            $performance?->format->name,
             $performance?->startsAt()->format('d.m.Y'),
         ]));
 
@@ -86,17 +86,17 @@ class TechnicalPlanReceived extends Notification implements ShouldQueue
     }
 
     /**
-     * The show's name, with the performance's own title appended when it has
+     * The format's name, with the performance's own title appended when it has
      * one — e.g. a guest act's name on a night shared with others.
      */
-    private function showName(?Performance $performance): string
+    private function formatName(?Performance $performance): string
     {
         if ($performance === null) {
             return $this->plan->token;
         }
 
         return $performance->title === null
-            ? $performance->show->name
-            : $performance->show->name.' — '.$performance->title;
+            ? $performance->format->name
+            : $performance->format->name.' — '.$performance->title;
     }
 }

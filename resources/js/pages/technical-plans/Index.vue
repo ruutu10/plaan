@@ -67,7 +67,7 @@ defineOptions({
                     <span
                         class="font-r10-display text-base font-semibold text-r10-ink"
                     >
-                        {{ plan.showName ?? 'Nimeta plaan' }}
+                        {{ plan.formatName ?? 'Nimeta plaan' }}
                     </span>
                 </td>
                 <td class="px-5 py-4 align-top text-r10-grey-500">

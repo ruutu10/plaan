@@ -40,7 +40,7 @@ class StoreTechnicalPlanRequest extends FormRequest
             'submit' => ['boolean'],
 
             // The night is the only thing the wizard's first block contributes:
-            // the show, the group, the date and the running time are read off
+            // the format, the group, the date and the running time are read off
             // the performance rather than taken from the client, so whatever
             // else `meta` arrives with is ignored. A performer whose evening is
             // not on the books picks the stand-in performance — see

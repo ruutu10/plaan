@@ -42,7 +42,7 @@ enum TechnicalPlanStatus: string
     /**
      * The statuses of a plan somebody other than its author may open and fill
      * a new plan in from: what the crew holds, plus what has since been
-     * archived — a plan for a show that has been played is exactly the one
+     * archived — a plan for a format that has been played is exactly the one
      * worth copying for its next run.
      *
      * @return array<int, self>

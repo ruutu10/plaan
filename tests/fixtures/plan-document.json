@@ -32,8 +32,8 @@
                 "meta": {
                     "performanceId": 7,
                     "performer": "Teater Kuu",
-                    "showName": "Öölaul",
-                    "showDate": "2026-08-14",
+                    "formatName": "Öölaul",
+                    "performanceDate": "2026-08-14",
                     "duration": 90,
                     "description": "Kahevaatuseline  "
                 },
@@ -118,10 +118,10 @@
             "expected": {
                 "token": "R10-2026-abc123def456",
                 "statusLabel": "Esitatud",
-                "showName": "Öölaul",
+                "formatName": "Öölaul",
                 "performer": "Teater Kuu",
                 "contact": "esineja@example.com",
-                "showDate": "2026-08-14",
+                "performanceDate": "2026-08-14",
                 "durationLabel": "90 min",
                 "description": "Kahevaatuseline",
                 "micsSummary": "Jah — Kaks peamikrofoni",
@@ -201,8 +201,8 @@
                 "meta": {
                     "performanceId": null,
                     "performer": "",
-                    "showName": "",
-                    "showDate": "",
+                    "formatName": "",
+                    "performanceDate": "",
                     "duration": null,
                     "description": ""
                 },
@@ -224,10 +224,10 @@
             "expected": {
                 "token": null,
                 "statusLabel": "Mustand",
-                "showName": "—",
+                "formatName": "—",
                 "performer": "—",
                 "contact": "—",
-                "showDate": "—",
+                "performanceDate": "—",
                 "durationLabel": "—",
                 "description": "—",
                 "micsSummary": "Ei",
@@ -250,8 +250,8 @@
                 "meta": {
                     "performanceId": null,
                     "performer": "Trupp",
-                    "showName": "Proov",
-                    "showDate": "2026-09-01",
+                    "formatName": "Proov",
+                    "performanceDate": "2026-09-01",
                     "duration": 0,
                     "description": ""
                 },
@@ -273,10 +273,10 @@
             "expected": {
                 "token": "R10-2026-000000000000",
                 "statusLabel": "Tehniku kinnitatud",
-                "showName": "Proov",
+                "formatName": "Proov",
                 "performer": "Trupp",
                 "contact": "tehnik@example.com",
-                "showDate": "2026-09-01",
+                "performanceDate": "2026-09-01",
                 "durationLabel": "—",
                 "description": "—",
                 "micsSummary": "Jah",

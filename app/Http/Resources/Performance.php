@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * One dated performance of a show, as the management screens list and edit it.
+ * One dated performance of a format, as the management screens list and edit it.
  *
  * @property-read PerformanceModel $resource
  */
@@ -45,7 +45,7 @@ class Performance extends JsonResource
 
         return [
             'id' => $performance->id,
-            // Both empty for the ordinary performance, whose show already says
+            // Both empty for the ordinary performance, whose format already says
             // what is played and by whom; filled for an act on an evening
             // several groups share.
             'title' => $performance->title,

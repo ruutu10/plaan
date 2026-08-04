@@ -30,7 +30,7 @@ import { dashboard, manual } from '@/routes';
 import { index as adminPerformances } from '@/routes/admin/performances';
 import { index as adminTeams } from '@/routes/admin/teams';
 import { index as adminUsers } from '@/routes/admin/users';
-import { index as shows } from '@/routes/shows';
+import { index as formats } from '@/routes/formats';
 import { index as technicalPlan } from '@/routes/technical-plan';
 import { index as technicalPlans } from '@/routes/technical-plans';
 import type { NavItem } from '@/types';
@@ -52,11 +52,11 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: technicalPlan().url,
         icon: ListPlus,
     },
-    // Everyone manages their own groups' shows; the list is empty rather than
+    // Everyone manages their own groups' formats; the list is empty rather than
     // shut for a user whose groups have staged nothing yet.
     {
-        title: 'Lavastused',
-        href: shows().url,
+        title: 'Formaadid',
+        href: formats().url,
         icon: Theater,
     },
     // The plan overview is everybody's door: the technical crew find the whole
@@ -68,7 +68,7 @@ const mainNavItems = computed<NavItem[]>(() => [
         icon: ClipboardList,
     },
     // The house-wide performance overview, next to the plans it feeds. A user
-    // without the permission reaches their own groups' dates through Lavastused
+    // without the permission reaches their own groups' dates through Formaadid
     // and is not shown a door the server would shut.
     ...(page.props.auth?.can?.manageAllPerformances
         ? [

@@ -42,7 +42,7 @@ const linkClass =
                 <div
                     class="font-r10-display text-[22px] leading-[1.05] font-bold tracking-[0.02em] break-words text-r10-navy uppercase sm:text-[26px]"
                 >
-                    {{ doc.showName }}
+                    {{ doc.formatName }}
                 </div>
             </div>
             <div
@@ -58,7 +58,7 @@ const linkClass =
                 </div>
                 <div>
                     <span class="font-bold text-r10-navy">Etendus:</span>
-                    {{ doc.showDate }}
+                    {{ doc.performanceDate }}
                 </div>
                 <div>
                     <span class="font-bold text-r10-navy">Kestus: </span>

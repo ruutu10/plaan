@@ -5,32 +5,32 @@
  */
 export type CreatedBy = 'manual' | 'planka-import';
 
-/** One show as the management screens list and edit it. */
-export interface Show {
+/** One format as the management screens list and edit it. */
+export interface Format {
     id: number;
     name: string;
     description: string | null;
-    /** The group whose show this is. Null only for shows nobody claimed yet. */
+    /** The group whose format this is. Null only for formats nobody claimed yet. */
     teamId: number | null;
     teamName: string | null;
-    /** How many dated performances hang off the show; only the listing counts them. */
+    /** How many dated performances hang off the format; only the listing counts them. */
     performanceCount: number | null;
     /**
-     * Whether the user may correct the show itself. False for a show they only
+     * Whether the user may correct the format itself. False for a format they only
      * reach because one of their groups plays a performance of it.
      */
     canEdit: boolean;
     /**
-     * How many readings of Planka cards stand behind this show — one per card
-     * that made it or added a night to it. Zero for a show entered by hand, and
+     * How many readings of Planka cards stand behind this format — one per card
+     * that made it or added a night to it. Zero for a format entered by hand, and
      * for a user who may not read them.
      */
     reasoningLogCount: number;
-    /** Whether the show was entered by hand or read off a Planka card. */
+    /** Whether the format was entered by hand or read off a Planka card. */
     createdBy: CreatedBy;
     /**
-     * When the show was put on the books; ISO 8601, already on the venue's
-     * clock. Null only for a show the server has not saved yet.
+     * When the format was put on the books; ISO 8601, already on the venue's
+     * clock. Null only for a format the server has not saved yet.
      */
     createdAt: string | null;
 }
@@ -49,32 +49,32 @@ export interface ClaudeReasoningLog {
     readAt: string | null;
 }
 
-/** A group the show may be handed to, as offered by the show forms. */
-export interface ShowTeamOption {
+/** A group the format may be handed to, as offered by the format forms. */
+export interface FormatTeamOption {
     id: number;
     name: string;
 }
 
-/** The fields a show is written through, and what the server refused about them. */
-export interface ShowFormData {
+/** The fields a format is written through, and what the server refused about them. */
+export interface FormatFormData {
     team_id: number | null;
     name: string;
     description: string;
 }
 
-export type ShowFieldErrors = Partial<Record<keyof ShowFormData, string>>;
+export type FormatFieldErrors = Partial<Record<keyof FormatFormData, string>>;
 
-/** One dated performance of a show. */
+/** One dated performance of a format. */
 export interface Performance {
     id: number;
     /**
      * The act's own name, for an evening several groups share. Null when the
-     * show's own name already says what is played.
+     * format's own name already says what is played.
      */
     title: string | null;
     /**
-     * The group playing this performance, when it is not the show's own. Null
-     * for the ordinary performance, which the show's group plays.
+     * The group playing this performance, when it is not the format's own. Null
+     * for the ordinary performance, which the format's group plays.
      */
     teamId: number | null;
     teamName: string | null;
@@ -116,16 +116,16 @@ export interface Performance {
 /**
  * One row of the crew's overview of every performance in the house. Narrower
  * than {@link Performance}: the overview only reads, and a performance is
- * corrected on the show it belongs to.
+ * corrected on the format it belongs to.
  */
 export interface AdminPerformanceRow {
     id: number;
-    /** The show the row opens — where the performance is edited. */
-    showId: number;
-    showName: string;
+    /** The format the row opens — where the performance is edited. */
+    formatId: number;
+    formatName: string;
     /** The act's own name, for an evening several groups share. */
     title: string | null;
-    /** Who plays it: the performance's own group, or the show's. */
+    /** Who plays it: the performance's own group, or the format's. */
     teamName: string | null;
     /** ISO date (YYYY-MM-DD), on the venue's clock. */
     date: string;
@@ -140,9 +140,9 @@ export interface AdminPerformanceRow {
 
 /** The fields a performance is written through. */
 export interface PerformanceFormData {
-    /** The act's own name; empty leaves the performance under the show's. */
+    /** The act's own name; empty leaves the performance under the format's. */
     title: string;
-    /** The performing group; null leaves the performance to the show's own. */
+    /** The performing group; null leaves the performance to the format's own. */
     team_id: number | null;
     date: string;
     /** "19:00" on the venue's clock; empty falls back to the house's usual hour. */

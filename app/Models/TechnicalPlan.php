@@ -194,7 +194,7 @@ class TechnicalPlan extends Model implements HasMedia
      * Limit the query to the plans the given user may open as the basis for a
      * new plan: their own plans, whatever state those are in, plus the plans
      * their teams' performances have already been handed in with — archived
-     * ones included, since a played show's plan is the one worth copying for
+     * ones included, since a played format's plan is the one worth copying for
      * its next run. A team-mate's unfinished draft stays theirs alone.
      *
      * @param  Builder<TechnicalPlan>  $query
@@ -208,12 +208,12 @@ class TechnicalPlan extends Model implements HasMedia
             ->where('user_id', $user->id)
             ->orWhere(fn (Builder $query) => $query
                 ->whereIn('status', TechnicalPlanStatus::reusable())
-                // A performance is the team's through the show it stages, or by
+                // A performance is the team's through the format it stages, or by
                 // being the team's own act on an evening somebody else stages —
                 // an Õppelava slot's plan belongs to whoever plays the slot.
                 ->whereHas('performance', fn (Builder $performance) => $performance
                     ->whereIn('performances.team_id', $teamIds)
-                    ->orWhereHas('show', fn (Builder $show) => $show->whereIn('team_id', $teamIds)))));
+                    ->orWhereHas('format', fn (Builder $format) => $format->whereIn('team_id', $teamIds)))));
     }
 
     /**
@@ -229,7 +229,7 @@ class TechnicalPlan extends Model implements HasMedia
 
     /**
      * Limit the query to the plans this user may write to on the strength of
-     * who they are: their own, and those of a performance — or its show —
+     * who they are: their own, and those of a performance — or its format —
      * staged by one of their teams.
      *
      * Unlike {@see visibleTo()}, a team-mate's unfinished draft counts. That
@@ -247,12 +247,12 @@ class TechnicalPlan extends Model implements HasMedia
 
         $query->where(fn (Builder $query) => $query
             ->where('user_id', $user->id)
-            // A performance is the team's through the show it stages, or by
+            // A performance is the team's through the format it stages, or by
             // being the team's own act on an evening somebody else stages —
             // an Õppelava slot's plan belongs to whoever plays the slot.
             ->orWhereHas('performance', fn (Builder $performance) => $performance
                 ->whereIn('performances.team_id', $teamIds)
-                ->orWhereHas('show', fn (Builder $show) => $show->whereIn('team_id', $teamIds))));
+                ->orWhereHas('format', fn (Builder $format) => $format->whereIn('team_id', $teamIds))));
     }
 
     /**
@@ -270,7 +270,7 @@ class TechnicalPlan extends Model implements HasMedia
             return true;
         }
 
-        // The crew running the shows fix the plans they are handed, whoever
+        // The crew running the formats fix the plans they are handed, whoever
         // wrote them and whichever group's night they are for.
         if ($user->can(self::EDIT_ALL_PERMISSION)) {
             return true;
@@ -285,12 +285,12 @@ class TechnicalPlan extends Model implements HasMedia
     /**
      * Limit the query to the plans the given user may read in the overview of
      * plans that have been sent in. Holders of {@see VIEW_ALL_PERMISSION} — the
-     * crew running the shows — are not limited at all; everybody else is shown
+     * crew running the formats — are not limited at all; everybody else is shown
      * their own plans and their groups', whatever state those are in.
      *
      * Reading a plan in the listing reaches exactly as far as writing to it, so
      * this leans on {@see editableBy()} for what makes a plan a group's: the
-     * performance is theirs, or the show staging it is. A team-mate's unfinished
+     * performance is theirs, or the format staging it is. A team-mate's unfinished
      * draft counts here for the same reason it counts there — it is a plan the
      * group still owes, and the overview is where they would go looking for it.
      *

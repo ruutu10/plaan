@@ -60,7 +60,7 @@ class RemindAboutTechnicalPlan
         $performers = $this->performers($performance);
 
         if ($performers->isEmpty()) {
-            // The show has an owning group, but the group has nobody in it, so
+            // The format has an owning group, but the group has nobody in it, so
             // there is no one to write to. The claim is given back: this is a
             // gap in the records rather than a decision, and the reminder
             // should still go out if somebody joins the group in time.
@@ -68,7 +68,7 @@ class RemindAboutTechnicalPlan
 
             Log::warning('A performance needs its technical plan chased, but its group has no members', [
                 'performance_id' => $performance->id,
-                'show_id' => $performance->show_id,
+                'format_id' => $performance->format_id,
                 'team_id' => $performance->performingTeamId(),
                 'schedule' => $schedule->value,
             ]);
@@ -97,7 +97,7 @@ class RemindAboutTechnicalPlan
         // this whole job exists to prevent, so every send is on the record.
         Log::info('Chased the performers for a missing technical plan', [
             'performance_id' => $performance->id,
-            'show_id' => $performance->show_id,
+            'format_id' => $performance->format_id,
             'schedule' => $schedule->value,
             'starts_at' => $performance->startsAt()->toDateTimeString(),
             'recipients' => $performers->count(),
@@ -170,7 +170,7 @@ class RemindAboutTechnicalPlan
 
     /**
      * Who hears about it: every member of the group playing this performance —
-     * its own when the evening is shared, the show's otherwise. A performance
+     * its own when the evening is shared, the format's otherwise. A performance
      * neither has a group for has nobody to chase; the caller filters those
      * out, and this returns nothing for them either way.
      *

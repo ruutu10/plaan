@@ -6,8 +6,8 @@ use App\Data\ImportedNight;
 use App\Data\ImportedPerformance;
 use App\Enums\CreatedBy;
 use App\Models\ClaudeReasoningLog;
+use App\Models\Format;
 use App\Models\Performance;
-use App\Models\Show;
 use App\Models\Team;
 use App\Services\PlankaPerformanceExtractor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -113,8 +113,8 @@ class ImportPlankaPerformancesTest extends TestCase
     }
 
     /**
-     * One night as the AI would have read it off a card: a show played once, by
-     * whoever the show belongs to. The start time defaults to none, which is
+     * One night as the AI would have read it off a card: a format played once, by
+     * whoever the format belongs to. The start time defaults to none, which is
      * the common case — most cards name a date and leave the hour to the house.
      */
     private function night(
@@ -125,7 +125,7 @@ class ImportPlankaPerformancesTest extends TestCase
         ?string $startTime = null,
     ): ImportedNight {
         return new ImportedNight(
-            showName: $name,
+            formatName: $name,
             date: Carbon::parse($date),
             teamId: $teamId,
             performances: [
@@ -139,14 +139,14 @@ class ImportPlankaPerformancesTest extends TestCase
     }
 
     /**
-     * A night several groups share: one show, an act apiece.
+     * A night several groups share: one format, an act apiece.
      *
      * @param  list<ImportedPerformance>  $acts
      */
     private function sharedNight(string $name, array $acts, string $date = '2025-10-09'): ImportedNight
     {
         return new ImportedNight(
-            showName: $name,
+            formatName: $name,
             date: Carbon::parse($date),
             teamId: null,
             performances: $acts,
@@ -230,8 +230,8 @@ class ImportPlankaPerformancesTest extends TestCase
         ]]);
 
         $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
-            'shows' => [[
-                'show_name' => 'Õppelava',
+            'formats' => [[
+                'format_name' => 'Õppelava',
                 'date' => '2025-10-09',
                 'team_id' => null,
                 'performances' => [
@@ -244,10 +244,10 @@ class ImportPlankaPerformancesTest extends TestCase
         ])));
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Imported 1 show(s) and 4 performance(s)')
+            ->expectsOutputToContain('Imported 1 format(s) and 4 performance(s)')
             ->assertSuccessful();
 
-        $performances = Show::query()->sole()->performances()->orderBy('date')->get();
+        $performances = Format::query()->sole()->performances()->orderBy('date')->get();
 
         $this->assertSame(
             ['Märtu10 20:00', 'Tõnis ilma Tanelita külalisega 20:20', 'Mätu 20:50', 'Improräpp 21:20'],
@@ -265,8 +265,8 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
 
         $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
-            'shows' => [[
-                'show_name' => 'Õppelava',
+            'formats' => [[
+                'format_name' => 'Õppelava',
                 'date' => '2025-10-09',
                 'team_id' => null,
                 'performances' => [['title' => 'Märtu10', 'start_time' => '20:00', 'duration_minutes' => 20]],
@@ -289,8 +289,8 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
 
         $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
-            'shows' => [[
-                'show_name' => 'Õppelava',
+            'formats' => [[
+                'format_name' => 'Õppelava',
                 'date' => '2025-10-09',
                 'performances' => [['title' => 'Märtu10']],
             ]],
@@ -306,8 +306,8 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
 
         $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
-            'shows' => [[
-                'show_name' => 'Õppelava',
+            'formats' => [[
+                'format_name' => 'Õppelava',
                 'date' => '2025-10-09',
                 'team_id' => null,
                 'performances' => [['title' => 'Märtu10', 'start_time' => '20:00', 'duration_minutes' => 20]],
@@ -337,7 +337,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->artisan('planka:import')->assertSuccessful();
 
         // Each night points at the card that announced it, even though both
-        // nights belong to the one show the first card made.
+        // nights belong to the one format the first card made.
         $this->assertSame(
             ['card-1', 'card-2'],
             Performance::query()->orderBy('date')->pluck('planka_card_id')->all(),
@@ -349,8 +349,8 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
 
         $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
-            'shows' => [[
-                'show_name' => 'Õppelava',
+            'formats' => [[
+                'format_name' => 'Õppelava',
                 'date' => '2025-10-09',
                 'team_id' => null,
                 'performances' => [
@@ -373,22 +373,22 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame(['Kuupäev real "Toimumise kuupäev: 9.10.2025".'], $log->notes);
 
         // And everything that reading made can be traced back to it.
-        $show = Show::sole();
+        $format = Format::sole();
 
-        $this->assertSame([$show->id], $log->shows->pluck('id')->all());
+        $this->assertSame([$format->id], $log->formats->pluck('id')->all());
         $this->assertSame(
             Performance::query()->orderBy('id')->pluck('id')->all(),
             $log->performances->pluck('id')->sort()->values()->all(),
         );
-        $this->assertSame([$log->id], $show->reasoningLogs->pluck('id')->all());
+        $this->assertSame([$log->id], $format->reasoningLogs->pluck('id')->all());
     }
 
-    public function test_a_show_built_card_by_card_keeps_every_cards_reasoning(): void
+    public function test_a_format_built_card_by_card_keeps_every_cards_reasoning(): void
     {
-        // The Õppelava case: one show, a night from each of two cards. The show
+        // The Õppelava case: one format, a night from each of two cards. The format
         // is created by the first and only added to by the second, and both
         // readings have to survive — the one that explains a wrong date is
-        // rarely the one the show was created with.
+        // rarely the one the format was created with.
         $this->fakeBoard([
             $this->card('card-1', 'Õppelava 9.10'),
             $this->card('card-2', 'TLN õppelava 15.11'),
@@ -407,12 +407,12 @@ class ImportPlankaPerformancesTest extends TestCase
 
         $this->artisan('planka:import')->assertSuccessful();
 
-        $show = Show::sole();
+        $format = Format::sole();
 
         $this->assertDatabaseCount('claude_reasoning_logs', 2);
         $this->assertSame(
             ['Õppelava 9.10', 'TLN õppelava 15.11'],
-            $show->reasoningLogs()->orderBy('claude_reasoning_logs.id')->pluck('card_name')->all(),
+            $format->reasoningLogs()->orderBy('claude_reasoning_logs.id')->pluck('card_name')->all(),
         );
 
         // Each night still explains only itself.
@@ -431,8 +431,8 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
 
         $answer = (string) json_encode([
-            'shows' => [[
-                'show_name' => 'Õppelava',
+            'formats' => [[
+                'format_name' => 'Õppelava',
                 'date' => '2025-10-09',
                 'team_id' => null,
                 'performances' => [['title' => 'Märtu10', 'start_time' => '20:00', 'duration_minutes' => 20]],
@@ -446,8 +446,8 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->artisan('planka:import')->assertSuccessful();
 
         // The second run created nothing, so it wrote no account of anything.
-        // This is what keeps a show from gathering another reading every week
-        // now that a card which adds a night explains the show as well.
+        // This is what keeps a format from gathering another reading every week
+        // now that a card which adds a night explains the format as well.
         $this->assertDatabaseCount('claude_reasoning_logs', 1);
         $this->assertDatabaseCount('claude_reasoning_log_subjects', 2);
     }
@@ -457,8 +457,8 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
 
         $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
-            'shows' => [[
-                'show_name' => 'Õppelava',
+            'formats' => [[
+                'format_name' => 'Õppelava',
                 'date' => '2025-10-09',
                 'performances' => [['title' => 'Märtu10']],
             ]],
@@ -467,7 +467,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertDatabaseCount('claude_reasoning_logs', 0);
-        $this->assertCount(0, Show::sole()->reasoningLogs);
+        $this->assertCount(0, Format::sole()->reasoningLogs);
     }
 
     public function test_a_dry_run_keeps_no_reasoning_either(): void
@@ -475,8 +475,8 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
 
         $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
-            'shows' => [[
-                'show_name' => 'Õppelava',
+            'formats' => [[
+                'format_name' => 'Õppelava',
                 'date' => '2025-10-09',
                 'performances' => [['title' => 'Märtu10']],
             ]],
@@ -490,7 +490,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertDatabaseCount('claude_reasoning_logs', 0);
     }
 
-    public function test_an_evening_several_groups_share_is_one_show_played_once(): void
+    public function test_an_evening_several_groups_share_is_one_format_played_once(): void
     {
         $marturu = Team::factory()->create(['name' => 'Märtu10']);
         $matu = Team::factory()->create(['name' => 'Mätu']);
@@ -506,17 +506,17 @@ class ImportPlankaPerformancesTest extends TestCase
         ]);
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Imported 1 show(s) and 4 performance(s)')
+            ->expectsOutputToContain('Imported 1 format(s) and 4 performance(s)')
             ->expectsOutputToContain('Creating performance: Õppelava — Märtu10 on 2025-10-09 at 20:00 (performed by: Märtu10)')
             ->assertSuccessful();
 
-        $show = Show::query()->sole();
+        $format = Format::query()->sole();
 
-        $this->assertSame('Õppelava', $show->name);
+        $this->assertSame('Õppelava', $format->name);
         // Nobody owns the evening; each act names its own group instead.
-        $this->assertNull($show->team_id);
+        $this->assertNull($format->team_id);
 
-        $performances = $show->performances()->orderBy('date')->get();
+        $performances = $format->performances()->orderBy('date')->get();
 
         $this->assertCount(4, $performances);
         $this->assertSame(
@@ -534,12 +534,12 @@ class ImportPlankaPerformancesTest extends TestCase
         );
     }
 
-    public function test_an_act_carries_its_own_group_even_where_the_show_has_one(): void
+    public function test_an_act_carries_its_own_group_even_where_the_format_has_one(): void
     {
         $owner = Team::factory()->create(['name' => 'Improteater Ruutu10']);
         $guest = Team::factory()->create(['name' => 'Mätu']);
 
-        Show::factory()->create(['name' => 'Õppelava', 'team_id' => $owner->id]);
+        Format::factory()->create(['name' => 'Õppelava', 'team_id' => $owner->id]);
 
         $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
         $this->fakeExtraction([
@@ -554,10 +554,10 @@ class ImportPlankaPerformancesTest extends TestCase
         $guestSlot = Performance::query()->where('title', 'Mätu')->sole();
 
         $this->assertSame($guest->id, $guestSlot->team_id);
-        // The guest's own group answers for the slot, not the show's owner.
+        // The guest's own group answers for the slot, not the format's owner.
         $this->assertSame('Mätu', $guestSlot->performerName());
 
-        // The act the AI could not place falls back to the show's group.
+        // The act the AI could not place falls back to the format's group.
         $this->assertSame('Improteater Ruutu10', Performance::query()->where('title', 'Märtu10')->sole()->performerName());
     }
 
@@ -574,7 +574,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->artisan('planka:import')->assertSuccessful();
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Imported 0 show(s) and 0 performance(s); 0 show(s) handed to a group, 2 already known')
+            ->expectsOutputToContain('Imported 0 format(s) and 0 performance(s); 0 format(s) handed to a group, 2 already known')
             ->assertSuccessful();
 
         $this->assertSame(2, Performance::query()->count());
@@ -604,7 +604,7 @@ class ImportPlankaPerformancesTest extends TestCase
         // The act already on the books is left as it is; only the new one is
         // registered.
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Imported 0 show(s) and 1 performance(s); 0 show(s) handed to a group, 1 already known')
+            ->expectsOutputToContain('Imported 0 format(s) and 1 performance(s); 0 format(s) handed to a group, 1 already known')
             ->assertSuccessful();
 
         $this->assertSame(
@@ -625,15 +625,15 @@ class ImportPlankaPerformancesTest extends TestCase
         ]);
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Imported 1 show(s) and 2 performance(s)')
+            ->expectsOutputToContain('Imported 1 format(s) and 2 performance(s)')
             ->assertSuccessful();
 
         $this->assertSame(['Märtu10', 'Improräpp'], Performance::query()->orderBy('date')->pluck('title')->all());
     }
 
-    public function test_a_shared_evening_of_a_deleted_show_is_passed_over_act_by_act(): void
+    public function test_a_shared_evening_of_a_deleted_format_is_passed_over_act_by_act(): void
     {
-        Show::factory()->create(['name' => 'Õppelava'])->delete();
+        Format::factory()->create(['name' => 'Õppelava'])->delete();
 
         $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
         $this->fakeExtraction([
@@ -644,13 +644,13 @@ class ImportPlankaPerformancesTest extends TestCase
         ]);
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Imported 0 show(s) and 0 performance(s); 0 show(s) handed to a group, 2 already known')
+            ->expectsOutputToContain('Imported 0 format(s) and 0 performance(s); 0 format(s) handed to a group, 2 already known')
             ->assertSuccessful();
 
         $this->assertSame(0, Performance::query()->count());
     }
 
-    public function test_a_lone_act_leaves_the_performance_under_the_shows_own_name(): void
+    public function test_a_lone_act_leaves_the_performance_under_the_formats_own_name(): void
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->night('Trupp 1')]);
@@ -662,7 +662,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertNull(Performance::sole()->title);
     }
 
-    public function test_it_creates_a_show_and_a_performance_for_every_night_on_the_card(): void
+    public function test_it_creates_a_format_and_a_performance_for_every_night_on_the_card(): void
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
@@ -673,15 +673,15 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->artisan('planka:import')
             ->assertSuccessful();
 
-        $this->assertSame(2, Show::query()->count());
+        $this->assertSame(2, Format::query()->count());
         $this->assertSame(2, Performance::query()->count());
 
-        $trupp = Show::query()->where('name', 'Trupp 1')->sole();
+        $trupp = Format::query()->where('name', 'Trupp 1')->sole();
         $this->assertNull($trupp->team_id);
         $this->assertSame('2025-09-13', $trupp->performances()->sole()->date->toDateString());
         $this->assertSame(90, $trupp->performances()->sole()->duration);
 
-        $jada = Show::query()->where('name', 'JadaJada Special')->sole();
+        $jada = Format::query()->where('name', 'JadaJada Special')->sole();
         $this->assertNull($jada->performances()->sole()->duration);
     }
 
@@ -708,15 +708,15 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->artisan('planka:import')
             ->assertSuccessful();
 
-        // Both the show the house had never had and the night it was made for:
+        // Both the format the house had never had and the night it was made for:
         // nobody typed either, and the screens have to be able to say so.
-        $this->assertSame(CreatedBy::PlankaImport, Show::sole()->created_by);
+        $this->assertSame(CreatedBy::PlankaImport, Format::sole()->created_by);
         $this->assertSame(CreatedBy::PlankaImport, Performance::sole()->created_by);
     }
 
-    public function test_a_night_added_to_a_show_somebody_entered_leaves_the_show_alone(): void
+    public function test_a_night_added_to_a_format_somebody_entered_leaves_the_format_alone(): void
     {
-        $show = Show::factory()->create(['name' => 'Trupp 1']);
+        $format = Format::factory()->create(['name' => 'Trupp 1']);
 
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->night('Trupp 1')]);
@@ -724,9 +724,9 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->artisan('planka:import')
             ->assertSuccessful();
 
-        // The card announced the night, not the show: a show somebody entered
+        // The card announced the night, not the format: a format somebody entered
         // by hand does not become an imported one by being played again.
-        $this->assertSame(CreatedBy::Manual, $show->fresh()->created_by);
+        $this->assertSame(CreatedBy::Manual, $format->fresh()->created_by);
         $this->assertSame(CreatedBy::PlankaImport, Performance::sole()->created_by);
     }
 
@@ -738,10 +738,10 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->artisan('planka:import')->assertSuccessful();
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Imported 0 show(s) and 0 performance(s); 0 show(s) handed to a group, 1 already known')
+            ->expectsOutputToContain('Imported 0 format(s) and 0 performance(s); 0 format(s) handed to a group, 1 already known')
             ->assertSuccessful();
 
-        $this->assertSame(1, Show::query()->count());
+        $this->assertSame(1, Format::query()->count());
         $this->assertSame(1, Performance::query()->count());
     }
 
@@ -755,11 +755,11 @@ class ImportPlankaPerformancesTest extends TestCase
 
         $this->artisan('planka:import')->assertSuccessful();
 
-        $this->assertSame(1, Show::query()->count());
+        $this->assertSame(1, Format::query()->count());
         $this->assertSame(1, Performance::query()->count());
     }
 
-    public function test_the_same_act_on_a_second_night_is_a_second_performance_of_one_show(): void
+    public function test_the_same_act_on_a_second_night_is_a_second_performance_of_one_format(): void
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
@@ -769,41 +769,41 @@ class ImportPlankaPerformancesTest extends TestCase
 
         $this->artisan('planka:import')->assertSuccessful();
 
-        $this->assertSame(1, Show::query()->count());
+        $this->assertSame(1, Format::query()->count());
         $this->assertSame(2, Performance::query()->count());
     }
 
-    public function test_it_hangs_new_performances_off_an_existing_show_whatever_its_casing(): void
+    public function test_it_hangs_new_performances_off_an_existing_format_whatever_its_casing(): void
     {
-        $existing = Show::factory()->create(['name' => 'JadaJada Special']);
+        $existing = Format::factory()->create(['name' => 'JadaJada Special']);
 
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->night('jadajada special')]);
 
         $this->artisan('planka:import')->assertSuccessful();
 
-        $this->assertSame(1, Show::query()->count());
-        $this->assertSame($existing->id, Performance::query()->sole()->show_id);
+        $this->assertSame(1, Format::query()->count());
+        $this->assertSame($existing->id, Performance::query()->sole()->format_id);
     }
 
-    public function test_it_leaves_a_deleted_show_deleted(): void
+    public function test_it_leaves_a_deleted_format_deleted(): void
     {
-        $deleted = Show::factory()->create(['name' => 'Trupp 1']);
+        $deleted = Format::factory()->create(['name' => 'Trupp 1']);
         $deleted->delete();
 
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->night('Trupp 1')]);
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('the show was deleted here')
+            ->expectsOutputToContain('the format was deleted here')
             ->assertSuccessful();
 
         $this->assertSoftDeleted($deleted);
-        $this->assertSame(0, Show::query()->count());
+        $this->assertSame(0, Format::query()->count());
         $this->assertSame(0, Performance::query()->count());
     }
 
-    public function test_it_hands_a_new_show_to_the_group_the_ai_matched_it_to(): void
+    public function test_it_hands_a_new_format_to_the_group_the_ai_matched_it_to(): void
     {
         $team = Team::factory()->create(['name' => 'Tsikid Reas']);
 
@@ -811,59 +811,59 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeExtraction([$this->night('Tšikid reas', teamId: $team->id)]);
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Creating show: Tšikid reas (owner: Tsikid Reas)')
+            ->expectsOutputToContain('Creating format: Tšikid reas (owner: Tsikid Reas)')
             ->assertSuccessful();
 
-        $this->assertSame($team->id, Show::query()->sole()->team_id);
+        $this->assertSame($team->id, Format::query()->sole()->team_id);
     }
 
-    public function test_it_hands_an_ownerless_show_it_already_had_to_a_group(): void
+    public function test_it_hands_an_ownerless_format_it_already_had_to_a_group(): void
     {
         $team = Team::factory()->create(['name' => 'Tsikid Reas']);
-        $show = Show::factory()->create(['name' => 'Tšikid reas', 'team_id' => null]);
+        $format = Format::factory()->create(['name' => 'Tšikid reas', 'team_id' => null]);
 
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->night('Tšikid reas', teamId: $team->id)]);
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Handing over show: Tšikid reas (owner: Tsikid Reas)')
-            ->expectsOutputToContain('1 show(s) handed to a group')
+            ->expectsOutputToContain('Handing over format: Tšikid reas (owner: Tsikid Reas)')
+            ->expectsOutputToContain('1 format(s) handed to a group')
             ->assertSuccessful();
 
-        $this->assertSame($team->id, $show->refresh()->team_id);
+        $this->assertSame($team->id, $format->refresh()->team_id);
     }
 
-    public function test_a_show_that_already_has_a_group_keeps_it(): void
+    public function test_a_format_that_already_has_a_group_keeps_it(): void
     {
         $owner = Team::factory()->create(['name' => 'Tsikid Reas']);
         $other = Team::factory()->create(['name' => 'Jaanuar']);
-        $show = Show::factory()->create(['name' => 'Tšikid reas', 'team_id' => $owner->id]);
+        $format = Format::factory()->create(['name' => 'Tšikid reas', 'team_id' => $owner->id]);
 
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->night('Tšikid reas', teamId: $other->id)]);
 
         $this->artisan('planka:import')->assertSuccessful();
 
-        $this->assertSame($owner->id, $show->refresh()->team_id);
+        $this->assertSame($owner->id, $format->refresh()->team_id);
     }
 
-    public function test_a_show_the_ai_could_not_place_is_left_ownerless(): void
+    public function test_a_format_the_ai_could_not_place_is_left_ownerless(): void
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->night('Trupp 1', teamId: null)]);
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Creating show: Trupp 1')
+            ->expectsOutputToContain('Creating format: Trupp 1')
             ->doesntExpectOutputToContain('owner:')
             ->assertSuccessful();
 
-        $this->assertNull(Show::query()->sole()->team_id);
+        $this->assertNull(Format::query()->sole()->team_id);
     }
 
-    public function test_a_hand_over_is_reported_once_however_many_nights_the_show_plays(): void
+    public function test_a_hand_over_is_reported_once_however_many_nights_the_format_plays(): void
     {
         $team = Team::factory()->create(['name' => 'Tsikid Reas']);
-        Show::factory()->create(['name' => 'Tšikid reas', 'team_id' => null]);
+        Format::factory()->create(['name' => 'Tšikid reas', 'team_id' => null]);
 
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
@@ -872,43 +872,43 @@ class ImportPlankaPerformancesTest extends TestCase
         ]);
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('1 show(s) handed to a group')
+            ->expectsOutputToContain('1 format(s) handed to a group')
             ->assertSuccessful();
     }
 
     public function test_a_dry_run_hands_nothing_over(): void
     {
         $team = Team::factory()->create(['name' => 'Tsikid Reas']);
-        $show = Show::factory()->create(['name' => 'Tšikid reas', 'team_id' => null]);
+        $format = Format::factory()->create(['name' => 'Tšikid reas', 'team_id' => null]);
 
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->night('Tšikid reas', teamId: $team->id)]);
 
         $this->artisan('planka:import', ['--dry-run' => true])
-            ->expectsOutputToContain('Would hand over show: Tšikid reas (owner: Tsikid Reas)')
+            ->expectsOutputToContain('Would hand over format: Tšikid reas (owner: Tsikid Reas)')
             ->assertSuccessful();
 
-        $this->assertNull($show->refresh()->team_id);
+        $this->assertNull($format->refresh()->team_id);
     }
 
-    public function test_it_creates_a_show_the_house_has_never_had(): void
+    public function test_it_creates_a_format_the_house_has_never_had(): void
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->night('Trupp 1')]);
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Creating show: Trupp 1')
+            ->expectsOutputToContain('Creating format: Trupp 1')
             ->assertSuccessful();
 
-        $show = Show::query()->sole();
-        $this->assertSame('Trupp 1', $show->name);
-        $this->assertSame('2025-09-13', $show->performances()->sole()->date->toDateString());
+        $format = Format::query()->sole();
+        $this->assertSame('Trupp 1', $format->name);
+        $this->assertSame('2025-09-13', $format->performances()->sole()->date->toDateString());
     }
 
     public function test_it_does_not_bring_back_a_deleted_performance(): void
     {
-        $show = Show::factory()->create(['name' => 'Trupp 1']);
-        Performance::factory()->for($show)->create(['date' => '2025-09-13'])->delete();
+        $format = Format::factory()->create(['name' => 'Trupp 1']);
+        Performance::factory()->for($format)->create(['date' => '2025-09-13'])->delete();
 
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->night('Trupp 1')]);
@@ -918,7 +918,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame(0, Performance::query()->count());
     }
 
-    public function test_a_new_show_is_created_once_however_many_nights_it_plays(): void
+    public function test_a_new_format_is_created_once_however_many_nights_it_plays(): void
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
@@ -928,14 +928,14 @@ class ImportPlankaPerformancesTest extends TestCase
         ]);
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Imported 1 show(s) and 3 performance(s)')
+            ->expectsOutputToContain('Imported 1 format(s) and 3 performance(s)')
             ->assertSuccessful();
 
-        $this->assertSame(1, Show::query()->count());
-        $this->assertSame(3, Show::query()->sole()->performances()->count());
+        $this->assertSame(1, Format::query()->count());
+        $this->assertSame(3, Format::query()->sole()->performances()->count());
     }
 
-    public function test_a_dry_run_reports_a_new_show_once_however_many_nights_it_plays(): void
+    public function test_a_dry_run_reports_a_new_format_once_however_many_nights_it_plays(): void
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
@@ -944,13 +944,13 @@ class ImportPlankaPerformancesTest extends TestCase
         ]);
 
         // Nothing is written in a dry run, so a second look at the database
-        // would report the same show as new all over again.
+        // would report the same format as new all over again.
         $this->artisan('planka:import', ['--dry-run' => true])
-            ->expectsOutputToContain('Would import 1 show(s) and 2 performance(s)')
+            ->expectsOutputToContain('Would import 1 format(s) and 2 performance(s)')
             ->assertSuccessful();
     }
 
-    public function test_names_differing_only_in_estonian_capitals_are_one_show(): void
+    public function test_names_differing_only_in_estonian_capitals_are_one_format(): void
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
@@ -959,15 +959,15 @@ class ImportPlankaPerformancesTest extends TestCase
         ]);
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Imported 1 show(s) and 2 performance(s)')
+            ->expectsOutputToContain('Imported 1 format(s) and 2 performance(s)')
             ->assertSuccessful();
 
-        $this->assertSame(1, Show::query()->count());
+        $this->assertSame(1, Format::query()->count());
     }
 
-    public function test_a_show_deleted_here_is_passed_over_on_every_night_it_plays(): void
+    public function test_a_format_deleted_here_is_passed_over_on_every_night_it_plays(): void
     {
-        Show::factory()->create(['name' => 'Tšikid reas'])->delete();
+        Format::factory()->create(['name' => 'Tšikid reas'])->delete();
 
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
@@ -976,23 +976,23 @@ class ImportPlankaPerformancesTest extends TestCase
         ]);
 
         $this->artisan('planka:import')
-            ->expectsOutputToContain('Imported 0 show(s) and 0 performance(s); 0 show(s) handed to a group, 2 already known')
+            ->expectsOutputToContain('Imported 0 format(s) and 0 performance(s); 0 format(s) handed to a group, 2 already known')
             ->assertSuccessful();
 
-        $this->assertSame(0, Show::query()->count());
+        $this->assertSame(0, Format::query()->count());
     }
 
-    public function test_a_show_kept_outlives_an_older_one_of_the_same_name_that_was_deleted(): void
+    public function test_a_format_kept_outlives_an_older_one_of_the_same_name_that_was_deleted(): void
     {
-        Show::factory()->create(['name' => 'Tšikid reas'])->delete();
-        $kept = Show::factory()->create(['name' => 'Tšikid reas']);
+        Format::factory()->create(['name' => 'Tšikid reas'])->delete();
+        $kept = Format::factory()->create(['name' => 'Tšikid reas']);
 
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->night('Tšikid reas', '2025-08-14')]);
 
         $this->artisan('planka:import')->assertSuccessful();
 
-        $this->assertSame($kept->id, Performance::query()->sole()->show_id);
+        $this->assertSame($kept->id, Performance::query()->sole()->format_id);
     }
 
     public function test_a_dry_run_writes_nothing(): void
@@ -1001,10 +1001,10 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeExtraction([$this->night('Trupp 1')]);
 
         $this->artisan('planka:import', ['--dry-run' => true])
-            ->expectsOutputToContain('Would import 1 show(s) and 1 performance(s)')
+            ->expectsOutputToContain('Would import 1 format(s) and 1 performance(s)')
             ->assertSuccessful();
 
-        $this->assertSame(0, Show::query()->count());
+        $this->assertSame(0, Format::query()->count());
         $this->assertSame(0, Performance::query()->count());
     }
 

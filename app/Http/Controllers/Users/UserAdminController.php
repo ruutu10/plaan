@@ -18,7 +18,7 @@ use Spatie\Permission\Models\Role;
 
 /**
  * Account management: every account in the house, what it is called and where
- * it came from. Unlike shows and teams, nothing here is scoped to what the
+ * it came from. Unlike formats and teams, nothing here is scoped to what the
  * reader belongs to — either they hold {@see User::MANAGE_PERMISSION} and see
  * the house, or they are refused. That is one flat right with no per-account
  * shading to it, so the routes guard the whole controller with `can:` and

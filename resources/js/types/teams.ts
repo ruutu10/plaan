@@ -63,7 +63,7 @@ export interface ManagedTeam {
     /** How many people belong to the team; only the listing counts them. */
     memberCount: number | null;
     /** How much the team has staged; only the listing counts it. */
-    showCount: number | null;
+    formatCount: number | null;
     /** The people themselves, which only the edit page reads. */
     members?: ManagedTeamMember[];
 }

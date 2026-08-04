@@ -6,8 +6,8 @@ use App\Models\User;
 
 /**
  * For models that belong to a team and are reached through one. Each decides
- * for itself how it reaches its team — a show holds the id, a performance goes
- * through its show — so the query scope stays with the model. What is shared is
+ * for itself how it reaches its team — a format holds the id, a performance goes
+ * through its format — so the query scope stays with the model. What is shared is
  * asking the question about a single record, which has to be answered by the
  * same scope the listings use or the two would eventually disagree.
  *

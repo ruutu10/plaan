@@ -17,11 +17,11 @@
 
 @section('title', 'Esitatud tehnikaplaan')
 
-@section('preheader', $doc['showName'].' · tehnikaplaan on esitatud.')
+@section('preheader', $doc['formatName'].' · tehnikaplaan on esitatud.')
 
 @section('content')
     <h1 style="margin:0 0 16px 0; font-family:'Futura','Century Gothic','Roboto',Arial,sans-serif; font-size:24px; line-height:1.15; font-weight:700; letter-spacing:0.01em; text-transform:uppercase; color:#0c0f16;">
-        {{ $doc['showName'] }}
+        {{ $doc['formatName'] }}
     </h1>
 
     @if ($isAuthor)
@@ -67,7 +67,7 @@
         </tr>
         <tr>
             <td style="{{ $labelCell }}">Kuupäev</td>
-            <td style="{{ $cell }}">{{ $doc['showDate'] }}</td>
+            <td style="{{ $cell }}">{{ $doc['performanceDate'] }}</td>
         </tr>
         <tr>
             <td style="{{ $labelCell }}">Kestus</td>

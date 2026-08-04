@@ -55,14 +55,14 @@ class TechnicalPlanMissing extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $show = $this->performance->show;
+        $format = $this->performance->format;
 
         return (new MailMessage)
             ->subject($this->subject())
             ->view('emails.technical-plan-missing', [
-                'showName' => $this->performance->title === null
-                    ? $show->name
-                    : $show->name.' — '.$this->performance->title,
+                'formatName' => $this->performance->title === null
+                    ? $format->name
+                    : $format->name.' — '.$this->performance->title,
                 'performer' => $this->performance->performerName() ?? '',
                 'startsAt' => $this->performance->startsAt(),
                 'noticeLabel' => $this->schedule->noticeLabel(),
@@ -92,7 +92,7 @@ class TechnicalPlanMissing extends Notification implements ShouldQueue
      */
     private function subject(): string
     {
-        $label = $this->performance->show->name.' · '.$this->performance->startsAt()->format('d.m.Y');
+        $label = $this->performance->format->name.' · '.$this->performance->startsAt()->format('d.m.Y');
 
         return $this->isForPerformer()
             ? 'Tehnikaplaan puudu · '.$label

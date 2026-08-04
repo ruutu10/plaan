@@ -85,8 +85,8 @@ export function blankPlan(): Plan {
         meta: {
             performanceId: null,
             performer: '',
-            showName: '',
-            showDate: '',
+            formatName: '',
+            performanceDate: '',
             duration: null,
             description: '',
         },

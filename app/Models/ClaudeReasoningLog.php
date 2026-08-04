@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
  * came from, why an evening became one night or three, why a group was matched
  * or left off — and this is where that answer is kept. One row per card read,
  * pointing at every record that reading produced, so the question a person
- * actually asks ("why is this show called that?") can be answered from the
+ * actually asks ("why is this format called that?") can be answered from the
  * screen the wrong record is on.
  *
  * Nothing here is written for an audience: the notes quote the card back and
@@ -29,7 +29,7 @@ use Illuminate\Support\Carbon;
  * @property list<string> $notes
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Collection<int, Show> $shows
+ * @property-read Collection<int, Format> $formats
  * @property-read Collection<int, Performance> $performances
  */
 #[Fillable([
@@ -54,19 +54,19 @@ class ClaudeReasoningLog extends Model
      * means a card read twice links the same records once, and the unique key on
      * the pivot means a record never ends up with two explanations.
      */
-    public function link(Show|Performance $subject): void
+    public function link(Format|Performance $subject): void
     {
         $subject->reasoningLogs()->syncWithoutDetaching([$this->getKey()]);
     }
 
     /**
-     * The shows this reading created.
+     * The formats this reading created.
      *
-     * @return MorphToMany<Show, $this>
+     * @return MorphToMany<Format, $this>
      */
-    public function shows(): MorphToMany
+    public function formats(): MorphToMany
     {
-        return $this->morphedByMany(Show::class, 'subject', 'claude_reasoning_log_subjects');
+        return $this->morphedByMany(Format::class, 'subject', 'claude_reasoning_log_subjects');
     }
 
     /**

@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 
 /**
  * A performance the user can attach a new plan to. Each row also carries the
- * plans handed in for other performances of the same show — the user's own and their
+ * plans handed in for other performances of the same format — the user's own and their
  * teams' alike — so a new plan can be pre-filled from a past one.
  *
  * @property-read Performance $resource
@@ -21,7 +21,7 @@ class UpcomingPerformance extends JsonResource
     public static $wrap = null;
 
     /**
-     * @param  Collection<int, TechnicalPlanModel>  $candidatePriorPlans  the plans available to the user for any of the listed shows; the ones belonging to this show's other performances are picked out here
+     * @param  Collection<int, TechnicalPlanModel>  $candidatePriorPlans  the plans available to the user for any of the listed formats; the ones belonging to this format's other performances are picked out here
      */
     public function __construct(Performance $performance, private Collection $candidatePriorPlans = new Collection)
     {
@@ -40,23 +40,23 @@ class UpcomingPerformance extends JsonResource
         return [
             'id' => $performance->id,
             'performer' => $performance->performerName() ?? '',
-            'showName' => $performance->show->name,
-            // The act's own name, when the evening is shared and the show's
+            'formatName' => $performance->format->name,
+            // The act's own name, when the evening is shared and the format's
             // name alone would leave three identical rows to choose between.
             'title' => $performance->title,
-            'showDate' => $performance->startDate(),
+            'performanceDate' => $performance->startDate(),
             'startTime' => $performance->startTime(),
             'duration' => $performance->duration,
-            'description' => $performance->show->description ?? '',
+            'description' => $performance->format->description ?? '',
             'priorPlans' => PriorPlan::collection($this->priorPlans($request))->resolve($request),
         ];
     }
 
     /**
-     * The plans written for other performances of the same show. A plan for this
+     * The plans written for other performances of the same format. A plan for this
      * very performance is left out only when it is the user's own — theirs is to be
      * edited, not cloned — while a team-mate's is offered, since taking over an
-     * existing plan for the upcoming show is the point.
+     * existing plan for the upcoming format is the point.
      *
      * @return Collection<int, TechnicalPlanModel>
      */
@@ -66,7 +66,7 @@ class UpcomingPerformance extends JsonResource
 
         return $this->candidatePriorPlans
             ->filter(fn (TechnicalPlanModel $plan): bool => $plan->performance !== null
-                && $plan->performance->show_id === $performance->show_id
+                && $plan->performance->format_id === $performance->format_id
                 && ! ($plan->performance->id === $performance->id && $plan->user_id === $request->user()?->id))
             ->values();
     }

@@ -21,13 +21,13 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 
 /**
- * One dated performance of a {@see Show}. Everything the performances of a show
- * have in common — the name, the description — belongs to the show; a
+ * One dated performance of a {@see Format}. Everything the performances of a
+ * format have in common — the name, the description — belongs to the format; a
  * performance holds only what can differ between them.
  *
- * Who plays it is one of those things. A show one troupe fills has its group on
- * the show, and its performances inherit it; an evening several groups share —
- * an Õppelava, a gala — is one show played once, with a performance per act,
+ * Who plays it is one of those things. A format one troupe fills has its group on
+ * the format, and its performances inherit it; an evening several groups share —
+ * an Õppelava, a gala — is one format played once, with a performance per act,
  * each naming its own group and carrying the act's name off the board. {@see
  * performerName()} is the one place that distinction is resolved.
  *
@@ -38,7 +38,7 @@ use Illuminate\Support\Facades\Date;
  * conversion and the only places it should happen.
  *
  * @property int $id
- * @property int $show_id
+ * @property int $format_id
  * @property int|null $team_id
  * @property string|null $title
  * @property string|null $planka_card_id
@@ -49,7 +49,7 @@ use Illuminate\Support\Facades\Date;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
- * @property-read Show $show
+ * @property-read Format $format
  * @property-read Team|null $team
  * @property-read Collection<int, TechnicalPlan> $technicalPlans
  * @property-read int|null $technical_plans_count
@@ -58,7 +58,7 @@ use Illuminate\Support\Facades\Date;
  * @property-read Collection<int, ClaudeReasoningLog> $reasoningLogs
  */
 #[Fillable([
-    'show_id',
+    'format_id',
     'team_id',
     'title',
     'planka_card_id',
@@ -74,7 +74,7 @@ class Performance extends Model
 
     /**
      * The permission — held by the "technician" role — that opens the performances
-     * of every show in the house, not just those of the holder's own groups.
+     * of every format in the house, not just those of the holder's own groups.
      */
     public const EDIT_ALL_PERMISSION = 'performances.edit_all';
 
@@ -94,7 +94,7 @@ class Performance extends Model
 
     /**
      * Limit the query to the performances the given user may manage: those of the
-     * shows their groups own. Holders of {@see EDIT_ALL_PERMISSION} are not
+     * formats their groups own. Holders of {@see EDIT_ALL_PERMISSION} are not
      * limited at all.
      *
      * @param  Builder<Performance>  $query
@@ -108,12 +108,12 @@ class Performance extends Model
 
         $teamIds = $user->teamIds();
 
-        // A performance is the group's through the show it belongs to, or by
+        // A performance is the group's through the format it belongs to, or by
         // being the group's own slot on an evening somebody else stages. The
-        // second does not carry over to the show: a guest may correct their own
-        // performance without touching the show it sits in.
+        // second does not carry over to the format: a guest may correct their own
+        // performance without touching the format it sits in.
         $query->where(fn (Builder $performance) => $performance
-            ->whereHas('show', fn (Builder $show) => $show->whereIn('team_id', $teamIds))
+            ->whereHas('format', fn (Builder $format) => $format->whereIn('team_id', $teamIds))
             ->orWhereIn('performances.team_id', $teamIds));
     }
 
@@ -125,15 +125,15 @@ class Performance extends Model
     private const PLACEHOLDER_YEARS_AHEAD = 5;
 
     /**
-     * The one performance of the stand-in show, registered the first time it is
+     * The one performance of the stand-in format, registered the first time it is
      * asked for: the night a plan is written under when the real one is not on
      * the books yet. Restored rather than duplicated if it has been put aside,
-     * for the same reason as {@see Show::placeholder()}.
+     * for the same reason as {@see Format::placeholder()}.
      */
     public static function placeholder(): self
     {
         $performance = static::withTrashed()->firstOrCreate(
-            ['show_id' => Show::placeholder()->id],
+            ['format_id' => Format::placeholder()->id],
             [
                 'date' => self::momentFrom(
                     Carbon::today(self::venueTimezone())
@@ -155,7 +155,7 @@ class Performance extends Model
      */
     public function isPlaceholder(): bool
     {
-        return $this->show->isPlaceholder();
+        return $this->format->isPlaceholder();
     }
 
     /**
@@ -168,9 +168,9 @@ class Performance extends Model
     #[Scope]
     protected function excludingPlaceholder(Builder $query): void
     {
-        $query->whereHas('show', fn (Builder $show) => $show
-            ->where('shows.name', '!=', Show::PLACEHOLDER_NAME)
-            ->orWhereNotNull('shows.team_id'));
+        $query->whereHas('format', fn (Builder $format) => $format
+            ->where('formats.name', '!=', Format::PLACEHOLDER_NAME)
+            ->orWhereNotNull('formats.team_id'));
     }
 
     /**
@@ -188,23 +188,23 @@ class Performance extends Model
     }
 
     /**
-     * Determine whether the user may manage the performances of the given show at
-     * all — the question {@see editableBy()} asks, for a show that has none yet.
+     * Determine whether the user may manage the performances of the given format at
+     * all — the question {@see editableBy()} asks, for a format that has none yet.
      */
-    public static function manageableFor(User $user, Show $show): bool
+    public static function manageableFor(User $user, Format $format): bool
     {
         if ($user->can(self::EDIT_ALL_PERMISSION)) {
             return true;
         }
 
-        return $show->team_id !== null
-            && $user->teams()->where('teams.id', $show->team_id)->exists();
+        return $format->team_id !== null
+            && $user->teams()->where('teams.id', $format->team_id)->exists();
     }
 
     /**
      * The groups a performance may be handed to: the ones the user belongs to,
      * or every group in the house for the holders of {@see EDIT_ALL_PERMISSION}.
-     * Mirrors {@see Show::assignableTeams()}, on the performances' own right.
+     * Mirrors {@see Format::assignableTeams()}, on the performances' own right.
      *
      * @return Collection<int, Team>
      */
@@ -218,17 +218,17 @@ class Performance extends Model
     }
 
     /**
-     * The show this is a performance of.
+     * The format this is a performance of.
      *
-     * @return BelongsTo<Show, $this>
+     * @return BelongsTo<Format, $this>
      */
-    public function show(): BelongsTo
+    public function format(): BelongsTo
     {
-        return $this->belongsTo(Show::class);
+        return $this->belongsTo(Format::class);
     }
 
     /**
-     * The group playing this performance, when it is not simply the show's own.
+     * The group playing this performance, when it is not simply the format's own.
      * Set for the acts of an evening several groups share; empty otherwise.
      *
      * @return BelongsTo<Team, $this>
@@ -239,10 +239,10 @@ class Performance extends Model
     }
 
     /**
-     * Who is playing this performance: its own group, or the show's when it has
+     * Who is playing this performance: its own group, or the format's when it has
      * none of its own. Every screen, mail and listing asks the question here
-     * rather than reaching for `show->team`, so an act on a shared evening is
-     * never announced under the name of whoever happens to own the show.
+     * rather than reaching for `format->team`, so an act on a shared evening is
+     * never announced under the name of whoever happens to own the format.
      */
     public function performerName(): ?string
     {
@@ -254,17 +254,17 @@ class Performance extends Model
      */
     public function performingTeamId(): ?int
     {
-        return $this->team_id ?? $this->show->team_id;
+        return $this->team_id ?? $this->format->team_id;
     }
 
     /**
-     * The group playing this performance as a model — its own, or the show's.
+     * The group playing this performance as a model — its own, or the format's.
      * The one to chase about a missing plan, and the one whose members may read
      * the plans written for it.
      */
     public function performedBy(): ?Team
     {
-        return $this->team ?? $this->show->team;
+        return $this->team ?? $this->format->team;
     }
 
     /**
@@ -362,7 +362,7 @@ class Performance extends Model
      */
     protected static function booted(): void
     {
-        // An act carrying no name of its own is one the show's name already
+        // An act carrying no name of its own is one the format's name already
         // names, so an empty string is stored as an absence rather than as a
         // title nobody can see.
         static::saving(function (Performance $performance): void {

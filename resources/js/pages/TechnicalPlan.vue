@@ -58,8 +58,8 @@ const props = withDefaults(
 const plan = reactive<Plan>(hydratePlan(props.initialPlan));
 
 // A reminder's link has already chosen the night, so the wizard starts with it
-// filled in rather than making a performer who was just told which show this is
-// about pick it out of a list.
+// filled in rather than making a performer who was just told which performance
+// this is about pick it out of a list.
 if (props.initialPerformance) {
     Object.assign(plan.meta, props.initialPerformance);
 }

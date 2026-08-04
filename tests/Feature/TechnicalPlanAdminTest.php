@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Enums\TechnicalPlanStatus;
 use App\Events\TechnicalPlanStatusChanged;
+use App\Models\Format;
 use App\Models\Performance;
-use App\Models\Show;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
@@ -58,15 +58,15 @@ class TechnicalPlanAdminTest extends TestCase
                 ->where('plans.0.token', $own->token));
     }
 
-    public function test_the_overview_shows_a_plain_user_the_plans_of_their_teams_shows(): void
+    public function test_the_overview_shows_a_plain_user_the_plans_of_their_teams_formats(): void
     {
         $user = User::factory()->create();
         $team = $this->teamOf($user, 'Märold');
-        $show = Show::factory()->create(['team_id' => $team->id]);
+        $format = Format::factory()->create(['team_id' => $team->id]);
 
         $ours = TechnicalPlan::factory()->submitted()->create([
             'performance_id' => Performance::factory()->create([
-                'show_id' => $show->id,
+                'format_id' => $format->id,
                 'date' => '2026-05-01',
             ]),
         ]);
@@ -89,7 +89,7 @@ class TechnicalPlanAdminTest extends TestCase
         $user = User::factory()->create();
         $team = $this->teamOf($user, 'Märold');
 
-        // An Õppelava slot: the show belongs to the house, the act to the team.
+        // An Õppelava slot: the format belongs to the house, the act to the team.
         $ours = TechnicalPlan::factory()->submitted()->create([
             'performance_id' => Performance::factory()->create([
                 'team_id' => $team->id,
@@ -109,7 +109,7 @@ class TechnicalPlanAdminTest extends TestCase
     {
         $user = User::factory()->create();
         $team = $this->teamOf($user, 'Märold');
-        $show = Show::factory()->create(['team_id' => $team->id]);
+        $format = Format::factory()->create(['team_id' => $team->id]);
 
         // Written by a team-mate and never handed in: the group still owes it,
         // so the overview is exactly where they would go looking for it.
@@ -117,7 +117,7 @@ class TechnicalPlanAdminTest extends TestCase
             'status' => TechnicalPlanStatus::Draft,
             'user_id' => User::factory()->create()->id,
             'performance_id' => Performance::factory()->create([
-                'show_id' => $show->id,
+                'format_id' => $format->id,
                 'date' => '2026-05-01',
             ]),
         ]);
@@ -136,11 +136,11 @@ class TechnicalPlanAdminTest extends TestCase
         $this->teamOf($user, 'Märold');
 
         $theirTeam = Team::factory()->create(['name' => 'Improteater']);
-        $theirShow = Show::factory()->create(['team_id' => $theirTeam->id]);
+        $theirFormat = Format::factory()->create(['team_id' => $theirTeam->id]);
 
         TechnicalPlan::factory()->submitted()->create([
             'performance_id' => Performance::factory()->create([
-                'show_id' => $theirShow->id,
+                'format_id' => $theirFormat->id,
                 'date' => '2026-05-01',
             ]),
         ]);
@@ -165,8 +165,8 @@ class TechnicalPlanAdminTest extends TestCase
     {
         $author = User::factory()->create(['name' => 'Mart Naide', 'email' => 'mart@naide.ee']);
         $team = Team::factory()->create(['name' => 'Märold']);
-        $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
-        $performance = Performance::factory()->create(['show_id' => $show->id, 'date' => '2026-08-01']);
+        $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
+        $performance = Performance::factory()->create(['format_id' => $format->id, 'date' => '2026-08-01']);
 
         $submitted = TechnicalPlan::factory()->submitted()->create([
             'user_id' => $author->id,
@@ -193,7 +193,7 @@ class TechnicalPlanAdminTest extends TestCase
                 ->component('technical-plans/Index')
                 ->has('plans', 3)
                 ->where('plans.0.token', $submitted->token)
-                ->where('plans.0.showName', 'Festival 2026')
+                ->where('plans.0.formatName', 'Festival 2026')
                 ->where('plans.0.teamName', 'Märold')
                 ->where('plans.0.performanceDate', '2026-08-01')
                 ->where('plans.0.submittedBy', 'Mart Naide')
@@ -290,13 +290,13 @@ class TechnicalPlanAdminTest extends TestCase
     {
         $user = User::factory()->create();
         $team = $this->teamOf($user, 'Märold');
-        $show = Show::factory()->create(['team_id' => $team->id]);
+        $format = Format::factory()->create(['team_id' => $team->id]);
 
         // A team-mate's plan, not their own: every row the overview offers has
         // to open, or the listing sends people at a door that shuts.
         $plan = TechnicalPlan::factory()->submitted()->create([
             'user_id' => User::factory()->create()->id,
-            'performance_id' => Performance::factory()->create(['show_id' => $show->id]),
+            'performance_id' => Performance::factory()->create(['format_id' => $format->id]),
         ]);
 
         $this->actingAs($user)
@@ -311,8 +311,8 @@ class TechnicalPlanAdminTest extends TestCase
     {
         $author = User::factory()->create(['name' => 'Mart Naide', 'email' => 'mart@naide.ee']);
         $team = Team::factory()->create(['name' => 'Märold']);
-        $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
-        $performance = Performance::factory()->create(['show_id' => $show->id, 'date' => '2026-08-01']);
+        $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
+        $performance = Performance::factory()->create(['format_id' => $format->id, 'date' => '2026-08-01']);
 
         $plan = TechnicalPlan::factory()->submitted()->create([
             'user_id' => $author->id,
@@ -326,7 +326,7 @@ class TechnicalPlanAdminTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('technical-plans/Show')
                 ->where('plan.token', $plan->token)
-                ->where('plan.showName', 'Festival 2026')
+                ->where('plan.formatName', 'Festival 2026')
                 ->where('plan.teamName', 'Märold')
                 ->where('plan.performanceDate', '2026-08-01')
                 ->where('plan.submittedBy', 'Mart Naide')
@@ -361,10 +361,10 @@ class TechnicalPlanAdminTest extends TestCase
     {
         $user = User::factory()->create();
         $team = $this->teamOf($user, 'Märold');
-        $show = Show::factory()->create(['team_id' => $team->id]);
+        $format = Format::factory()->create(['team_id' => $team->id]);
 
         $plan = TechnicalPlan::factory()->submitted()->create([
-            'performance_id' => Performance::factory()->create(['show_id' => $show->id]),
+            'performance_id' => Performance::factory()->create(['format_id' => $format->id]),
         ]);
 
         // Reading the plan and moving it along are separate rights: the group
@@ -460,8 +460,8 @@ class TechnicalPlanAdminTest extends TestCase
         $author = User::factory()->create(['email' => 'mart@naide.ee']);
         $confirmedBy = User::factory()->create(['name' => 'Tiit Tehnik']);
         $team = Team::factory()->create();
-        $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
-        $performance = Performance::factory()->create(['show_id' => $show->id, 'date' => '2026-08-10']);
+        $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
+        $performance = Performance::factory()->create(['format_id' => $format->id, 'date' => '2026-08-10']);
         $plan = TechnicalPlan::factory()->create([
             'status' => TechnicalPlanStatus::Received,
             'user_id' => $author->id,
@@ -484,8 +484,8 @@ class TechnicalPlanAdminTest extends TestCase
         $author = User::factory()->create();
         $confirmedBy = User::factory()->create();
         $team = Team::factory()->create();
-        $show = Show::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
-        $performance = Performance::factory()->create(['show_id' => $show->id, 'title' => 'Märtu10']);
+        $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
+        $performance = Performance::factory()->create(['format_id' => $format->id, 'title' => 'Märtu10']);
         $plan = TechnicalPlan::factory()->create([
             'status' => TechnicalPlanStatus::Received,
             'user_id' => $author->id,

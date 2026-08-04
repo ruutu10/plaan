@@ -7,7 +7,7 @@ import type { Ref } from 'vue';
  * loaded.
  *
  * The loader returns the rows rather than being handed a route, because most
- * endpoints send something alongside them — the teams a show may be assigned
+ * endpoints send something alongside them — the teams a format may be assigned
  * to, the roles a member may be given — which the caller assigns itself.
  */
 export function useResource<T>(load: () => Promise<T>): {

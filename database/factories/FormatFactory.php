@@ -3,14 +3,14 @@
 namespace Database\Factories;
 
 use App\Enums\CreatedBy;
-use App\Models\Show;
+use App\Models\Format;
 use App\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Show>
+ * @extends Factory<Format>
  */
-class ShowFactory extends Factory
+class FormatFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -28,7 +28,7 @@ class ShowFactory extends Factory
     }
 
     /**
-     * Indicate that the show was registered by the Planka import rather than
+     * Indicate that the format was registered by the Planka import rather than
      * entered by hand.
      */
     public function plankaImported(): static

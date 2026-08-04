@@ -13,11 +13,11 @@
 
 @section('title', 'Tehnikaplaan on kätte saadud')
 
-@section('preheader', $showName.' · tehnik on tehnikaplaani kätte saanud.')
+@section('preheader', $formatName.' · tehnik on tehnikaplaani kätte saanud.')
 
 @section('content')
     <h1 style="margin:0 0 16px 0; font-family:'Futura','Century Gothic','Roboto',Arial,sans-serif; font-size:24px; line-height:1.15; font-weight:700; letter-spacing:0.01em; text-transform:uppercase; color:#0c0f16;">
-        {{ $showName }}
+        {{ $formatName }}
     </h1>
 
     <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6;">
@@ -39,8 +39,8 @@
     <div style="{{ $sectionTitle }}">Etendus</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
         <tr>
-            <td style="{{ $labelCell }}">Lavastus</td>
-            <td style="{{ $cell }}">{{ $showName }}</td>
+            <td style="{{ $labelCell }}">Formaat</td>
+            <td style="{{ $cell }}">{{ $formatName }}</td>
         </tr>
         @if ($performer)
             <tr>

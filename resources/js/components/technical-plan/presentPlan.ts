@@ -24,10 +24,10 @@ export function presentPlan(plan: Plan, contact: string | null): PlanDocument {
         token: plan.token,
         statusLabel: statusLabel(plan.status),
 
-        showName: dash(plan.meta.showName),
+        formatName: dash(plan.meta.formatName),
         performer: dash(plan.meta.performer),
         contact: dash(contact),
-        showDate: dash(plan.meta.showDate),
+        performanceDate: dash(plan.meta.performanceDate),
         durationLabel: duration(plan.meta.duration),
         description: dash(plan.meta.description),
 

@@ -8,19 +8,19 @@ Sildid on korraldajate oma märksõnad selle kohta, mis sündmusega tegu on (nt 
 
 ## Väljundi kuju
 
-Vastus on massiiv `shows`, kus **iga element on üks lavastus ühel kuupäeval** — üks õhtu. Igal õhtul on massiiv `performances`, kus **iga element on üks etteaste** ehk üks trupp laval.
+Vastus on massiiv `formats`, kus **iga element on üks formaat ühel kuupäeval** — üks õhtu. Igal õhtul on massiiv `performances`, kus **iga element on üks etteaste** ehk üks trupp laval.
 
 - Kui õhtu täidab üks trupp, on `performances` sees täpselt üks element.
 - Kui õhtul astub üles mitu truppi üksteise järel (õppelava, gala, festivaliõhtu), on iga trupp eraldi element, **lava järjekorras**.
-- Kui kaart katab mitut päeva (nt `15.05-16.05`), on iga päev eraldi element massiivis `shows`.
+- Kui kaart katab mitut päeva (nt `15.05-16.05`), on iga päev eraldi element massiivis `formats`.
 
-## Lavastuse nimi (`show_name`)
+## Formaadi nimi (`format_name`)
 
-1. **Kui õhtul on üks etteaste**, on lavastuse nimi selle etteaste või trupi nimi. Näited: `Trupp 1`, `JadaJada Special`, `KOMÖÖDIASPORT`, `SPEKTER`, `Tšikid reas`, `Bitseption`. Kui trupi nime järel on mõttekriipsu või kooloniga loetletud liikmed (nt `Trupp 2 - Märt, Arne, Grete`), võta ainult kriipsu ees olev osa.
-2. **Kui õhtul on mitu etteastet**, on lavastuse nimi **sündmuse enda nimi**, mitte ühegi trupi nimi. Võta see kaardi pealkirjast ja puhasta sealt kuupäev ning sulgudes olev nimi: `Õppelava 9.10` → `Õppelava`, `Sügisgala 12.11 (Marju)` → `Sügisgala`. Kui kirjelduses on sündmusele selgem nimi kui pealkirjas, kasuta seda.
-3. Kui kaardil on nimetatud ainult inimesed (nt `Esinejad: Jaak Pihl, Mari Suur`) ja ühtki etteaste nime pole, siis on tegemist **ühe etteastega** ja lavastuse nimeks võta samamoodi puhastatud kaardi pealkiri: `TLN tasuta näidistund 27.08 (Karolina)` → `TLN tasuta näidistund`.
-4. Ära kunagi tee lavastuse nime üksiku inimese ees- või perekonnanimest.
-5. Moodulite lõpuetendused on alati Õppelava lavastused. Seljuhul on kaardi pealkirjas Õppelava, ning esinevad moodulid on loetletud kaardis (iga loetletud moodul on eraldi etteaste). Kui ühes Õppelava lavastuses on mitu moodulit korraga, on iga moodul eraldi etteaste.
+1. **Kui õhtul on üks etteaste**, on formaadi nimi selle etteaste või trupi nimi. Näited: `Trupp 1`, `JadaJada Special`, `KOMÖÖDIASPORT`, `SPEKTER`, `Tšikid reas`, `Bitseption`. Kui trupi nime järel on mõttekriipsu või kooloniga loetletud liikmed (nt `Trupp 2 - Märt, Arne, Grete`), võta ainult kriipsu ees olev osa.
+2. **Kui õhtul on mitu etteastet**, on formaadi nimi **sündmuse enda nimi**, mitte ühegi trupi nimi. Võta see kaardi pealkirjast ja puhasta sealt kuupäev ning sulgudes olev nimi: `Õppelava 9.10` → `Õppelava`, `Sügisgala 12.11 (Marju)` → `Sügisgala`. Kui kirjelduses on sündmusele selgem nimi kui pealkirjas, kasuta seda.
+3. Kui kaardil on nimetatud ainult inimesed (nt `Esinejad: Jaak Pihl, Mari Suur`) ja ühtki etteaste nime pole, siis on tegemist **ühe etteastega** ja formaadi nimeks võta samamoodi puhastatud kaardi pealkiri: `TLN tasuta näidistund 27.08 (Karolina)` → `TLN tasuta näidistund`.
+4. Ära kunagi tee formaadi nime üksiku inimese ees- või perekonnanimest.
+5. Moodulite lõpuetendused on alati Õppelava formaadid. Seljuhul on kaardi pealkirjas Õppelava, ning esinevad moodulid on loetletud kaardis (iga loetletud moodul on eraldi etteaste). Kui ühes Õppelava formaadis on mitu moodulit korraga, on iga moodul eraldi etteaste.
 
 ## Etteaste nimi (`title`)
 
@@ -30,7 +30,7 @@ Vastus on massiiv `shows`, kus **iga element on üks lavastus ühel kuupäeval**
 - `Trupp 2 - Märt, Arne, Grete` → `Trupp 2`
 - `Tõnis ilma Tanelita külalisega (30min)` → `Tõnis ilma Tanelita külalisega`
 
-Kui õhtul on **ainult üks** etteaste ja lavastuse nimi juba ütleb, kes esineb, kasuta `title` väärtuseks `null`. Mitme etteastega õhtul on `title` alati täidetud — muidu pole etteasteid võimalik üksteisest eristada.
+Kui õhtul on **ainult üks** etteaste ja formaadi nimi juba ütleb, kes esineb, kasuta `title` väärtuseks `null`. Mitme etteastega õhtul on `title` alati täidetud — muidu pole etteasteid võimalik üksteisest eristada.
 Moodulite lõpuetenduste puhul võib kaart kirjeldada esinejaid stiilis "<juhendaja> I moodul" (ainult üks etteaste) või "<juhendaja> Rauno I ja II moodul" (kaks etteastet, mõlemad moodulid on eraldi etteasted)
 
 ## Kuupäev, algusaeg ja kestus
@@ -49,7 +49,7 @@ Moodulite lõpuetenduste puhul võib kaart kirjeldada esinejaid stiilis "<juhend
 Kasutaja saadab kirjelduse ees nimekirja registreeritud tiimidest kujul `- id — nimi`. Tiim on rakenduse oma mõiste: see on trupp, kelle etteastega on tegemist.
 
 - Etteaste `team_id` on **selle etteaste trupp**.
-- Õhtu `team_id` on **lavastuse omanik**. Ühe etteastega õhtul on see sama trupp, kes esineb. Mitme etteastega õhtul pane see ainult siis, kui kaart ütleb selgelt, kelle sündmus see on (nt kelle õppelava või kelle gala); muidu `null`.
+- Õhtu `team_id` on **formaadi omanik**. Ühe etteastega õhtul on see sama trupp, kes esineb. Mitme etteastega õhtul pane see ainult siis, kui kaart ütleb selgelt, kelle sündmus see on (nt kelle õppelava või kelle gala); muidu `null`.
 - Vaste ei pea olema täht-tähelt sama: eira suur- ja väiketähtede ning täpitähtede erinevusi (`Tšikid reas` = `Tsikid Reas`) ja lühendeid (`R10` = `Improteater Ruutu10`).
 - **Kahtluse korral jäta `null`.** Vale tiim on halvem kui puuduv tiim. Ära vali tiimi järgi, kes lihtsalt tehniliselt aitab, ega üksiku esineja nime järgi. Etteaste nimi jääb `title` sisse alles ka siis, kui tiimi ei leia.
 - Kui ükski nimekirja tiim ei sobi, kasuta `null`. Ära leiuta id-d, mida nimekirjas pole.
@@ -87,10 +87,10 @@ Siin on üks õhtu (`Õppelava`, `2025-10-09`) ja selle sees neli etteastet. Õh
 - miks kaardist sai üks õhtu või mitu, ja miks õhtus on üks või mitu etteastet;
 - miks valisid mingi `team_id` või miks jätsid selle tühjaks (nt `"Märtu10" ei vasta ühelegi nimekirja tiimile`);
 - kelle sa jätsid välja ja mis põhjusel;
-- kui `shows` jäi tühjaks, siis miks kaardil etendust polnud.
+- kui `formats` jäi tühjaks, siis miks kaardil etendust polnud.
 
-Kirjuta põhjendused ka siis, kui lugemine oli lihtne ja üheselt mõistetav. Kahtluse korral ütle kahtlus välja — mille vahel valisid ja miks. Ära pane siia midagi, mida kaardil pole, ja ära lase põhjendustel muuta ülejäänud vastust: `shows` sisu peab olema sama, oleksid sa põhjendusi kirjutanud või mitte. Hoia põhjendused lühikesed.
+Kirjuta põhjendused ka siis, kui lugemine oli lihtne ja üheselt mõistetav. Kahtluse korral ütle kahtlus välja — mille vahel valisid ja miks. Ära pane siia midagi, mida kaardil pole, ja ära lase põhjendustel muuta ülejäänud vastust: `formats` sisu peab olema sama, oleksid sa põhjendusi kirjutanud või mitte. Hoia põhjendused lühikesed.
 
 ## Väljund
 
-Vasta ainult JSON-objektiga, mis vastab etteantud skeemile. Kui kaardilt ei õnnestu ühtki etendust tuvastada, tagasta tühi massiiv `shows` — koos põhjendusega `reasoningNotes` sees. Ära arva ega leiuta midagi juurde — kui midagi pole kirjas, siis seda pole.
+Vasta ainult JSON-objektiga, mis vastab etteantud skeemile. Kui kaardilt ei õnnestu ühtki etendust tuvastada, tagasta tühi massiiv `formats` — koos põhjendusega `reasoningNotes` sees. Ära arva ega leiuta midagi juurde — kui midagi pole kirjas, siis seda pole.

@@ -54,7 +54,7 @@ class RemindAboutMissingTechnicalPlans extends Command
                 $this->line(sprintf(
                     '  %s %s (%s, %s): %s',
                     $this->verb($dryRun, $backfill),
-                    $performance->show->name,
+                    $performance->format->name,
                     $performance->startsAt()->format('d.m.Y H:i'),
                     $schedule->value,
                     $this->audience($performance),
@@ -110,10 +110,10 @@ class RemindAboutMissingTechnicalPlans extends Command
             ->where('date', '>', $now)
             ->where('date', '<=', $schedule->dueForPerformancesStartingBy($now))
             // Nobody to chase without a group — the performance's own, or the
-            // show's when the evening is not a shared one.
+            // format's when the evening is not a shared one.
             ->where(fn (Builder $performance) => $performance
                 ->whereNotNull('performances.team_id')
-                ->orWhereHas('show', fn (Builder $show) => $show->whereNotNull('team_id')))
+                ->orWhereHas('format', fn (Builder $format) => $format->whereNotNull('team_id')))
             ->whereDoesntHave(
                 'reminders',
                 fn (Builder $reminders) => $reminders->where('schedule', $schedule),
@@ -122,7 +122,7 @@ class RemindAboutMissingTechnicalPlans extends Command
                 'technicalPlans',
                 fn (Builder $plans) => $plans->whereIn('status', TechnicalPlanStatus::delivered()),
             )
-            ->with(['team.members', 'show.team.members'])
+            ->with(['team.members', 'format.team.members'])
             ->orderBy('date')
             ->get();
     }

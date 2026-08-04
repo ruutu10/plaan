@@ -15,7 +15,7 @@ use MagicLink\MagicLink;
  * A performer chased about a plan is by definition somebody who has not got
  * round to it. Anything standing between the mail and the form — remembering
  * which address they used, waiting for a second mail to log in, hunting their
- * show out of a list — is another place to give up, so the link clears all
+ * performance out of a list — is another place to give up, so the link clears all
  * three at once.
  */
 class BuildTechnicalPlanInvite

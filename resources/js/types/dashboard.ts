@@ -1,8 +1,8 @@
 /** The next performance still to be played. */
-export type UpcomingShow = {
-    showName: string;
+export type UpcomingFormat = {
+    formatName: string;
     teamName: string | null;
-    /** ISO date (YYYY-MM-DD) the show is staged on, on the venue's clock. */
+    /** ISO date (YYYY-MM-DD) the format is staged on, on the venue's clock. */
     date: string;
     /** Curtain-up as "19:00", on the venue's clock. */
     startTime: string;
@@ -22,5 +22,5 @@ export type UpcomingSummary = {
      * at all.
      */
     planExpectedWithinDays: number;
-    next: UpcomingShow | null;
+    next: UpcomingFormat | null;
 };

@@ -14,7 +14,7 @@ use Illuminate\Notifications\Notification;
 /**
  * The plan a performer has just submitted, mailed out in full — to the
  * performer as their own copy, and to the technical team as the plan they will
- * play the show from. Both get the same document; only the opening line and
+ * play the format from. Both get the same document; only the opening line and
  * the sharing link's framing differ.
  */
 class TechnicalPlanSubmitted extends Notification implements ShouldQueue
@@ -61,7 +61,7 @@ class TechnicalPlanSubmitted extends Notification implements ShouldQueue
     }
 
     /**
-     * How the plan is named in the subject line: the show it belongs to, or —
+     * How the plan is named in the subject line: the format it belongs to, or —
      * for a plan filled in ahead of any registered performance — its key.
      */
     private function planLabel(): string
@@ -69,7 +69,7 @@ class TechnicalPlanSubmitted extends Notification implements ShouldQueue
         $performance = $this->plan->performance;
 
         $parts = array_values(array_filter([
-            $performance?->show->name,
+            $performance?->format->name,
             $performance?->startsAt()->format('d.m.Y'),
         ]));
 

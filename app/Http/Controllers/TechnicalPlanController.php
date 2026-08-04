@@ -16,6 +16,7 @@ use App\Http\Resources\SavedTechnicalPlan as SavedTechnicalPlanResource;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Http\Resources\TechnicalPlanSummary as TechnicalPlanSummaryResource;
 use App\Http\Resources\UpcomingPerformance as UpcomingPerformanceResource;
+use App\Models\Format;
 use App\Models\Performance;
 use App\Models\TechnicalPlan;
 use App\Models\User;
@@ -33,10 +34,10 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 class TechnicalPlanController extends Controller
 {
     /**
-     * How many past plans a show offers as a starting point. More than a
+     * How many past plans a format offers as a starting point. More than a
      * handful is not a choice, it is a list to read through.
      */
-    private const PRIOR_PLANS_PER_SHOW = 5;
+    private const PRIOR_PLANS_PER_FORMAT = 5;
 
     /**
      * The last step of the wizard, counting from zero — the review page. Kept
@@ -75,7 +76,7 @@ class TechnicalPlanController extends Controller
 
     /**
      * List the plans that have been written — drafts included — as far as the
-     * reader reaches: every plan in the house for the crew running the shows,
+     * reader reaches: every plan in the house for the crew running the formats,
      * and otherwise the reader's own plans and their groups'. See
      * {@see TechnicalPlan::listableBy()}.
      */
@@ -86,7 +87,7 @@ class TechnicalPlanController extends Controller
         // performance are dated years out and so gather at the top, which is
         // where the crew wants them — those are the ones needing a real night.
         $plans = TechnicalPlan::query()
-            ->with(['user', 'performance.team', 'performance.show.team'])
+            ->with(['user', 'performance.team', 'performance.format.team'])
             ->listableBy($request->user())
             ->leftJoin('performances', 'performances.id', '=', 'technical_plans.performance_id')
             ->orderByDesc('performances.date')
@@ -118,7 +119,7 @@ class TechnicalPlanController extends Controller
             abort(403);
         }
 
-        $plan->load(['user', 'performance.team', 'performance.show.team']);
+        $plan->load(['user', 'performance.team', 'performance.format.team']);
 
         return Inertia::render('technical-plans/Show', [
             'plan' => AdminTechnicalPlanResource::make($plan)->resolve($request),
@@ -277,7 +278,7 @@ class TechnicalPlanController extends Controller
     public function lookup(Request $request): JsonResponse
     {
         $plans = TechnicalPlan::query()
-            ->with(['performance.team', 'performance.show.team'])
+            ->with(['performance.team', 'performance.format.team'])
             ->where('user_id', $request->user()->id)
             ->where('status', TechnicalPlanStatus::Submitted)
             ->latest('submitted_at')
@@ -291,11 +292,11 @@ class TechnicalPlanController extends Controller
 
     /**
      * List upcoming performances the user can attach a plan to. Each row also
-     * carries the plans handed in for the same show's other performances, so a new
+     * carries the plans handed in for the same format's other performances, so a new
      * plan can be pre-filled from a past one. Those are not only the user's own:
      * a plan for a performance of one of their teams counts too, which is how
-     * the next plan for a show can be written by someone else in the group than
-     * the one who sent the last. Archived plans are offered too: a show that has
+     * the next plan for a format can be written by someone else in the group than
+     * the one who sent the last. Archived plans are offered too: a format that has
      * been played is exactly the one whose plan the next run starts from.
      *
      * Drafts are left out: a performance the import guessed at is not one to
@@ -304,7 +305,7 @@ class TechnicalPlanController extends Controller
     public function performances(Request $request): JsonResponse
     {
         $upcoming = Performance::query()
-            ->with(['team', 'show.team'])
+            ->with(['team', 'format.team'])
             ->vouchedFor()
             ->excludingPlaceholder()
             // Still to come. A performance carries its curtain-up now, so
@@ -318,23 +319,23 @@ class TechnicalPlanController extends Controller
         // is playing, and it has to stay on offer whatever else is coming up,
         // since a plan can be written no other way when the real performance is
         // not on the books.
-        $placeholder = Performance::placeholder()->load(['team', 'show.team']);
+        $placeholder = Performance::placeholder()->load(['team', 'format.team']);
 
-        // Kept per show rather than as one global list: a single busy show would
+        // Kept per format rather than as one global list: a single busy format would
         // otherwise fill a shared limit and leave every other row offering no
         // prior plan at all. The set is bounded by the upcoming performances
         // above, so it stays small without a limit of its own.
-        $showIds = $upcoming->pluck('show_id')->push($placeholder->show_id)->all();
+        $formatIds = $upcoming->pluck('format_id')->push($placeholder->format_id)->all();
 
         $priorPlans = TechnicalPlan::query()
             ->with(['performance', 'user'])
             ->visibleTo($request->user())
             ->whereIn('status', TechnicalPlanStatus::reusable())
-            ->whereHas('performance', fn ($query) => $query->whereIn('show_id', $showIds))
+            ->whereHas('performance', fn ($query) => $query->whereIn('format_id', $formatIds))
             ->latest('submitted_at')
             ->get()
-            ->groupBy(fn (TechnicalPlan $plan): int => $plan->performance->show_id)
-            ->flatMap(fn (Collection $plans): Collection => $plans->take(self::PRIOR_PLANS_PER_SHOW));
+            ->groupBy(fn (TechnicalPlan $plan): int => $plan->performance->format_id)
+            ->flatMap(fn (Collection $plans): Collection => $plans->take(self::PRIOR_PLANS_PER_FORMAT));
 
         $results = $upcoming->map(
             fn (Performance $performance): array => UpcomingPerformanceResource::make($performance, $priorPlans)->resolve($request),
@@ -404,7 +405,7 @@ class TechnicalPlanController extends Controller
         }
 
         $performance = Performance::query()
-            ->with(['team', 'show.team'])
+            ->with(['team', 'format.team'])
             ->vouchedFor()
             ->where('date', '>', now())
             ->find($id);
@@ -424,10 +425,10 @@ class TechnicalPlanController extends Controller
         return [
             'performanceId' => $performance->id,
             'performer' => $performance->performerName() ?? '',
-            'showName' => $performance->show->name,
-            'showDate' => $performance->startDate(),
+            'formatName' => $performance->format->name,
+            'performanceDate' => $performance->startDate(),
             'duration' => $performance->duration,
-            'description' => $performance->show->description ?? '',
+            'description' => $performance->format->description ?? '',
         ];
     }
 
@@ -458,12 +459,12 @@ class TechnicalPlanController extends Controller
     }
 
     /**
-     * Hydrate an unsaved plan (with its performance, show, team and contact
+     * Hydrate an unsaved plan (with its performance, format, team and contact
      * user) from validated wizard input, so it can be handed to the AI reviewer
      * as a full TechnicalPlan model without saving anything.
      *
      * The night is loaded rather than rebuilt from what the wizard posted: the
-     * show, the group, the date and the running time belong to the performance,
+     * format, the group, the date and the running time belong to the performance,
      * so the reviewer reads the same ones the saved plan would show. The rules
      * have already held the id to a performance that exists.
      *
@@ -476,7 +477,7 @@ class TechnicalPlanController extends Controller
         ]);
 
         $plan->setRelation('performance', Performance::query()
-            ->with(['team', 'show.team'])
+            ->with(['team', 'format.team'])
             ->findOrFail($data['meta']['performanceId']));
         $plan->setRelation('user', $user);
 

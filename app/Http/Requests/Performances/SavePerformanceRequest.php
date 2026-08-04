@@ -21,14 +21,14 @@ class SavePerformanceRequest extends FormRequest
 
         return $performance instanceof Performance
             ? Gate::allows('update', $performance)
-            : Gate::allows('create', [Performance::class, $this->route('show')]);
+            : Gate::allows('create', [Performance::class, $this->route('format')]);
     }
 
     /**
      * A cleared field arrives as an empty string from a plain HTML client. None
      * of these is a bad value: a performance nobody has timed, one nobody has
-     * given an hour, an act the show's own name already names, a slot played by
-     * the show's own group. All are handled further down as an absence.
+     * given an hour, an act the format's own name already names, a slot played by
+     * the format's own group. All are handled further down as an absence.
      */
     protected function prepareForValidation(): void
     {
@@ -42,7 +42,7 @@ class SavePerformanceRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * The show is not among them: a performance belongs to the show in the URL and
+     * The format is not among them: a performance belongs to the format in the URL and
      * is never moved to another by saving it.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
@@ -51,11 +51,11 @@ class SavePerformanceRequest extends FormRequest
     {
         return [
             // The act's own name, for an evening several groups share. Left
-            // out, the show's name is what the performance is listed under.
+            // out, the format's name is what the performance is listed under.
             'title' => ['nullable', 'string', 'max:255'],
-            // The group playing this performance, when it is not the show's
+            // The group playing this performance, when it is not the format's
             // own. Held to the groups the user may hand a performance to, the
-            // way a show's owner is held by SaveShowRequest.
+            // way a format's owner is held by SaveFormatRequest.
             'team_id' => [
                 'nullable',
                 'integer',

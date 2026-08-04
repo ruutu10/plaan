@@ -4,9 +4,9 @@ namespace Tests\Feature;
 
 use App\Actions\Teams\DeleteTeam;
 use App\Enums\TeamRole;
+use App\Models\Format;
 use App\Models\PendingUpload;
 use App\Models\Performance;
-use App\Models\Show;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
@@ -136,21 +136,21 @@ class OperationalLoggingTest extends TestCase
             && $context['reason'] === 'not_a_member');
     }
 
-    public function test_deleting_a_show_records_how_many_performances_went_with_it(): void
+    public function test_deleting_a_format_records_how_many_performances_went_with_it(): void
     {
         $user = User::factory()->create();
         $team = $this->teamOf($user);
-        $show = Show::factory()->create(['team_id' => $team->id]);
+        $format = Format::factory()->create(['team_id' => $team->id]);
 
-        Performance::factory()->count(3)->create(['show_id' => $show->id]);
+        Performance::factory()->count(3)->create(['format_id' => $format->id]);
 
         Log::spy();
 
         $this->actingAs($user)
-            ->deleteJson(route('api.shows.destroy', $show))
+            ->deleteJson(route('api.formats.destroy', $format))
             ->assertNoContent();
 
-        $this->assertLogged('notice', 'Show deleted', fn (array $context): bool => $context['show_id'] === $show->id
+        $this->assertLogged('notice', 'Format deleted', fn (array $context): bool => $context['format_id'] === $format->id
             && $context['team_id'] === $team->id
             && $context['user_id'] === $user->id
             && $context['performances_deleted'] === 3);
@@ -299,8 +299,8 @@ class OperationalLoggingTest extends TestCase
                 // Every plan names the night it is for.
                 'performanceId' => Performance::factory()->create()->id,
                 'performer' => 'Märold',
-                'showName' => 'Festival 2026',
-                'showDate' => '2026-08-01',
+                'formatName' => 'Festival 2026',
+                'performanceDate' => '2026-08-01',
                 'duration' => 25,
                 'description' => 'Improetendus kolmes osas.',
             ],

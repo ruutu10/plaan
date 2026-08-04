@@ -5,8 +5,8 @@ return [
         'view_all' => 'Kõigi tehnikaplaanide vaatamine',
         'edit_all' => 'Kõigi tehnikaplaanide muutmine',
     ],
-    'shows' => [
-        'edit_all' => 'Kõigi lavastuste muutmine',
+    'formats' => [
+        'edit_all' => 'Kõigi formaatide muutmine',
     ],
     'performances' => [
         'edit_all' => 'Kõigi etenduste muutmine',

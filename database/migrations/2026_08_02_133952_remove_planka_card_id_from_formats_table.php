@@ -6,10 +6,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * A show is not a card: it is played on several nights, each its own
+ * A format is not a card: it is played on several nights, each its own
  * {@see Performance}, and each already carries the card it was
- * announced on. A card id on the show itself named no particular night, so
- * whichever card happened to create or last touch the show — not necessarily
+ * announced on. A card id on the format itself named no particular night, so
+ * whichever card happened to create or last touch the format — not necessarily
  * the one anybody actually wants when a date looks wrong.
  */
 return new class extends Migration
@@ -19,7 +19,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('shows', function (Blueprint $table) {
+        Schema::table('formats', function (Blueprint $table) {
             $table->dropColumn('planka_card_id');
         });
     }
@@ -29,7 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('shows', function (Blueprint $table) {
+        Schema::table('formats', function (Blueprint $table) {
             $table->string('planka_card_id')->nullable()->after('description');
         });
     }
