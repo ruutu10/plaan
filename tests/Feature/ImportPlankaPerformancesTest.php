@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Console\Commands\ImportPlankaPerformances;
 use App\Data\ImportedNight;
 use App\Data\ImportedPerformance;
+use App\Data\ImportSummary;
 use App\Enums\CreatedBy;
 use App\Models\ClaudeReasoningLog;
 use App\Models\Format;
@@ -13,7 +15,9 @@ use App\Services\PlankaPerformanceExtractor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Mockery\MockInterface;
+use ReflectionMethod;
 use RuntimeException;
 use Tests\Concerns\AnswersAsTheExtractionModel;
 use Tests\TestCase;
@@ -629,6 +633,89 @@ class ImportPlankaPerformancesTest extends TestCase
             ->assertSuccessful();
 
         $this->assertSame(['Märtu10', 'Improräpp'], Performance::query()->orderBy('date')->pluck('title')->all());
+    }
+
+    public function test_two_untitled_acts_on_one_shared_night_are_kept_apart(): void
+    {
+        // Neither act has a name to be matched by, so a database check keyed on
+        // title alone must not treat the second as a duplicate of the first.
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+        $this->fakeExtraction([
+            new ImportedNight(
+                formatName: 'Õppelava',
+                date: Carbon::parse('2025-10-09'),
+                performances: [
+                    new ImportedPerformance(startTime: '20:00', duration: 20),
+                    new ImportedPerformance(startTime: '20:30', duration: 20),
+                ],
+            ),
+        ]);
+
+        $this->artisan('planka:import')
+            ->expectsOutputToContain('Imported 1 format(s) and 2 performance(s)')
+            ->assertSuccessful();
+
+        $this->assertSame(2, Performance::query()->count());
+    }
+
+    public function test_a_titled_act_a_card_had_already_put_on_the_books_is_not_registered_again(): void
+    {
+        // The exact case a second Planka card can produce: the act is already a
+        // row in the database, by format, date and title, before this card is
+        // ever read.
+        $format = Format::factory()->create(['name' => 'Õppelava']);
+        Performance::factory()->for($format)->create([
+            'date' => Performance::momentFrom('2025-10-09', '20:00'),
+            'title' => 'Märtu10',
+        ]);
+
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+        $this->fakeExtraction([
+            $this->sharedNight('Õppelava', [$this->act('Märtu10', '20:00', 20)]),
+        ]);
+
+        $this->artisan('planka:import')
+            ->expectsOutputToContain('Imported 0 format(s) and 0 performance(s); 0 format(s) handed to a group, 1 already known')
+            ->assertSuccessful();
+
+        $this->assertSame(1, Performance::query()->count());
+    }
+
+    public function test_the_final_database_check_catching_a_duplicate_logs_a_warning(): void
+    {
+        // importNight()'s own batched check already catches the previous
+        // test's case before importPerformance() is ever reached, so the only
+        // way to see the final check actually catch something is to call it
+        // directly — which is also how a second run overlapping this one
+        // would reach it, past the batched check, with the competing row
+        // already on the books.
+        Log::spy();
+
+        $format = Format::factory()->create(['name' => 'Õppelava']);
+        Performance::factory()->for($format)->create([
+            'date' => Performance::momentFrom('2025-10-09', '20:00'),
+            'title' => 'Märtu10',
+        ]);
+
+        $command = $this->app->make(ImportPlankaPerformances::class);
+        $importPerformance = new ReflectionMethod($command, 'importPerformance');
+        $importPerformance->setAccessible(true);
+
+        $night = $this->sharedNight('Õppelava', [$this->act('Märtu10', '20:00', 20)]);
+        $summary = new ImportSummary;
+
+        $importPerformance->invoke($command, $format, $night, $night->performances[0], $summary, false);
+
+        $this->assertSame(1, $summary->skipped);
+        $this->assertSame(1, Performance::query()->count());
+
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn (string $message, array $context): bool => $message
+                === 'Skipped a performance already on the books, caught only by the final database check'
+                && $context['format_id'] === $format->id
+                && $context['title'] === 'Märtu10'
+                && $context['date'] === '2025-10-09')
+            ->once();
     }
 
     public function test_a_shared_evening_of_a_deleted_format_is_passed_over_act_by_act(): void

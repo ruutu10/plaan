@@ -6,7 +6,7 @@ import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 import { attachSentryToVueApp, initializeSentry } from '@/lib/sentry';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'Plaan';
 
 // This must run before the app boots so early errors are captured...
 initializeSentry();

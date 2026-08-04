@@ -318,6 +318,31 @@ class ImportPlankaPerformances extends Command
     ): void {
         $startsAt = Performance::momentFrom($night->date->toDateString(), $act->startTime);
 
+        // A last, literal check against the database itself: two Planka cards
+        // can describe one performance, and {@see actsAlreadyOn()} already
+        // guards the whole night at once, but this asks again for the one act
+        // about to be written, so a way that check was fooled still cannot
+        // leave two rows behind. Asked only for a titled act — one the card
+        // leaves unnamed has nothing but its place in the running order to
+        // tell it from a sibling act the night also left unnamed, and a
+        // literal title match would wrongly treat the second as the first's
+        // duplicate.
+        if ($format !== null && $act->title !== null && $this->performanceAlreadyRecorded($format, $act->title, $night->date)) {
+            $summary->skipped++;
+
+            // The batched check in importNight() should already have caught
+            // this; reaching here means it did not, which is worth knowing
+            // about even though the outcome — no duplicate written — is right.
+            Log::warning('Skipped a performance already on the books, caught only by the final database check', [
+                'card' => $this->cardId,
+                'format_id' => $format->id,
+                'title' => $act->title,
+                'date' => $night->date->toDateString(),
+            ]);
+
+            return;
+        }
+
         $this->line(sprintf(
             '  %s performance: %s%s on %s at %s%s%s',
             $dryRun ? 'Would create' : 'Creating',
@@ -550,14 +575,12 @@ class ImportPlankaPerformances extends Command
             return [];
         }
 
-        $dayBegins = Carbon::parse($night->date->toDateString(), Performance::venueTimezone())
-            ->startOfDay()
-            ->utc();
+        [$dayBegins, $dayEnds] = $this->venueDayBounds($night->date);
 
         $performances = Performance::withTrashed()
             ->where('format_id', $format->id)
             ->where('date', '>=', $dayBegins)
-            ->where('date', '<', $dayBegins->copy()->addDay())
+            ->where('date', '<', $dayEnds)
             ->orderBy('date')
             ->orderBy('id')
             ->get();
@@ -572,5 +595,46 @@ class ImportPlankaPerformances extends Command
         }
 
         return $keys;
+    }
+
+    /**
+     * Whether the database already holds a performance for this exact act: the
+     * same format, the same venue-local day, and the same title. A final,
+     * literal check asked again right before a titled act is written — see
+     * {@see importPerformance()} for why one more question is asked of the
+     * database when {@see actsAlreadyOn()} has already answered for the night.
+     *
+     * Title is matched folded and trimmed in PHP rather than in SQL, for the
+     * reason {@see primeFormats()} does the same: SQLite's `LOWER()` leaves
+     * Estonian capitals alone.
+     */
+    protected function performanceAlreadyRecorded(Format $format, string $title, Carbon $date): bool
+    {
+        [$dayBegins, $dayEnds] = $this->venueDayBounds($date);
+        $title = mb_strtolower(trim($title));
+
+        return Performance::withTrashed()
+            ->where('format_id', $format->id)
+            ->where('date', '>=', $dayBegins)
+            ->where('date', '<', $dayEnds)
+            ->get(['title'])
+            ->contains(fn (Performance $performance): bool => $performance->title !== null
+                && mb_strtolower(trim($performance->title)) === $title);
+    }
+
+    /**
+     * The UTC bounds of one venue-local day, for bracketing a stored UTC date
+     * by the local midnights it falls between — see {@see actsAlreadyOn()} for
+     * why a night is matched by its day rather than its moment.
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    protected function venueDayBounds(Carbon $date): array
+    {
+        $begins = Carbon::parse($date->toDateString(), Performance::venueTimezone())
+            ->startOfDay()
+            ->utc();
+
+        return [$begins, $begins->copy()->addDay()];
     }
 }

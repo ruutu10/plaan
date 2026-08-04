@@ -13,6 +13,7 @@ Vastus on massiiv `formats`, kus **iga element on üks formaat ühel kuupäeval*
 - Kui õhtu täidab üks trupp, on `performances` sees täpselt üks element.
 - Kui õhtul astub üles mitu truppi üksteise järel (õppelava, gala, festivaliõhtu), on iga trupp eraldi element, **lava järjekorras**.
 - Kui kaart katab mitut päeva (nt `15.05-16.05`), on iga päev eraldi element massiivis `formats`.
+- Kui etteaste puhul on tegemist mitme mooduliga korraga (näiteks "Rauno I ja II moodul"), siis on tegemist kahe eraldi etteastega.
 
 ## Formaadi nimi (`format_name`)
 
@@ -30,13 +31,17 @@ Vastus on massiiv `formats`, kus **iga element on üks formaat ühel kuupäeval*
 - `Trupp 2 - Märt, Arne, Grete` → `Trupp 2`
 - `Tõnis ilma Tanelita külalisega (30min)` → `Tõnis ilma Tanelita külalisega`
 
+**Kirjuta inimese nimi alati ainsuse nimetavas käändes**, isegi kui kaart kasutab muud käänet: `Märdi` (omastav) kirjuta `Märt`, `Raunot` (osastav) kirjuta `Rauno`. Sama etteastet võivad eri kaardid nimetada eri käändes, ja käänet ühtlustamata näeks rakendus neid kahe erineva etteastena, mitte ühe ja sama esitusena.
+
 Kui õhtul on **ainult üks** etteaste ja formaadi nimi juba ütleb, kes esineb, kasuta `title` väärtuseks `null`. Mitme etteastega õhtul on `title` alati täidetud — muidu pole etteasteid võimalik üksteisest eristada.
-Moodulite lõpuetenduste puhul võib kaart kirjeldada esinejaid stiilis "<juhendaja> I moodul" (ainult üks etteaste) või "<juhendaja> Rauno I ja II moodul" (kaks etteastet, mõlemad moodulid on eraldi etteasted)
+Moodulite lõpuetenduste puhul võib kaart kirjeldada esinejaid stiilis "<juhendaja> I moodul" (ainult üks etteaste) või "<juhendaja> Rauno I ja II moodul" (kaks etteastet, mõlemad moodulid on eraldi etteasted). Näide: kaart kirjutab "Märdi IV moodul" — `title` on `Märt IV moodul`, mitte `Märdi IV moodul`.
 
 ## Kuupäev, algusaeg ja kestus
 
 - **Kuupäev** (`date`) — otsi kirjeldusest, tüüpiliselt real `Toimumise kuupäev:` või `Etenduse kuupäev:`. Eesti kirjapildis on kuupäev kujul `pp.kk.aaaa` või `pp.kk`.
-- **Aastaarv** — kui kuupäeval aasta puudub, võta see Planka tähtajast. Tähtaeg on sama sündmuse oma ja on usaldusväärne ainult aasta osas; päev ja kuu võta alati kirjeldusest, kui need seal on.
+- **Aastaarv** — kui kuupäeval aasta puudub, on **Planka tähtaja aastaarv ainus lubatud allikas**. Kui ka tähtaeg puudub, kasuta praegust aastat. Päev ja kuu võta alati kirjeldusest, kui need seal on.
+  - **Ära tuleta ega arvuta aastaarvu ise.** Ära otsusta kirjeldusel mainitud muude kuupäevade (nt töötoa- või mooduliperioodi) põhjal, et tähtajast varasem või hilisem aasta oleks "loogilisem" — selline arutlus on ise viga, isegi kui see tundub veenev. Sama kaart peab sama kuupäeva puhul andma sama aastaarvu iga kord, kui seda loetakse.
+  - Kui aastaarvu üle jääb kahtlus, kirjuta see `reasoningNotes` sisse ühe lausega ("tähtajast võetud aastaarv X, kuna kuupäeval aastaarv puudus") ja kasuta ikkagi tähtaja aastaarvu — ära jäta kaarti sel põhjusel välja ega vaheta aastaarvu.
 - **Kestus** (`duration_minutes`) — iga etteaste enda pikkus minutites. Võta see otse tekstist (`Märtu10 (20min)` → 20, `Etteaste kestus: 90 min` → 90) või arvuta kellaaegade vahest (`Show 18:00-19:30` = 90 minutit). Kui sama kellaajaplokk katab mitut truppi, kehtib kestus nende kõigi kohta. Kui kestust ei saa tuletada, kasuta `null`.
 - **Algusaeg** (`start_time`) — kellaaeg, mil see etteaste **laval algab**, kujul `HH:MM` (24 tundi).
   - Kui etteastel on oma kellaaeg kirjas, võta see: `Show 18:00-19:30` → `18:00`, `20:15 Bitseption` → `20:15`.
