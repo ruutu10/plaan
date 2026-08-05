@@ -5,6 +5,8 @@ namespace App\Services;
 use Anthropic\Client;
 use App\Data\ImportedNight;
 use App\Data\ImportedPerformance;
+use App\Data\ImportedStaffMember;
+use App\Enums\PerformanceStaffRole;
 use App\Models\Team;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -178,6 +180,7 @@ class PlankaPerformanceExtractor
                 startTime: $this->readStartTime($entry['start_time'] ?? null),
                 duration: is_numeric($duration) && (int) $duration > 0 ? (int) $duration : null,
                 teamId: $this->readTeamId($entry['team_id'] ?? null),
+                staff: $this->readStaff($entry['staff'] ?? null),
             );
         }
 
@@ -191,10 +194,41 @@ class PlankaPerformanceExtractor
                 startTime: $performances[0]->startTime,
                 duration: $performances[0]->duration,
                 teamId: $performances[0]->teamId,
+                staff: $performances[0]->staff,
             );
         }
 
         return $performances;
+    }
+
+    /**
+     * The people the model named for one act — cast and crew alike. An entry
+     * with no usable name or a role outside {@see PerformanceStaffRole} is
+     * dropped rather than guessed at, the same defence the schema's own `enum`
+     * already gives this field once, kept here in case that ever changes.
+     *
+     * @return list<ImportedStaffMember>
+     */
+    protected function readStaff(mixed $entries): array
+    {
+        $staff = [];
+
+        foreach (is_array($entries) ? $entries : [] as $entry) {
+            if (! is_array($entry)) {
+                continue;
+            }
+
+            $name = trim((string) ($entry['name'] ?? ''));
+            $role = PerformanceStaffRole::tryFrom((string) ($entry['role'] ?? ''));
+
+            if ($name === '' || $role === null) {
+                continue;
+            }
+
+            $staff[] = new ImportedStaffMember($name, $role);
+        }
+
+        return $staff;
     }
 
     /**
@@ -333,8 +367,28 @@ class PlankaPerformanceExtractor
                                             ],
                                             'description' => 'Id of the group performing this act, from the list given, or null when no group is a clear match.',
                                         ],
+                                        'staff' => [
+                                            'type' => 'array',
+                                            'description' => 'Every named person staffing this act, on stage or behind it, whose job is one of the given roles. Anyone whose role does not clearly match one of them is left out entirely.',
+                                            'items' => [
+                                                'type' => 'object',
+                                                'properties' => [
+                                                    'name' => [
+                                                        'type' => 'string',
+                                                        'description' => 'The person\'s first name, in the singular nominative — the same normalisation as a performance title.',
+                                                    ],
+                                                    'role' => [
+                                                        'type' => 'string',
+                                                        'enum' => PerformanceStaffRole::values(),
+                                                        'description' => 'What this person does at the performance.',
+                                                    ],
+                                                ],
+                                                'required' => ['name', 'role'],
+                                                'additionalProperties' => false,
+                                            ],
+                                        ],
                                     ],
-                                    'required' => ['title', 'start_time', 'duration_minutes', 'team_id'],
+                                    'required' => ['title', 'start_time', 'duration_minutes', 'team_id', 'staff'],
                                     'additionalProperties' => false,
                                 ],
                             ],

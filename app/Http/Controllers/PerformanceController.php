@@ -73,9 +73,32 @@ class PerformanceController extends Controller
             ->with(['team', 'reasoningLogs'])
             ->withCount('technicalPlans')
             ->orderBy('date')
-            ->get();
+            ->get()
+            // Every row's format is the one already in hand — set rather than
+            // asked for again, so the resource's formatName costs nothing extra
+            // here.
+            ->each(fn (Performance $performance) => $performance->setRelation('format', $format));
 
         return PerformanceResource::collection($performances)->additional([
+            'teams' => Performance::assignableTeams($request->user())
+                ->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])
+                ->values(),
+        ]);
+    }
+
+    /**
+     * Return a single performance, together with the staff imported for it and
+     * the groups it may be handed to — the details screen's own edit form needs
+     * the same choice {@see index()} offers, and one round trip is enough for
+     * both.
+     */
+    public function show(Request $request, Format $format, Performance $performance): PerformanceResource
+    {
+        Gate::authorize('view', $performance);
+
+        return PerformanceResource::make(
+            $performance->load(['team', 'staff', 'reasoningLogs'])->loadCount('technicalPlans'),
+        )->additional([
             'teams' => Performance::assignableTeams($request->user())
                 ->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])
                 ->values(),
@@ -96,7 +119,9 @@ class PerformanceController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        return PerformanceResource::make($performance->load('team')->loadCount('technicalPlans'))
+        return PerformanceResource::make(
+            $performance->setRelation('format', $format)->load('team')->loadCount('technicalPlans'),
+        )
             ->response()
             ->setStatusCode(SymfonyResponse::HTTP_CREATED);
     }
@@ -120,7 +145,9 @@ class PerformanceController extends Controller
             'changed' => $changed,
         ]);
 
-        return PerformanceResource::make($performance->load('team')->loadCount('technicalPlans'));
+        return PerformanceResource::make(
+            $performance->setRelation('format', $format)->load('team')->loadCount('technicalPlans'),
+        );
     }
 
     /**

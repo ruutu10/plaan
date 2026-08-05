@@ -11,6 +11,7 @@ use App\Models\ClaudeReasoningLog;
 use App\Models\Format;
 use App\Models\Performance;
 use App\Models\Team;
+use App\Services\PerformanceStaffSync;
 use App\Services\PlankaClient;
 use App\Services\PlankaPerformanceExtractor;
 use Illuminate\Console\Attributes\Description;
@@ -78,6 +79,7 @@ class ImportPlankaPerformances extends Command
     public function __construct(
         protected PlankaClient $planka,
         protected PlankaPerformanceExtractor $extractor,
+        protected PerformanceStaffSync $staffing,
     ) {
         parent::__construct();
     }
@@ -294,7 +296,7 @@ class ImportPlankaPerformances extends Command
             $key = $act->key($index);
 
             // The same act named twice under one night is one performance.
-            if (isset($seen[$key]) || isset($known[$key])) {
+            if (isset($seen[$key])) {
                 $summary->skipped++;
 
                 continue;
@@ -302,8 +304,37 @@ class ImportPlankaPerformances extends Command
 
             $seen[$key] = true;
 
+            if (isset($known[$key])) {
+                $summary->skipped++;
+
+                // Everything else about an act already on the books is left
+                // exactly as it is — see importCard()'s doc comment — but the
+                // staff table is the one thing nobody edits by hand, so a card
+                // that changed its crew still overwrites it, even on a night
+                // that adds nothing new.
+                $this->syncStaff($known[$key], $act, $dryRun);
+
+                continue;
+            }
+
             $this->importPerformance($format, $night, $act, $summary, $dryRun);
         }
+    }
+
+    /**
+     * Write this act's staff exactly as the card gives it, replacing whatever
+     * was there before. A performance a technician has since put aside is left
+     * alone — its staff table is not worth resurrecting along with it — and
+     * nothing is written in a dry run, which reports what it would do without
+     * touching the database.
+     */
+    protected function syncStaff(Performance $performance, ImportedPerformance $act, bool $dryRun): void
+    {
+        if ($dryRun || $performance->trashed()) {
+            return;
+        }
+
+        $this->staffing->sync($performance, $act->staff);
     }
 
     /**
@@ -383,6 +414,8 @@ class ImportPlankaPerformances extends Command
         $log = $this->logForCard($dryRun);
         $log?->link($created);
         $log?->link($format);
+
+        $this->staffing->sync($created, $act->staff);
 
         Log::info('Registered a performance from a Planka card', [
             'performance_id' => $created->id,
@@ -567,7 +600,11 @@ class ImportPlankaPerformances extends Command
      * were told apart at all — and every one already on the books is — keeps
      * being recognised.
      *
-     * @return array<string, true>
+     * The performance itself rides along with its key rather than a bare
+     * marker: an act the card still describes has its staff re-synced even
+     * when nothing else about it is touched — see {@see importNight()}.
+     *
+     * @return array<string, Performance>
      */
     protected function actsAlreadyOn(?Format $format, ImportedNight $night): array
     {
@@ -591,7 +628,7 @@ class ImportPlankaPerformances extends Command
         foreach ($performances as $performance) {
             $keys[$performance->title === null
                 ? '#'.$unnamed++
-                : mb_strtolower(trim($performance->title))] = true;
+                : mb_strtolower(trim($performance->title))] = $performance;
         }
 
         return $keys;

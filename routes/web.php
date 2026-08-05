@@ -9,6 +9,7 @@ use App\Http\Controllers\FormatPageController;
 use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PerformanceController;
+use App\Http\Controllers\PerformancePageController;
 use App\Http\Controllers\Teams\TeamAdminController;
 use App\Http\Controllers\Teams\TeamAdminMemberController;
 use App\Http\Controllers\Teams\TeamAdminPageController;
@@ -96,6 +97,13 @@ Route::prefix('api/tehnikaplaan')
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('formats', [FormatPageController::class, 'index'])->name('formats.index');
     Route::get('formats/{format}/edit', [FormatPageController::class, 'edit'])->name('formats.edit');
+
+    // A single performance's own details, reached from the format's edit page.
+    // Scoped bindings tie the performance to the format in the URL, matching
+    // the JSON API this shell reads from.
+    Route::get('formats/{format}/performances/{performance}', [PerformancePageController::class, 'show'])
+        ->name('formats.performances.show')
+        ->scopeBindings();
 });
 
 // JSON API for format management. A user reaches the formats of the groups they
@@ -126,6 +134,7 @@ Route::prefix('api/formats')
             ->group(function () {
                 Route::get('/', [PerformanceController::class, 'index'])->name('index');
                 Route::post('/', [PerformanceController::class, 'store'])->name('store');
+                Route::get('{performance}', [PerformanceController::class, 'show'])->name('show');
                 Route::patch('{performance}', [PerformanceController::class, 'update'])->name('update');
                 Route::delete('{performance}', [PerformanceController::class, 'destroy'])->name('destroy');
 

@@ -7,6 +7,7 @@ use App\Concerns\LogsModelActivity;
 use App\Concerns\ScopedByTeamAccess;
 use App\Enums\CreatedBy;
 use App\Enums\ReminderSchedule;
+use App\Services\PerformanceStaffSync;
 use Carbon\CarbonInterface;
 use Database\Factories\PerformanceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -57,6 +59,7 @@ use Illuminate\Support\Facades\Date;
  * @property-read Collection<int, PerformanceReminder> $reminders
  * @property-read int|null $reminders_count
  * @property-read Collection<int, ClaudeReasoningLog> $reasoningLogs
+ * @property-read Collection<int, User> $staff
  */
 #[Fillable([
     'format_id',
@@ -287,6 +290,22 @@ class Performance extends Model
     public function reminders(): HasMany
     {
         return $this->hasMany(PerformanceReminder::class);
+    }
+
+    /**
+     * The people staffing this performance — on stage and behind it — as read
+     * off its Planka card. Read-only in the app: see
+     * {@see PerformanceStaffSync}, the only place a row here is
+     * ever written.
+     *
+     * @return BelongsToMany<User, $this, PerformanceStaff, 'pivot'>
+     */
+    public function staff(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'performance_staff')
+            ->using(PerformanceStaff::class)
+            ->withPivot(['role'])
+            ->withTimestamps();
     }
 
     /**

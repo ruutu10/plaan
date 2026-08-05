@@ -3,7 +3,6 @@ import { useHttp } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { toast } from 'vue-sonner';
 import PlankaCardField from '@/components/PlankaCardField.vue';
-import RecordOriginFields from '@/components/RecordOriginFields.vue';
 import R10FormDialog from '@/components/technical-plan/R10FormDialog.vue';
 import R10Input from '@/components/technical-plan/R10Input.vue';
 import R10Select from '@/components/technical-plan/R10Select.vue';
@@ -206,14 +205,5 @@ async function save(): Promise<void> {
                 {{ form.errors.is_draft }}
             </span>
         </div>
-
-        <!-- Only for a performance that exists: one being added has no origin
-             to report yet, and saying "käsitsi lisatud" before it is saved
-             would be reporting the form back to whoever is filling it in. -->
-        <RecordOriginFields
-            v-if="performance"
-            :created-by="performance.createdBy"
-            :created-at="performance.createdAt"
-        />
     </R10FormDialog>
 </template>

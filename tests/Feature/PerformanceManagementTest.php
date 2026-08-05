@@ -40,6 +40,10 @@ class PerformanceManagementTest extends TestCase
             ->assertJsonPath('data.0.date', '2026-08-01')
             ->assertJsonPath('data.0.duration', 75)
             ->assertJsonPath('data.0.technicalPlanCount', 0)
+            // The format rides along without an extra query per row — see
+            // PerformanceController::index()'s own setRelation() call.
+            ->assertJsonPath('data.0.formatId', $format->id)
+            ->assertJsonPath('data.0.formatName', $format->name)
             ->assertJsonPath('data.1.id', $later->id);
     }
 

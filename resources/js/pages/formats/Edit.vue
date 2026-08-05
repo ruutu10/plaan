@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { UrlMethodPair } from '@inertiajs/core';
-import { Head, useHttp } from '@inertiajs/vue3';
+import { Head, Link, useHttp } from '@inertiajs/vue3';
 import {
     ExternalLink,
     FileClock,
@@ -32,6 +32,7 @@ import {
     index as performancesApi,
 } from '@/routes/api/formats/performances';
 import { edit, index } from '@/routes/formats';
+import { show as performancePage } from '@/routes/formats/performances';
 import type {
     Format,
     FormatFormData,
@@ -54,7 +55,7 @@ const canEditFormat = ref(true);
 
 const performanceModalOpen = ref(false);
 const deleteModalOpen = ref(false);
-/** The performance a modal is working on; null in the add-a-performance case. */
+/** The performance a delete or a reasoning-log dialog is working on. */
 const chosenPerformance = ref<Performance | null>(null);
 /** Where the log dialog reads from; null until a button is pressed. */
 const chosenLogSource = ref<UrlMethodPair | null>(null);
@@ -121,12 +122,6 @@ const {
 });
 
 function openAddPerformance(): void {
-    chosenPerformance.value = null;
-    performanceModalOpen.value = true;
-}
-
-function openEditPerformance(performance: Performance): void {
-    chosenPerformance.value = performance;
     performanceModalOpen.value = true;
 }
 
@@ -361,16 +356,18 @@ async function save(): Promise<void> {
                                 <span class="sr-only">Põhjendused</span>
                             </button>
 
-                            <button
-                                type="button"
-                                title="Muuda etendust"
+                            <Link
+                                :href="
+                                    performancePage([formatId, performance.id])
+                                        .url
+                                "
+                                title="Ava etendus"
                                 data-test="edit-performance-button"
                                 class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-navy bg-white p-2 text-r10-navy transition hover:bg-r10-navy hover:text-white"
-                                @click="openEditPerformance(performance)"
                             >
                                 <Pencil class="h-3.5 w-3.5" />
-                                <span class="sr-only">Muuda</span>
-                            </button>
+                                <span class="sr-only">Ava etendus</span>
+                            </Link>
 
                             <button
                                 type="button"
@@ -391,7 +388,7 @@ async function save(): Promise<void> {
         <PerformanceModal
             v-model:open="performanceModalOpen"
             :format-id="formatId"
-            :performance="chosenPerformance"
+            :performance="null"
             :teams="performanceTeams"
             @saved="reloadPerformances"
         />

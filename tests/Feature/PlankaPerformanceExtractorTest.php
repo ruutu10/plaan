@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PerformanceStaffRole;
 use App\Models\Team;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
@@ -179,8 +180,16 @@ class PlankaPerformanceExtractorTest extends TestCase
             $formats['items']['required'],
         );
         $this->assertSame(
-            ['title', 'start_time', 'duration_minutes', 'team_id'],
+            ['title', 'start_time', 'duration_minutes', 'team_id', 'staff'],
             $formats['items']['properties']['performances']['items']['required'],
+        );
+        $this->assertSame(
+            ['name', 'role'],
+            $formats['items']['properties']['performances']['items']['properties']['staff']['items']['required'],
+        );
+        $this->assertSame(
+            PerformanceStaffRole::values(),
+            $formats['items']['properties']['performances']['items']['properties']['staff']['items']['properties']['role']['enum'],
         );
 
         // The reading is only debuggable if the model says how it read the card.
@@ -314,6 +323,75 @@ class PlankaPerformanceExtractorTest extends TestCase
         $this->assertCount(1, $nights);
         $this->assertSame('Trupp 2', $nights[0]->formatName);
         $this->assertNull($nights[0]->performances[0]->duration);
+    }
+
+    public function test_it_reads_the_staff_the_model_named(): void
+    {
+        $nights = $this->extractorAnswering((string) json_encode([
+            'formats' => [[
+                'format_name' => 'Õppelava',
+                'date' => '2025-10-09',
+                'performances' => [[
+                    'title' => 'Märtu10',
+                    'staff' => [
+                        ['name' => 'Arne', 'role' => 'host'],
+                        ['name' => 'Tom', 'role' => 'technician'],
+                    ],
+                ]],
+            ]],
+        ]))->extract('Õppelava 9.10', 'Õhtujuht: Arne');
+
+        $staff = $nights[0]->performances[0]->staff;
+
+        $this->assertCount(2, $staff);
+        $this->assertSame('Arne', $staff[0]->name);
+        $this->assertSame(PerformanceStaffRole::Host, $staff[0]->role);
+        $this->assertSame('Tom', $staff[1]->name);
+        $this->assertSame(PerformanceStaffRole::Technician, $staff[1]->role);
+    }
+
+    public function test_it_drops_a_staff_entry_with_no_name_or_an_unknown_role(): void
+    {
+        $nights = $this->extractorAnswering((string) json_encode([
+            'formats' => [[
+                'format_name' => 'Õppelava',
+                'date' => '2025-10-09',
+                'performances' => [[
+                    'title' => 'Märtu10',
+                    // A role outside the enum cannot come back from a real,
+                    // schema-constrained answer, but the parser is defensive
+                    // about it anyway — see readStaff()'s doc comment.
+                    'staff' => [
+                        ['name' => '', 'role' => 'host'],
+                        ['name' => 'Marju', 'role' => 'project-manager'],
+                        ['name' => 'Tom', 'role' => 'technician'],
+                    ],
+                ]],
+            ]],
+        ]))->extract('Õppelava 9.10', 'Kaardi tekst');
+
+        $staff = $nights[0]->performances[0]->staff;
+
+        $this->assertCount(1, $staff);
+        $this->assertSame('Tom', $staff[0]->name);
+    }
+
+    public function test_the_title_stripped_from_a_lone_act_keeps_its_staff(): void
+    {
+        $nights = $this->extractorAnswering((string) json_encode([
+            'formats' => [[
+                'format_name' => 'Trupp 1',
+                'date' => '2025-09-13',
+                'performances' => [[
+                    'title' => 'Trupp 1',
+                    'staff' => [['name' => 'Ando', 'role' => 'technician']],
+                ]],
+            ]],
+        ]))->extract('13.09 õhtu', 'Heli- ja valgus: Ando');
+
+        $this->assertNull($nights[0]->performances[0]->title);
+        $this->assertCount(1, $nights[0]->performances[0]->staff);
+        $this->assertSame('Ando', $nights[0]->performances[0]->staff[0]->name);
     }
 
     public function test_an_answer_that_is_not_a_night_list_yields_nothing(): void

@@ -412,6 +412,10 @@ valikuliselt kestus, valikuliselt oma pealkiri ja oma esinev tiim (jagatud
   ega kuupäeva. Ekraan hoiatab, kui neid on; tagasitee on etendus taastada või
   plaan avada ja esimesest sammust mõne teise etenduse peale tõsta.
 
+Igal etendusel on ka oma leht (avatav muutmisnimekirja pliiatsinupust), kus
+lisaks eelnimetatud väljadele näeb ka etenduse **meeskonda**, kui see on
+Plankast imporditud - vt §11.2.
+
 ### 7.3 Mustandietendused
 
 Mustandiks märgitud etendus on selline, mille automaatne import registreeris ja
@@ -524,6 +528,26 @@ Kuna lugemist teeb AI, **säilitatakse iga imporditud kirje taga olev
 arutluskäik** ning tehnikud ja majarahvas saavad selle formaadi ja etenduse
 ekraanidelt lahti teha - nii jõuab vale kuupäev tagasi kaardini, kust see tuli.
 Kirjed näitavad, kas need sisestati käsitsi või impordiga.
+
+### 11.2 Meeskonna import
+
+Sama importija loeb kaardilt ka iga etenduse **meeskonna** - nii laval olevad
+esinejad (kui kaart nimetab neid nimepidi) kui lava taga töötavad inimesed.
+Tuntakse ainult järgnevaid rolle: **esineja**, **õhtujuht**, **heli- ja
+valgustehnik**, **operaator/videoprodutsent**, **piletimüüja** ja **baar**.
+Kõik muu, mida kaart mainib (fotograaf, projektijuht, turundus, vastutaja
+jms), jäetakse importimata.
+
+Kaardil on inimesed enamasti kirjas ainult eesnimega. Süsteem otsib selle nime
+järgi kasutajakontot, kelle **e-posti aadress on ühel teatri enda
+domeenidest** (vt §2.4) - nii ei aeta näiteks kahte eri "Märti" segamini. Kui
+nime järgi ei leidu ühtki sobivat kontot, või kui sobivaid on mitu, jäetakse
+see inimene lisamata.
+
+Meeskond on nähtav ainult etenduse enda lehel (§7.2) ja on **puhtalt loetav** -
+seda ei saa käsitsi muuta ega täiendada. Iga uus import kirjutab eelmise
+meeskonna üle, nii et kui kaardil roll muutub, lisandub või kaob, kajastub see
+sama moodi ka siin.
 
 ---
 

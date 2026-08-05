@@ -39,6 +39,15 @@ class PerformancePolicy
     }
 
     /**
+     * Determine whether the user can open the performance's own details page:
+     * the same reach as editing it, since the page exists to correct it.
+     */
+    public function view(User $user, Performance $performance): bool
+    {
+        return $performance->isEditableBy($user);
+    }
+
+    /**
      * Determine whether the user can update the performance.
      */
     public function update(User $user, Performance $performance): bool
