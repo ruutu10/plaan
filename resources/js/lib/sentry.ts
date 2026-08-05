@@ -26,7 +26,7 @@ let feedbackActor: ReturnType<
  * errors thrown while resolving the initial page are still reported.
  */
 export function initializeSentry(): void {
-    if (!dsn) {
+    if (!dsn || typeof window === 'undefined') {
         return;
     }
 
