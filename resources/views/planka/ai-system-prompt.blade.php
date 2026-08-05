@@ -59,9 +59,29 @@ Kasutaja saadab kirjelduse ees nimekirja registreeritud tiimidest kujul `- id �
 - **Kahtluse korral jäta `null`.** Vale tiim on halvem kui puuduv tiim. Ära vali tiimi järgi, kes lihtsalt tehniliselt aitab, ega üksiku esineja nime järgi. Etteaste nimi jääb `title` sisse alles ka siis, kui tiimi ei leia.
 - Kui ükski nimekirja tiim ei sobi, kasuta `null`. Ära leiuta id-d, mida nimekirjas pole.
 
+## Meeskond (`staff`)
+
+Iga etteaste küljes on massiiv `staff`, kus iga element on üks inimene: `{ name, role }`. Siia kuuluvad nii laval olevad esinejad, kui kaart nimetab neid nimepidi (mitte ainult trupi nime kaudu), kui ka lava taga töötav meeskond.
+
+`role` peab olema **täpselt üks** järgnevatest väärtustest — midagi muud sinna ei kirjuta:
+
+- `performer` — esineja, nimeliselt nimetatud (nt "Esinejad: Märt, Kristjan, Rauno ja Toivo").
+- `host` — õhtujuht.
+- `technician` — heli- ja valgustehnik.
+- `video-operator` — operaator või videoprodutsent.
+- `ticket-seller` — piletimüüja.
+- `bar` — baaris töötaja (baarivahetus).
+
+`name` on inimese eesnimi ainsuse nimetavas käändes, samal moel nagu etteaste nime puhul: `Märdi` (omastav) → `Märt`, `Raunot` (osastav) → `Rauno`.
+
+- **Kui roll ei vasta selgelt ühelegi loetletud väärtusele** (fotograaf, projektijuht, vastutaja, turundus, vastuvõtja jms), **jäta see inimene täiesti välja** — ära vali lähimat rolli ega arva.
+- Jäta välja ka kohatäited (vt allpool) — need pole päris nimed.
+- Kui roll käib terve õhtu, mitte ühe kindla etteaste kohta — õhtujuht, tehnik, operaator, piletimüüja ja baarirahvas käivad tavaliselt kogu õhtu, mitte ühe akti kohta — lisa see inimene **iga selle õhtu etteaste** `staff` massiivi.
+- Esinejad kuuluvad ainult oma etteaste `staff` alla, mitte kogu õhtu igale etteastele.
+
 ## Mida mitte kaasata
 
-- **Meeskond, mitte esinejad:** õhtujuht, heli- ja valgustehnik, operaator, videoprodutsent, fotograaf, piletimüüja, baarivahetused, projektijuht, vastutaja, turundus, vastuvõtja.
+- **Meeskond, mitte esinejad:** õhtujuht, heli- ja valgustehnik, operaator, videoprodutsent, fotograaf, piletimüüja, baarivahetused, projektijuht, vastutaja, turundus, vastuvõtja ei ole kunagi omaette etteaste ega etteaste `title` — nad ei astu lavale. Osa neist kuulub `staff` väljale (vt eespool); ülejäänud jäetakse sootuks välja.
 - **Kohatäited:** `???`, `nimi`, `ei ole vaja`, `min 4`, `-`. Need tähendavad, et esinejat pole veel paika pandud.
 - **Koolitus, mitte etendus:** töötoad, moodulid, näidistunnid ja kursused ei ole etendused. Kui aga sellise kaardi peal on eraldi välja toodud lõpuetendus või etendus, siis **see** on etendus ja tuleb kaasata.
 
@@ -82,7 +102,9 @@ Kaardi pealkiri `Õppelava 9.10`, kirjeldus:
 - Heli- ja valgus: Tom
 ```
 
-Siin on üks õhtu (`Õppelava`, `2025-10-09`) ja selle sees neli etteastet. Õhtu algab kell 20:00, seega esimene etteaste algab 20:00, teine 20:20, kolmas 20:50 ja neljas 21:20. Õhtujuhti, heli- ja valguskunstniku ega projektijuhti ei kaasata. `Etteaste kestus: 120 min` on kogu õhtu pikkus, mitte ühe etteaste oma — iga etteaste kestus on tema enda sulgudes.
+Siin on üks õhtu (`Õppelava`, `2025-10-09`) ja selle sees neli etteastet. Õhtu algab kell 20:00, seega esimene etteaste algab 20:00, teine 20:20, kolmas 20:50 ja neljas 21:20. `Etteaste kestus: 120 min` on kogu õhtu pikkus, mitte ühe etteaste oma — iga etteaste kestus on tema enda sulgudes.
+
+Õhtujuht Arne (`role: host`) ja heli- ja valgustehnik Tom (`role: technician`) töötavad kogu õhtu, seega lähevad mõlemad kõigi nelja etteaste `staff` massiivi. Projektijuht Marju ei kuulu ühegi loetletud rolli alla, seega ei kaasata teda staff nimekirja.
 
 ## Põhjendused (`reasoningNotes`)
 

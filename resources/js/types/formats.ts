@@ -5,6 +5,27 @@
  */
 export type CreatedBy = 'manual' | 'planka-import';
 
+/**
+ * What a person is to one performance, as the Planka import reads a card's
+ * cast and crew. Never set by hand — see {@link Performance.staff}.
+ */
+export type PerformanceStaffRole =
+    | 'performer'
+    | 'host'
+    | 'technician'
+    | 'video-operator'
+    | 'ticket-seller'
+    | 'bar';
+
+/** One person staffing one performance, imported from its Planka card. */
+export interface PerformanceStaffMember {
+    id: number;
+    name: string;
+    email: string;
+    role: PerformanceStaffRole;
+    roleLabel: string;
+}
+
 /** One format as the management screens list and edit it. */
 export interface Format {
     id: number;
@@ -67,6 +88,9 @@ export type FormatFieldErrors = Partial<Record<keyof FormatFormData, string>>;
 /** One dated performance of a format. */
 export interface Performance {
     id: number;
+    /** The format this is a performance of — where it opens for editing. */
+    formatId: number;
+    formatName: string;
     /**
      * The act's own name, for an evening several groups share. Null when the
      * format's own name already says what is played.
@@ -111,6 +135,13 @@ export interface Performance {
      * venue's clock. Not the date it is played — that is `date` above.
      */
     createdAt: string | null;
+    /**
+     * Who staffs this performance — cast and crew alike — as imported from
+     * Planka. Read-only: there is no form field that writes it. Present only
+     * where the server eager-loaded it — the performance's own details page,
+     * not the list a format's edit page shows.
+     */
+    staff?: PerformanceStaffMember[];
 }
 
 /**

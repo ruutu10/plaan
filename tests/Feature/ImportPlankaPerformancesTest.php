@@ -5,12 +5,15 @@ namespace Tests\Feature;
 use App\Console\Commands\ImportPlankaPerformances;
 use App\Data\ImportedNight;
 use App\Data\ImportedPerformance;
+use App\Data\ImportedStaffMember;
 use App\Data\ImportSummary;
 use App\Enums\CreatedBy;
+use App\Enums\PerformanceStaffRole;
 use App\Models\ClaudeReasoningLog;
 use App\Models\Format;
 use App\Models\Performance;
 use App\Models\Team;
+use App\Models\User;
 use App\Services\PlankaPerformanceExtractor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -127,6 +130,7 @@ class ImportPlankaPerformancesTest extends TestCase
         ?int $duration = 90,
         ?int $teamId = null,
         ?string $startTime = null,
+        array $staff = [],
     ): ImportedNight {
         return new ImportedNight(
             formatName: $name,
@@ -137,6 +141,7 @@ class ImportPlankaPerformancesTest extends TestCase
                     startTime: $startTime,
                     duration: $duration,
                     teamId: $teamId,
+                    staff: $staff,
                 ),
             ],
         );
@@ -165,13 +170,23 @@ class ImportPlankaPerformancesTest extends TestCase
         ?string $startTime = null,
         ?int $duration = null,
         ?int $teamId = null,
+        array $staff = [],
     ): ImportedPerformance {
         return new ImportedPerformance(
             title: $title,
             startTime: $startTime,
             duration: $duration,
             teamId: $teamId,
+            staff: $staff,
         );
+    }
+
+    /**
+     * One name and role, as the AI would have read it off a card's crew list.
+     */
+    private function staffMember(string $name, PerformanceStaffRole $role): ImportedStaffMember
+    {
+        return new ImportedStaffMember($name, $role);
     }
 
     public function test_an_imported_performance_keeps_the_hour_the_card_named(): void
@@ -1258,5 +1273,179 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->artisan('planka:import')
             ->expectsOutputToContain('Could not read the Planka lists')
             ->assertFailed();
+    }
+
+    public function test_a_staff_member_named_on_the_card_is_matched_to_a_house_account(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        $arne = User::factory()->create(['name' => 'Arne Tamm', 'email' => 'arne@ruutu10.ee']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([
+            $this->night('Trupp 1', staff: [$this->staffMember('Arne', PerformanceStaffRole::Host)]),
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $staffing = Performance::sole()->staff()->sole();
+
+        $this->assertSame($arne->id, $staffing->id);
+        $this->assertSame(PerformanceStaffRole::Host, $staffing->pivot->role);
+    }
+
+    public function test_a_name_that_matches_nobody_in_the_house_is_left_unmatched(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([
+            $this->night('Trupp 1', staff: [$this->staffMember('Keegi', PerformanceStaffRole::Host)]),
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame(0, Performance::sole()->staff()->count());
+    }
+
+    public function test_a_name_shared_by_two_house_accounts_is_left_unmatched(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        User::factory()->create(['name' => 'Märt Kask', 'email' => 'mart.kask@ruutu10.ee']);
+        User::factory()->create(['name' => 'Märt Ots', 'email' => 'mart.ots@ruutu10.ee']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([
+            $this->night('Trupp 1', staff: [$this->staffMember('Märt', PerformanceStaffRole::Technician)]),
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        // Two different people, not one wrong guess — the same reasoning that
+        // leaves an ambiguous team_id null.
+        $this->assertSame(0, Performance::sole()->staff()->count());
+    }
+
+    public function test_a_name_outside_the_house_domains_is_left_unmatched(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        // Shares the first name and is otherwise a perfectly good account — a
+        // guest performer's, most likely — just not one on the house's own mail.
+        User::factory()->create(['name' => 'Arne Guest', 'email' => 'arne@example.com']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([
+            $this->night('Trupp 1', staff: [$this->staffMember('Arne', PerformanceStaffRole::Host)]),
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame(0, Performance::sole()->staff()->count());
+    }
+
+    public function test_reimporting_a_card_overwrites_the_staff_it_named(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        $arne = User::factory()->create(['name' => 'Arne', 'email' => 'arne@ruutu10.ee']);
+        $tom = User::factory()->create(['name' => 'Tom', 'email' => 'tom@ruutu10.ee']);
+
+        $this->fakeBoard([$this->card()]);
+
+        // A command's constructor-injected extractor is resolved once and reused
+        // across artisan() calls in a test, so two differing runs are queued on
+        // one mock rather than made with two — see the other multi-run tests.
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                $this->night('Trupp 1', staff: [$this->staffMember('Arne', PerformanceStaffRole::Host)]),
+            ]);
+            // The board changed hands between the two runs: the same night, a
+            // different crew.
+            $mock->shouldReceive('extract')->once()->andReturn([
+                $this->night('Trupp 1', staff: [$this->staffMember('Tom', PerformanceStaffRole::Technician)]),
+            ]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
+
+        $this->artisan('planka:import')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $staffing = Performance::sole()->staff()->sole();
+
+        $this->assertSame($tom->id, $staffing->id);
+        $this->assertSame(PerformanceStaffRole::Technician, $staffing->pivot->role);
+        $this->assertFalse(Performance::sole()->staff()->whereKey($arne->id)->exists());
+    }
+
+    public function test_reimporting_a_card_that_now_names_no_staff_clears_it(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        User::factory()->create(['name' => 'Arne', 'email' => 'arne@ruutu10.ee']);
+
+        $this->fakeBoard([$this->card()]);
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                $this->night('Trupp 1', staff: [$this->staffMember('Arne', PerformanceStaffRole::Host)]),
+            ]);
+            // The card was tidied up and no longer names a crew at all.
+            $mock->shouldReceive('extract')->once()->andReturn([$this->night('Trupp 1')]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
+
+        $this->artisan('planka:import')->assertSuccessful();
+        $this->assertSame(1, Performance::sole()->staff()->count());
+
+        $this->artisan('planka:import')->assertSuccessful();
+        $this->assertSame(0, Performance::sole()->staff()->count());
+    }
+
+    public function test_a_deleted_performances_staff_is_not_resurrected(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        User::factory()->create(['name' => 'Arne', 'email' => 'arne@ruutu10.ee']);
+
+        $format = Format::factory()->create(['name' => 'Trupp 1']);
+        $deleted = Performance::factory()->for($format)->create(['date' => '2025-09-13']);
+        $deleted->delete();
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([
+            $this->night('Trupp 1', staff: [$this->staffMember('Arne', PerformanceStaffRole::Host)]),
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        // The performance stays put aside — see it_does_not_bring_back_a_deleted_performance —
+        // and its staff table is not worth resurrecting along with it.
+        $this->assertSame(0, $deleted->staff()->count());
+    }
+
+    public function test_an_acts_staff_is_synced_even_when_the_act_itself_is_already_known(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        $tom = User::factory()->create(['name' => 'Tom', 'email' => 'tom@ruutu10.ee']);
+
+        $format = Format::factory()->create(['name' => 'Õppelava']);
+        $existing = Performance::factory()->for($format)->create([
+            'date' => Performance::momentFrom('2025-10-09', '20:00'),
+            'title' => 'Märtu10',
+        ]);
+
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+        $this->fakeExtraction([
+            $this->sharedNight('Õppelava', [
+                $this->act('Märtu10', '20:00', 20, staff: [$this->staffMember('Tom', PerformanceStaffRole::Technician)]),
+            ]),
+        ]);
+
+        $this->artisan('planka:import')
+            ->expectsOutputToContain('Imported 0 format(s) and 0 performance(s); 0 format(s) handed to a group, 1 already known')
+            ->assertSuccessful();
+
+        // Nothing new was created — the act was already on the books — but its
+        // crew still landed, because staffing is never something a card's
+        // earlier reading gets to freeze in place.
+        $this->assertSame(1, Performance::query()->count());
+        $staffing = $existing->staff()->sole();
+        $this->assertSame($tom->id, $staffing->id);
     }
 }

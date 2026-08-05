@@ -18,11 +18,15 @@ use App\Models\Performance;
  */
 readonly class ImportedPerformance
 {
+    /**
+     * @param  list<ImportedStaffMember>  $staff  who staffs this act, cast and crew alike
+     */
     public function __construct(
         public ?string $title = null,
         public ?string $startTime = null,
         public ?int $duration = null,
         public ?int $teamId = null,
+        public array $staff = [],
     ) {
         //
     }

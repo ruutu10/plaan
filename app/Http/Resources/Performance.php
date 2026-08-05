@@ -24,6 +24,8 @@ class Performance extends JsonResource
      *
      * @return array{
      *     id: int,
+     *     formatId: int,
+     *     formatName: string,
      *     title: string|null,
      *     teamId: int|null,
      *     teamName: string|null,
@@ -37,6 +39,7 @@ class Performance extends JsonResource
      *     plankaCardUrl: string|null,
      *     createdBy: string,
      *     createdAt: string|null,
+     *     staff: mixed,
      * }
      */
     public function toArray(Request $request): array
@@ -45,6 +48,10 @@ class Performance extends JsonResource
 
         return [
             'id' => $performance->id,
+            // The details page opens through the format, but names it too — a
+            // performance's own page is otherwise a screen with no format on it.
+            'formatId' => $performance->format_id,
+            'formatName' => $performance->format->name,
             // Both empty for the ordinary performance, whose format already says
             // what is played and by whom; filled for an act on an evening
             // several groups share.
@@ -80,6 +87,10 @@ class Performance extends JsonResource
             'createdAt' => $performance->created_at
                 ?->setTimezone(PerformanceModel::venueTimezone())
                 ->toIso8601String(),
+            // Imported and read-only: see App\Services\PerformanceStaffSync.
+            // Empty unless eager-loaded, so a listing that has no use for it
+            // never pays for the query.
+            'staff' => PerformanceStaffMember::collection($this->whenLoaded('staff')),
         ];
     }
 }
