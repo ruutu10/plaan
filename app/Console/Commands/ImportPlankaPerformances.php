@@ -157,7 +157,7 @@ class ImportPlankaPerformances extends Command
         }
 
         if ($label = $this->excludedLabelOn($card['labels'])) {
-            $this->line("  Passing over \"{$card['name']}\": labelled {$label}.");
+            $this->comment("  Passing over \"{$card['name']}\": labelled {$label}.");
             Log::debug('Passing over a Planka card by label', [
                 'card' => $card['id'],
                 'label' => $label,
@@ -258,14 +258,14 @@ class ImportPlankaPerformances extends Command
         $status = $this->resolveFormat($night->formatName, $night->teamId, $dryRun);
 
         if ($status === ImportedFormatStatus::Deleted) {
-            $this->line("  Skipping {$night->formatName}: the format was deleted here.");
+            $this->comment("  Skipping {$night->formatName}: the format was deleted here.");
             $summary->skipped += count($night->performances);
 
             return;
         }
 
         if ($status === ImportedFormatStatus::Created) {
-            $this->line(sprintf(
+            $this->info(sprintf(
                 '  %s format: %s%s',
                 $dryRun ? 'Would create' : 'Creating',
                 $night->formatName,
@@ -282,7 +282,7 @@ class ImportPlankaPerformances extends Command
                 $dryRun ? 'Would hand over' : 'Handing over',
                 $night->formatName,
                 $this->teamNote($night->teamId),
-            ));
+            ), 'fg=cyan');
             $summary->formatsAdopted++;
         }
 
@@ -374,7 +374,7 @@ class ImportPlankaPerformances extends Command
             return;
         }
 
-        $this->line(sprintf(
+        $this->info(sprintf(
             '  %s performance: %s%s on %s at %s%s%s',
             $dryRun ? 'Would create' : 'Creating',
             $night->formatName,
