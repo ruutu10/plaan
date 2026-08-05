@@ -10,6 +10,18 @@ function sampleRate(value: string | undefined, fallback: number): number {
 }
 
 /**
+ * The feedback integration's `remove()`/`createWidget()` pair tears down and
+ * rebuilds its shadow DOM host, but `remove()` looks up that host via
+ * `ShadowRoot.parentElement` — which is always null, so it never actually
+ * detaches anything. Creating the widget ourselves (with `autoInject: false`
+ * below) keeps a handle to its actor button instead, whose own `show()` /
+ * `hide()` toggle a CSS rule and reliably work.
+ */
+let feedbackActor: ReturnType<
+    NonNullable<ReturnType<typeof Sentry.getFeedback>>['createWidget']
+> | null = null;
+
+/**
  * Boots the browser SDK. Called before the Inertia app is created so that
  * errors thrown while resolving the initial page are still reported.
  */
@@ -28,6 +40,7 @@ export function initializeSentry(): void {
             Sentry.browserTracingIntegration(),
             Sentry.replayIntegration(),
             Sentry.feedbackIntegration({
+                autoInject: false,
                 colorScheme: 'system',
                 showBranding: false,
                 triggerLabel: 'Teata veast',
@@ -60,6 +73,8 @@ export function initializeSentry(): void {
         ),
         sendDefaultPii: false,
     });
+
+    feedbackActor = Sentry.getFeedback()?.createWidget() ?? null;
 }
 
 /**
@@ -74,4 +89,17 @@ export function attachSentryToVueApp(app: App): void {
         attachProps: true,
         attachErrorHandler: true,
     });
+}
+
+/**
+ * Hides the feedback trigger button, e.g. while a full-screen overlay (such
+ * as the technician view) covers it and shouldn't be interrupted.
+ */
+export function hideFeedbackWidget(): void {
+    feedbackActor?.hide();
+}
+
+/** Shows the feedback trigger button again after {@link hideFeedbackWidget}. */
+export function showFeedbackWidget(): void {
+    feedbackActor?.show();
 }

@@ -3,6 +3,7 @@ import { Head, router } from '@inertiajs/vue3';
 import { computed, onMounted, provide, reactive, ref, watch } from 'vue';
 import {
     clearDraft,
+    outgrowsLocalDraft,
     readDraft,
     writeDraft,
 } from '@/components/technical-plan/draftStorage';
@@ -457,6 +458,12 @@ onMounted(() => {
 watch(
     [plan, step],
     () => {
+        if (outgrowsLocalDraft(plan)) {
+            clearDraft();
+
+            return;
+        }
+
         // A plan opened by its share link is never this browser's draft —
         // whether it is being read or edited, it is saved at its own link, and
         // storing it here would prefill the next new plan with it. The draft
