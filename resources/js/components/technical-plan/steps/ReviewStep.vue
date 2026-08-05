@@ -2,6 +2,7 @@
 import { usePage } from '@inertiajs/vue3';
 import { Spotlight } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import type { User } from '@/types';
 import Diamond from '../Diamond.vue';
 import PlanDocument from '../PlanDocument.vue';
 import { usePlan } from '../planKey';
@@ -10,7 +11,6 @@ import R10Button from '../R10Button.vue';
 import R10Notice from '../R10Notice.vue';
 import ScenePlayback from '../ScenePlayback.vue';
 import StepHeader from '../StepHeader.vue';
-import type { User } from '@/types';
 
 const plan = usePlan();
 const page = usePage<{ auth: { user: User | null } }>();

@@ -1,6 +1,6 @@
-import { formatFileSize } from './plan';
 import { jsonHeaders } from '@/lib/http';
 import type { PlanFile, WizardConfig } from '@/types/technicalPlan';
+import { formatFileSize } from './plan';
 
 /**
  * Shared file-upload plumbing for the wizard. Files are uploaded on their own

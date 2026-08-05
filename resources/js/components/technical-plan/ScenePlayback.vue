@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { useEventListener, useNow } from '@vueuse/core';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { hideFeedbackWidget, showFeedbackWidget } from '@/lib/sentry';
 import Diamond from './Diamond.vue';
 import { formatFileSize, playableAudio } from './plan';
 import { usePlan } from './planKey';
 import { normaliseScenes } from './presentPlan';
 import SceneAudio from './SceneAudio.vue';
-import { hideFeedbackWidget, showFeedbackWidget } from '@/lib/sentry';
 
 const plan = usePlan();
 

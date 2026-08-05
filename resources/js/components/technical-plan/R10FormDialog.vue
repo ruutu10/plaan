@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { watch } from 'vue';
-import R10Button from './R10Button.vue';
 import {
     Dialog,
     DialogDescription,
@@ -8,6 +7,7 @@ import {
     DialogScrollContent,
     DialogTitle,
 } from '@/components/ui/dialog';
+import R10Button from './R10Button.vue';
 
 /**
  * A modal holding a form: the R10 dialog chrome, the fields, and a
