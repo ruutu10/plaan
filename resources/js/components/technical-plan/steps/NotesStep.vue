@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { PlanFile } from '@/types/technicalPlan';
 import {
     acceptAttribute,
     discardAttachment,
@@ -14,6 +13,7 @@ import R10Dropzone from '../R10Dropzone.vue';
 import R10FileChip from '../R10FileChip.vue';
 import R10Textarea from '../R10Textarea.vue';
 import StepHeader from '../StepHeader.vue';
+import type { PlanFile } from '@/types/technicalPlan';
 
 const plan = usePlan();
 const config = useWizardConfig();

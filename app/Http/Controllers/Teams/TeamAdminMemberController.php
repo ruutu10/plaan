@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\Teams;
 
+use App\Actions\FindOrCreateUserByEmail;
+use App\Enums\SignupSource;
 use App\Enums\TeamRole;
+use App\Events\TeamMemberProvisioned;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Teams\AddTeamMemberRequest;
 use App\Http\Requests\Teams\UpdateTeamMemberRequest;
@@ -25,15 +28,16 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
  */
 class TeamAdminMemberController extends Controller
 {
+    public function __construct(private FindOrCreateUserByEmail $findOrCreateUser) {}
+
     /**
-     * Put an existing account straight into the team. This is the management
-     * screen's shortcut past the invitation flow, which is why the account has
-     * to exist already — see {@see AddTeamMemberRequest}.
+     * Put an account straight into the team, provisioning a lightweight one
+     * first if the address doesn't have an account yet — see
+     * {@see AddTeamMemberRequest}.
      */
     public function store(AddTeamMemberRequest $request, Team $team): JsonResponse
     {
-        /** @var User $member */
-        $member = $request->member();
+        $member = $this->findOrCreateUser->handle($request->validated('email'), SignupSource::TeamMember);
 
         $role = TeamRole::from($request->validated('role'));
 
@@ -49,7 +53,12 @@ class TeamAdminMemberController extends Controller
             'member_id' => $member->id,
             'role' => $role->value,
             'added_by' => $request->user()->id,
+            'new_account' => $member->wasRecentlyCreated,
         ]);
+
+        if ($member->wasRecentlyCreated) {
+            TeamMemberProvisioned::dispatch($team, $member);
+        }
 
         return TeamMemberResource::make($this->reread($team, $member))
             ->response()

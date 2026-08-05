@@ -51,7 +51,7 @@ async function save(): Promise<void> {
     <R10FormDialog
         v-model:open="open"
         title="Lisa liige"
-        description="Lisa tiimi olemasolev kasutaja. Kellel kontot veel pole, tuleb kutsuda kutsega."
+        description="Lisa tiimi kasutaja e-posti järgi. Kui lisataval kasutajal kontot veel pole, luuakse see automaatselt ja talle saadetakse kiri sisselogimise kohta."
         submit-label="Lisa liige"
         :processing="form.processing"
         test-id-prefix="add-member"

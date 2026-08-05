@@ -14,7 +14,7 @@ import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import { formatEstonianDate } from '@/lib/date';
 import { dashboard } from '@/routes';
-import type { DashboardInvitation, Team } from '@/types';
+import type { DashboardInvitation } from '@/types';
 import type { UpcomingSummary } from '@/types/dashboard';
 import type { AdminPlanRow } from '@/types/technicalPlan';
 
@@ -33,13 +33,11 @@ const canViewAllPlans = computed(
 );
 
 defineOptions({
-    layout: (layoutProps: { currentTeam?: Team | null }) => ({
+    layout: () => ({
         breadcrumbs: [
             {
                 title: 'Töölaud',
-                href: layoutProps.currentTeam
-                    ? dashboard(layoutProps.currentTeam.slug)
-                    : '/',
+                href: dashboard(),
             },
         ],
     }),

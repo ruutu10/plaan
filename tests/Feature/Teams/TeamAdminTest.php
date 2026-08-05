@@ -2,11 +2,14 @@
 
 namespace Tests\Feature\Teams;
 
+use App\Enums\SignupSource;
 use App\Enums\TeamRole;
 use App\Models\Format;
 use App\Models\Team;
 use App\Models\User;
+use App\Notifications\Teams\AddedToTeam;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -362,8 +365,44 @@ class TeamAdminTest extends TestCase
         $this->assertSame(TeamRole::Admin, $newcomer->fresh()->teamRole($team));
     }
 
-    public function test_an_unknown_address_is_refused(): void
+    public function test_an_unknown_address_gets_a_lightweight_account_provisioned(): void
     {
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+
+        $this->assertDatabaseMissing('users', ['email' => 'keegi@näiteid.ee']);
+
+        $this->actingAs($user)
+            ->postJson(route('api.teams.members.store', $team), [
+                'email' => 'keegi@näiteid.ee',
+                'role' => TeamRole::Member->value,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.role', 'member');
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'keegi@näiteid.ee',
+            'signup_source' => SignupSource::TeamMember->value,
+            'email_verified_at' => null,
+        ]);
+
+        $newcomer = User::where('email', 'keegi@näiteid.ee')->firstOrFail();
+
+        $this->assertSame(TeamRole::Member, $newcomer->teamRole($team));
+
+        Notification::assertSentTo($newcomer, AddedToTeam::class);
+    }
+
+    public function test_the_welcome_email_logs_the_newcomer_into_the_team_they_were_added_to(): void
+    {
+        Notification::fake();
+
+        // The acting admin's own current team is a different one from the
+        // team they are adding this member to, so a link built off the
+        // admin's ambient current team would point the newcomer somewhere
+        // they do not belong.
         $user = User::factory()->create();
         $team = $this->teamOf($user);
 
@@ -372,7 +411,39 @@ class TeamAdminTest extends TestCase
                 'email' => 'keegi@näiteid.ee',
                 'role' => TeamRole::Member->value,
             ])
-            ->assertJsonValidationErrors('email');
+            ->assertCreated();
+
+        $newcomer = User::where('email', 'keegi@näiteid.ee')->firstOrFail();
+        $this->assertNull($newcomer->current_team_id);
+
+        $loginUrl = null;
+        Notification::assertSentTo($newcomer, AddedToTeam::class, function (AddedToTeam $notification) use (&$loginUrl): bool {
+            $loginUrl = $notification->loginUrl;
+
+            return true;
+        });
+
+        $this->get($loginUrl)->assertRedirect('/dashboard');
+        $this->assertAuthenticatedAs($newcomer);
+        $this->assertSame($team->id, $newcomer->fresh()->current_team_id);
+    }
+
+    public function test_adding_an_existing_account_sends_no_welcome_email(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+        $newcomer = User::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson(route('api.teams.members.store', $team), [
+                'email' => $newcomer->email,
+                'role' => TeamRole::Member->value,
+            ])
+            ->assertCreated();
+
+        Notification::assertNothingSent();
     }
 
     public function test_somebody_already_in_the_team_is_not_added_twice(): void

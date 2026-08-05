@@ -55,6 +55,17 @@ export function writeDraft(
     }
 }
 
+/**
+ * Whether a plan that has just been saved should stop being kept as this
+ * browser's local draft. Once a plan carries a token it has its own home on
+ * the server — leaving it as the local draft would have the next brand-new
+ * plan started in this browser resume at its step (typically the review step
+ * it was saved from) instead of starting at the beginning.
+ */
+export function outgrowsLocalDraft(plan: Pick<Plan, 'token'>): boolean {
+    return Boolean(plan.token);
+}
+
 /** Forget this browser's draft, as starting over does. */
 export function clearDraft(): void {
     try {

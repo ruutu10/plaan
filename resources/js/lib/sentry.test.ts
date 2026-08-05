@@ -13,6 +13,7 @@ vi.mock('@sentry/vue', () => ({
 // so each case needs its own fresh module instance rather than reusing one.
 async function freshSentryModule() {
     vi.resetModules();
+
     return import('@/lib/sentry');
 }
 

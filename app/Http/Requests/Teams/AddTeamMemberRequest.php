@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Teams;
 
 use App\Enums\TeamRole;
+use App\Http\Controllers\Teams\TeamAdminMemberController;
 use App\Models\Team;
 use App\Models\User;
 use Closure;
@@ -14,8 +15,9 @@ use Illuminate\Validation\Validator;
 
 /**
  * Putting a person straight into a team, which is the management screen's way
- * around the invitation flow: the account has to exist already, and it is only
- * ever added once.
+ * around the invitation flow. If no account exists for the address yet, one
+ * is provisioned the same way an unrecognised magic-link address is — see
+ * {@see TeamAdminMemberController::store()}.
  */
 class AddTeamMemberRequest extends FormRequest
 {
@@ -41,8 +43,9 @@ class AddTeamMemberRequest extends FormRequest
     }
 
     /**
-     * Configure the validator instance. Both checks read the same account, so
-     * they are made here rather than as two rules that each fetch it.
+     * Configure the validator instance. An address with no account yet is
+     * fine — one is provisioned when the request is handled — so this only
+     * has to catch an address that is already in the team.
      *
      * @return array<int, Closure(Validator): void>
      */
@@ -56,13 +59,7 @@ class AddTeamMemberRequest extends FormRequest
 
                 $user = $this->member();
 
-                if (! $user) {
-                    $validator->errors()->add('email', __('Selle e-postiga kasutajat pole. '));
-
-                    return;
-                }
-
-                if ($this->team()->members()->whereKey($user->id)->exists()) {
+                if ($user && $this->team()->members()->whereKey($user->id)->exists()) {
                     $validator->errors()->add('email', __('See kasutaja on juba tiimi liige.'));
                 }
             },
@@ -70,11 +67,11 @@ class AddTeamMemberRequest extends FormRequest
     }
 
     /**
-     * The account being added, if there is one with the given address.
+     * The existing account at this address, if there is one already.
      */
     public function member(): ?User
     {
-        return once(fn (): ?User => User::where('email', $this->string('email')->trim()->value())->first());
+        return once(fn (): ?User => User::where('email', strtolower($this->string('email')->trim()->value()))->first());
     }
 
     /**

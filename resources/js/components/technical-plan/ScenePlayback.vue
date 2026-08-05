@@ -6,6 +6,7 @@ import { formatFileSize, playableAudio } from './plan';
 import { usePlan } from './planKey';
 import { normaliseScenes } from './presentPlan';
 import SceneAudio from './SceneAudio.vue';
+import { hideFeedbackWidget, showFeedbackWidget } from '@/lib/sentry';
 
 const plan = usePlan();
 
@@ -97,10 +98,14 @@ const previousOverflow = ref('');
 onMounted(() => {
     previousOverflow.value = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // The trigger button floats over this overlay otherwise, inviting bug
+    // reports mid-cue instead of once the tech is back in the wizard.
+    hideFeedbackWidget();
 });
 
 onBeforeUnmount(() => {
     document.body.style.overflow = previousOverflow.value;
+    showFeedbackWidget();
 });
 
 function sceneLabel(name: string): string {

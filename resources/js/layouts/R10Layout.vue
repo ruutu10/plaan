@@ -18,9 +18,7 @@ withDefaults(
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
-const dashboardUrl = computed(() =>
-    page.props.currentTeam ? dashboard(page.props.currentTeam.slug).url : '/',
-);
+const dashboardUrl = computed(() => dashboard().url);
 </script>
 
 <template>

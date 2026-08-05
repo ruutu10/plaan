@@ -16,7 +16,6 @@ use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Controllers\TechnicalPlanController;
 use App\Http\Controllers\Users\UserAdminController;
 use App\Http\Controllers\Users\UserRoleController;
-use App\Http\Middleware\EnsureTeamMembership;
 use App\Models\ClaudeReasoningLog;
 use App\Models\Performance;
 use App\Models\TechnicalPlan;
@@ -223,11 +222,12 @@ Route::prefix('api/users')
             });
     });
 
-Route::prefix('{current_team}')
-    ->middleware(['auth', 'verified', EnsureTeamMembership::class])
-    ->group(function () {
-        Route::get('dashboard', DashboardController::class)->name('dashboard');
-    });
+// Not scoped to a team: the dashboard shows the signed-in user's own
+// invitations, upcoming performances and plans, none of which belong to a
+// particular team, so it must stay reachable for a user who is on none.
+Route::get('dashboard', DashboardController::class)
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');

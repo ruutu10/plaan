@@ -2,7 +2,9 @@
 
 namespace App\Actions\MagicLink;
 
+use App\Models\Team;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Auth;
 use MagicLink\Actions\LoginAction;
@@ -18,6 +20,23 @@ use MagicLink\Actions\LoginAction;
  */
 class LogInAndVerifyEmail extends LoginAction
 {
+    /**
+     * A team to make current once the user is logged in — for a newcomer
+     * whose account only exists because they were added to this team, so it
+     * should not linger without one until the link is followed and the
+     * membership is confirmed real.
+     *
+     * @param  mixed  $httpResponse
+     */
+    public function __construct(
+        Authenticatable $user,
+        $httpResponse = null,
+        ?string $guard = null,
+        private readonly ?int $switchToTeamId = null,
+    ) {
+        parent::__construct($user, $httpResponse, $guard);
+    }
+
     /**
      * Execute Action.
      *
@@ -35,6 +54,10 @@ class LogInAndVerifyEmail extends LoginAction
             $user->markEmailAsVerified();
 
             event(new Verified($user));
+        }
+
+        if ($this->switchToTeamId !== null && $team = Team::find($this->switchToTeamId)) {
+            $user->switchTeam($team);
         }
 
         return $response;

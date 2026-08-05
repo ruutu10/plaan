@@ -12,10 +12,10 @@ class FindOrCreateUserByEmail
 {
     /**
      * Find the user for the given e-mail, creating a lightweight account if
-     * none exists yet, so plans and magic-link logins can be tied to a real
-     * user record.
+     * none exists yet, so plans, magic-link logins, and team memberships can
+     * be tied to a real user record.
      */
-    public function handle(string $email): User
+    public function handle(string $email, SignupSource $signupSource = SignupSource::AnonymousPlan): User
     {
         $email = strtolower(trim($email));
 
@@ -24,7 +24,7 @@ class FindOrCreateUserByEmail
             [
                 'name' => Str::of($email)->before('@')->trim()->value() ?: 'Esineja',
                 'password' => Hash::make(Str::random(40)),
-                'signup_source' => SignupSource::AnonymousPlan->value,
+                'signup_source' => $signupSource->value,
             ],
         );
 
@@ -33,7 +33,7 @@ class FindOrCreateUserByEmail
             // only trail of where an unfamiliar user came from.
             Log::info('Provisioned a lightweight account for an unknown e-mail', [
                 'user_id' => $user->id,
-                'signup_source' => SignupSource::AnonymousPlan->value,
+                'signup_source' => $signupSource->value,
             ]);
         }
 

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     clearDraft,
     keepsLocalDraft,
+    outgrowsLocalDraft,
     readDraft,
     writeDraft,
 } from './draftStorage';
@@ -95,6 +96,18 @@ describe('clearDraft', () => {
         clearDraft();
 
         expect(readDraft()).toBeNull();
+    });
+});
+
+describe('outgrowsLocalDraft', () => {
+    it('keeps a plan still only written in this browser as the local draft', () => {
+        expect(outgrowsLocalDraft(blankPlan())).toBe(false);
+    });
+
+    it('outgrows the local draft once the plan has been saved and carries a token', () => {
+        expect(outgrowsLocalDraft({ ...blankPlan(), token: 'abc123' })).toBe(
+            true,
+        );
     });
 });
 
