@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Notifications\Teams\TeamInvitation as TeamInvitationNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use MagicLink\MagicLink;
 use Tests\TestCase;
 
 class TeamInvitationTest extends TestCase
@@ -40,43 +41,69 @@ class TeamInvitationTest extends TestCase
         ]);
     }
 
-    public function test_invitation_email_for_existing_users_uses_login_route()
+    public function test_invitation_email_uses_the_given_magic_login_url()
     {
+        $owner = User::factory()->create();
+        $team = Team::factory()->create();
+
+        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+
+        $invitation = TeamInvitation::factory()->create([
+            'team_id' => $team->id,
+            'email' => 'invited@example.com',
+            'invited_by' => $owner->id,
+        ]);
+
+        $mail = (new TeamInvitationNotification($invitation, 'https://plaan.test/magic-link/abc123'))->toMail((object) []);
+
+        $this->assertSame('https://plaan.test/magic-link/abc123', $mail->actionUrl);
+        $this->assertStringContainsString('töölauale', implode(' ', $mail->introLines));
+        $this->assertStringContainsString('logi sisse', strtolower(implode(' ', $mail->introLines)));
+    }
+
+    public function test_sending_an_invitation_mails_a_magic_link_that_signs_the_invited_address_in()
+    {
+        Notification::fake();
+
+        $owner = User::factory()->create();
+        $team = Team::factory()->create();
+
+        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+
+        $this
+            ->actingAs($owner)
+            ->post(route('teams.invitations.store', $team), [
+                'email' => 'invited@example.com',
+                'role' => TeamRole::Member->value,
+            ]);
+
+        $invitedUser = User::where('email', 'invited@example.com')->firstOrFail();
+
+        $this->get(MagicLink::query()->firstOrFail()->url);
+
+        $this->assertAuthenticatedAs($invitedUser->fresh());
+    }
+
+    public function test_an_invitation_for_an_existing_account_signs_that_account_in()
+    {
+        Notification::fake();
+
         $owner = User::factory()->create();
         $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
         $team = Team::factory()->create();
 
         $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
 
-        $invitation = TeamInvitation::factory()->create([
-            'team_id' => $team->id,
-            'email' => $invitedUser->email,
-            'invited_by' => $owner->id,
-        ]);
+        $this
+            ->actingAs($owner)
+            ->post(route('teams.invitations.store', $team), [
+                'email' => 'invited@example.com',
+                'role' => TeamRole::Member->value,
+            ]);
 
-        $mail = (new TeamInvitationNotification($invitation))->toMail($invitedUser);
+        $this->get(MagicLink::query()->firstOrFail()->url);
 
-        $this->assertSame(route('login', ['invitation' => $invitation->code]), $mail->actionUrl);
-        $this->assertStringContainsString('dashboard', implode(' ', $mail->introLines));
-    }
-
-    public function test_invitation_email_for_unknown_users_uses_login_route()
-    {
-        $owner = User::factory()->create();
-        $team = Team::factory()->create();
-
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-
-        $invitation = TeamInvitation::factory()->create([
-            'team_id' => $team->id,
-            'email' => 'unknown@example.com',
-            'invited_by' => $owner->id,
-        ]);
-
-        $mail = (new TeamInvitationNotification($invitation))->toMail((object) []);
-
-        $this->assertSame(route('login', ['invitation' => $invitation->code]), $mail->actionUrl);
-        $this->assertStringContainsString('log in', strtolower(implode(' ', $mail->introLines)));
+        $this->assertAuthenticatedAs($invitedUser->fresh());
     }
 
     public function test_team_invitations_can_be_created_by_admins()

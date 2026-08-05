@@ -3,18 +3,17 @@
 namespace App\Http\Controllers\Teams;
 
 use App\Enums\TeamRole;
+use App\Events\TeamInvited;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Teams\CreateTeamInvitationRequest;
 use App\Http\Requests\Teams\RespondToTeamInvitationRequest;
 use App\Models\Team;
 use App\Models\TeamInvitation;
-use App\Notifications\Teams\TeamInvitation as TeamInvitationNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 
 class TeamInvitationController extends Controller
@@ -33,8 +32,7 @@ class TeamInvitationController extends Controller
             'expires_at' => now()->addDays(3),
         ]);
 
-        Notification::route('mail', $invitation->email)
-            ->notify(new TeamInvitationNotification($invitation));
+        TeamInvited::dispatch($invitation);
 
         // The invitation code identifies it through the whole flow; the address
         // it went to stays out of the log.
@@ -46,7 +44,7 @@ class TeamInvitationController extends Controller
             'expires_at' => $invitation->expires_at?->toIso8601String(),
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Invitation sent.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Kutse saadetud.')]);
 
         return to_route('teams.edit', ['team' => $team->slug]);
     }

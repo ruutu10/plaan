@@ -57,7 +57,7 @@ function change(value: boolean): void {
                     </DialogTitle>
                     <DialogDescription class="text-[15px] text-r10-grey-500">
                         Saada kutse tiimiga liitumiseks. Kutse kehtib
-                        tähtajaliselt.
+                        tähtajaliselt ja kutsutu saab selle kohta e-maili.
                     </DialogDescription>
                 </DialogHeader>
 

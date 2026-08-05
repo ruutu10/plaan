@@ -14,8 +14,11 @@
     <p style="margin:0 0 12px 0; font-size:16px; line-height:1.6; color:#3d4557;">
         Tere{{ ! empty($name) ? ', '.$name : '' }}!
     </p>
+    <p style="margin:0 0 12px 0; font-size:16px; line-height:1.6; color:#3d4557;">
+        Plaan on Ruutu10 improteatri tehnikaplaneerimise süsteem, kus esinevad trupid annavad tehnikatiimile üle oma etenduse valgus- ja helivajadused. Said selle kirja, sest küsisid tehnikaplaani keskkonda sisselogimiseks lingi.
+    </p>
     <p style="margin:0 0 28px 0; font-size:16px; line-height:1.6; color:#3d4557;">
-        Sisselogimiseks tehnikaplaani keskkonda vajuta alloleval nupul.
+        Sisselogimiseks vajuta alloleval nupul.
         Seejärel saad jätkata tehnikaplaani esitamist.
     </p>
 

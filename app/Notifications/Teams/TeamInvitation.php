@@ -14,8 +14,13 @@ class TeamInvitation extends Notification implements ShouldQueue
 
     /**
      * Create a new notification instance.
+     *
+     * @param  string  $loginUrl  a magic link that signs the invited address in
+     *                            directly and lands on the dashboard, where the
+     *                            pending invitation waits to be accepted or
+     *                            declined — see App\Listeners\SendTeamInvitation
      */
-    public function __construct(public TeamInvitationModel $invitation)
+    public function __construct(public TeamInvitationModel $invitation, public string $loginUrl)
     {
         //
     }
@@ -39,16 +44,11 @@ class TeamInvitation extends Notification implements ShouldQueue
         $inviter = $this->invitation->inviter;
 
         return (new MailMessage)
-            ->subject(__("You've been invited to join :teamName", ['teamName' => $team->name]))
-            ->line(__(':inviterName has invited you to join the :teamName team.', [
-                'inviterName' => $inviter->name,
-                'teamName' => $team->name,
-            ]))
-            ->line(__('Log in and visit your dashboard to accept or decline this invitation.'))
-            ->action(
-                __('Log in'),
-                route('login', ['invitation' => $this->invitation->code]),
-            );
+            ->subject('Kutse liituda tiimiga '.$team->name)
+            ->line('Plaan on Ruutu10 improteatri tehnikaplaneerimise süsteem, kus esinevad trupid kirjeldavad oma etenduste valgus- ja helivajadused ning tehnikatiim kogub need plaanid kokku ja juhib nende järgi õhtut.')
+            ->line($inviter->name.' kutsus sind liituma Plaan tiimiga '.$team->name.'.')
+            ->line('Logi sisse ja mine oma töölauale, et kutse vastu võtta või tagasi lükata.')
+            ->action('Logi sisse', $this->loginUrl);
     }
 
     /**
