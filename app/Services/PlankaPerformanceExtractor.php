@@ -37,6 +37,15 @@ class PlankaPerformanceExtractor
      */
     protected array $reasoningNotes = [];
 
+    /**
+     * The model's answer for the card it was last given, decoded whole and kept
+     * here so the reading it produced can be checked against exactly what came
+     * back, not just the notes and nights read out of it.
+     *
+     * @var array<string, mixed>|null
+     */
+    protected ?array $rawResponse = null;
+
     public function __construct(protected ?Client $client = null)
     {
         //
@@ -55,6 +64,7 @@ class PlankaPerformanceExtractor
 
         // Whatever the last card was reasoned to, it is not this one's.
         $this->reasoningNotes = [];
+        $this->rawResponse = null;
 
         $startedAt = microtime(true);
 
@@ -86,6 +96,7 @@ class PlankaPerformanceExtractor
         ]);
 
         $this->reasoningNotes = $this->readReasoningNotes($aiResponse);
+        $this->rawResponse = $this->readRawResponse($aiResponse);
 
         $nights = $this->parse($aiResponse);
 
@@ -241,6 +252,31 @@ class PlankaPerformanceExtractor
     public function reasoningNotes(): array
     {
         return $this->reasoningNotes;
+    }
+
+    /**
+     * The model's answer for the card it was last given, whole. Null until
+     * {@see extract()} has been called, and null again for an answer that was
+     * not the JSON object the schema requires.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function rawResponse(): ?array
+    {
+        return $this->rawResponse;
+    }
+
+    /**
+     * Decode the model's answer without picking it apart, so a log kept of a
+     * card explains itself even where {@see parse()} found nothing usable in it.
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function readRawResponse(string $aiResponse): ?array
+    {
+        $decoded = json_decode($aiResponse, true);
+
+        return is_array($decoded) ? $decoded : null;
     }
 
     /**

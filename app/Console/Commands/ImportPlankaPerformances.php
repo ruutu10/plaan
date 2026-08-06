@@ -245,6 +245,7 @@ class ImportPlankaPerformances extends Command
             'card_id' => $this->cardId,
             'card_name' => $this->cardName,
             'notes' => $notes,
+            'raw_response' => $this->extractor->rawResponse(),
         ]);
     }
 

@@ -390,6 +390,12 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame('card-1', $log->card_id);
         $this->assertSame('Õppelava 9.10', $log->card_name);
         $this->assertSame(['Kuupäev real "Toimumise kuupäev: 9.10.2025".'], $log->notes);
+        // The model's answer kept whole, not just the notes read out of it.
+        $this->assertSame(['formats', 'reasoningNotes'], array_keys((array) $log->raw_response));
+        $this->assertSame(
+            ['Kuupäev real "Toimumise kuupäev: 9.10.2025".'],
+            $log->raw_response['reasoningNotes'],
+        );
 
         // And everything that reading made can be traced back to it.
         $format = Format::sole();
@@ -421,6 +427,10 @@ class ImportPlankaPerformancesTest extends TestCase
             $mock->shouldReceive('reasoningNotes')->andReturn(
                 ['Kuupäev real "Toimumise kuupäev: 9.10.2025".'],
                 ['Kuupäev real "Toimumise kuupäev: 15.11.2025".'],
+            );
+            $mock->shouldReceive('rawResponse')->andReturn(
+                ['formats' => [], 'reasoningNotes' => ['Kuupäev real "Toimumise kuupäev: 9.10.2025".']],
+                ['formats' => [], 'reasoningNotes' => ['Kuupäev real "Toimumise kuupäev: 15.11.2025".']],
             );
         });
 

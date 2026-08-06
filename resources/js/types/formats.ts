@@ -66,6 +66,8 @@ export interface ClaudeReasoningLog {
     cardUrl: string | null;
     /** One line per decision, in the model's own words. */
     notes: string[];
+    /** The model's answer for the card, whole, or null for a reading kept before this was recorded. */
+    rawResponse: Record<string, unknown> | null;
     /** When the card was read; ISO 8601. */
     readAt: string | null;
 }

@@ -155,6 +155,19 @@ watch([open, () => props.source], async ([isOpen, source]) => {
                     <p v-else class="text-[15px] text-r10-grey-500">
                         Selle lugemise kohta pole põhjendusi.
                     </p>
+
+                    <details
+                        v-if="log.rawResponse"
+                        data-test="reasoning-log-raw-response"
+                        class="text-[13px] text-r10-grey-500"
+                    >
+                        <summary class="cursor-pointer select-none">
+                            Claude JSON-vastus
+                        </summary>
+                        <pre
+                            class="mt-2 max-h-64 overflow-auto rounded-md bg-r10-grey-100 p-3 text-[12px] text-r10-grey-700"
+                        ><code>{{ JSON.stringify(log.rawResponse, null, 2) }}</code></pre>
+                    </details>
                 </section>
             </template>
         </div>

@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $card_id
  * @property string|null $card_name
  * @property list<string> $notes
+ * @property array<string, mixed>|null $raw_response
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Format> $formats
@@ -36,6 +37,7 @@ use Illuminate\Support\Carbon;
     'card_id',
     'card_name',
     'notes',
+    'raw_response',
 ])]
 class ClaudeReasoningLog extends Model
 {
@@ -88,6 +90,7 @@ class ClaudeReasoningLog extends Model
     {
         return [
             'notes' => 'array',
+            'raw_response' => 'array',
         ];
     }
 }

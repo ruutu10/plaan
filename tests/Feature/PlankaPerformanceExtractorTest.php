@@ -449,4 +449,31 @@ class PlankaPerformanceExtractorTest extends TestCase
                 && $context['reasoningNotes'] === [])
             ->once();
     }
+
+    public function test_it_keeps_the_models_answer_whole(): void
+    {
+        $answer = [
+            'formats' => [
+                [
+                    'format_name' => 'Trupp 1',
+                    'date' => '2025-09-13',
+                    'performances' => [['title' => null]],
+                ],
+            ],
+            'reasoningNotes' => ['Kuupäev real "Toimumise kuupäev: 13.09.2025".'],
+        ];
+
+        $extractor = $this->extractorAnswering((string) json_encode($answer));
+        $extractor->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
+
+        $this->assertSame($answer, $extractor->rawResponse());
+    }
+
+    public function test_an_answer_that_is_not_a_night_list_keeps_no_raw_response(): void
+    {
+        $extractor = $this->extractorAnswering('Vabandust, ma ei oska.');
+        $extractor->extract('Tühi', 'Tühi kaart');
+
+        $this->assertNull($extractor->rawResponse());
+    }
 }

@@ -24,6 +24,7 @@ class ClaudeReasoningLog extends JsonResource
      *     cardName: string|null,
      *     cardUrl: string|null,
      *     notes: list<string>,
+     *     rawResponse: array<string, mixed>|null,
      *     readAt: string|null,
      * }
      */
@@ -39,6 +40,9 @@ class ClaudeReasoningLog extends JsonResource
             'cardName' => $log->card_name,
             'cardUrl' => PlankaClient::cardUrl($log->card_id),
             'notes' => $log->notes,
+            // The model's answer whole, for whoever needs more than the notes
+            // say — a note that turns out to be wrong is checked against this.
+            'rawResponse' => $log->raw_response,
             // When the card was read, which is not when the record was last
             // touched by hand — an old reading explains less than it seems to.
             'readAt' => $log->created_at?->toIso8601String(),

@@ -24,6 +24,13 @@ class ClaudeReasoningLogFactory extends Factory
                 'Kuupäev real "Toimumise kuupäev: 9.10.2025".',
                 'Tom on heli ja valgus, seega meeskond, mitte esineja.',
             ],
+            'raw_response' => [
+                'formats' => [],
+                'reasoningNotes' => [
+                    'Kuupäev real "Toimumise kuupäev: 9.10.2025".',
+                    'Tom on heli ja valgus, seega meeskond, mitte esineja.',
+                ],
+            ],
         ];
     }
 }
