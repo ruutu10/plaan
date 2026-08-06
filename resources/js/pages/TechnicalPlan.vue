@@ -350,6 +350,7 @@ async function submitPlan(): Promise<void> {
 
     if (ok) {
         justSubmitted.value = true;
+        clearDraft();
         window.scrollTo({
             top: document.body.scrollHeight,
             behavior: 'smooth',
