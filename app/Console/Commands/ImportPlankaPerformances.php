@@ -277,12 +277,12 @@ class ImportPlankaPerformances extends Command
         $format = $this->formats[$this->formatKey($night->formatName)] ?? null;
 
         if ($this->adoptFormat($format, $night->teamId, $dryRun)) {
-            $this->line(sprintf(
-                '  %s format: %s%s',
+            $this->output->writeln(sprintf(
+                '  <fg=cyan>%s format: %s%s</>',
                 $dryRun ? 'Would hand over' : 'Handing over',
                 $night->formatName,
                 $this->teamNote($night->teamId),
-            ), 'fg=cyan');
+            ));
             $summary->formatsAdopted++;
         }
 
