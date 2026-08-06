@@ -76,9 +76,9 @@ class PerformanceAdminTest extends TestCase
 
         TechnicalPlan::factory()->submitted()->create(['performance_id' => $performance->id]);
 
-        // Another group's night, dated before the one asserted on so the order
+        // Another group's night, dated after the one asserted on so the order
         // of the two rows is the sorting's doing rather than the factory's.
-        Performance::factory()->startingAt('2026-08-01')->create(['format_id' => $theirs->id]);
+        Performance::factory()->startingAt('2026-10-01')->create(['format_id' => $theirs->id]);
 
         $this->actingAs($this->technician())
             ->get(route('admin.performances.index'))
@@ -135,7 +135,7 @@ class PerformanceAdminTest extends TestCase
                 ->where('performances.0.isDraft', true));
     }
 
-    public function test_the_overview_sorts_the_newest_performance_first(): void
+    public function test_the_overview_sorts_the_soonest_performance_first(): void
     {
         $older = Performance::factory()->startingAt('2026-08-01')->create();
         $newer = Performance::factory()->startingAt('2026-09-10')->create();
@@ -144,8 +144,8 @@ class PerformanceAdminTest extends TestCase
             ->get(route('admin.performances.index'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('performances.0.id', $newer->id)
-                ->where('performances.1.id', $older->id));
+                ->where('performances.0.id', $older->id)
+                ->where('performances.1.id', $newer->id));
     }
 
     public function test_the_manage_all_ability_is_shared_with_the_frontend(): void

@@ -33,7 +33,7 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 class PerformanceController extends Controller
 {
     /**
-     * The overview of the performances the user may manage, newest first.
+     * The overview of the performances the user may manage, soonest first.
      *
      * What comes back is decided by permission rather than by the route: a
      * technician is handed every performance in the house, whatever format it
@@ -42,13 +42,13 @@ class PerformanceController extends Controller
      */
     public function overview(Request $request): InertiaResponse
     {
-        // Newest first, like the plan overview: what is coming up — or has just
-        // been played — is what the crew looks for, not the archive.
+        // Soonest first: what is coming up next is what the crew looks for,
+        // with already-played nights sinking toward the bottom.
         $performances = Performance::query()
             ->with(['format.team', 'team'])
             ->withCount('technicalPlans')
             ->editableBy($request->user())
-            ->orderByDesc('date')
+            ->orderBy('date')
             ->get();
 
         return Inertia::render('admin/performances/Index', [

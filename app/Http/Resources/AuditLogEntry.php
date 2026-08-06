@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Concerns\LogsModelActivity;
+use App\Models\Format;
 use App\Models\Performance;
 use App\Models\Team;
 use App\Models\User;
@@ -67,7 +68,7 @@ class AuditLogEntry extends JsonResource
     private function subjectLabel(?Model $subject): ?string
     {
         return match (true) {
-            $subject instanceof Team, $subject instanceof User => $subject->name,
+            $subject instanceof Team, $subject instanceof User, $subject instanceof Format => $subject->name,
             // A shared evening's act carries its own name; the format's own
             // performance — the ordinary case — does not, and reads by its
             // format's name instead.

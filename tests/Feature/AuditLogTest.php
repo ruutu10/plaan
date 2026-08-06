@@ -79,7 +79,7 @@ class AuditLogTest extends TestCase
                 ->where('entries.1.subjectLabel', 'Teise trupi etteaste')
                 ->where('entries.2.subjectId', $format->id)
                 ->where('entries.2.subjectType', 'Format')
-                ->where('entries.2.subjectLabel', null)
+                ->where('entries.2.subjectLabel', 'Suveetendus')
                 ->where('entries.5.subjectId', $member->id)
                 ->where('entries.5.subjectType', 'User')
                 ->where('entries.5.subjectLabel', 'Mart Naide')
