@@ -14,6 +14,7 @@ Vastus on massiiv `formats`, kus **iga element on üks formaat ühel kuupäeval*
 - Kui õhtul astub üles mitu truppi üksteise järel (õppelava, gala, festivaliõhtu), on iga trupp eraldi element, **lava järjekorras**.
 - Kui kaart katab mitut päeva (nt `15.05-16.05`), on iga päev eraldi element massiivis `formats`.
 - Kui etteaste puhul on tegemist mitme mooduliga korraga (näiteks "Rauno I ja II moodul"), siis on tegemist kahe eraldi etteastega.
+- Kui kaardi kirjelduses on esineja väli mainitud, kuid tühi ("Esinejad: ???"), kuid kaart viitab selgelt etendusele, siis loo etteaste ikkagi, ja kasuta esinejana kaardi pealkirja.
 
 ## Formaadi nimi (`format_name`)
 
