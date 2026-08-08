@@ -10,7 +10,9 @@ use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\TechnicalPlan;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -295,6 +297,173 @@ class DashboardTest extends TestCase
                 ->where('latestPlans.0.submittedBy', 'Mart Naide')
                 ->where('latestPlans.0.url', route('technical-plan.public', $newer))
                 ->where('latestPlans.1.token', $older->token));
+    }
+
+    public function test_todays_bill_lists_the_performances_by_curtain_up(): void
+    {
+        $timezone = Performance::venueTimezone();
+        $today = Carbon::today($timezone)->toDateString();
+
+        $late = Performance::factory()->create([
+            'date' => Performance::momentFrom($today, '21:00'),
+        ]);
+        $early = Performance::factory()->create([
+            'date' => Performance::momentFrom($today, '18:00'),
+        ]);
+
+        // Yesterday's and tomorrow's nights are not today's bill.
+        Performance::factory()->create([
+            'date' => Performance::momentFrom(
+                Carbon::today($timezone)->subDay()->toDateString(), '19:00',
+            ),
+        ]);
+        Performance::factory()->create([
+            'date' => Performance::momentFrom(
+                Carbon::today($timezone)->addDay()->toDateString(), '00:30',
+            ),
+        ]);
+
+        // The drawer the plans without a night of their own are filed under is
+        // not an evening the house is playing.
+        Performance::placeholder();
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('today', 2)
+                ->where('today.0.id', $early->id)
+                ->where('today.0.startTime', '18:00')
+                ->where('today.1.id', $late->id)
+                ->where('today.1.startTime', '21:00'));
+    }
+
+    public function test_todays_bill_lists_a_performance_nobody_has_handed_a_plan_in_for(): void
+    {
+        $team = Team::factory()->create(['name' => 'Märold']);
+        $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
+        $performance = Performance::factory()->create([
+            'format_id' => $format->id,
+            'date' => $this->tonight(),
+        ]);
+
+        // A draft has not been handed in, so the night still reads as unplanned.
+        TechnicalPlan::factory()->create([
+            'status' => TechnicalPlanStatus::Draft,
+            'performance_id' => $performance->id,
+        ]);
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('today', 1)
+                ->where('today.0.formatName', 'Festival 2026')
+                ->where('today.0.teamName', 'Märold')
+                ->has('today.0.plans', 0));
+    }
+
+    public function test_todays_bill_links_to_the_plans_the_reader_may_open(): void
+    {
+        $author = User::factory()->create(['name' => 'Mart Naide']);
+        $performance = Performance::factory()->create(['date' => $this->tonight()]);
+
+        $plan = TechnicalPlan::factory()->submitted()->create([
+            'user_id' => $author->id,
+            'performance_id' => $performance->id,
+        ]);
+
+        $this->actingAs($author)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('today.0.plans', 1)
+                ->where('today.0.plans.0.visible', true)
+                ->where('today.0.plans.0.token', $plan->token)
+                ->where('today.0.plans.0.url', route('technical-plan.public', $plan))
+                ->where('today.0.plans.0.statusLabel', TechnicalPlanStatus::Submitted->label())
+                ->where('today.0.plans.0.submittedBy', 'Mart Naide'));
+    }
+
+    public function test_todays_bill_names_a_plan_the_reader_may_not_open_without_giving_it_away(): void
+    {
+        $performance = Performance::factory()->create(['date' => $this->tonight()]);
+
+        TechnicalPlan::factory()->submitted()->create([
+            'user_id' => User::factory()->create(['name' => 'Mart Naide'])->id,
+            'performance_id' => $performance->id,
+        ]);
+
+        // A stranger to the plan's author and to their groups.
+        $this->actingAs(User::factory()->create())
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('today.0.plans', 1)
+                ->where('today.0.plans.0.visible', false)
+                ->where('today.0.plans.0.statusLabel', 'Esitatud, peidetud')
+                ->where('today.0.plans.0.token', null)
+                ->where('today.0.plans.0.url', null)
+                ->where('today.0.plans.0.submittedBy', null));
+    }
+
+    public function test_todays_bill_opens_a_team_mates_plan_to_the_whole_group(): void
+    {
+        $team = Team::factory()->create();
+        $member = User::factory()->create();
+        $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+
+        $format = Format::factory()->create(['team_id' => $team->id]);
+        $performance = Performance::factory()->create([
+            'format_id' => $format->id,
+            'date' => $this->tonight(),
+        ]);
+
+        $plan = TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => $performance->id,
+        ]);
+
+        $this->actingAs($member)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('today.0.plans.0.visible', true)
+                ->where('today.0.plans.0.token', $plan->token));
+    }
+
+    public function test_todays_bill_opens_every_plan_to_the_technical_crew(): void
+    {
+        $performance = Performance::factory()->create(['date' => $this->tonight()]);
+
+        $first = TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => $performance->id,
+            'submitted_at' => now()->subHours(2),
+        ]);
+        $second = TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => $performance->id,
+            'submitted_at' => now()->subHour(),
+        ]);
+
+        $this->actingAs(User::factory()->create()->assignRole('technician'))
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('today.0.plans', 2)
+                ->where('today.0.plans.0.token', $first->token)
+                ->where('today.0.plans.0.visible', true)
+                ->where('today.0.plans.1.token', $second->token)
+                ->where('today.0.plans.1.visible', true));
+    }
+
+    /**
+     * A curtain-up later today, on the venue's clock.
+     */
+    private function tonight(): CarbonInterface
+    {
+        return Performance::momentFrom(
+            Carbon::today(Performance::venueTimezone())->toDateString(),
+            '19:00',
+        );
     }
 
     public function test_the_plan_timeline_stays_empty_without_the_view_all_permission(): void

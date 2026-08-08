@@ -3,6 +3,7 @@ import { Head, usePage } from '@inertiajs/vue3';
 import {
     CalendarClock,
     CalendarDays,
+    Drama,
     ExternalLink,
     FileWarning,
 } from '@lucide/vue';
@@ -15,12 +16,13 @@ import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import { formatEstonianDate } from '@/lib/date';
 import { dashboard } from '@/routes';
 import type { DashboardInvitation } from '@/types';
-import type { UpcomingSummary } from '@/types/dashboard';
+import type { TodaysPerformance, UpcomingSummary } from '@/types/dashboard';
 import type { AdminPlanRow } from '@/types/technicalPlan';
 
 defineProps<{
     pendingInvitations?: DashboardInvitation[];
     upcoming: UpcomingSummary;
+    today: TodaysPerformance[];
     latestPlans: AdminPlanRow[];
 }>();
 
@@ -132,6 +134,109 @@ defineOptions({
                     — kaugemaid etendusi siin ei loeta.
                 </p>
             </div>
+        </div>
+
+        <div
+            data-test="widget-todays-plans"
+            class="mt-4 rounded-[22px] border border-r10-grey-200 bg-white p-[26px]"
+        >
+            <h2
+                class="flex items-center gap-2 font-r10-display text-lg font-bold tracking-[0.03em] text-r10-navy uppercase"
+            >
+                <Drama class="h-5 w-5" />
+                Tänaste etenduste tehnikaplaanid
+            </h2>
+
+            <ul v-if="today.length > 0" class="mt-6 space-y-3">
+                <li
+                    v-for="performance in today"
+                    :key="performance.id"
+                    data-test="todays-performance"
+                    class="rounded-[16px] border border-r10-grey-200 p-4"
+                >
+                    <div
+                        class="flex flex-wrap items-baseline justify-between gap-2"
+                    >
+                        <div>
+                            <span
+                                class="font-r10-display text-base font-semibold text-r10-ink"
+                            >
+                                {{ performance.formatName }}
+                            </span>
+                            <span
+                                v-if="performance.title"
+                                class="ml-2 text-sm text-r10-grey-500"
+                            >
+                                {{ performance.title }}
+                            </span>
+                            <span class="block text-sm text-r10-grey-500">
+                                {{ performance.teamName ?? '—' }}
+                            </span>
+                        </div>
+                        <span
+                            class="font-r10-display text-lg font-bold text-r10-ink tabular-nums"
+                        >
+                            {{ performance.startTime }}
+                        </span>
+                    </div>
+
+                    <ul
+                        v-if="performance.plans.length > 0"
+                        class="mt-3 space-y-2"
+                    >
+                        <li
+                            v-for="(plan, index) in performance.plans"
+                            :key="plan.token ?? `hidden-${index}`"
+                            data-test="todays-plan"
+                            class="flex flex-wrap items-center justify-between gap-2"
+                        >
+                            <div class="flex items-center gap-2">
+                                <R10Pill
+                                    :tone="
+                                        plan.visible
+                                            ? statusTone(plan.status)
+                                            : 'muted'
+                                    "
+                                >
+                                    {{ plan.statusLabel }}
+                                </R10Pill>
+                                <span
+                                    v-if="plan.submittedBy"
+                                    class="text-sm text-r10-grey-500"
+                                >
+                                    {{ plan.submittedBy }}
+                                </span>
+                            </div>
+                            <R10Button
+                                v-if="plan.visible && plan.url"
+                                variant="outline"
+                                size="sm"
+                                external
+                                :href="plan.url"
+                                target="_blank"
+                                rel="noopener"
+                                data-test="todays-plan-link"
+                                class="px-4 py-2"
+                            >
+                                Ava
+                                <ExternalLink class="h-3.5 w-3.5" />
+                            </R10Button>
+                        </li>
+                    </ul>
+
+                    <p
+                        v-else
+                        data-test="todays-plan-missing"
+                        class="mt-3 text-sm font-bold text-r10-error"
+                    >
+                        Tehnikaplaan puudub
+                    </p>
+                </li>
+            </ul>
+
+            <p v-else class="mt-6 text-sm text-r10-grey-500">
+                Täna ei ole ühtegi etendust.
+            </p>
         </div>
 
         <div

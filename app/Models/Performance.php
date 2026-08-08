@@ -178,6 +178,25 @@ class Performance extends Model
     }
 
     /**
+     * Limit the query to the performances played today, on the venue's clock —
+     * not on the stored moments' UTC, which puts a late night on tomorrow's
+     * bill. Both ends are worked out in {@see venueTimezone()} and only then
+     * turned into the UTC the column holds.
+     *
+     * @param  Builder<Performance>  $query
+     */
+    #[Scope]
+    protected function playedToday(Builder $query): void
+    {
+        $startOfDay = Carbon::today(self::venueTimezone());
+        $endOfDay = $startOfDay->copy()->addDay();
+
+        $query
+            ->where('date', '>=', $startOfDay->utc())
+            ->where('date', '<', $endOfDay->utc());
+    }
+
+    /**
      * Limit the query to the performances the house has vouched for. A draft is
      * one the Planka import registered and nobody has reviewed yet: its date may
      * be wrong or the night may not be happening at all, so it is kept out of

@@ -24,3 +24,31 @@ export type UpcomingSummary = {
     planExpectedWithinDays: number;
     next: UpcomingFormat | null;
 };
+
+/**
+ * One technical plan handed in for a performance on today's bill. A plan the
+ * reader may not open still appears, but carries nothing beyond the fact that
+ * it exists — `visible` is false and everything identifying it is null.
+ */
+export type TodaysPlan = {
+    visible: boolean;
+    token: string | null;
+    /** The plan's own page, or null when the reader may not open it. */
+    url: string | null;
+    status: string | null;
+    statusLabel: string;
+    submittedBy: string | null;
+};
+
+/** A performance the house is playing today, and the plans written for it. */
+export type TodaysPerformance = {
+    id: number;
+    formatName: string;
+    /** The act's own name, on an evening several groups share. */
+    title: string | null;
+    teamName: string | null;
+    /** Curtain-up as "19:00", on the venue's clock. */
+    startTime: string;
+    /** Empty when nobody has handed a plan in for this performance. */
+    plans: TodaysPlan[];
+};

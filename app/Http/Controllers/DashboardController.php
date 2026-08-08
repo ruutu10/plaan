@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
+use App\Http\Resources\TodaysPerformance as TodaysPerformanceResource;
 use App\Models\Performance;
 use App\Models\TeamInvitation;
 use App\Models\TechnicalPlan;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection as SupportCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -47,10 +50,69 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', [
             'pendingInvitations' => $pendingInvitations,
             'upcoming' => $this->upcomingSummary(),
+            'today' => $this->todaysBill($request),
             'latestPlans' => $canViewAllPlans
                 ? AdminTechnicalPlanResource::collection($this->latestSubmittedPlans())->resolve($request)
                 : [],
         ]);
+    }
+
+    /**
+     * Tonight's bill: what the house is playing today, curtain-up first, each
+     * with the plans handed in for it. Every performance is listed whether or
+     * not a plan has come in — an evening nobody has written for is the one
+     * worth seeing here — and so is every plan, though only the ones the reader
+     * may open are named; see {@see TechnicalPlan::listableBy()}.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function todaysBill(Request $request): array
+    {
+        $performances = Performance::query()
+            ->excludingPlaceholder()
+            ->playedToday()
+            ->with([
+                'team',
+                'format.team',
+                // A draft is not a plan anybody has handed in, so it does not
+                // count as one here — its night still reads as unplanned.
+                'technicalPlans' => fn (Relation $plans) => $plans
+                    ->whereIn('status', TechnicalPlanStatus::delivered())
+                    ->with('user')
+                    ->orderBy('submitted_at')
+                    ->orderBy('id'),
+            ])
+            ->orderBy('date')
+            ->get();
+
+        $visiblePlanIds = $this->visiblePlanIds($request, $performances);
+
+        return $performances
+            ->map(fn (Performance $performance) => TodaysPerformanceResource::make($performance, $visiblePlanIds)
+                ->resolve($request))
+            ->all();
+    }
+
+    /**
+     * Which of the listed plans the reader may open, answered in one query
+     * rather than one per plan.
+     *
+     * @param  Collection<int, Performance>  $performances
+     * @return SupportCollection<int, int>
+     */
+    private function visiblePlanIds(Request $request, Collection $performances): SupportCollection
+    {
+        $planIds = $performances
+            ->flatMap(fn (Performance $performance) => $performance->technicalPlans->modelKeys());
+
+        if ($planIds->isEmpty()) {
+            return $planIds;
+        }
+
+        return TechnicalPlan::query()
+            ->whereKey($planIds)
+            ->listableBy($request->user())
+            ->pluck('id');
     }
 
     /**
