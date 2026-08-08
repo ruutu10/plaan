@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/vue3';
 import R10Layout from '@/layouts/R10Layout.vue';
 
 defineProps<{
-    /** MANUAL.md, already rendered to HTML on the server. */
+    /** docs/MANUAL.md, already rendered to HTML on the server. */
     html: string;
 }>();
 </script>

@@ -6,7 +6,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 /**
- * The help page behind the header's "Abi" icon: MANUAL.md, rendered.
+ * The help page behind the header's "Abi" icon: docs/MANUAL.md, rendered.
  */
 class ManualTest extends TestCase
 {
