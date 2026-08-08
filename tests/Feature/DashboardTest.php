@@ -455,6 +455,105 @@ class DashboardTest extends TestCase
                 ->where('today.0.plans.1.visible', true));
     }
 
+    public function test_todays_bill_links_the_names_to_the_records_behind_them(): void
+    {
+        $team = Team::factory()->create();
+        $member = User::factory()->create();
+        $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+
+        $format = Format::factory()->create(['team_id' => $team->id]);
+        $performance = Performance::factory()->create([
+            'format_id' => $format->id,
+            'date' => $this->tonight(),
+        ]);
+
+        $this->actingAs($member)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('today.0.formatUrl', route('formats.edit', $format))
+                ->where('today.0.performanceUrl', route('formats.performances.show', [$format, $performance])));
+    }
+
+    public function test_todays_bill_leaves_a_name_unlinked_for_a_reader_who_may_not_open_it(): void
+    {
+        // A stranger to the group staging tonight: the night is still on the
+        // bill for them, but neither screen behind it would open.
+        Performance::factory()->create(['date' => $this->tonight()]);
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('today', 1)
+                ->where('today.0.formatUrl', null)
+                ->where('today.0.performanceUrl', null));
+    }
+
+    public function test_todays_bill_links_a_guest_troupe_to_the_evening_it_plays_on(): void
+    {
+        // The format belongs to the house; the guest only has a slot on it. It
+        // reaches both screens — the format read-only — to correct its own act.
+        $guests = Team::factory()->create();
+        $member = User::factory()->create();
+        $guests->members()->attach($member, ['role' => TeamRole::Member->value]);
+
+        $format = Format::factory()->create(['team_id' => Team::factory()->create()->id]);
+        $performance = Performance::factory()->create([
+            'format_id' => $format->id,
+            'team_id' => $guests->id,
+            'date' => $this->tonight(),
+        ]);
+
+        $this->actingAs($member)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('today.0.formatUrl', route('formats.edit', $format))
+                ->where('today.0.performanceUrl', route('formats.performances.show', [$format, $performance])));
+    }
+
+    public function test_the_next_performance_links_to_the_format_and_the_night(): void
+    {
+        $format = Format::factory()->create();
+        $performance = Performance::factory()->create([
+            'format_id' => $format->id,
+            'date' => now()->addDays(3),
+        ]);
+
+        $this->actingAs(User::factory()->create()->assignRole('technician'))
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('upcoming.next.formatUrl', route('formats.edit', $format))
+                ->where('upcoming.next.performanceUrl', route('formats.performances.show', [$format, $performance])));
+    }
+
+    public function test_the_plan_timeline_links_a_row_to_the_format_that_was_staged(): void
+    {
+        $format = Format::factory()->create();
+        $plan = TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => Performance::factory()->create(['format_id' => $format->id]),
+            'submitted_at' => now()->subDay(),
+        ]);
+
+        // A plan filed under the stand-in night names no evening anybody is
+        // playing, so its name leads nowhere.
+        TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => Performance::placeholder()->id,
+            'submitted_at' => now()->subWeek(),
+        ]);
+
+        $this->actingAs(User::factory()->create()->assignRole('technician'))
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('latestPlans', 2)
+                ->where('latestPlans.0.token', $plan->token)
+                ->where('latestPlans.0.formatUrl', route('formats.edit', $format))
+                ->where('latestPlans.1.formatUrl', null));
+    }
+
     /**
      * A curtain-up later today, on the venue's clock.
      */

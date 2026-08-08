@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Data\RecordLinks;
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
 use App\Http\Resources\TodaysPerformance as TodaysPerformanceResource;
@@ -47,13 +48,24 @@ class DashboardController extends Controller
         // that opens the plan overview.
         $canViewAllPlans = (bool) $request->user()?->can(TechnicalPlan::VIEW_ALL_PERMISSION);
 
+        $todaysBill = $this->todaysPerformances();
+        $next = $this->nextPerformance();
+        $latestPlans = $canViewAllPlans ? $this->latestSubmittedPlans() : new Collection;
+
+        // Every name the page shows leads back to the record behind it, so the
+        // reach for all three widgets is worked out in one go rather than
+        // widget by widget.
+        $links = RecordLinks::for($request->user(), $todaysBill
+            ->concat([$next])
+            ->concat($latestPlans->map(fn (TechnicalPlan $plan) => $plan->performance)));
+
         return Inertia::render('Dashboard', [
             'pendingInvitations' => $pendingInvitations,
-            'upcoming' => $this->upcomingSummary(),
-            'today' => $this->todaysBill($request),
-            'latestPlans' => $canViewAllPlans
-                ? AdminTechnicalPlanResource::collection($this->latestSubmittedPlans())->resolve($request)
-                : [],
+            'upcoming' => $this->upcomingSummary($next, $links),
+            'today' => $this->todaysBill($request, $todaysBill, $links),
+            'latestPlans' => $latestPlans
+                ->map(fn (TechnicalPlan $plan) => AdminTechnicalPlanResource::make($plan)->linkedBy($links)->resolve($request))
+                ->all(),
         ]);
     }
 
@@ -64,11 +76,28 @@ class DashboardController extends Controller
      * worth seeing here — and so is every plan, though only the ones the reader
      * may open are named; see {@see TechnicalPlan::listableBy()}.
      *
+     * @param  Collection<int, Performance>  $performances  today's bill, as {@see todaysPerformances()} read it
      * @return array<int, array<string, mixed>>
      */
-    private function todaysBill(Request $request): array
+    private function todaysBill(Request $request, Collection $performances, RecordLinks $links): array
     {
-        $performances = Performance::query()
+        $visiblePlanIds = $this->visiblePlanIds($request, $performances);
+
+        return $performances
+            ->map(fn (Performance $performance) => TodaysPerformanceResource::make($performance, $visiblePlanIds, $links)
+                ->resolve($request))
+            ->all();
+    }
+
+    /**
+     * The performances on today's bill, curtain-up first, each with the plans
+     * handed in for it.
+     *
+     * @return Collection<int, Performance>
+     */
+    private function todaysPerformances(): Collection
+    {
+        return Performance::query()
             ->excludingPlaceholder()
             ->playedToday()
             ->with([
@@ -84,13 +113,6 @@ class DashboardController extends Controller
             ])
             ->orderBy('date')
             ->get();
-
-        $visiblePlanIds = $this->visiblePlanIds($request, $performances);
-
-        return $performances
-            ->map(fn (Performance $performance) => TodaysPerformanceResource::make($performance, $visiblePlanIds)
-                ->resolve($request))
-            ->all();
     }
 
     /**
@@ -124,16 +146,11 @@ class DashboardController extends Controller
      *     performances: int,
      *     missingPlans: int,
      *     planExpectedWithinDays: int,
-     *     next: array{formatName: string, teamName: string|null, date: string, startTime: string}|null,
+     *     next: array{formatName: string, formatUrl: string|null, performanceUrl: string|null, teamName: string|null, date: string, startTime: string}|null,
      * }
      */
-    private function upcomingSummary(): array
+    private function upcomingSummary(?Performance $next, RecordLinks $links): array
     {
-        $next = $this->upcomingPerformances()
-            ->with(['team', 'format.team'])
-            ->orderBy('date')
-            ->first();
-
         return [
             'performances' => $this->upcomingPerformances()->count(),
             'missingPlans' => $this->upcomingPerformances()
@@ -149,11 +166,26 @@ class DashboardController extends Controller
             'planExpectedWithinDays' => TechnicalPlan::EXPECTED_WITHIN_DAYS,
             'next' => $next ? [
                 'formatName' => $next->format->name,
+                // The screens behind the names, when this reader may open them.
+                'formatUrl' => $links->formatUrl($next),
+                'performanceUrl' => $links->performanceUrl($next),
                 'teamName' => $next->performerName(),
                 'date' => $next->startDate(),
                 'startTime' => $next->startTime(),
             ] : null,
         ];
+    }
+
+    /**
+     * The soonest performance still to come, or null when the house has nothing
+     * left on the books.
+     */
+    private function nextPerformance(): ?Performance
+    {
+        return $this->upcomingPerformances()
+            ->with(['team', 'format.team'])
+            ->orderBy('date')
+            ->first();
     }
 
     /**

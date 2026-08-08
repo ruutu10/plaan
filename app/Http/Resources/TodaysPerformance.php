@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Data\RecordLinks;
 use App\Models\Performance;
 use App\Models\TechnicalPlan as TechnicalPlanModel;
 use Illuminate\Http\Request;
@@ -27,11 +28,19 @@ class TodaysPerformance extends JsonResource
     public const HIDDEN_LABEL = 'Esitatud, peidetud';
 
     /**
+     * The screens this reader may open behind the row's names. Left unlinked
+     * when the caller worked none out.
+     */
+    private RecordLinks $links;
+
+    /**
      * @param  Collection<int, int>  $visiblePlanIds  the ids of the plans this reader may open; anything outside it is shown as hidden
      */
-    public function __construct(Performance $performance, private Collection $visiblePlanIds = new Collection)
+    public function __construct(Performance $performance, private Collection $visiblePlanIds = new Collection, ?RecordLinks $links = null)
     {
         parent::__construct($performance);
+
+        $this->links = $links ?? RecordLinks::none();
     }
 
     /**
@@ -40,6 +49,8 @@ class TodaysPerformance extends JsonResource
      * @return array{
      *     id: int,
      *     formatName: string,
+     *     formatUrl: string|null,
+     *     performanceUrl: string|null,
      *     title: string|null,
      *     teamName: string|null,
      *     startTime: string,
@@ -53,6 +64,10 @@ class TodaysPerformance extends JsonResource
         return [
             'id' => $performance->id,
             'formatName' => $performance->format->name,
+            // The screens behind the names, when this reader may open them —
+            // the row names two records, and both are corrected elsewhere.
+            'formatUrl' => $this->links->formatUrl($performance),
+            'performanceUrl' => $this->links->performanceUrl($performance),
             // The act's own name, when the evening is shared and the format's
             // name alone would leave three identical rows to read.
             'title' => $performance->title,

@@ -173,6 +173,8 @@ export interface LookupResult {
 export interface AdminPlanRow {
     token: string;
     formatName: string | null;
+    /** The format's own screen, or null when the reader may not open it. */
+    formatUrl: string | null;
     teamName: string | null;
     /** ISO date (YYYY-MM-DD) of the performance, if the plan names one. */
     performanceDate: string | null;

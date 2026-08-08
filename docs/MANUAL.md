@@ -510,6 +510,11 @@ Kõik näevad:
 Tehnikud ja majarahvas näevad lisaks **8 viimati esitatud plaani** ajajoont, kust
 saab otse plaani sisse minna.
 
+Formaatide ja etenduste nimed on töölaual lingid kirje enda juurde: formaadi nimi
+viib formaadi ekraanile, etenduse oma (kuupäev, kellaaeg või etteaste nimi)
+etenduse ekraanile. Kui sul pole õigust seda ekraani avada, jääb nimi tavaliseks
+tekstiks.
+
 ---
 
 ## 11. Mida süsteem ise teeb

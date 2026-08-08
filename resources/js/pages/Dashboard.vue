@@ -13,6 +13,7 @@ import { statusTone } from '@/components/technical-plan/presentPlan';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
+import R10RecordLink from '@/components/technical-plan/R10RecordLink.vue';
 import { formatEstonianDate } from '@/lib/date';
 import { dashboard } from '@/routes';
 import type { DashboardInvitation } from '@/types';
@@ -89,13 +90,24 @@ defineOptions({
                 <div
                     class="mt-2 font-r10-display text-4xl font-bold text-r10-ink tabular-nums"
                 >
-                    {{ formatEstonianDate(upcoming.next?.date) }}
+                    <!-- The date is the night itself, so it opens the
+                    performance; the format's name opens the format. -->
+                    <R10RecordLink
+                        :href="upcoming.next?.performanceUrl"
+                        data-test="next-performance-link"
+                    >
+                        {{ formatEstonianDate(upcoming.next?.date) }}
+                    </R10RecordLink>
                 </div>
                 <div class="mt-3 text-sm text-r10-grey-500">
                     <template v-if="upcoming.next">
-                        <span class="block font-bold text-r10-ink">
+                        <R10RecordLink
+                            :href="upcoming.next.formatUrl"
+                            class="block font-bold text-r10-ink"
+                            data-test="next-format-link"
+                        >
                             {{ upcoming.next.formatName }}
-                        </span>
+                        </R10RecordLink>
                         <span class="block">
                             Algus {{ upcoming.next.startTime }}
                         </span>
@@ -158,26 +170,34 @@ defineOptions({
                         class="flex flex-wrap items-baseline justify-between gap-2"
                     >
                         <div>
-                            <span
+                            <R10RecordLink
+                                :href="performance.formatUrl"
                                 class="font-r10-display text-base font-semibold text-r10-ink"
+                                data-test="todays-format-link"
                             >
                                 {{ performance.formatName }}
-                            </span>
-                            <span
+                            </R10RecordLink>
+                            <!-- The act's own name is the performance's, so it
+                            opens the performance rather than the format. -->
+                            <R10RecordLink
                                 v-if="performance.title"
+                                :href="performance.performanceUrl"
                                 class="ml-2 text-sm text-r10-grey-500"
+                                data-test="todays-performance-title-link"
                             >
                                 {{ performance.title }}
-                            </span>
+                            </R10RecordLink>
                             <span class="block text-sm text-r10-grey-500">
                                 {{ performance.teamName ?? '—' }}
                             </span>
                         </div>
-                        <span
+                        <R10RecordLink
+                            :href="performance.performanceUrl"
                             class="font-r10-display text-lg font-bold text-r10-ink tabular-nums"
+                            data-test="todays-performance-link"
                         >
                             {{ performance.startTime }}
-                        </span>
+                        </R10RecordLink>
                     </div>
 
                     <ul
@@ -275,11 +295,13 @@ defineOptions({
                             >
                                 {{ formatEstonianDate(plan.submittedAt) }}
                             </span>
-                            <span
+                            <R10RecordLink
+                                :href="plan.formatUrl"
                                 class="block font-r10-display text-base font-semibold text-r10-ink"
+                                data-test="latest-plan-format-link"
                             >
                                 {{ plan.formatName ?? 'Nimeta plaan' }}
-                            </span>
+                            </R10RecordLink>
                             <span class="text-sm text-r10-grey-500">
                                 {{ plan.teamName ?? '—' }}
                                 <template v-if="plan.submittedBy">

@@ -1,6 +1,10 @@
 /** The next performance still to be played. */
 export type UpcomingFormat = {
     formatName: string;
+    /** The format's own screen, or null when the reader may not open it. */
+    formatUrl: string | null;
+    /** The performance's own screen, or null when the reader may not open it. */
+    performanceUrl: string | null;
     teamName: string | null;
     /** ISO date (YYYY-MM-DD) the format is staged on, on the venue's clock. */
     date: string;
@@ -44,6 +48,10 @@ export type TodaysPlan = {
 export type TodaysPerformance = {
     id: number;
     formatName: string;
+    /** The format's own screen, or null when the reader may not open it. */
+    formatUrl: string | null;
+    /** The performance's own screen, or null when the reader may not open it. */
+    performanceUrl: string | null;
     /** The act's own name, on an evening several groups share. */
     title: string | null;
     teamName: string | null;
