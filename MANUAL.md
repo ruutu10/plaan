@@ -29,10 +29,11 @@ kaks automaatset teed, mida kirjeldab §2.4.
 
 ### 2.1 Neli ust
 
-1. **Maagiline link (esineja uks).** Tehnikaplaani lehel kirjutad oma e-posti
-   aadressi ja sulle saadetakse ühekordne sisselogimislink. Kui sellel aadressil
-   kontot ei ole, luuakse lihtne konto kohapeal - täita pole ühtegi
-   registreerimisvormi ja parooli ei pea valima.
+1. **Maagiline link (esineja uks).** Tehnikaplaani lehel - ja ka tavalisel
+   sisselogimislehel - kirjutad oma e-posti aadressi ja sulle saadetakse
+   ühekordne sisselogimislink. Kui sellel aadressil kontot ei ole, luuakse lihtne
+   konto kohapeal - täita pole ühtegi registreerimisvormi ja parooli ei pea
+   valima.
 2. **Meeldetuletuse link.** Meeldetuletuskirjad (§6) sisaldavad linki, mis logib
    sind sisse *ja* avab ühe klikiga vormi õige etenduse peal.
 3. **Ruutu10 SSO (Authentik).** „Jätka Authentikuga“. Kui brauseris on Authentiku
@@ -42,6 +43,11 @@ kaks automaatset teed, mida kirjeldab §2.4.
    taastamine, e-posti kinnitamine. Kaheastmeline autentimine
    (autentimisrakendus koos taastekoodidega) ja pääsuvõtmed on mõlemad saadaval
    Seaded → Turvalisus.
+
+Sisselogimisleht küsib kõigepealt ainult e-posti aadressi. Kui oled selle
+kirjutanud, valid kahe vahel: **„Saada sisselogimislink“** (uks 1) või **„Sisesta
+parool“** (uks 4), mis alles siis avab paroolivälja. Pääsuvõti ja SSO on lehe
+ülaosas, aadressi kirjutamata.
 
 ### 2.2 Kuidas lingid töötavad
 

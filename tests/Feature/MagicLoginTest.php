@@ -151,6 +151,90 @@ class MagicLoginTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_the_login_page_mails_a_link_and_confirms_it_on_screen(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create(['email' => 'ando@ruutu10.ee']);
+
+        $response = $this->from(route('login'))->post(route('login.magic-link'), [
+            'email' => 'ando@ruutu10.ee',
+        ]);
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHas('status', fn (string $status): bool => str_contains($status, 'ando@ruutu10.ee'));
+
+        Notification::assertSentTo($user, MagicLoginLink::class);
+    }
+
+    public function test_a_link_asked_for_on_the_login_page_lands_on_the_dashboard(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create(['email' => 'ando@ruutu10.ee']);
+
+        $this->post(route('login.magic-link'), ['email' => 'ando@ruutu10.ee']);
+
+        $response = $this->get($this->mailedLink($user));
+
+        $response->assertRedirect(route('dashboard'));
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_a_link_asked_for_on_the_login_page_returns_to_the_page_that_wanted_a_login(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create(['email' => 'ando@ruutu10.ee']);
+
+        // The guard puts the wanted page in the session on its way to /login;
+        // the mailed link should honour it rather than the dashboard.
+        $this->get(route('formats.index'))->assertRedirect(route('login'));
+
+        $this->post(route('login.magic-link'), ['email' => 'ando@ruutu10.ee']);
+
+        $response = $this->get($this->mailedLink($user));
+
+        $response->assertRedirect(route('formats.index'));
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_the_login_page_registers_an_unknown_address_as_a_signup(): void
+    {
+        Notification::fake();
+
+        $this->post(route('login.magic-link'), ['email' => 'uus@naide.ee'])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'uus@naide.ee',
+            'signup_source' => SignupSource::SignupForm->value,
+        ]);
+    }
+
+    public function test_the_login_page_rejects_an_invalid_address(): void
+    {
+        Notification::fake();
+
+        $this->from(route('login'))
+            ->post(route('login.magic-link'), ['email' => 'not-an-email'])
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors('email');
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_an_already_signed_in_user_has_no_use_for_a_login_link(): void
+    {
+        Notification::fake();
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('login.magic-link'), ['email' => 'ando@ruutu10.ee'])
+            ->assertRedirect(route('dashboard'));
+
+        Notification::assertNothingSent();
+    }
+
     public function test_visiting_the_magic_link_settles_an_unverified_address(): void
     {
         Notification::fake();

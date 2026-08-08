@@ -29,6 +29,13 @@ Route::inertia('/', 'Welcome')->name('home');
 // exactly the reader most likely to need it.
 Route::get('abi', ManualController::class)->name('manual');
 
+// The login page's third door, beside the password and passkey ones Fortify
+// owns: mail the address the visitor typed a one-time link that signs them in.
+// Shares its controller with the plan wizard's own login step further down.
+Route::post('login/magic-link', [MagicLoginController::class, 'send'])
+    ->middleware(['guest', 'throttle:6,1'])
+    ->name('login.magic-link');
+
 // Generic, model-agnostic file staging shared by any feature that needs
 // attachments (see App\Concerns\HasAttachments).
 Route::prefix('api/attachments')->name('attachments.')->group(function () {

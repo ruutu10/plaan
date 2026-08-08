@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\FindOrCreateUserByEmail;
 use App\Actions\MagicLink\LogInAndVerifyEmail;
+use App\Enums\SignupSource;
 use App\Models\TechnicalPlan;
 use App\Notifications\MagicLoginLink;
 use Illuminate\Http\JsonResponse;
@@ -19,8 +20,13 @@ class MagicLoginController extends Controller
     /**
      * E-mail a one-time magic login link to the given address, provisioning a
      * lightweight account first if the address is not yet registered.
+     *
+     * The same link is asked for at two doors, which differ only in where they
+     * leave the user and how they answer: the plan wizard's own login step
+     * talks JSON and lands on the plan being read, while the application's
+     * login page is an Inertia screen and lands on the dashboard.
      */
-    public function send(Request $request): JsonResponse
+    public function send(Request $request): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255'],
@@ -32,9 +38,17 @@ class MagicLoginController extends Controller
             'email.email' => 'Sisesta kehtiv e-posti aadress.',
         ]);
 
-        $user = $this->findOrCreateUser->handle($data['email']);
+        $fromLoginPage = $request->routeIs('login.magic-link');
 
-        $action = new LogInAndVerifyEmail($user, $this->destination($data['token'] ?? null));
+        $user = $this->findOrCreateUser->handle(
+            $data['email'],
+            $fromLoginPage ? SignupSource::SignupForm : SignupSource::AnonymousPlan,
+        );
+
+        $action = new LogInAndVerifyEmail($user, $fromLoginPage
+            // Whatever page sent them to the login screen, if anything did.
+            ? redirect()->intended(route('dashboard'))
+            : $this->destination($data['token'] ?? null));
 
         $magicLink = MagicLink::create($action, lifetime: 30, numMaxVisits: 4);
 
@@ -47,6 +61,13 @@ class MagicLoginController extends Controller
         ]);
 
         $user->notify(new MagicLoginLink($magicLink->url));
+
+        if ($fromLoginPage) {
+            return back()->with(
+                'status',
+                "Saatsime sisselogimislingi aadressile {$user->email}. Link kehtib 30 minutit.",
+            );
+        }
 
         return response()->json(['sent' => true]);
     }
