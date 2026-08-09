@@ -509,6 +509,59 @@ class PerformanceManagementTest extends TestCase
         $this->assertNull($plan->fresh()->performance);
     }
 
+    public function test_a_performance_is_only_put_aside_unless_a_wipe_is_asked_for(): void
+    {
+        [$user, $format] = $this->formatOfOwnTeam();
+        $performance = Performance::factory()->create(['format_id' => $format->id]);
+
+        // What the screen sends with the box left ticked, spelt out: the row
+        // stays, which is what keeps the Planka import off the night.
+        $this->actingAs($user)
+            ->deleteJson(route('api.formats.performances.destroy', [$format, $performance, 'force' => 0]))
+            ->assertNoContent();
+
+        $this->assertSoftDeleted($performance);
+    }
+
+    public function test_a_performance_can_be_wiped_so_the_import_may_register_it_again(): void
+    {
+        [$user, $format] = $this->formatOfOwnTeam();
+        $performance = Performance::factory()->create(['format_id' => $format->id]);
+
+        $this->actingAs($user)
+            ->deleteJson(route('api.formats.performances.destroy', [$format, $performance, 'force' => 1]))
+            ->assertNoContent();
+
+        // Not put aside: gone, leaving nothing for the import to recognise.
+        $this->assertDatabaseMissing('performances', ['id' => $performance->id]);
+    }
+
+    public function test_wiping_a_performance_takes_the_plans_written_for_it_with_it(): void
+    {
+        [$user, $format] = $this->formatOfOwnTeam();
+        $performance = Performance::factory()->create(['format_id' => $format->id]);
+        $plan = TechnicalPlan::factory()->create(['performance_id' => $performance->id]);
+
+        $this->actingAs($user)
+            ->deleteJson(route('api.formats.performances.destroy', [$format, $performance, 'force' => 1]))
+            ->assertNoContent();
+
+        // A plan is not allowed to outlive the night it describes, so the
+        // database cascades it. The screen warns about this before asking.
+        $this->assertDatabaseMissing('technical_plans', ['id' => $plan->id]);
+    }
+
+    public function test_wiping_another_teams_performance_is_forbidden(): void
+    {
+        $performance = Performance::factory()->create();
+
+        $this->actingAs(User::factory()->create())
+            ->deleteJson(route('api.formats.performances.destroy', [$performance->format, $performance, 'force' => 1]))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('performances', ['id' => $performance->id]);
+    }
+
     public function test_a_deleted_performance_can_no_longer_be_reached(): void
     {
         [$user, $format] = $this->formatOfOwnTeam();

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
+import PlankaReimportField from '@/components/PlankaReimportField.vue';
 import R10ConfirmDelete from '@/components/technical-plan/R10ConfirmDelete.vue';
 import { formatEstonianDate } from '@/lib/date';
 import { destroy } from '@/routes/api/formats/performances';
@@ -14,8 +15,24 @@ const emit = defineEmits<{ deleted: [] }>();
 
 const open = defineModel<boolean>('open', { required: true });
 
+/** Put aside rather than wiped — see {@see PlankaReimportField}. */
+const keepDeleted = ref(true);
+
+// Put back to its default every time the dialog opens: the dialog is mounted
+// with the page, not with the row, so a wipe asked for once must not still be
+// asked for on the next performance the user reaches for.
+watch(open, (isOpen) => {
+    if (isOpen) {
+        keepDeleted.value = true;
+    }
+});
+
 const action = computed(() =>
-    props.performance ? destroy([props.formatId, props.performance.id]) : null,
+    props.performance
+        ? destroy([props.formatId, props.performance.id], {
+              query: { force: !keepDeleted.value },
+          })
+        : null,
 );
 
 const planCount = computed(() => props.performance?.technicalPlanCount ?? 0);
@@ -36,8 +53,16 @@ const planCount = computed(() => props.performance?.technicalPlanCount ?? 0);
         </template>
 
         <template v-if="planCount > 0" #warning>
-            Sellele etendusele on esitatud {{ planCount }} tehnikaplaani.
-            Plaanid jäävad alles, kuid etendus kaob nende juurest.
+            <template v-if="keepDeleted">
+                Sellele etendusele on esitatud {{ planCount }} tehnikaplaani.
+                Plaanid jäävad alles, kuid etendus kaob nende juurest.
+            </template>
+            <template v-else>
+                Sellele etendusele on esitatud {{ planCount }} tehnikaplaani.
+                Koos etendusega kustutatakse jäädavalt ka need.
+            </template>
         </template>
+
+        <PlankaReimportField v-model="keepDeleted" />
     </R10ConfirmDelete>
 </template>

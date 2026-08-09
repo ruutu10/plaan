@@ -416,9 +416,18 @@ tavapäraselt.
 et parandada *oma* etendust, kuid formaat ise - selle nimi, omanik,
 kustutamine - jääb formaadi tiimi kätte.
 
-**Formaadi kustutamine** paneb selle kõrvale (pehme kustutus) ja võtab etendused
-kaasa, nii et miski ei jää osutama formaadile, mida rakendus mujal enam ei
-näita. Nendele etendustele kirjutatud plaanid säilitavad oma jälje.
+**Formaadi kustutamine** küsib enne kinnitust ja pakub kinnitusaknas ühe valiku:
+*„Kustuta, ja ära uuesti Plankast impordi“*. Linnuke on vaikimisi ees.
+
+- **Linnukesega** pannakse formaat kõrvale (pehme kustutus) ja etendused lähevad
+  kaasa, nii et miski ei jää osutama formaadile, mida rakendus mujal enam ei
+  näita. Nendele etendustele kirjutatud plaanid säilitavad oma jälje. Andmebaasi
+  jäänud kirje on ühtlasi see, mis hoiab Planka impordi formaadist eemal - sama
+  nimega formaati enam ei looda.
+- **Ilma linnukeseta** kustutatakse formaat andmebaasist jäädavalt ja koos
+  sellega ka kõik selle etendused ning neile etendustele esitatud
+  tehnikaplaanid. Kuna järele ei jää midagi, mida import ära tunneks, luuakse
+  formaat sama kaardi pealt järgmisel korral uuesti.
 
 ### 7.2 Etendused
 
@@ -430,11 +439,20 @@ valikuliselt kestus, valikuliselt oma pealkiri ja oma esinev tiim (jagatud
   lõiku parandada, kuid mitte kavva enda omi juurde panna.
 - **Etenduse muutmine ja kustutamine** on lubatud formaadi tiimile, seda
   etendust mängivale tiimile ja tehnikutele.
-- **Etenduse kustutamine ei kustuta sellele kirjutatud plaane.** Need osutavad
-  sellele edasi - etendus on üksnes peidetud, nii et taastamine seob need kaks
-  uuesti kokku - kuid seni loetakse neid plaanidena, millel pole formaati, tiimi
-  ega kuupäeva. Ekraan hoiatab, kui neid on; tagasitee on etendus taastada või
-  plaan avada ja esimesest sammust mõne teise etenduse peale tõsta.
+- **Etenduse kustutamine** küsib enne kinnitust ja pakub sedasama valikut, mis
+  formaadi oma: *„Kustuta, ja ära uuesti Plankast impordi“*, linnuke vaikimisi
+  ees.
+- **Linnukesega kustutamine ei kustuta etendusele kirjutatud plaane.** Need
+  osutavad sellele edasi - etendus on üksnes peidetud, nii et taastamine seob
+  need kaks uuesti kokku - kuid seni loetakse neid plaanidena, millel pole
+  formaati, tiimi ega kuupäeva. Ekraan hoiatab, kui neid on; tagasitee on
+  etendus taastada või plaan avada ja esimesest sammust mõne teise etenduse
+  peale tõsta. Peidetud kirje hoiab ühtlasi Planka impordi eemal: sama õhtut
+  enam uuesti ei registreerita.
+- **Ilma linnukeseta kustutamine kustutab ka plaanid.** Etendus kaob
+  andmebaasist jäädavalt ja plaan ei tohi üle elada õhtut, mida ta kirjeldab, nii
+  et need lähevad koos. Vastutasuks registreerib Planka import sama õhtu
+  kaardilt järgmisel korral uuesti.
 
 Igal etendusel on ka oma leht (avatav muutmisnimekirja pliiatsinupust), kus
 lisaks eelnimetatud väljadele näeb ka etenduse **meeskonda**, kui see on
@@ -539,7 +557,7 @@ tekstiks.
 
 | Töö | Millal | Mida ta teeb |
 | --- | --- | --- |
-| **Planka import** | Iga päev | Loeb projektide kaarte ja registreerib formaadid ja etendused, mille kohta on kaart. Uued etendused saabuvad **mustanditena**, mis ootavad ülevaatamist. Formaate, mille admin on siin kustutanud, ei äratata kunagi ellu. Kaarte saab sildi järgi välja jätta. |
+| **Planka import** | Iga päev | Loeb projektide kaarte ja registreerib formaadid ja etendused, mille kohta on kaart. Uued etendused saabuvad **mustanditena**, mis ootavad ülevaatamist. Formaate ja etendusi, mille admin on siin kõrvale pannud, ei äratata kunagi ellu; jäädavalt kustutatud kirje aga luuakse sama kaardi pealt uuesti. Kaarte saab sildi järgi välja jätta. |
 | **Meeldetuletused** | Iga tund | Saadab välja iga tehnikaplaani meeldetuletuse, mille aeg on äsja kätte jõudnud (§6). Enamikul tundidel vaikne. |
 | **Arhiveerimine** | Iga päev | Viib esitatud ja kinnitatud plaanid staatusesse **Arhiveeritud**, kui nende etendus mängiti ära rohkem kui 24 tundi tagasi. Esineja enda mustandit ei arhiveerita kunagi - seda ei antud kunagi üle. |
 | **Kutsete koristus** | Iga päev | Kustutab aegunud tiimikutsed. |
@@ -616,5 +634,7 @@ Veel kaks märkust piiride kohta:
   pandud; vorm lihtsalt avaneb algusest koos valikunimekirjaga.
 - **Tiimi ümber nimetamine lõhub lingid, mis selle nime sisaldavad.**
 - **Etenduse kustutamine jätab selle plaanid alles**; formaadi kustutamine võtab
-  selle etendused kaasa.
+  selle etendused kaasa. Mõlemad kehtivad tavalise, kõrvalepaneva kustutuse
+  kohta - kui kinnitusaknas linnuke maha võtta, kustutatakse kirje jäädavalt ja
+  plaanid lähevad kaasa.
 

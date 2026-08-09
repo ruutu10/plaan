@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Console\Commands\ImportPlankaPerformances;
 use App\Http\Requests\Performances\SavePerformanceRequest;
 use App\Http\Resources\AdminPerformance as AdminPerformanceResource;
 use App\Http\Resources\Performance as PerformanceResource;
@@ -153,26 +154,41 @@ class PerformanceController extends Controller
     }
 
     /**
-     * Delete one of the format's performances. The technical plans written for it are
-     * not deleted with it — they are left without a performance, the column being
-     * nulled, which is why the screen warns when there are any.
+     * Delete one of the format's performances — put it aside, or wipe it outright.
+     *
+     * Put aside is the usual answer and the default the screen offers: the row
+     * stays, so the plans written for the night keep pointing at something, and
+     * the Planka import recognises the night as one the house has already dealt
+     * with rather than announcing it again (see
+     * {@see ImportPlankaPerformances::actsAlreadyOn()}).
+     *
+     * `force` asks for the other answer: the row goes, and the plans written for
+     * it go with it — the database cascades them, a plan not being allowed to
+     * outlive the night it describes. Nothing is left for the import to
+     * recognise, so a night still on the card is registered again on the next
+     * run, which is the point of asking for it.
      */
     public function destroy(Request $request, Format $format, Performance $performance): Response
     {
         Gate::authorize('delete', $performance);
 
-        // The plans written for it survive without a performance, so the count
-        // says how many are about to be left dangling.
-        $orphanedPlans = $performance->technicalPlans()->count();
+        $permanently = $request->boolean('force');
 
-        $performance->delete();
+        // The plans written for it survive a performance put aside, so the count
+        // says how many are about to be left dangling — or, when it is wiped,
+        // how many the cascade is about to take with it.
+        $plans = $performance->technicalPlans()->count();
+
+        $permanently ? $performance->forceDelete() : $performance->delete();
 
         Log::notice('Performance deleted', [
             'performance_id' => $performance->id,
             'format_id' => $format->id,
             'starts_at' => $performance->startsAt()->toDateTimeString(),
             'user_id' => $request->user()->id,
-            'orphaned_plans' => $orphanedPlans,
+            'orphaned_plans' => $permanently ? 0 : $plans,
+            'plans_deleted' => $permanently ? $plans : 0,
+            'permanently' => $permanently,
         ]);
 
         return response()->noContent();

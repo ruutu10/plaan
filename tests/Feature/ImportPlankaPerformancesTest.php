@@ -915,6 +915,36 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame(0, Performance::query()->count());
     }
 
+    public function test_it_announces_a_wiped_format_again(): void
+    {
+        // The other half of the choice the delete dialog offers: a format put
+        // aside leaves a row that holds the import off (see the test above),
+        // and one wiped leaves nothing, so the card produces it afresh.
+        Format::factory()->create(['name' => 'Trupp 1'])->forceDelete();
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([$this->night('Trupp 1')]);
+
+        $this->artisan('planka:import')
+            ->expectsOutputToContain('Creating format: Trupp 1')
+            ->assertSuccessful();
+
+        $this->assertSame('Trupp 1', Format::query()->sole()->name);
+    }
+
+    public function test_it_registers_a_wiped_performance_again(): void
+    {
+        $format = Format::factory()->create(['name' => 'Trupp 1']);
+        Performance::factory()->for($format)->create(['date' => '2025-09-13'])->forceDelete();
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([$this->night('Trupp 1')]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame('2025-09-13', Performance::query()->sole()->startDate());
+    }
+
     public function test_it_hands_a_new_format_to_the_group_the_ai_matched_it_to(): void
     {
         $team = Team::factory()->create(['name' => 'Tsikid Reas']);

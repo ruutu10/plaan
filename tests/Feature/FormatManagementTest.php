@@ -6,6 +6,7 @@ use App\Enums\CreatedBy;
 use App\Models\Format;
 use App\Models\Performance;
 use App\Models\Team;
+use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -562,6 +563,67 @@ class FormatManagementTest extends TestCase
 
         // Nothing is left pointing at a format the rest of the app no longer sees.
         $performances->each(fn (Performance $performance) => $this->assertSoftDeleted($performance));
+    }
+
+    public function test_a_format_is_only_put_aside_unless_a_wipe_is_asked_for(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+        $format = Format::factory()->create(['team_id' => $team->id]);
+
+        // What the screen sends with the box left ticked, spelt out: the row
+        // stays, which is what keeps the Planka import off the format.
+        $this->actingAs($user)
+            ->deleteJson(route('api.formats.destroy', ['format' => $format, 'force' => 0]))
+            ->assertNoContent();
+
+        $this->assertSoftDeleted($format);
+    }
+
+    public function test_a_format_can_be_wiped_so_the_import_may_announce_it_again(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+        $format = Format::factory()->create(['team_id' => $team->id]);
+
+        $this->actingAs($user)
+            ->deleteJson(route('api.formats.destroy', ['format' => $format, 'force' => 1]))
+            ->assertNoContent();
+
+        // Not put aside: gone, leaving nothing for the import to recognise.
+        $this->assertDatabaseMissing('formats', ['id' => $format->id]);
+    }
+
+    public function test_wiping_a_format_takes_its_performances_and_their_plans_with_it(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+        $format = Format::factory()->create(['team_id' => $team->id]);
+
+        $performance = Performance::factory()->create(['format_id' => $format->id]);
+        $alreadyPutAside = Performance::factory()->trashed()->create(['format_id' => $format->id]);
+        $plan = TechnicalPlan::factory()->create(['performance_id' => $performance->id]);
+
+        $this->actingAs($user)
+            ->deleteJson(route('api.formats.destroy', ['format' => $format, 'force' => 1]))
+            ->assertNoContent();
+
+        // The database cascades the lot: a performance cannot outlive its
+        // format, and a plan cannot outlive the night it describes.
+        $this->assertDatabaseMissing('performances', ['id' => $performance->id]);
+        $this->assertDatabaseMissing('performances', ['id' => $alreadyPutAside->id]);
+        $this->assertDatabaseMissing('technical_plans', ['id' => $plan->id]);
+    }
+
+    public function test_wiping_another_teams_format_is_forbidden(): void
+    {
+        $format = Format::factory()->create();
+
+        $this->actingAs(User::factory()->create())
+            ->deleteJson(route('api.formats.destroy', ['format' => $format, 'force' => 1]))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('formats', ['id' => $format->id]);
     }
 
     public function test_a_performance_already_deleted_on_its_own_is_not_disturbed(): void

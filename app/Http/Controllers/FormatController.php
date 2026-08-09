@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Console\Commands\ImportPlankaPerformances;
 use App\Http\Requests\Formats\SaveFormatRequest;
 use App\Http\Resources\Format as FormatResource;
 use App\Models\Format;
@@ -107,24 +108,42 @@ class FormatController extends Controller
     }
 
     /**
-     * Put the format aside. It is soft-deleted, taking its performances with it (see
-     * {@see Format::booted()}), so the plans written for them keep their trail.
+     * Put the format aside, or wipe it outright.
+     *
+     * Put aside is the usual answer and the default the screen offers: the
+     * format is soft-deleted, taking its performances with it (see
+     * {@see Format::booted()}), so the plans written for them keep their trail —
+     * and the row left behind is what keeps the Planka import from announcing
+     * the same format all over again next week (see
+     * {@see ImportPlankaPerformances::primeFormats()}).
+     *
+     * `force` asks for the other answer: the row goes, and with it — by the
+     * database's own cascade — every performance of the format and every plan
+     * written for those. Nothing is left for the import to recognise, so a
+     * format still on the board comes back on the next run, which is the point
+     * of asking for it.
      */
     public function destroy(Request $request, Format $format): Response
     {
         Gate::authorize('delete', $format);
 
-        // Counted before the delete: putting a format aside takes its
-        // performances with it, and that reach is the point of the record.
-        $performances = $format->performances()->count();
+        $permanently = $request->boolean('force');
 
-        $format->delete();
+        // Counted before the delete: deleting a format takes its performances
+        // with it, and that reach is the point of the record. A wipe reaches
+        // the ones already put aside too, so those are counted as well.
+        $performances = $permanently
+            ? $format->performances()->withTrashed()->count()
+            : $format->performances()->count();
+
+        $permanently ? $format->forceDelete() : $format->delete();
 
         Log::notice('Format deleted', [
             'format_id' => $format->id,
             'team_id' => $format->team_id,
             'user_id' => $request->user()->id,
             'performances_deleted' => $performances,
+            'permanently' => $permanently,
         ]);
 
         return response()->noContent();

@@ -78,6 +78,10 @@ async function remove(): Promise<void> {
             >
         </p>
 
+        <!-- Anything the confirmation itself asks about, below the warning and
+             above the buttons: the deletions that offer a choice put it here. -->
+        <slot />
+
         <template #actions>
             <R10Button
                 variant="outline"
