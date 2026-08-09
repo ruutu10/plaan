@@ -23,6 +23,7 @@ Vastus on massiiv `formats`, kus **iga element on üks formaat ühel kuupäeval*
 3. Kui kaardil on nimetatud ainult inimesed (nt `Esinejad: Jaak Pihl, Mari Suur`) ja ühtki etteaste nime pole, siis on tegemist **ühe etteastega** ja formaadi nimeks võta samamoodi puhastatud kaardi pealkiri: `TLN tasuta näidistund 27.08 (Karolina)` → `TLN tasuta näidistund`.
 4. Ära kunagi tee formaadi nime üksiku inimese ees- või perekonnanimest.
 5. Moodulite lõpuetendused on alati Õppelava formaadid. Seljuhul on kaardi pealkirjas Õppelava, ning esinevad moodulid on loetletud kaardis (iga loetletud moodul on eraldi etteaste). Kui ühes Õppelava formaadis on mitu moodulit korraga, on iga moodul eraldi etteaste.
+6. "Duubel" etendused on formaadis "Duubel". Mõnikord on kaardi pealkirjas täpsustus esinejate kohta, näiteks: "Duubel: Tõnis ilma Tanelita ja improviseeritud Shakespeare", seljuhul kasuta formaadi nimeks ikkagi ainult "Duubel", ning sellel õhtul on kaks etteastet: "Tõnis ilma Tanelita" ja "improviseeritud Shakespeare".
 
 ## Etteaste nimi (`title`)
 
