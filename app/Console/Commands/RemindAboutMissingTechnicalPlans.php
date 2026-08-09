@@ -93,8 +93,9 @@ class RemindAboutMissingTechnicalPlans extends Command
 
     /**
      * The performances this reminder is due for right now: still to be played,
-     * vouched for, owned by a group there is somebody to write to, without a
-     * plan the technical team holds, and not already dealt with at this moment.
+     * vouched for, of a format the house expects a plan for, owned by a group
+     * there is somebody to write to, without a plan the technical team holds,
+     * and not already dealt with at this moment.
      *
      * The window is expressed as a bound on the start time rather than worked
      * out per row, so the database hands back the few that matter instead of
@@ -109,6 +110,10 @@ class RemindAboutMissingTechnicalPlans extends Command
             // Still ahead of us, and near enough for this reminder to be due.
             ->where('date', '>', $now)
             ->where('date', '<=', $schedule->dueForPerformancesStartingBy($now))
+            // A format the house expects no plan for is not chased about one.
+            // Nothing else changes for it: a performer may still hand a plan in,
+            // and the crew still see it if they do.
+            ->whereHas('format', fn (Builder $format) => $format->where('technical_plan_mandatory', true))
             // Nobody to chase without a group — the performance's own, or the
             // format's when the evening is not a shared one.
             ->where(fn (Builder $performance) => $performance

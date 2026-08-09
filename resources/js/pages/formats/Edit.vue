@@ -64,10 +64,17 @@ const logOpen = ref(false);
 const loader = useHttp();
 const performanceLoader = useHttp();
 
+/**
+ * Stand-ins for the form's fields while it loads, in their own order and
+ * proportions: group, name, description, and the mandatory-plan tick-box.
+ */
+const skeletonFieldHeights = ['h-12', 'h-12', 'h-32', 'h-20'];
+
 const form = useHttp<FormatFormData>({
     team_id: null,
     name: '',
     description: '',
+    technical_plan_mandatory: true,
 });
 
 defineOptions({
@@ -100,6 +107,7 @@ const { data: format, loadFailed } = useResource(async () => {
     form.team_id = response.data.teamId;
     form.name = response.data.name;
     form.description = response.data.description ?? '';
+    form.technical_plan_mandatory = response.data.technicalPlanMandatory;
     form.defaults();
 
     nameTheTrail(response.data.name);
@@ -180,13 +188,17 @@ async function save(): Promise<void> {
             data-test="format-form-skeleton"
             class="flex max-w-2xl flex-col gap-6 rounded-xl border-2 border-r10-grey-200 bg-white p-5 md:p-7"
         >
-            <div v-for="field in 3" :key="field" class="flex flex-col gap-2">
+            <div
+                v-for="(height, field) in skeletonFieldHeights"
+                :key="field"
+                class="flex flex-col gap-2"
+            >
                 <span
                     class="block h-3 w-24 animate-pulse rounded-full bg-r10-grey-200"
                 />
                 <span
                     class="block animate-pulse rounded-lg bg-r10-grey-100"
-                    :class="field === 3 ? 'h-32' : 'h-12'"
+                    :class="height"
                 />
             </div>
         </div>
@@ -209,6 +221,7 @@ async function save(): Promise<void> {
                 v-model:team-id="form.team_id"
                 v-model:name="form.name"
                 v-model:description="form.description"
+                v-model:technical-plan-mandatory="form.technical_plan_mandatory"
                 :teams="teams"
                 :errors="form.errors"
                 :disabled="!canEditFormat"

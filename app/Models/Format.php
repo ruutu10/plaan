@@ -28,6 +28,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $team_id
  * @property string $name
  * @property string|null $description
+ * @property bool $technical_plan_mandatory
  * @property CreatedBy $created_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -41,6 +42,7 @@ use Illuminate\Support\Carbon;
     'team_id',
     'name',
     'description',
+    'technical_plan_mandatory',
     'created_by',
 ])]
 class Format extends Model
@@ -50,14 +52,17 @@ class Format extends Model
 
     /**
      * A format nobody said otherwise about was entered by hand: only the Planka
-     * import says where else it came from. Spelt out here as well as in the
-     * column default so a format just created reads as manual rather than as an
-     * attribute that has not come back from the database yet.
+     * import says where else it came from. The same goes for the technical plan
+     * being expected, which holds for all but the handful of nights that run
+     * themselves. Both are spelt out here as well as in the column defaults, so
+     * a format just created reads right rather than as an attribute that has not
+     * come back from the database yet.
      *
      * @var array<string, mixed>
      */
     protected $attributes = [
         'created_by' => CreatedBy::Manual->value,
+        'technical_plan_mandatory' => true,
     ];
 
     /**
@@ -69,6 +74,7 @@ class Format extends Model
     {
         return [
             'created_by' => CreatedBy::class,
+            'technical_plan_mandatory' => 'boolean',
         ];
     }
 
@@ -228,6 +234,6 @@ class Format extends Model
      */
     protected function activityLogAttributes(): array
     {
-        return ['team_id', 'name', 'description', 'created_by'];
+        return ['team_id', 'name', 'description', 'technical_plan_mandatory', 'created_by'];
     }
 }

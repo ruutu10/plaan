@@ -23,8 +23,20 @@ class FormatFactory extends Factory
             'team_id' => Team::factory(),
             'name' => fake()->words(3, true),
             'description' => fake()->paragraph(),
+            'technical_plan_mandatory' => true,
             'created_by' => CreatedBy::Manual,
         ];
+    }
+
+    /**
+     * Indicate that the format is one of the nights that run themselves, which
+     * nobody is chased about a missing technical plan for.
+     */
+    public function withoutMandatoryTechnicalPlan(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'technical_plan_mandatory' => false,
+        ]);
     }
 
     /**

@@ -30,7 +30,7 @@ enum PerformanceStaffRole: string
         return match ($this) {
             self::Performer => 'Esineja',
             self::Host => 'Õhtujuht',
-            self::Technician => 'Heli- ja valgustehnik',
+            self::Technician => 'Heli- ja valgusmeister',
             self::VideoOperator => 'Operaator/videoprodutsent',
             self::TicketSeller => 'Piletimüüja',
             self::Bar => 'Baar',

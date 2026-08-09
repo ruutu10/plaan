@@ -149,6 +149,99 @@ class FormatManagementTest extends TestCase
         $this->assertContains('Jaanuar', array_column($response->json('teams'), 'name'));
     }
 
+    public function test_a_format_expects_a_technical_plan_unless_somebody_says_otherwise(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+
+        $this->actingAs($user)
+            ->postJson(route('api.formats.store'), [
+                'team_id' => $team->id,
+                'name' => 'Hooaja avaetendus',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.technicalPlanMandatory', true);
+
+        $this->assertTrue(Format::sole()->technical_plan_mandatory);
+    }
+
+    public function test_a_format_can_be_entered_as_one_that_needs_no_technical_plan(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+
+        $this->actingAs($user)
+            ->postJson(route('api.formats.store'), [
+                'team_id' => $team->id,
+                'name' => 'Õppelava',
+                'technical_plan_mandatory' => false,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.technicalPlanMandatory', false);
+
+        $this->assertFalse(Format::sole()->technical_plan_mandatory);
+    }
+
+    public function test_the_technical_plan_requirement_can_be_switched_off_and_back_on(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+        $format = Format::factory()->create(['team_id' => $team->id]);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.formats.update', $format), [
+                'team_id' => $team->id,
+                'name' => $format->name,
+                'technical_plan_mandatory' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.technicalPlanMandatory', false);
+
+        $this->assertFalse($format->fresh()->technical_plan_mandatory);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.formats.update', $format), [
+                'team_id' => $team->id,
+                'name' => $format->name,
+                'technical_plan_mandatory' => true,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.technicalPlanMandatory', true);
+
+        $this->assertTrue($format->fresh()->technical_plan_mandatory);
+    }
+
+    public function test_a_save_that_says_nothing_about_the_requirement_leaves_it_alone(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+        $format = Format::factory()->withoutMandatoryTechnicalPlan()->create(['team_id' => $team->id]);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.formats.update', $format), [
+                'team_id' => $team->id,
+                'name' => 'Uus nimi',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.technicalPlanMandatory', false);
+
+        $this->assertFalse($format->fresh()->technical_plan_mandatory);
+    }
+
+    public function test_the_requirement_has_to_be_a_boolean(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+
+        $this->actingAs($user)
+            ->postJson(route('api.formats.store'), [
+                'team_id' => $team->id,
+                'name' => 'Õppelava',
+                'technical_plan_mandatory' => 'vahel',
+            ])
+            ->assertJsonValidationErrors('technical_plan_mandatory');
+    }
+
     public function test_the_api_reports_where_a_format_came_from_and_when(): void
     {
         $user = User::factory()->create();

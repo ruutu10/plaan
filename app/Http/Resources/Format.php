@@ -24,6 +24,7 @@ class Format extends JsonResource
      *     id: int,
      *     name: string,
      *     description: string|null,
+     *     technicalPlanMandatory: bool,
      *     teamId: int|null,
      *     teamName: string|null,
      *     performanceCount: int|null,
@@ -41,6 +42,10 @@ class Format extends JsonResource
             'id' => $format->id,
             'name' => $format->name,
             'description' => $format->description,
+            // Whether the house expects a technical plan for this format at all.
+            // False for the nights that run themselves, which nobody is chased
+            // about a plan for.
+            'technicalPlanMandatory' => $format->technical_plan_mandatory,
             'teamId' => $format->team_id,
             'teamName' => $format->team?->name,
             // Only the listing counts the performances; the edit page does not.

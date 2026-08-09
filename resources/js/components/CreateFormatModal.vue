@@ -18,6 +18,9 @@ const form = useHttp<FormatFormData>({
     team_id: null,
     name: '',
     description: '',
+    // A new format is expected to have a plan; the handful that are not are
+    // told apart by hand.
+    technical_plan_mandatory: true,
 });
 
 /**
@@ -68,6 +71,7 @@ async function save(): Promise<void> {
             v-model:team-id="form.team_id"
             v-model:name="form.name"
             v-model:description="form.description"
+            v-model:technical-plan-mandatory="form.technical_plan_mandatory"
             :teams="teams"
             :errors="form.errors"
         />

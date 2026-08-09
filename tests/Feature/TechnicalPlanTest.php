@@ -558,6 +558,23 @@ class TechnicalPlanTest extends TestCase
         $response->assertJsonPath('placeholder.formatName', Format::PLACEHOLDER_NAME);
     }
 
+    public function test_the_performances_endpoint_says_which_nights_owe_no_plan(): void
+    {
+        // Still on offer, and marked: a plan for a night that runs itself is
+        // taken just the same, it is simply not owed.
+        $optional = Performance::factory()
+            ->for(Format::factory()->withoutMandatoryTechnicalPlan()->state(['name' => 'Õppelava']))
+            ->create();
+        $expected = Performance::factory()->for(Format::factory()->state(['name' => 'Öine impro']))->create();
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+        $response->assertJsonCount(2, 'results');
+        $response->assertJsonFragment(['id' => $optional->id, 'technicalPlanMandatory' => false]);
+        $response->assertJsonFragment(['id' => $expected->id, 'technicalPlanMandatory' => true]);
+    }
+
     public function test_the_performances_endpoint_leaves_out_the_ones_waiting_to_be_reviewed(): void
     {
         $reviewed = Performance::factory()->for(Format::factory()->state(['name' => 'Üle vaadatud']))->create();

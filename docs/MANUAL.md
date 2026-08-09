@@ -153,6 +153,11 @@ välja jäetud). Tänaõhtune etendus püsib nimekirjas kuni eesriide avanemisen
 plaan kuulub ühe etenduse juurde, nii et see on ainus valik, mille peale vorm
 käib: sellest sammust edasi ei avane midagi enne, kui see on tehtud.
 
+Etendus, mille formaadil ei ole tehnikaplaan kohustuslik (§7.1), kannab
+nimekirjas märkust **„Selle etenduse tehnikaplaan ei ole kohustuslik“**.
+Valikust see midagi ei võta - plaani saab talle kirjutada ja saata nagu igale
+teisele; puuduva plaani pärast lihtsalt ei nüksata kedagi.
+
 Kui sinu õhtut nimekirjas ei ole, vali **„Etendust pole nimekirjas“** -
 asendusetendus, mida pakutakse nimekirja all punktiirkastina. Plaan jõuab
 tehnikatiimini täpselt samamoodi nagu iga teine; kirjuta formaadi nimi, kuupäev
@@ -363,6 +368,8 @@ sisalda meelega ühtki sisselogimislinki.
 loe - seda ei antud kunagi üle.
 
 **Mille pärast ei nüksata:**
+- etendused, mille formaadil on **tehnikaplaani kohustus maha võetud** (§7.1) -
+  näiteks õppelava või jämm,
 - mustandiks märgitud etendused,
 - etendused, millel pole tiimi (pole kellelegi kirjutada),
 - etendused, mille tiimil pole liikmeid - see logitakse hoiatusena ja vaadatakse
@@ -393,6 +400,17 @@ Sa saad luua formaadi (valides omaniku nende tiimide seast, kuhu ise kuulud;
 tehnik võib valida ükskõik millise tiimi), selle ümber nimetada, kirjeldust muuta
 ja anda selle teisele tiimile. Formaati ei liigutata kunagi sinna, kuhu selle
 muutja järele ei pääse.
+
+**Tehnikaplaani kohustus.** Formaadi muutmislehel on linnuke „Tehnikaplaan on
+kohustuslik“, mis on uuel formaadil ja kõigil varem loodud formaatidel sees. Kui
+linnuke maha võtta, siis selle formaadi etenduste kohta **ei saadeta puuduva
+tehnikaplaani meeldetuletusi** (§6) - ei esinejatele ega tehnikatiimile. Mõeldud
+nendele õhtutele, mis tehnikat ei vaja: õppelava, jämm.
+
+Muud see linnuke ei muuda. Etendus jääb tehnikaplaani vormi „Vali etendus“
+sammu nimekirja alles ja sinna lisatakse ainult märkus, et plaan pole
+kohustuslik; kes soovib, saab plaani ikka saata ja tehnikatiim näeb seda
+tavapäraselt.
 
 **Kaks õigust on meelega erinevad.** Külalistrupp pääseb õhtule, mida ta mängib,
 et parandada *oma* etendust, kuid formaat ise - selle nimi, omanik,
@@ -545,7 +563,7 @@ Kirjed näitavad, kas need sisestati käsitsi või impordiga.
 Sama importija loeb kaardilt ka iga etenduse **meeskonna** - nii laval olevad
 esinejad (kui kaart nimetab neid nimepidi) kui lava taga töötavad inimesed.
 Tuntakse ainult järgnevaid rolle: **esineja**, **õhtujuht**, **heli- ja
-valgustehnik**, **operaator/videoprodutsent**, **piletimüüja** ja **baar**.
+valgusmeister**, **operaator/videoprodutsent**, **piletimüüja** ja **baar**.
 Kõik muu, mida kaart mainib (fotograaf, projektijuht, turundus, vastutaja
 jms), jäetakse importimata.
 

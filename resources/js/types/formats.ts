@@ -31,6 +31,12 @@ export interface Format {
     id: number;
     name: string;
     description: string | null;
+    /**
+     * Whether the house expects a technical plan for this format at all. False
+     * for the nights that run themselves, which nobody is chased about a
+     * missing plan for.
+     */
+    technicalPlanMandatory: boolean;
     /** The group whose format this is. Null only for formats nobody claimed yet. */
     teamId: number | null;
     teamName: string | null;
@@ -83,6 +89,7 @@ export interface FormatFormData {
     team_id: number | null;
     name: string;
     description: string;
+    technical_plan_mandatory: boolean;
 }
 
 export type FormatFieldErrors = Partial<Record<keyof FormatFormData, string>>;

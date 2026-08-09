@@ -39,6 +39,10 @@ class SaveFormatRequest extends FormRequest
             'team_id' => ['required', 'integer', Rule::in(Format::assignableTeams($this->user())->modelKeys())],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:10000'],
+            // Left out rather than false when a caller says nothing about it: a
+            // save that never mentions the flag must not quietly switch a
+            // format's reminders off.
+            'technical_plan_mandatory' => ['sometimes', 'boolean'],
         ];
     }
 

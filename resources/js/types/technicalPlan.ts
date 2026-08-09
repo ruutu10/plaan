@@ -73,6 +73,12 @@ export interface UpcomingPerformance {
     startTime: string;
     duration: number | null;
     description: string;
+    /**
+     * Whether a technical plan is expected for this night at all. False for the
+     * formats that run themselves; the row says so, and a plan handed in anyway
+     * is taken just the same.
+     */
+    technicalPlanMandatory: boolean;
     /** Plans handed in for other performances of the same format, by the user or their teams. */
     priorPlans: PriorPlan[];
 }

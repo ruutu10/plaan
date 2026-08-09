@@ -195,6 +195,16 @@ onMounted(loadPerformances);
                                 · {{ performance.duration }} min
                             </template>
                         </span>
+                        <!-- A night that runs itself. Said here rather than left
+                             out of the list: the plan is still taken if somebody
+                             wants to write one, it is just not owed. -->
+                        <span
+                            v-if="!performance.technicalPlanMandatory"
+                            class="mt-1 block text-[12px] text-r10-grey-500 italic"
+                            data-test="technical-plan-optional-note"
+                        >
+                            Selle etenduse tehnikaplaan ei ole kohustuslik.
+                        </span>
                     </span>
                 </button>
 

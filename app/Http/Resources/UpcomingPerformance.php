@@ -48,6 +48,10 @@ class UpcomingPerformance extends JsonResource
             'startTime' => $performance->startTime(),
             'duration' => $performance->duration,
             'description' => $performance->format->description ?? '',
+            // Whether a plan is expected for this night at all. The wizard says
+            // so under the row rather than hiding it: a plan handed in for a
+            // night that runs itself is still welcome, it is just not owed.
+            'technicalPlanMandatory' => $performance->format->technical_plan_mandatory,
             'priorPlans' => PriorPlan::collection($this->priorPlans($request))->resolve($request),
         ];
     }

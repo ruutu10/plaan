@@ -379,6 +379,63 @@ class PerformanceReminderTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    public function test_a_format_the_house_expects_no_plan_for_is_not_chased(): void
+    {
+        Notification::fake();
+
+        $this->performanceIn('6 days', planMandatory: false);
+
+        $this->artisan('performances:remind-missing-plans')->assertSuccessful();
+
+        // Neither the performers nor the crew: there is no plan owed, so there
+        // is nothing for either of them to hear about.
+        Notification::assertNothingSent();
+        $this->assertDatabaseCount('performance_reminders', 0);
+    }
+
+    public function test_the_night_that_needs_no_plan_does_not_hold_up_the_ones_that_do(): void
+    {
+        Notification::fake();
+
+        // Its own group, with its own member: the helper writes to a fixed pair
+        // of addresses and only stretches to one performance per test.
+        $ownRun = Team::factory()->create();
+        $ownRun->members()->attach(User::factory()->create(), ['role' => TeamRole::Owner->value]);
+
+        Performance::factory()->create([
+            'format_id' => Format::factory()->withoutMandatoryTechnicalPlan()->create(['team_id' => $ownRun->id])->id,
+            'date' => now()->addDays(6)->subMinute(),
+            'created_at' => now()->subMonths(3),
+        ]);
+
+        [$chased, $members] = $this->performanceIn('6 days');
+
+        $this->artisan('performances:remind-missing-plans')->assertSuccessful();
+
+        foreach ($members as $member) {
+            Notification::assertSentTo($member, TechnicalPlanMissing::class);
+        }
+
+        $this->assertDatabaseCount('performance_reminders', 1);
+        $this->assertDatabaseHas('performance_reminders', [
+            'performance_id' => $chased->id,
+            'schedule' => ReminderSchedule::SixDays->value,
+        ]);
+    }
+
+    public function test_a_format_that_stops_expecting_a_plan_is_left_alone_from_then_on(): void
+    {
+        Notification::fake();
+
+        [$performance] = $this->performanceIn('6 days');
+
+        $performance->format->update(['technical_plan_mandatory' => false]);
+
+        $this->artisan('performances:remind-missing-plans')->assertSuccessful();
+
+        Notification::assertNothingSent();
+    }
+
     public function test_a_format_without_an_owning_group_is_not_chased(): void
     {
         Notification::fake();
@@ -624,9 +681,10 @@ class PerformanceReminderTest extends TestCase
      * about the chasing has to put it there in good time. Passing
      * `registeredAt: 'now'` is how the late-addition case is set up.
      *
+     * @param  bool  $planMandatory  false for one of the nights that run themselves, which the house expects no plan for
      * @return array{0: Performance, 1: array<int, User>}
      */
-    private function performanceIn(string $interval, bool $draft = false, string $registeredAt = '-3 months'): array
+    private function performanceIn(string $interval, bool $draft = false, string $registeredAt = '-3 months', bool $planMandatory = true): array
     {
         $team = Team::factory()->create();
 
@@ -641,7 +699,9 @@ class PerformanceReminderTest extends TestCase
             ]);
         }
 
-        $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Öine impro']);
+        $format = Format::factory()
+            ->when(! $planMandatory, fn ($factory) => $factory->withoutMandatoryTechnicalPlan())
+            ->create(['team_id' => $team->id, 'name' => 'Öine impro']);
 
         $performance = Performance::factory()->when($draft, fn ($factory) => $factory->draft())->create([
             'format_id' => $format->id,
