@@ -1,3 +1,4 @@
+import { formatFileSize } from './plan';
 import type {
     Plan,
     PlanDocument,
@@ -5,7 +6,6 @@ import type {
     PlanDocumentScene,
     PlanFile,
 } from '@/types/technicalPlan';
-import { formatFileSize } from './plan';
 
 export { formatFileSize };
 

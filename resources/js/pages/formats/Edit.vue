@@ -261,6 +261,7 @@ async function save(): Promise<void> {
                     { label: 'Etteaste' },
                     { label: 'Kestus' },
                     { label: 'Olek' },
+                    { label: 'Meeskonnas' },
                     { label: 'Tehnikaplaane' },
                     { label: 'Tegevused', align: 'right', srOnly: true },
                 ]"
@@ -323,6 +324,12 @@ async function save(): Promise<void> {
                         >
                             Kinnitatud
                         </span>
+                    </td>
+                    <td
+                        class="px-5 py-4 tabular-nums"
+                        data-test="performance-staff-count"
+                    >
+                        {{ performance.staffCount ?? 0 }}
                     </td>
                     <td class="px-5 py-4 tabular-nums">
                         {{ performance.technicalPlanCount ?? 0 }}

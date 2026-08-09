@@ -2,7 +2,6 @@
 import { Copy, Link, Trash2, Upload } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import type { Component } from 'vue';
-import type { Scene } from '@/types/technicalPlan';
 import {
     acceptAttribute,
     discardAttachment,
@@ -19,6 +18,7 @@ import R10Input from '../R10Input.vue';
 import R10Textarea from '../R10Textarea.vue';
 import RadioPills from '../RadioPills.vue';
 import StepHeader from '../StepHeader.vue';
+import type { Scene } from '@/types/technicalPlan';
 
 const plan = usePlan();
 const config = useWizardConfig();

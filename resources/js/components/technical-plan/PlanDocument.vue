@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { PlanDocument } from '@/types/technicalPlan';
 import Diamond from './Diamond.vue';
+import type { PlanDocument } from '@/types/technicalPlan';
 
 /**
  * The plan as the performer and the technician read it: on screen at the end of

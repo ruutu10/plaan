@@ -34,6 +34,7 @@ class Performance extends JsonResource
      *     duration: int|null,
      *     isDraft: bool,
      *     technicalPlanCount: int|null,
+     *     staffCount: int|null,
      *     reasoningLogCount: int,
      *     plankaCardId: string|null,
      *     plankaCardUrl: string|null,
@@ -67,6 +68,10 @@ class Performance extends JsonResource
             // Deleting a performance leaves the plans written for it behind without
             // one, so the screen warns before that happens.
             'technicalPlanCount' => $performance->technical_plans_count,
+            // How many people the import last put on this performance. Counted
+            // rather than listed, so a listing says how well staffed a night is
+            // without carrying every name — see 'staff' below for those.
+            'staffCount' => $performance->staff_count,
             // Whether the import's account of this performance can be read, for
             // whoever may read it — and zero for everyone else, so the screen
             // never offers a button the API would refuse. One card, so never

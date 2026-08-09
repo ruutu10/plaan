@@ -121,6 +121,12 @@ export interface Performance {
     /** Plans written for this performance; they outlive it, without a performance. */
     technicalPlanCount: number | null;
     /**
+     * How many people staff this performance, as the Planka import last read
+     * them off the card. The names themselves are in `staff` below, which only
+     * the performance's own page is given.
+     */
+    staffCount: number | null;
+    /**
      * Whether the reading of the Planka card that registered this performance
      * can be read: one card, so never more than one. Zero for a performance
      * entered by hand, and for a user who may not read it.

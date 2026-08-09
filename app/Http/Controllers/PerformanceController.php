@@ -71,7 +71,9 @@ class PerformanceController extends Controller
             // The reading that registered each performance rides along, for the
             // same reason the formats listing carries it: one query, not one a row.
             ->with(['team', 'reasoningLogs'])
-            ->withCount('technicalPlans')
+            // Counted, not loaded: the listing only says how many people staff
+            // each night, and the names belong to the performance's own page.
+            ->withCount(['technicalPlans', 'staff'])
             ->orderBy('date')
             ->get()
             // Every row's format is the one already in hand — set rather than
@@ -97,7 +99,7 @@ class PerformanceController extends Controller
         Gate::authorize('view', $performance);
 
         return PerformanceResource::make(
-            $performance->load(['team', 'staff', 'reasoningLogs'])->loadCount('technicalPlans'),
+            $performance->load(['team', 'staff', 'reasoningLogs'])->loadCount(['technicalPlans', 'staff']),
         )->additional([
             'teams' => Performance::assignableTeams($request->user())
                 ->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])
@@ -120,7 +122,7 @@ class PerformanceController extends Controller
         ]);
 
         return PerformanceResource::make(
-            $performance->setRelation('format', $format)->load('team')->loadCount('technicalPlans'),
+            $performance->setRelation('format', $format)->load('team')->loadCount(['technicalPlans', 'staff']),
         )
             ->response()
             ->setStatusCode(SymfonyResponse::HTTP_CREATED);
@@ -146,7 +148,7 @@ class PerformanceController extends Controller
         ]);
 
         return PerformanceResource::make(
-            $performance->setRelation('format', $format)->load('team')->loadCount('technicalPlans'),
+            $performance->setRelation('format', $format)->load('team')->loadCount(['technicalPlans', 'staff']),
         );
     }
 

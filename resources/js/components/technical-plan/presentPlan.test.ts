@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import type { Plan, PlanDocument } from '@/types/technicalPlan';
 import { formatFileSize, presentPlan, statusLabel } from './presentPlan';
+import type { Plan, PlanDocument } from '@/types/technicalPlan';
 
 /**
  * The other half of `tests/Feature/PlanDocumentTest.php`. Both suites read this

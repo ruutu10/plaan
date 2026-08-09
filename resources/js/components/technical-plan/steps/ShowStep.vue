@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { formatEstonianDateTime } from '@/lib/date';
-import { requestJson } from '@/lib/http';
-import type { UpcomingPerformance } from '@/types/technicalPlan';
 import { applyPlanContent, resetPlanContent } from '../plan';
 import { usePlan } from '../planKey';
 import PriorPlanPicker from '../PriorPlanPicker.vue';
 import StepHeader from '../StepHeader.vue';
+import { formatEstonianDateTime } from '@/lib/date';
+import { requestJson } from '@/lib/http';
+import type { UpcomingPerformance } from '@/types/technicalPlan';
 
 const plan = usePlan();
 

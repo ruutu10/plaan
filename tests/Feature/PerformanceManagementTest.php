@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\CreatedBy;
+use App\Enums\PerformanceStaffRole;
 use App\Enums\TeamRole;
 use App\Models\Format;
 use App\Models\Performance;
@@ -530,6 +531,25 @@ class PerformanceManagementTest extends TestCase
             ->getJson(route('api.formats.performances.index', $format))
             ->assertOk()
             ->assertJsonPath('data.0.technicalPlanCount', 2);
+    }
+
+    public function test_the_number_of_staff_is_listed_without_their_names(): void
+    {
+        [$user, $format] = $this->formatOfOwnTeam();
+        $staffed = Performance::factory()->create(['format_id' => $format->id, 'date' => '2026-08-01']);
+        Performance::factory()->create(['format_id' => $format->id, 'date' => '2026-09-01']);
+
+        $staffed->staff()->attach(User::factory()->create(), ['role' => PerformanceStaffRole::Host->value]);
+        $staffed->staff()->attach(User::factory()->create(), ['role' => PerformanceStaffRole::Performer->value]);
+
+        $this->actingAs($user)
+            ->getJson(route('api.formats.performances.index', $format))
+            ->assertOk()
+            ->assertJsonPath('data.0.staffCount', 2)
+            // The listing counts them; only the performance's own page carries
+            // who they are.
+            ->assertJsonMissingPath('data.0.staff.0')
+            ->assertJsonPath('data.1.staffCount', 0);
     }
 
     public function test_deleting_another_teams_performance_is_forbidden(): void
