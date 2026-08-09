@@ -184,6 +184,90 @@ class ImportUsersTest extends TestCase
         $this->assertSame(2, User::count());
     }
 
+    public function test_it_grants_the_named_role_to_imported_accounts(): void
+    {
+        $path = $this->csv("Mari Maasikas,mari@example.com\nJaan Tamm,jaan@example.com\n");
+
+        $this->artisan('user:import', ['path' => $path, '--role' => 'staff'])
+            ->assertSuccessful();
+
+        $this->assertTrue(User::firstWhere('email', 'mari@example.com')->hasRole('staff'));
+        $this->assertTrue(User::firstWhere('email', 'jaan@example.com')->hasRole('staff'));
+    }
+
+    public function test_it_grants_the_named_role_to_an_account_that_already_exists(): void
+    {
+        $existing = User::factory()->create(['email' => 'mari@example.com']);
+
+        $this->assertFalse($existing->hasRole('staff'));
+
+        $path = $this->csv("Mari Maasikas,mari@example.com\n");
+
+        $this->artisan('user:import', ['path' => $path, '--role' => 'staff'])
+            ->assertSuccessful();
+
+        $this->assertTrue($existing->fresh()->hasRole('staff'));
+
+        // Still passed over as an import: no second account, and nothing else
+        // about the one it has was rewritten.
+        $this->assertSame(1, User::where('email', 'mari@example.com')->count());
+        $this->assertSame($existing->name, $existing->fresh()->name);
+    }
+
+    public function test_granting_a_role_an_account_already_holds_changes_nothing(): void
+    {
+        $existing = User::factory()->create(['email' => 'mari@example.com']);
+        $existing->assignRole('staff');
+
+        $path = $this->csv("Mari Maasikas,mari@example.com\n");
+
+        $this->artisan('user:import', ['path' => $path, '--role' => 'staff'])
+            ->assertSuccessful();
+
+        $this->assertTrue($existing->fresh()->hasRole('staff'));
+        $this->assertCount(1, $existing->fresh()->roles);
+    }
+
+    public function test_no_role_is_granted_when_none_is_named(): void
+    {
+        $existing = User::factory()->create(['email' => 'mari@example.com']);
+
+        $path = $this->csv("Mari Maasikas,mari@example.com\nJaan Tamm,jaan@example.com\n");
+
+        $this->artisan('user:import', ['path' => $path])->assertSuccessful();
+
+        $this->assertCount(0, $existing->fresh()->roles);
+        $this->assertCount(0, User::firstWhere('email', 'jaan@example.com')->roles);
+    }
+
+    public function test_an_unknown_role_stops_the_run_before_anything_is_created(): void
+    {
+        $path = $this->csv("Mari Maasikas,mari@example.com\n");
+
+        $this->artisan('user:import', ['path' => $path, '--role' => 'no-such-role'])
+            ->assertFailed();
+
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_the_role_is_granted_alongside_the_team(): void
+    {
+        $team = Team::factory()->create();
+
+        $path = $this->csv("Mari Maasikas,mari@example.com\n");
+
+        $this->artisan('user:import', [
+            'path' => $path,
+            '--team' => $team->slug,
+            '--role' => 'technician',
+        ])->assertSuccessful();
+
+        $user = User::firstWhere('email', 'mari@example.com');
+
+        $this->assertTrue($user->hasRole('technician'));
+        $this->assertSame(TeamRole::Member, $user->teamRole($team));
+    }
+
     public function test_a_header_row_is_not_taken_for_an_account(): void
     {
         $path = $this->csv("name,email\nMari Maasikas,mari@example.com\n");
