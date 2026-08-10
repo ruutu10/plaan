@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { blankPlan, hydratePlan } from './plan';
+import type { PlanSound } from '@/types/technicalPlan';
+import { blankPlan, hasSoundErrors, hydratePlan, soundErrors } from './plan';
 
 describe('hydratePlan', () => {
     it('keeps the status and submission time a saved plan arrives with', () => {
@@ -32,5 +33,50 @@ describe('hydratePlan', () => {
 
         expect(hydrated.status).toBe(blankPlan().status);
         expect(hydrated.submittedAt).toBeNull();
+    });
+});
+
+describe('soundErrors', () => {
+    function sound(overrides: Partial<PlanSound> = {}): PlanSound {
+        return { ...blankPlan().sound, ...overrides };
+    }
+
+    it('asks for the detail behind a "jah" about microphones', () => {
+        const errors = soundErrors(sound({ micsMode: 'yes' }));
+
+        expect(errors.micsDetail).not.toBe('');
+        expect(errors.musicianDetail).toBe('');
+        expect(hasSoundErrors(sound({ micsMode: 'yes' }))).toBe(true);
+    });
+
+    it('asks for the detail behind a "jah" about a musician', () => {
+        const errors = soundErrors(sound({ musicianMode: 'yes' }));
+
+        expect(errors.musicianDetail).not.toBe('');
+        expect(errors.micsDetail).toBe('');
+    });
+
+    it('takes whitespace for no answer at all', () => {
+        expect(
+            soundErrors(sound({ micsMode: 'yes', micsDetail: '   ' }))
+                .micsDetail,
+        ).not.toBe('');
+    });
+
+    it('is satisfied once the detail is written', () => {
+        expect(
+            hasSoundErrors(
+                sound({
+                    micsMode: 'yes',
+                    micsDetail: '2 käsimikrofoni',
+                    musicianMode: 'yes',
+                    musicianDetail: 'Kitarr, ühendada helisüsteemi',
+                }),
+            ),
+        ).toBe(false);
+    });
+
+    it('asks nothing of a question answered "ei", however empty', () => {
+        expect(hasSoundErrors(blankPlan().sound)).toBe(false);
     });
 });

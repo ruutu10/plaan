@@ -8,8 +8,12 @@ import {
     writeDraft,
 } from '@/components/technical-plan/draftStorage';
 import LoginScreen from '@/components/technical-plan/LoginScreen.vue';
-import { hydratePlan } from '@/components/technical-plan/plan';
-import { configKey, planKey } from '@/components/technical-plan/planKey';
+import { hasSoundErrors, hydratePlan } from '@/components/technical-plan/plan';
+import {
+    configKey,
+    planKey,
+    showValidationKey,
+} from '@/components/technical-plan/planKey';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import Stepper from '@/components/technical-plan/Stepper.vue';
 import EquipmentStep from '@/components/technical-plan/steps/EquipmentStep.vue';
@@ -65,8 +69,15 @@ if (props.initialPerformance) {
     Object.assign(plan.meta, props.initialPerformance);
 }
 
+/**
+ * Whether the steps are pointing out what is still missing. Off until a step
+ * has been left with a half-finished answer — see `showValidationKey`.
+ */
+const showValidation = ref(false);
+
 provide(planKey, plan);
 provide(configKey, props.config);
+provide(showValidationKey, showValidation);
 
 const step = ref(props.initialStep);
 
@@ -119,6 +130,19 @@ const nextLabel = computed(() => (step.value === 5 ? 'Vaata üle' : 'Edasi'));
  */
 const performanceChosen = computed(() => plan.meta.performanceId !== null);
 
+/** Index of the sound step within `stepComponents`. */
+const SOUND_STEP = 2;
+
+/**
+ * The step standing in the way of reaching `index`, or null when the way is
+ * clear. The sound step is the one that can be half-answered — a "jah" whose
+ * description was never written — and the rest of the wizard stays shut until
+ * it is finished. Going back is always free.
+ */
+function blockingStep(index: number): number | null {
+    return index > SOUND_STEP && hasSoundErrors(plan.sound) ? SOUND_STEP : null;
+}
+
 /* ---- Plan lifecycle -------------------------------------------------- */
 
 function scrollTop(): void {
@@ -133,6 +157,7 @@ function resetTransient(): void {
     aiResult.value = '';
     aiError.value = '';
     submitting.value = false;
+    showValidation.value = false;
 }
 
 function loadIntoWizard(payload: Partial<Plan> | null, asNew = false): void {
@@ -177,7 +202,27 @@ function goTo(index: number): void {
     // Nothing past the picker until the night has been chosen — see
     // `performanceChosen`. The stepper offers every step, so it is refused
     // here rather than only on the "Edasi" button.
-    step.value = index > 0 && !performanceChosen.value ? 0 : index;
+    if (index > 0 && !performanceChosen.value) {
+        step.value = 0;
+        scrollTop();
+
+        return;
+    }
+
+    // A step left half-answered sends the performer back to it with the
+    // missing bits marked, rather than letting the plan reach the review page
+    // (or the server) incomplete.
+    const blocking = blockingStep(index);
+
+    if (blocking !== null) {
+        showValidation.value = true;
+        step.value = blocking;
+        scrollTop();
+
+        return;
+    }
+
+    step.value = index;
     scrollTop();
 }
 
@@ -341,6 +386,16 @@ async function savePlan(submit: boolean): Promise<boolean> {
 
 async function submitPlan(): Promise<void> {
     if (submitting.value) {
+        return;
+    }
+
+    // A plan that reached the review step some other way — copied in, or opened
+    // straight at it by a link — never passed the sound step's own gate, and
+    // the server refuses a half-answered plan on submit either way.
+    if (hasSoundErrors(plan.sound)) {
+        showValidation.value = true;
+        goTo(SOUND_STEP);
+
         return;
     }
 

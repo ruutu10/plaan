@@ -219,6 +219,65 @@ class TechnicalPlanTest extends TestCase
         $this->assertNotNull($plan->submitted_at);
     }
 
+    public function test_submitting_requires_a_description_of_the_microphones(): void
+    {
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'sound' => ['micsMode' => 'yes', 'micsDetail' => ''],
+        ]));
+
+        $response->assertUnprocessable();
+        $this->assertArrayHasKey('sound.micsDetail', $response->json('errors'));
+        $this->assertSame(0, TechnicalPlan::count());
+    }
+
+    public function test_submitting_requires_a_description_of_the_musician(): void
+    {
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'sound' => ['musicianMode' => 'yes', 'musicianDetail' => null],
+        ]));
+
+        $response->assertUnprocessable();
+        $this->assertArrayHasKey('sound.musicianDetail', $response->json('errors'));
+        $this->assertSame(0, TechnicalPlan::count());
+    }
+
+    public function test_submitting_asks_for_no_description_of_what_is_not_used(): void
+    {
+        // Neither question was answered "jah", so neither owes a description.
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'sound' => [
+                'micsMode' => 'no',
+                'micsDetail' => '',
+                'musicianMode' => 'no',
+                'musicianDetail' => null,
+            ],
+        ]));
+
+        $response->assertOk();
+        $this->assertSame(TechnicalPlanStatus::Submitted, TechnicalPlan::first()->status);
+    }
+
+    public function test_a_plan_still_being_written_may_be_saved_before_the_sound_is_described(): void
+    {
+        // Saving a draft — what handing out a share link does — must not demand
+        // answers the performer has not got to yet.
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => false,
+            'sound' => [
+                'micsMode' => 'yes',
+                'micsDetail' => '',
+                'musicianMode' => 'yes',
+                'musicianDetail' => '',
+            ],
+        ]));
+
+        $response->assertOk();
+        $this->assertSame(TechnicalPlanStatus::Draft, TechnicalPlan::first()->status);
+    }
+
     public function test_storing_with_an_existing_token_updates_the_plan(): void
     {
         $first = Performance::factory()->create();

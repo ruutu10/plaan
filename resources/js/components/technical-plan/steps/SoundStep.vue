@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { usePlan } from '../planKey';
+import { computed } from 'vue';
+import { soundErrors } from '../plan';
+import { usePlan, useShowValidation } from '../planKey';
 import R10Textarea from '../R10Textarea.vue';
 import RadioPills from '../RadioPills.vue';
 import StepHeader from '../StepHeader.vue';
 
 const plan = usePlan();
+const showValidation = useShowValidation();
+
+const errors = computed(() => soundErrors(plan.sound));
 
 const yesNo = [
     { value: 'no' as const, label: 'Ei' },
@@ -35,6 +40,7 @@ const yesNo = [
                 <div v-if="plan.sound.micsMode === 'yes'" class="mt-4">
                     <R10Textarea
                         v-model="plan.sound.micsDetail"
+                        :error="showValidation ? errors.micsDetail : ''"
                         hint="Kogus ja paigutus laval. N.B! Juhtmeta käsimikrofone saad kasutada maksimaalselt 1tk"
                         placeholder="Nt 2 käsimikrofoni, üks kummaski lava servas"
                         min-height="80px"
@@ -59,6 +65,7 @@ const yesNo = [
                 <div v-if="plan.sound.musicianMode === 'yes'" class="mt-4">
                     <R10Textarea
                         v-model="plan.sound.musicianDetail"
+                        :error="showValidation ? errors.musicianDetail : ''"
                         hint="Instrument ja kas ühendada helisüsteemi? Muusiku paigutus laval."
                         placeholder="Nt kitarr, palun ühendada helisüsteemi, muusik istub toolil lava aknapoolses ääres"
                         min-height="80px"

@@ -1,5 +1,5 @@
 import { inject } from 'vue';
-import type { InjectionKey } from 'vue';
+import type { InjectionKey, Ref } from 'vue';
 import type { Plan, WizardConfig } from '@/types/technicalPlan';
 
 /**
@@ -23,6 +23,31 @@ export function usePlan(): Plan {
     }
 
     return plan;
+}
+
+/**
+ * Injection key for whether the wizard is pointing out what a step still owes.
+ * Flipped on only once a step has been left with something missing, so a
+ * performer is never told off about a field they have not reached yet.
+ */
+export const showValidationKey: InjectionKey<Ref<boolean>> = Symbol(
+    'technical-plan-validation',
+);
+
+/**
+ * Resolve whether validation messages are being shown. Must be called inside
+ * the `TechnicalPlan` provider tree.
+ */
+export function useShowValidation(): Ref<boolean> {
+    const showValidation = inject(showValidationKey);
+
+    if (!showValidation) {
+        throw new Error(
+            'useShowValidation() must be used within the TechnicalPlan provider.',
+        );
+    }
+
+    return showValidation;
 }
 
 /**

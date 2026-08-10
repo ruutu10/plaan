@@ -1,4 +1,4 @@
-import type { Plan, PlanFile, Scene } from '@/types/technicalPlan';
+import type { Plan, PlanFile, PlanSound, Scene } from '@/types/technicalPlan';
 
 export const STEP_LABELS = [
     'Etendus',
@@ -41,6 +41,34 @@ export function blankScene(id: string = `${SCENE_ID_PREFIX}1`): Scene {
         notes: '',
         collapsed: false,
     };
+}
+
+/**
+ * The sound step's answers that are still owed a description. Saying "jah" to
+ * either question is only half an answer — a microphone nobody has counted or
+ * an instrument nobody has named tells the technician nothing — so the detail
+ * behind a "jah" is the one thing the step insists on. Mirrors the
+ * `required_if` rules in `StoreTechnicalPlanRequest`.
+ */
+export function soundErrors(sound: PlanSound): {
+    micsDetail: string;
+    musicianDetail: string;
+} {
+    return {
+        micsDetail:
+            sound.micsMode === 'yes' && !sound.micsDetail.trim()
+                ? 'Kirjelda mikrofonide kogust ja paigutust laval.'
+                : '',
+        musicianDetail:
+            sound.musicianMode === 'yes' && !sound.musicianDetail.trim()
+                ? 'Kirjelda instrumenti ja muusiku paigutust laval.'
+                : '',
+    };
+}
+
+/** Whether the sound step has an unanswered "jah" holding the wizard up. */
+export function hasSoundErrors(sound: PlanSound): boolean {
+    return Object.values(soundErrors(sound)).some(Boolean);
 }
 
 /**

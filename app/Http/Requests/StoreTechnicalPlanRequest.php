@@ -35,6 +35,15 @@ class StoreTechnicalPlanRequest extends FormRequest
      */
     public function rules(): array
     {
+        // A "jah" on either sound question is only half an answer: the
+        // technician needs to know which microphones, or which instrument.
+        // A plan still being written may carry it undescribed — the wizard
+        // saves drafts and hands out share links mid-write — so the detail is
+        // only insisted on when the plan is handed over.
+        $whenSubmitting = fn (string $question): array => $this->boolean('submit')
+            ? ["required_if:{$question},yes"]
+            : [];
+
         return [
             'token' => ['nullable', 'string', 'exists:technical_plans,token'],
             'submit' => ['boolean'],
@@ -50,9 +59,9 @@ class StoreTechnicalPlanRequest extends FormRequest
 
             'sound' => ['required', 'array'],
             'sound.micsMode' => ['nullable', 'string', 'max:20'],
-            'sound.micsDetail' => ['nullable', 'string', 'max:2000'],
+            'sound.micsDetail' => ['nullable', ...$whenSubmitting('sound.micsMode'), 'string', 'max:2000'],
             'sound.musicianMode' => ['nullable', 'string', 'max:20'],
-            'sound.musicianDetail' => ['nullable', 'string', 'max:2000'],
+            'sound.musicianDetail' => ['nullable', ...$whenSubmitting('sound.musicianMode'), 'string', 'max:2000'],
 
             'scenes' => ['required', 'array', 'min:1'],
             'scenes.*.id' => ['nullable', 'string', 'max:40'],
@@ -94,6 +103,8 @@ class StoreTechnicalPlanRequest extends FormRequest
         return [
             'meta.performanceId.required' => 'Vali etendus, mille kohta plaan käib.',
             'meta.performanceId.exists' => 'Valitud etendust ei leitud. Vali etendus uuesti.',
+            'sound.micsDetail.required_if' => 'Kirjelda mikrofonide kogust ja paigutust laval.',
+            'sound.musicianDetail.required_if' => 'Kirjelda instrumenti ja muusiku paigutust laval.',
         ];
     }
 
