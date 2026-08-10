@@ -6,7 +6,7 @@ const points = [
     'Esinejatele on lavalt nähtav suur taimer-kell. Kella käivitab tehnik etenduse alguses (kui õhtujuht on esinejad lavale kutsunud). Kell tiksub maha, nullini.',
     'Kui stseenide tabelis pole teisiti kirjeldatud, lõpetab etenduse tehnik valguse kustutamisega (fadeout või kiire blackout). Head lõpukohta hakatakse otsima, kui aega on jäänud alla 3 minuti.',
     'Etenduse lõpetav blackout kestab 5–10 sekundit — tüüpiliselt hakatakse plaksutama.',
-    'Saal avatakse publikule 30 min enne algust. Tehnilised läbimängud valguse ja heliga on 60 min enne algust — tungiv soovitus kogu grupiga läbi proovida.',
+    'Saal avatakse publikule 30 min enne algust. Tehnilised läbimängud valguse ja heliga on (võimalusel) 60 min enne algust - täpsusta tehnikaplaanis, kui soovid kindlasti tehnikuga briifi ja proovi aega.',
     'Kui pole märgitud teisiti, võib valgus etenduse ajal muutuda — valgustaja võib pimendada kasutamata lavaosa või kasutada värvilist valgust meeleolu rõhutamiseks.',
     'Kui pole märgitud teisiti, võib tehnik teha omapoolseid helipakkumisi',
     'Tehnik on improviseerija, ja saab aru, mis etenduses impro, stseeni ja formaadi mõttes toimub',
