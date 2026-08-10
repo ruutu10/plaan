@@ -56,6 +56,7 @@ class HandleInertiaRequests extends Middleware
                     'viewAllTechnicalPlans' => (bool) $user?->can(TechnicalPlan::VIEW_ALL_PERMISSION),
                     'editAllTechnicalPlans' => (bool) $user?->can(TechnicalPlan::EDIT_ALL_PERMISSION),
                     'manageAllTeams' => (bool) $user?->can(Team::EDIT_ALL_PERMISSION),
+                    'viewAllPerformances' => (bool) $user?->can(Performance::VIEW_ALL_PERMISSION),
                     'manageAllPerformances' => (bool) $user?->can(Performance::EDIT_ALL_PERMISSION),
                     'manageUsers' => (bool) $user?->can(User::MANAGE_PERMISSION),
                     'viewAuditLog' => (bool) $user?->can(AuditLogController::VIEW_PERMISSION),

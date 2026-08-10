@@ -18,7 +18,7 @@ Ekraanide ja nuppude nimed on tekstis toodud nii, nagu need liideses paistavad.
 | **Esineja** | Täidab tehnikaplaani formaadile, mida ta peagi mängib. Teavitus jõuab kohale tavaliselt e-kirja lingiga ja tal pole vaja süsteemi ülejäänud osa tundma õppida. |
 | **Tiimi liige** | Kuulub ühte või mitmesse esinevasse truppi (tiimi). Hoiab korras tiimi formaadid, etenduste kuupäevad ja liikmeskonna. |
 | **Tehnik** (roll `Tehnik`) | Viib etendused läbi. Loeb kõiki tehnikaplaane, kinnitab need ja hoiab korras kõik formaadid, etendused, tiimid ja kasutajakontod. |
-| **Majarahvas** (roll `Ruutu10 tiim`) | Teatri e-posti aadressiga inimesed. Võivad lugeda kõiki esitatud plaane. |
+| **Majarahvas** (roll `Ruutu10 tiim`) | Teatri e-posti aadressiga inimesed. Võivad lugeda kõiki esitatud plaane ja kogu maja etenduste kava. |
 
 Rollid antakse konto kaupa. Vaikimisi pole kellelgi ühtki rolli - välja arvatud
 kaks automaatset teed, mida kirjeldab §2.4.
@@ -471,9 +471,14 @@ Haldusekraanidel on see endiselt näha, üle vaatamata märkega.
 
 ### 7.4 Kogu maja etenduste ülevaade (`Etendused`)
 
-Tehnikud saavad ühe nimekirja kõigist maja etendustest, uuemad ees, koos
-sellega, mitu plaani igaühel on. Kõik teised jõuavad oma tiimide kuupäevadeni
-Formaatide kaudu.
+Tehnikud ja majarahvas saavad ühe nimekirja kõigist maja etendustest, uuemad
+ees, koos sellega, mitu plaani igaühel on. Kõik teised jõuavad oma tiimide
+kuupäevadeni Formaatide kaudu.
+
+Nimekirja **lugemine ja etenduse muutmine on eraldi õigused**, nagu plaanidegi
+puhul: majarahvas näeb kogu maja kava, kuid ridadel pole neile `Muuda` nuppu -
+oma tiimi etendusi saavad nad muuta ikka formaadi enda alt. Tehnik jõuab siit
+otse iga etenduse formaadi juurde.
 
 ---
 
@@ -600,19 +605,21 @@ sama moodi ka siin.
 
 ## 12. Kes mida näeb - kokkuvõte
 
-| | Oma plaanid | Oma tiimi plaanid | Kõik plaanid | Plaani staatuse muutmine | Oma tiimi formaadid | Kõik formaadid / etendused / tiimid | Kasutajakontod ja rollid |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Esineja (rollita) | ✅ | ✅ | - | - | ✅ | - | - |
-| Majarahvas | ✅ | ✅ | ✅ lugeda | - | ✅ | - | - |
-| Tehnik | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| | Oma plaanid | Oma tiimi plaanid | Kõik plaanid | Plaani staatuse muutmine | Oma tiimi formaadid | Kõik etendused | Kõik formaadid ja tiimid | Kasutajakontod ja rollid |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Esineja (rollita) | ✅ | ✅ | - | - | ✅ | - | - | - |
+| Majarahvas | ✅ | ✅ | ✅ lugeda | - | ✅ | ✅ lugeda | - | - |
+| Tehnik | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 Igaüks, kelle käes on plaani **jagamislink**, saab seda plaani ilma kontota
 lugeda ja sisse logides ka muuta.
 
-Veel kaks märkust piiride kohta:
+Veel kolm märkust piiride kohta:
 
 - Kõigi plaanide lugemine ja nende staatuse muutmine on eraldi õigused:
   majarahvas saab lugeda, aga mitte kinnitada.
+- Sama kehtib etenduste kohta: majarahvas näeb kogu maja kava (§7.4), kuid muuta
+  saab ainult oma tiimi etendusi, formaadi enda alt.
 - Kolleegi *lõpetamata mustandit* saab tema tiim muuta (selleks mustand ongi),
   kuid seda ei pakuta kunagi uue plaani lähtekohaks - selleks pakutakse ainult
   esitatud, kinnitatud ja arhiveeritud plaane.

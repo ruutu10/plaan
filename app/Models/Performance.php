@@ -83,6 +83,15 @@ class Performance extends Model
     public const EDIT_ALL_PERMISSION = 'performances.edit_all';
 
     /**
+     * The permission — held by the "technician" and "staff" roles — that shows
+     * the house-wide overview of every performance, whatever format it belongs to
+     * and whichever group plays it. Reading the bill is a right of its own: the
+     * house's own people follow what is being played without being handed the
+     * crew's power to change other groups' nights.
+     */
+    public const VIEW_ALL_PERMISSION = 'performances.view_all';
+
+    /**
      * A performance nobody said anything about is one the house stands behind
      * and one somebody entered by hand: only the Planka import asks for a draft,
      * and only it comes from anywhere else. Spelt out here as well as in the
@@ -119,6 +128,27 @@ class Performance extends Model
         $query->where(fn (Builder $performance) => $performance
             ->whereHas('format', fn (Builder $format) => $format->whereIn('team_id', $teamIds))
             ->orWhereIn('performances.team_id', $teamIds));
+    }
+
+    /**
+     * Limit the query to the performances the given user may read in the
+     * house-wide overview. Holders of {@see VIEW_ALL_PERMISSION} — the crew and
+     * the house's own people — are not limited at all; everybody else is shown
+     * their own groups' nights.
+     *
+     * Mirrors {@see TechnicalPlan::listableBy()}: reading reaches at least as far
+     * as writing, so what a user may edit they may always see listed.
+     *
+     * @param  Builder<Performance>  $query
+     */
+    #[Scope]
+    protected function listableBy(Builder $query, User $user): void
+    {
+        if ($user->can(self::VIEW_ALL_PERMISSION)) {
+            return;
+        }
+
+        $query->editableBy($user);
     }
 
     /**

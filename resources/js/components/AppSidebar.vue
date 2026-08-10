@@ -67,10 +67,12 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: technicalPlans().url,
         icon: ClipboardList,
     },
-    // The house-wide performance overview, next to the plans it feeds. A user
-    // without the permission reaches their own groups' dates through Formaadid
-    // and is not shown a door the server would shut.
-    ...(page.props.auth?.can?.manageAllPerformances
+    // The house-wide performance overview, next to the plans it feeds. Reading
+    // the bill is its own right, held by the crew and the house's own people;
+    // correcting a night is not, and stays on the format. A user without the
+    // permission reaches their own groups' dates through Formaadid and is not
+    // shown a door the server would shut.
+    ...(page.props.auth?.can?.viewAllPerformances
         ? [
               {
                   title: 'Etendused',

@@ -15,6 +15,7 @@ export type AuthAbilities = {
     viewAllTechnicalPlans: boolean;
     editAllTechnicalPlans: boolean;
     manageAllTeams: boolean;
+    viewAllPerformances: boolean;
     manageAllPerformances: boolean;
     manageUsers: boolean;
     viewAuditLog: boolean;

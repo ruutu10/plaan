@@ -33,6 +33,43 @@ class PerformanceAdminTest extends TestCase
     }
 
     /**
+     * The house's own people follow the whole bill without being handed the
+     * crew's power over it — reading it is a right of its own.
+     */
+    public function test_staff_can_open_the_overview(): void
+    {
+        Performance::factory()->create();
+
+        $this->actingAs(User::factory()->create()->assignRole('staff'))
+            ->get(route('admin.performances.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('admin/performances/Index')
+                ->has('performances', 1));
+    }
+
+    /**
+     * Reading the bill does not carry the right to correct it: the staff role
+     * gains the listing and nothing more, and the screen hides the way through
+     * to the format because of it.
+     */
+    public function test_staff_are_not_given_the_edit_all_ability(): void
+    {
+        $staff = User::factory()->create()->assignRole('staff');
+        $performance = Performance::factory()->create();
+
+        $this->assertFalse($staff->can(Performance::EDIT_ALL_PERMISSION));
+        $this->assertFalse($performance->isEditableBy($staff));
+
+        $this->actingAs($staff)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('auth.can.viewAllPerformances', true)
+                ->where('auth.can.manageAllPerformances', false));
+    }
+
+    /**
      * Belonging to a group that stages plenty is not the same right: the
      * overview is the whole house's, so it takes the house-wide permission.
      */
@@ -154,12 +191,14 @@ class PerformanceAdminTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
+                ->where('auth.can.viewAllPerformances', true)
                 ->where('auth.can.manageAllPerformances', true));
 
         $this->actingAs(User::factory()->create())
             ->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
+                ->where('auth.can.viewAllPerformances', false)
                 ->where('auth.can.manageAllPerformances', false));
     }
 }

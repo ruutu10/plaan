@@ -50,6 +50,7 @@ class RolesTest extends TestCase
                     __('permissions.technical_plans.edit_all', locale: 'et'),
                     __('permissions.users.manage', locale: 'et'),
                     __('permissions.audit_log.view', locale: 'et'),
+                    __('permissions.performances.view_all', locale: 'et'),
                 ])
             );
     }
@@ -67,6 +68,7 @@ class RolesTest extends TestCase
                 ->where('permissions', [
                     __('permissions.technical_plans.view_all', locale: 'et'),
                     __('permissions.claude.view_log', locale: 'et'),
+                    __('permissions.performances.view_all', locale: 'et'),
                 ])
             );
     }

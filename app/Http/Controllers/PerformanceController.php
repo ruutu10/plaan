@@ -26,20 +26,22 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
  * Every writing route is nested under the format and its bindings are scoped to
  * it, so a performance is only ever changed through the format it belongs to.
  *
- * Who may write here is settled by {@see PerformancePolicy}; how far a reader
- * sees is settled by {@see Performance::scopeEditableBy()}, which hands the
+ * Who may write here is settled by {@see PerformancePolicy}, which hands the
  * holders of {@see Performance::EDIT_ALL_PERMISSION} the whole house and
- * everybody else their own groups' nights.
+ * everybody else their own groups' nights. How far a reader sees is a wider
+ * question, settled by {@see Performance::scopeListableBy()} and its own
+ * {@see Performance::VIEW_ALL_PERMISSION}.
  */
 class PerformanceController extends Controller
 {
     /**
-     * The overview of the performances the user may manage, soonest first.
+     * The overview of the performances the user may read, soonest first.
      *
      * What comes back is decided by permission rather than by the route: a
-     * technician is handed every performance in the house, whatever format it
-     * belongs to and whichever group plays it, and anybody else only the nights
-     * of their own groups.
+     * holder of {@see Performance::VIEW_ALL_PERMISSION} is handed every
+     * performance in the house, whatever format it belongs to and whichever group
+     * plays it, and anybody else only the nights of their own groups. Correcting
+     * one of them is a further right, checked where the change is made.
      */
     public function overview(Request $request): InertiaResponse
     {
@@ -48,7 +50,7 @@ class PerformanceController extends Controller
         $performances = Performance::query()
             ->with(['format.team', 'team'])
             ->withCount('technicalPlans')
-            ->editableBy($request->user())
+            ->listableBy($request->user())
             ->orderBy('date')
             ->get();
 

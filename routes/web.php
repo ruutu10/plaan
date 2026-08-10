@@ -151,12 +151,14 @@ Route::prefix('api/formats')
             });
     });
 
-// The crew's overview of every performance in the house, whatever format it
-// belongs to and whichever group plays it. Opened by the performance edit-all
-// permission (the "technician" role), which is also what decides how far the
-// listing itself reaches; everybody else keeps to their own groups' formats above.
+// The house's overview of every performance, whatever format it belongs to and
+// whichever group plays it. Opened by the performance view-all permission (the
+// "technician" and "staff" roles), which is also what decides how far the listing
+// itself reaches; everybody else keeps to their own groups' formats above.
+// Changing a performance is a right of its own and stays with the crew — see
+// Performance::EDIT_ALL_PERMISSION and the API routes above.
 Route::get('performances', [PerformanceController::class, 'overview'])
-    ->middleware(['auth', 'verified', 'can:'.Performance::EDIT_ALL_PERMISSION])
+    ->middleware(['auth', 'verified', 'can:'.Performance::VIEW_ALL_PERMISSION])
     ->name('admin.performances.index');
 
 // The audit trail every state change in the house is kept in — see

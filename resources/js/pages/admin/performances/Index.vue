@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import { FileClock, Pencil } from '@lucide/vue';
+import { computed } from 'vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
@@ -12,6 +13,21 @@ import { edit } from '@/routes/formats';
 import type { AdminPerformanceRow } from '@/types';
 
 defineProps<{ performances: AdminPerformanceRow[] }>();
+
+const page = usePage();
+
+// Reading the whole bill and correcting a night on it are separate rights: the
+// house's own people follow every performance here, but only the crew are
+// offered the way through to the format that changes one.
+const canEditEveryPerformance = computed(
+    () => page.props.auth?.can?.manageAllPerformances === true,
+);
+
+const lead = computed(() =>
+    canEditEveryPerformance.value
+        ? 'Kõik maja etendused, olenemata formaadist ja tiimist. Muutmiseks ava formaat.'
+        : 'Kõik maja etendused, olenemata formaadist ja tiimist. Muuta saab neid oma tiimi formaadi alt.',
+);
 
 defineOptions({
     layout: {
@@ -32,7 +48,7 @@ defineOptions({
         <StepHeader
             eyebrow="Haldus"
             title="Etendused"
-            lead="Kõik maja etendused, olenemata formaadist ja tiimist. Muutmiseks ava formaat."
+            :lead="lead"
         />
 
         <R10Table
@@ -111,8 +127,10 @@ defineOptions({
                 </td>
                 <td class="px-5 py-4 text-right align-top">
                     <!-- A performance is corrected on the format it hangs off,
-                         which is the one page that knows the whole bill. -->
+                         which is the one page that knows the whole bill. Offered
+                         only to those the format would let in. -->
                     <R10Button
+                        v-if="canEditEveryPerformance"
                         variant="outline"
                         size="sm"
                         :href="edit(performance.formatId).url"

@@ -9,6 +9,7 @@ return [
         'edit_all' => 'Kõigi formaatide muutmine',
     ],
     'performances' => [
+        'view_all' => 'Kõigi etenduste vaatamine',
         'edit_all' => 'Kõigi etenduste muutmine',
     ],
     'teams' => [
