@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
+import TextLink from '@/components/TextLink.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
@@ -43,6 +44,17 @@ function eventTone(
 ): 'muted' | 'neutral' | 'accent' | 'navy' {
     return (event && EVENT_LABELS[event]?.tone) || 'muted';
 }
+
+/**
+ * What the row's record reads by: its own name, or its bare id when the record
+ * is one the feed does not name — or one since deleted.
+ */
+function subjectName(entry: AuditLogEntry): string {
+    return (
+        entry.subjectLabel ??
+        (entry.subjectId ? `#${entry.subjectId}` : (entry.subjectType ?? '—'))
+    );
+}
 </script>
 
 <template>
@@ -84,13 +96,19 @@ function eventTone(
                 </td>
                 <td class="px-5 py-4 align-top whitespace-nowrap">
                     <template v-if="entry.subjectType">
-                        <span class="block text-r10-ink">
-                            {{
-                                entry.subjectLabel ??
-                                (entry.subjectId
-                                    ? `#${entry.subjectId}`
-                                    : entry.subjectType)
-                            }}
+                        <!-- Through to the record itself, for a reader who may
+                             open it; the ones who may not read the same name as
+                             plain text. -->
+                        <TextLink
+                            v-if="entry.subjectUrl"
+                            :href="entry.subjectUrl"
+                            class="block"
+                            data-test="audit-log-subject-link"
+                        >
+                            {{ subjectName(entry) }}
+                        </TextLink>
+                        <span v-else class="block text-r10-ink">
+                            {{ subjectName(entry) }}
                         </span>
                         <span class="block text-r10-grey-500">
                             {{ entry.subjectType }}

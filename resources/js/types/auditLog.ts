@@ -13,11 +13,18 @@ export interface AuditLogEntry {
     subjectId: number | string | null;
     /**
      * The name the subject reads by — a team or user's own name, a
-     * performance's title (its format's, when it carries none of its own).
-     * Null for a subject type not worth naming this way; the row falls back
-     * to `subjectType` and `subjectId`.
+     * performance's title (its format's, when it carries none of its own), the
+     * date and name of the night a technical plan was written for. Null for a
+     * subject type not worth naming this way; the row falls back to
+     * `subjectType` and `subjectId`.
      */
     subjectLabel: string | null;
+    /**
+     * Where the subject may be opened. Null when the record has no screen of
+     * its own, is gone, or the reader may not open it — the row then names it
+     * as plain text.
+     */
+    subjectUrl: string | null;
     /** Null reads as the system itself — nobody was signed in to do this. */
     causerName: string | null;
     /** ISO 8601. */

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Concerns\LogsModelActivity;
 use App\Http\Resources\AuditLogEntry as AuditLogEntryResource;
 use App\Models\Performance;
+use App\Models\TechnicalPlan;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
@@ -39,7 +40,8 @@ class AuditLogController extends Controller
         // The subject rides along so the row can name the record rather than
         // just its id — see AuditLogEntry::subjectLabel(). A performance's own
         // format comes with it: an unnamed performance is labelled by its
-        // format's name instead.
+        // format's name instead. A plan reads by the night it was written for,
+        // so it brings that night — and the night's format — along too.
         $activities = Activity::query()
             ->with('causer', 'subject')
             ->orderByDesc('id')
@@ -47,6 +49,7 @@ class AuditLogController extends Controller
             ->get()
             ->loadMorph('subject', [
                 Performance::class => ['format'],
+                TechnicalPlan::class => ['performance.format'],
             ]);
 
         return Inertia::render('admin/audit-log/Index', [
