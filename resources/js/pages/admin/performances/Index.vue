@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Head, usePage } from '@inertiajs/vue3';
-import { FileClock, Pencil } from '@lucide/vue';
-import { computed } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { FileClock, Pencil, Plus } from '@lucide/vue';
+import { computed, ref } from 'vue';
+import PerformanceModal from '@/components/PerformanceModal.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
@@ -10,11 +11,26 @@ import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { formatLocalDate, formatLocalTime } from '@/lib/date';
 import { index } from '@/routes/admin/performances';
 import { edit } from '@/routes/formats';
-import type { AdminPerformanceRow } from '@/types';
+import type {
+    AdminPerformanceRow,
+    FormatOption,
+    FormatTeamOption,
+} from '@/types';
 
-defineProps<{ performances: AdminPerformanceRow[] }>();
+defineProps<{
+    performances: AdminPerformanceRow[];
+    /** Offered only to whoever may add a performance to any format — see below. */
+    formats: FormatOption[];
+    teams: FormatTeamOption[];
+}>();
 
 const page = usePage();
+
+const performanceModalOpen = ref(false);
+
+function reloadPerformances(): void {
+    router.reload({ only: ['performances'] });
+}
 
 // Reading the whole bill and correcting a night on it are separate rights: the
 // house's own people follow every performance here, but only the crew are
@@ -45,7 +61,19 @@ defineOptions({
     <Head title="Etendused" />
 
     <R10Page>
-        <StepHeader eyebrow="Haldus" title="Etendused" :lead="lead" />
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <StepHeader eyebrow="Haldus" title="Etendused" :lead="lead" />
+
+            <R10Button
+                v-if="canEditEveryPerformance"
+                data-test="add-performance-button"
+                :disabled="formats.length === 0"
+                @click="performanceModalOpen = true"
+            >
+                <Plus class="h-4 w-4" />
+                Uus etendus
+            </R10Button>
+        </div>
 
         <R10Table
             :columns="[
@@ -139,5 +167,15 @@ defineOptions({
                 </td>
             </template>
         </R10Table>
+
+        <PerformanceModal
+            v-if="canEditEveryPerformance"
+            v-model:open="performanceModalOpen"
+            :format-id="null"
+            :performance="null"
+            :teams="teams"
+            :formats="formats"
+            @saved="reloadPerformances"
+        />
     </R10Page>
 </template>

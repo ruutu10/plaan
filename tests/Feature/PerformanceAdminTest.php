@@ -187,6 +187,46 @@ class PerformanceAdminTest extends TestCase
                 ->where('performances.1.id', $newer->id));
     }
 
+    /**
+     * A new performance is added from this overview only by whoever may add one
+     * to any format in the house, so the choice of format is only worth fetching
+     * for them.
+     */
+    public function test_the_overview_offers_every_format_to_technicians(): void
+    {
+        $format = Format::factory()->create(['name' => 'Festival 2026']);
+
+        $this->actingAs($this->technician())
+            ->get(route('admin.performances.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('formats', 1)
+                ->where('formats.0.id', $format->id)
+                ->where('formats.0.name', 'Festival 2026'));
+    }
+
+    public function test_the_overview_leaves_out_the_stand_in_format(): void
+    {
+        Format::placeholder();
+
+        $this->actingAs($this->technician())
+            ->get(route('admin.performances.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('formats', 0));
+    }
+
+    public function test_the_overview_withholds_formats_from_staff(): void
+    {
+        Format::factory()->create();
+
+        $this->actingAs(User::factory()->create()->assignRole('staff'))
+            ->get(route('admin.performances.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('formats', 0));
+    }
+
     public function test_the_manage_all_ability_is_shared_with_the_frontend(): void
     {
         $this->actingAs($this->technician())

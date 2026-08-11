@@ -45,17 +45,39 @@ class PerformanceController extends Controller
      */
     public function overview(Request $request): InertiaResponse
     {
+        $user = $request->user();
+
         // Soonest first: what is coming up next is what the crew looks for,
         // with already-played nights sinking toward the bottom.
         $performances = Performance::query()
             ->with(['format.team', 'team'])
             ->withCount('technicalPlans')
-            ->listableBy($request->user())
+            ->listableBy($user)
             ->orderBy('date')
             ->get();
 
+        // A new performance is added from this overview only by whoever may add
+        // one to any format in the house — everybody else already has their own
+        // way in, through the format itself. The choice of format and group is
+        // fetched here rather than left to the dialog, so opening it costs
+        // nothing beyond the button press.
+        $canAddToAnyFormat = $user->can(Performance::EDIT_ALL_PERMISSION);
+
         return Inertia::render('admin/performances/Index', [
             'performances' => AdminPerformanceResource::collection($performances)->resolve($request),
+            'formats' => $canAddToAnyFormat
+                ? Format::query()
+                    ->where('name', '!=', Format::PLACEHOLDER_NAME)
+                    ->orderByRaw('LOWER(formats.name)')
+                    ->get()
+                    ->map(fn (Format $format): array => ['id' => $format->id, 'name' => $format->name])
+                    ->values()
+                : [],
+            'teams' => $canAddToAnyFormat
+                ? Performance::assignableTeams($user)
+                    ->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])
+                    ->values()
+                : [],
         ]);
     }
 

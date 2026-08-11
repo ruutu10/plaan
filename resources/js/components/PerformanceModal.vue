@@ -8,18 +8,26 @@ import R10Input from '@/components/technical-plan/R10Input.vue';
 import R10Select from '@/components/technical-plan/R10Select.vue';
 import { formatLocalTime, toLocalDateInputValue } from '@/lib/date';
 import { store, update } from '@/routes/api/formats/performances';
-import type { FormatTeamOption, Performance } from '@/types';
+import type { FormatOption, FormatTeamOption, Performance } from '@/types';
 
 /**
  * Adds a performance to a format, or corrects one — the two differ only in where
  * the form is posted and what it starts from, so one dialog serves both.
  */
 const props = defineProps<{
-    formatId: number;
+    /**
+     * The format a new performance is added to, when the dialog is opened from
+     * that format's own page. Null when the dialog itself is where the format is
+     * chosen — see `formats` — which only ever happens for a new performance;
+     * one being corrected already knows its format.
+     */
+    formatId: number | null;
     /** The performance being corrected, or null when a new one is being added. */
     performance: Performance | null;
     /** The groups a performance may be handed to. */
     teams: FormatTeamOption[];
+    /** Offered only when `formatId` is null: the formats to choose from. */
+    formats?: FormatOption[];
 }>();
 
 const emit = defineEmits<{ saved: [] }>();
@@ -42,8 +50,11 @@ const USUAL_START_TIME = '19:00';
 const FORMAT_S_OWN_TEAM = '';
 
 // The dated fields are held as the strings the inputs deal in; the duration and
-// the team become numbers (or nothing at all) on their way out.
+// the team become numbers (or nothing at all) on their way out. `format_id` never
+// reaches the server as a field of its own — it only picks the URL the rest is
+// posted to, see `save()` below.
 const form = useHttp({
+    format_id: null as number | null,
     title: '',
     team_id: FORMAT_S_OWN_TEAM as string | number,
     date: '',
@@ -63,6 +74,17 @@ const form = useHttp({
 
 const isEditing = computed(() => props.performance !== null);
 
+/** Whether the dialog itself offers the choice of format — see `formatId`. */
+const choosesFormat = computed(() => props.formatId === null);
+
+const formatOptions = computed(
+    () =>
+        props.formats?.map((format) => ({
+            value: format.id,
+            label: format.name,
+        })) ?? [],
+);
+
 /**
  * The groups on offer, led by the option that hands the performance back to the
  * format's own group — the ordinary case, and the one a mis-set team is undone
@@ -79,6 +101,14 @@ const teamOptions = computed(() => [
  */
 function fill(): void {
     form.clearErrors();
+    // Defaults to the first format on offer, so a choice is always in place —
+    // the button that opens this dialog is withheld when there is none to
+    // default to.
+    form.format_id =
+        props.performance?.formatId ??
+        props.formatId ??
+        props.formats?.[0]?.id ??
+        null;
     form.title = props.performance?.title ?? '';
     form.team_id = props.performance?.teamId ?? FORMAT_S_OWN_TEAM;
     form.date = props.performance
@@ -95,9 +125,14 @@ function fill(): void {
 }
 
 async function save(): Promise<void> {
+    // The performance being corrected already knows its own format; a new one
+    // takes whichever format the dialog fixed, or the one chosen inside it.
+    const formatId =
+        props.performance?.formatId ?? props.formatId ?? form.format_id!;
+
     const target = props.performance
-        ? update([props.formatId, props.performance.id])
-        : store(props.formatId);
+        ? update([formatId, props.performance.id])
+        : store(formatId);
 
     try {
         await form.submit(target);
@@ -129,6 +164,17 @@ async function save(): Promise<void> {
         @opened="fill"
         @submit="save"
     >
+        <R10Select
+            v-if="choosesFormat"
+            v-model="form.format_id"
+            label="Formaat"
+            hint="Milline formaat see etendus on."
+            required
+            :options="formatOptions"
+            :error="form.errors.format_id"
+            data-test="performance-format-select"
+        />
+
         <R10Input
             v-model="form.title"
             label="Etteaste nimi"

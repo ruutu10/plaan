@@ -84,6 +84,12 @@ export interface FormatTeamOption {
     name: string;
 }
 
+/** A format a new performance may be added to, as offered by the admin overview. */
+export interface FormatOption {
+    id: number;
+    name: string;
+}
+
 /** The fields a format is written through, and what the server refused about them. */
 export interface FormatFormData {
     team_id: number | null;
