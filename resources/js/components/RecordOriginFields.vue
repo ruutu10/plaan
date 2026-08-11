@@ -2,7 +2,7 @@
 import { Sparkles, UserPen } from '@lucide/vue';
 import { computed } from 'vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
-import { formatEstonianTimestamp } from '@/lib/date';
+import { formatLocalTimestamp } from '@/lib/date';
 import type { CreatedBy } from '@/types';
 
 /**
@@ -60,7 +60,7 @@ const originLabel = computed(() =>
                     class="font-medium text-r10-ink tabular-nums"
                     data-test="record-created-at"
                 >
-                    {{ formatEstonianTimestamp(createdAt) }}
+                    {{ formatLocalTimestamp(createdAt) }}
                 </span>
             </span>
         </div>

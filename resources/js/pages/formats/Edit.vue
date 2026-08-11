@@ -25,7 +25,7 @@ import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { useResource } from '@/composables/useResource';
 import { useTrailingCrumb } from '@/composables/useTrailingCrumb';
-import { formatEstonianDate } from '@/lib/date';
+import { formatLocalDate, formatLocalTime } from '@/lib/date';
 import { show as formatApi, update } from '@/routes/api/formats';
 import {
     claudeLogs as reasoningLogsApi,
@@ -291,9 +291,9 @@ async function save(): Promise<void> {
                     <td
                         class="px-5 py-4 font-medium whitespace-nowrap text-r10-ink"
                     >
-                        {{ formatEstonianDate(performance.date) }}
+                        {{ formatLocalDate(performance.startsAt) }}
                         <span class="text-r10-grey-500">
-                            {{ performance.startTime }}
+                            {{ formatLocalTime(performance.startsAt) }}
                         </span>
                     </td>
                     <td class="px-5 py-4 align-top">

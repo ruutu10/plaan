@@ -4,7 +4,6 @@ namespace App\Http\Resources;
 
 use App\Models\ClaudeReasoningLog;
 use App\Models\Format as FormatModel;
-use App\Models\Performance as PerformanceModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
@@ -64,11 +63,7 @@ class Format extends JsonResource
             // remembers entering was read off a card, and the screens say so
             // rather than leaving it to be guessed.
             'createdBy' => $format->created_by->value,
-            // Already on the venue's clock, like every other moment leaving
-            // here — the browser is never asked to do the arithmetic.
-            'createdAt' => $format->created_at
-                ?->setTimezone(PerformanceModel::venueTimezone())
-                ->toIso8601String(),
+            'createdAt' => $format->created_at?->toIso8601String(),
         ];
     }
 }

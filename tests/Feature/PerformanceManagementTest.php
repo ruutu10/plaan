@@ -10,12 +10,23 @@ use App\Models\Performance;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PerformanceManagementTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * A `startsAt` instant off the API, read on the venue's clock — the API
+     * itself now reports raw UTC, and reads through this the same way the
+     * browser is meant to.
+     */
+    private function venueMoment(string $startsAt): Carbon
+    {
+        return Carbon::parse($startsAt)->setTimezone(Performance::venueTimezone());
+    }
 
     public function test_guests_are_refused(): void
     {
@@ -38,7 +49,7 @@ class PerformanceManagementTest extends TestCase
             ->assertJsonCount(2, 'data')
             // Soonest first.
             ->assertJsonPath('data.0.id', $sooner->id)
-            ->assertJsonPath('data.0.date', '2026-08-01')
+            ->assertJsonPath('data.0.startsAt', $sooner->date->toIso8601String())
             ->assertJsonPath('data.0.duration', 75)
             ->assertJsonPath('data.0.technicalPlanCount', 0)
             // The format rides along without an extra query per row — see
@@ -71,18 +82,18 @@ class PerformanceManagementTest extends TestCase
     {
         [$user, $format] = $this->formatOfOwnTeam();
 
-        $this->actingAs($user)
+        $response = $this->actingAs($user)
             ->postJson(route('api.formats.performances.store', $format), [
                 'date' => '2026-08-14',
                 'duration' => 90,
             ])
             ->assertCreated()
-            ->assertJsonPath('data.date', '2026-08-14')
             ->assertJsonPath('data.duration', 90)
             ->assertJsonPath('data.technicalPlanCount', 0);
 
         $performance = Performance::sole();
 
+        $response->assertJsonPath('data.startsAt', $performance->date->toIso8601String());
         $this->assertSame($format->id, $performance->format_id);
         $this->assertSame('2026-08-14', $performance->date->toDateString());
         $this->assertSame(90, $performance->duration);
@@ -92,54 +103,62 @@ class PerformanceManagementTest extends TestCase
     {
         [$user, $format] = $this->formatOfOwnTeam();
 
-        $this->actingAs($user)
+        $response = $this->actingAs($user)
             ->postJson(route('api.formats.performances.store', $format), [
                 'date' => '2026-08-14',
                 'start_time' => '20:30',
             ])
-            ->assertCreated()
-            ->assertJsonPath('data.date', '2026-08-14')
-            ->assertJsonPath('data.startTime', '20:30');
+            ->assertCreated();
+
+        $performance = Performance::sole();
 
         // Half past eight on an August evening in Tallinn is 17:30 UTC, which
-        // is what a column shared with every other timestamp in the app holds.
-        $this->assertSame('2026-08-14 17:30:00', Performance::sole()->date->utc()->toDateTimeString());
+        // is what a column shared with every other timestamp in the app holds,
+        // and what the API reports as the raw instant.
+        $this->assertSame('2026-08-14 17:30:00', $performance->date->utc()->toDateTimeString());
+        $response->assertJsonPath('data.startsAt', $performance->date->toIso8601String());
     }
 
     public function test_a_performance_without_an_hour_takes_the_houses_usual_one(): void
     {
         [$user, $format] = $this->formatOfOwnTeam();
 
-        $this->actingAs($user)
+        $first = $this->actingAs($user)
             ->postJson(route('api.formats.performances.store', $format), ['date' => '2026-08-14'])
-            ->assertCreated()
-            ->assertJsonPath('data.startTime', '19:00');
+            ->assertCreated();
 
-        $this->actingAs($user)
+        $this->assertSame('19:00', $this->venueMoment($first->json('data.startsAt'))->format('H:i'));
+
+        $second = $this->actingAs($user)
             ->postJson(route('api.formats.performances.store', $format), [
                 'date' => '2026-08-15',
                 'start_time' => '',
             ])
-            ->assertCreated()
-            ->assertJsonPath('data.startTime', '19:00');
+            ->assertCreated();
+
+        $this->assertSame('19:00', $this->venueMoment($second->json('data.startsAt'))->format('H:i'));
     }
 
     public function test_a_late_night_performance_stays_on_the_night_it_is_played(): void
     {
         [$user, $format] = $this->formatOfOwnTeam();
 
-        $this->actingAs($user)
+        $response = $this->actingAs($user)
             ->postJson(route('api.formats.performances.store', $format), [
                 'date' => '2026-08-14',
                 'start_time' => '00:30',
             ])
-            ->assertCreated()
-            // Half past midnight Tallinn time is still the 13th in UTC. The
-            // house means the 14th, and that is what it is given back as.
-            ->assertJsonPath('data.date', '2026-08-14')
-            ->assertJsonPath('data.startTime', '00:30');
+            ->assertCreated();
 
+        // Half past midnight Tallinn time is still the 13th in UTC — the
+        // column shared with every other timestamp in the app holds that —
+        // but the house means the 14th, which is what reading the instant
+        // back on the venue's clock gives.
         $this->assertSame('2026-08-13 21:30:00', Performance::sole()->date->utc()->toDateTimeString());
+
+        $moment = $this->venueMoment($response->json('data.startsAt'));
+        $this->assertSame('2026-08-14', $moment->format('Y-m-d'));
+        $this->assertSame('00:30', $moment->format('H:i'));
     }
 
     public function test_the_venues_winter_clock_is_a_different_offset_from_its_summer_one(): void
@@ -148,15 +167,15 @@ class PerformanceManagementTest extends TestCase
 
         // Two hours ahead of UTC in January, three in August: a start time
         // stored as a fixed offset would be an hour out for half the season.
-        $this->actingAs($user)
+        $response = $this->actingAs($user)
             ->postJson(route('api.formats.performances.store', $format), [
                 'date' => '2027-01-14',
                 'start_time' => '19:00',
             ])
-            ->assertCreated()
-            ->assertJsonPath('data.startTime', '19:00');
+            ->assertCreated();
 
         $this->assertSame('2027-01-14 17:00:00', Performance::sole()->date->utc()->toDateTimeString());
+        $this->assertSame('19:00', $this->venueMoment($response->json('data.startsAt'))->format('H:i'));
     }
 
     public function test_an_hour_that_is_not_a_time_of_day_is_refused(): void
@@ -180,15 +199,15 @@ class PerformanceManagementTest extends TestCase
 
         $performance = Performance::factory()->startingAt('2026-08-01', '19:00')->create(['format_id' => $format->id]);
 
-        $this->actingAs($user)
+        $response = $this->actingAs($user)
             ->patchJson(route('api.formats.performances.update', [$format, $performance]), [
                 'date' => '2026-08-01',
                 'start_time' => '21:15',
             ])
-            ->assertOk()
-            ->assertJsonPath('data.startTime', '21:15');
+            ->assertOk();
 
         $this->assertSame('21:15', $performance->fresh()->startTime());
+        $this->assertSame('21:15', $this->venueMoment($response->json('data.startsAt'))->format('H:i'));
     }
 
     public function test_a_performance_may_be_added_without_a_duration(): void
@@ -248,19 +267,19 @@ class PerformanceManagementTest extends TestCase
         [$user, $format] = $this->formatOfOwnTeam();
         $performance = Performance::factory()->create(['format_id' => $format->id, 'date' => '2026-08-01']);
 
-        $this->actingAs($user)
+        $response = $this->actingAs($user)
             ->patchJson(route('api.formats.performances.update', [$format, $performance]), [
                 'date' => '2026-08-02',
                 'duration' => 120,
             ])
             ->assertOk()
-            ->assertJsonPath('data.date', '2026-08-02')
             ->assertJsonPath('data.duration', 120);
 
         $performance->refresh();
 
         $this->assertSame('2026-08-02', $performance->date->toDateString());
         $this->assertSame(120, $performance->duration);
+        $this->assertSame('2026-08-02', $this->venueMoment($response->json('data.startsAt'))->format('Y-m-d'));
     }
 
     public function test_the_planka_card_can_be_written_down_by_hand(): void
@@ -321,11 +340,11 @@ class PerformanceManagementTest extends TestCase
             ->getJson(route('api.formats.performances.index', $format))
             ->assertOk()
             ->assertJsonPath('data.0.createdBy', 'manual')
-            // On the venue's clock, like every other moment the screens are
-            // handed: 06:30 UTC is half past nine in Tallinn.
-            ->assertJsonPath('data.0.createdAt', '2026-07-15T09:30:00+03:00')
+            // Raw UTC, like every other moment the API hands over — the
+            // browser is where this becomes half past nine in Tallinn.
+            ->assertJsonPath('data.0.createdAt', '2026-07-15T06:30:00+00:00')
             ->assertJsonPath('data.1.createdBy', 'planka-import')
-            ->assertJsonPath('data.1.createdAt', '2026-07-16T09:30:00+03:00');
+            ->assertJsonPath('data.1.createdAt', '2026-07-16T06:30:00+00:00');
     }
 
     public function test_a_performance_added_by_hand_says_so(): void

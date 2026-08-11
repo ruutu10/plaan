@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import PlankaReimportField from '@/components/PlankaReimportField.vue';
 import R10ConfirmDelete from '@/components/technical-plan/R10ConfirmDelete.vue';
-import { formatEstonianDate } from '@/lib/date';
+import { formatLocalDate } from '@/lib/date';
 import { destroy } from '@/routes/api/formats/performances';
 import type { Performance } from '@/types';
 
@@ -48,8 +48,9 @@ const planCount = computed(() => props.performance?.technicalPlanCount ?? 0);
         @deleted="emit('deleted')"
     >
         <template #description>
-            Kas kustutada {{ formatEstonianDate(performance?.date) }} etendus?
-            Seda ei saa tagasi võtta.
+            Kas kustutada
+            {{ formatLocalDate(performance?.startsAt) }} etendus? Seda ei saa
+            tagasi võtta.
         </template>
 
         <template v-if="planCount > 0" #warning>

@@ -53,7 +53,7 @@ class TodaysPerformance extends JsonResource
      *     performanceUrl: string|null,
      *     title: string|null,
      *     teamName: string|null,
-     *     startTime: string,
+     *     startsAt: string,
      *     plans: array<int, array{visible: bool, token: string|null, url: string|null, status: string|null, statusLabel: string, submittedBy: string|null}>,
      * }
      */
@@ -72,7 +72,7 @@ class TodaysPerformance extends JsonResource
             // name alone would leave three identical rows to read.
             'title' => $performance->title,
             'teamName' => $performance->performerName(),
-            'startTime' => $performance->startTime(),
+            'startsAt' => $performance->date->toIso8601String(),
             'plans' => $performance->technicalPlans
                 ->map(fn (TechnicalPlanModel $plan): array => $this->planEntry($plan))
                 ->values()

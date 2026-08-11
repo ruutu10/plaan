@@ -258,9 +258,9 @@ class FormatManagementTest extends TestCase
             ->getJson(route('api.formats.show', $entered))
             ->assertOk()
             ->assertJsonPath('data.createdBy', 'manual')
-            // On the venue's clock, like every other moment the screens are
-            // handed: 06:30 UTC is half past nine in Tallinn.
-            ->assertJsonPath('data.createdAt', '2026-07-15T09:30:00+03:00');
+            // Raw UTC, like every other moment the API hands over — the
+            // browser is where this becomes half past nine in Tallinn.
+            ->assertJsonPath('data.createdAt', '2026-07-15T06:30:00+00:00');
 
         $this->actingAs($user)
             ->getJson(route('api.formats.show', $imported))

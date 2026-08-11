@@ -7,7 +7,7 @@ import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
-import { formatEstonianDate } from '@/lib/date';
+import { formatLocalDate, formatLocalTime } from '@/lib/date';
 import { index } from '@/routes/admin/performances';
 import { edit } from '@/routes/formats';
 import type { AdminPerformanceRow } from '@/types';
@@ -45,11 +45,7 @@ defineOptions({
     <Head title="Etendused" />
 
     <R10Page>
-        <StepHeader
-            eyebrow="Haldus"
-            title="Etendused"
-            :lead="lead"
-        />
+        <StepHeader eyebrow="Haldus" title="Etendused" :lead="lead" />
 
         <R10Table
             :columns="[
@@ -70,9 +66,9 @@ defineOptions({
                 <td
                     class="px-5 py-4 align-top font-medium whitespace-nowrap text-r10-ink"
                 >
-                    {{ formatEstonianDate(performance.date) }}
+                    {{ formatLocalDate(performance.startsAt) }}
                     <span class="text-r10-grey-500">
-                        {{ performance.startTime }}
+                        {{ formatLocalTime(performance.startsAt) }}
                     </span>
                 </td>
                 <td class="px-5 py-4 align-top">

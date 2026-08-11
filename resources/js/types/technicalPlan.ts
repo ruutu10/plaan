@@ -182,12 +182,13 @@ export interface AdminPlanRow {
     /** The format's own screen, or null when the reader may not open it. */
     formatUrl: string | null;
     teamName: string | null;
-    /** ISO date (YYYY-MM-DD) of the performance, if the plan names one. */
-    performanceDate: string | null;
+    /** ISO 8601 UTC instant the performance starts at, if the plan names one. */
+    performanceStartsAt: string | null;
     submittedBy: string | null;
     submittedByEmail: string | null;
     status: string;
     statusLabel: string;
+    /** ISO 8601 UTC instant. */
     submittedAt: string | null;
     /** Public link opening the plan itself. */
     url: string;

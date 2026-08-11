@@ -8,7 +8,7 @@ import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
-import { formatEstonianDate } from '@/lib/date';
+import { formatLocalDate } from '@/lib/date';
 import { index, show } from '@/routes/technical-plans';
 import type { AdminPlanRow } from '@/types/technicalPlan';
 
@@ -74,7 +74,7 @@ defineOptions({
                     {{ plan.teamName ?? '—' }}
                 </td>
                 <td class="px-5 py-4 align-top whitespace-nowrap">
-                    {{ formatEstonianDate(plan.performanceDate) }}
+                    {{ formatLocalDate(plan.performanceStartsAt) }}
                 </td>
                 <td class="px-5 py-4 align-top">
                     <span class="block text-r10-ink">

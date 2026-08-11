@@ -56,8 +56,8 @@ export interface Format {
     /** Whether the format was entered by hand or read off a Planka card. */
     createdBy: CreatedBy;
     /**
-     * When the format was put on the books; ISO 8601, already on the venue's
-     * clock. Null only for a format the server has not saved yet.
+     * When the format was put on the books; ISO 8601 UTC instant. Null only
+     * for a format the server has not saved yet.
      */
     createdAt: string | null;
 }
@@ -112,12 +112,11 @@ export interface Performance {
     teamId: number | null;
     teamName: string | null;
     /**
-     * ISO date (YYYY-MM-DD), on the venue's clock. The date and the start time
-     * are one stored moment server-side; they are split for the form.
+     * ISO 8601 UTC instant the performance starts at. Split into a local date
+     * and time only on the way into and out of the form — see
+     * {@link PerformanceFormData}.
      */
-    date: string;
-    /** Curtain-up as "19:00", on the venue's clock. */
-    startTime: string;
+    startsAt: string;
     /** Minutes, or null when the performance is not timed. */
     duration: number | null;
     /**
@@ -146,8 +145,8 @@ export interface Performance {
     /** Whether the performance was entered by hand or read off a Planka card. */
     createdBy: CreatedBy;
     /**
-     * When the performance was put on the books; ISO 8601, already on the
-     * venue's clock. Not the date it is played — that is `date` above.
+     * When the performance was put on the books; ISO 8601 UTC instant. Not
+     * the date it is played — that is `startsAt` above.
      */
     createdAt: string | null;
     /**
@@ -173,10 +172,8 @@ export interface AdminPerformanceRow {
     title: string | null;
     /** Who plays it: the performance's own group, or the format's. */
     teamName: string | null;
-    /** ISO date (YYYY-MM-DD), on the venue's clock. */
-    date: string;
-    /** Curtain-up as "19:00", on the venue's clock. */
-    startTime: string;
+    /** ISO 8601 UTC instant the performance starts at. */
+    startsAt: string;
     /** Minutes, or null when the performance is not timed. */
     duration: number | null;
     /** Imported and not reviewed yet. */

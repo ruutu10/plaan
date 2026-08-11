@@ -12,7 +12,7 @@ import R10SectionHeader from '@/components/technical-plan/R10SectionHeader.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { useResource } from '@/composables/useResource';
 import { useTrailingCrumb } from '@/composables/useTrailingCrumb';
-import { formatEstonianTimestamp } from '@/lib/date';
+import { formatLocalTimestamp } from '@/lib/date';
 import { edit, index } from '@/routes/admin/users';
 import { show as userApi, update } from '@/routes/api/users';
 import {
@@ -238,7 +238,7 @@ async function toggleRole(role: ManagedRole): Promise<void> {
                         Liitus
                     </dt>
                     <dd class="mt-1.5 text-[15px] text-r10-ink">
-                        {{ formatEstonianTimestamp(user.createdAt) }}
+                        {{ formatLocalTimestamp(user.createdAt) }}
                     </dd>
                 </div>
                 <div>

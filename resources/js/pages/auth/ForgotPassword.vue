@@ -36,7 +36,7 @@ defineProps<{
                 label="E-post"
                 autocomplete="off"
                 autofocus
-                placeholder="email@example.com"
+                placeholder="trent@pancy.com"
                 :error="errors.email"
             />
 

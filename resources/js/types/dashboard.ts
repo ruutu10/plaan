@@ -6,10 +6,8 @@ export type UpcomingFormat = {
     /** The performance's own screen, or null when the reader may not open it. */
     performanceUrl: string | null;
     teamName: string | null;
-    /** ISO date (YYYY-MM-DD) the format is staged on, on the venue's clock. */
-    date: string;
-    /** Curtain-up as "19:00", on the venue's clock. */
-    startTime: string;
+    /** ISO 8601 UTC instant the performance starts at. */
+    startsAt: string;
 };
 
 /** What the house still has ahead of it, and how ready it is for it. */
@@ -55,8 +53,8 @@ export type TodaysPerformance = {
     /** The act's own name, on an evening several groups share. */
     title: string | null;
     teamName: string | null;
-    /** Curtain-up as "19:00", on the venue's clock. */
-    startTime: string;
+    /** ISO 8601 UTC instant the performance starts at. */
+    startsAt: string;
     /** Empty when nobody has handed a plan in for this performance. */
     plans: TodaysPlan[];
 };

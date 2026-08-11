@@ -9,7 +9,7 @@ import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Select from '@/components/technical-plan/R10Select.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
-import { formatEstonianDate } from '@/lib/date';
+import { formatLocalDate } from '@/lib/date';
 import { index, show, updateStatus } from '@/routes/technical-plans';
 import type { AdminPlanRow, StatusOption } from '@/types/technicalPlan';
 
@@ -97,7 +97,7 @@ function confirmStatus(): void {
                     Etenduse kuupäev
                 </dt>
                 <dd class="mt-1 text-r10-ink">
-                    {{ formatEstonianDate(plan.performanceDate) }}
+                    {{ formatLocalDate(plan.performanceStartsAt) }}
                 </dd>
             </div>
 
@@ -125,7 +125,7 @@ function confirmStatus(): void {
                     Esitatud
                 </dt>
                 <dd class="mt-1 text-r10-ink">
-                    {{ formatEstonianDate(plan.submittedAt) }}
+                    {{ formatLocalDate(plan.submittedAt) }}
                 </dd>
             </div>
 

@@ -20,6 +20,15 @@ class DashboardTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * A `startsAt` instant off the page props, read as "H:i" on the venue's
+     * clock — the props themselves now carry raw UTC.
+     */
+    private function venueTime(string $startsAt): string
+    {
+        return Carbon::parse($startsAt)->setTimezone(Performance::venueTimezone())->format('H:i');
+    }
+
     public function test_guests_are_redirected_to_the_login_page()
     {
         $user = User::factory()->create();
@@ -190,7 +199,9 @@ class DashboardTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('upcoming.next.formatName', 'Festival 2026')
                 ->where('upcoming.next.teamName', 'Märold')
-                ->where('upcoming.next.date', now()->addDays(3)->toDateString()));
+                ->where('upcoming.next.startsAt', fn ($value) => Carbon::parse($value)
+                    ->setTimezone(Performance::venueTimezone())
+                    ->toDateString() === now()->addDays(3)->toDateString()));
     }
 
     public function test_dashboard_reports_no_next_performance_when_none_is_ahead(): void
@@ -333,9 +344,9 @@ class DashboardTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->has('today', 2)
                 ->where('today.0.id', $early->id)
-                ->where('today.0.startTime', '18:00')
+                ->where('today.0.startsAt', fn ($value) => $this->venueTime($value) === '18:00')
                 ->where('today.1.id', $late->id)
-                ->where('today.1.startTime', '21:00'));
+                ->where('today.1.startsAt', fn ($value) => $this->venueTime($value) === '21:00'));
     }
 
     public function test_todays_bill_lists_a_performance_nobody_has_handed_a_plan_in_for(): void

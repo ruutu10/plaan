@@ -1,14 +1,24 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import { requestJson } from '@/lib/http';
+import type { UpcomingPerformance } from '@/types/technicalPlan';
 import { applyPlanContent, resetPlanContent } from '../plan';
 import { usePlan } from '../planKey';
 import PriorPlanPicker from '../PriorPlanPicker.vue';
 import StepHeader from '../StepHeader.vue';
-import { formatEstonianDateTime } from '@/lib/date';
-import { requestJson } from '@/lib/http';
-import type { UpcomingPerformance } from '@/types/technicalPlan';
 
 const plan = usePlan();
+
+/**
+ * `performanceDate` and `startTime` arrive already on the venue's clock — see
+ * {@link UpcomingPerformance} — so this only joins them; there is no UTC
+ * instant here to convert.
+ */
+function formatPerformanceMoment(dateOnly: string, time: string): string {
+    const [year, month, day] = dateOnly.split('-');
+
+    return `${day}.${month}.${year} ${time}`;
+}
 
 const performances = ref<UpcomingPerformance[]>([]);
 /**
@@ -183,7 +193,7 @@ onMounted(loadPerformances);
                             class="mt-0.5 block text-[13px] text-r10-grey-500"
                         >
                             {{
-                                formatEstonianDateTime(
+                                formatPerformanceMoment(
                                     performance.performanceDate,
                                     performance.startTime,
                                 )

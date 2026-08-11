@@ -8,6 +8,7 @@ use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -127,8 +128,9 @@ class PerformanceAdminTest extends TestCase
                     ->where('0.formatId', $ours->id)
                     ->where('0.formatName', 'Festival 2026')
                     ->where('0.teamName', 'Märold')
-                    ->where('0.date', '2026-09-01')
-                    ->where('0.startTime', '19:30')
+                    ->where('0.startsAt', fn ($value) => Carbon::parse($value)
+                        ->setTimezone(Performance::venueTimezone())
+                        ->format('Y-m-d H:i') === '2026-09-01 19:30')
                     ->where('0.duration', 75)
                     ->where('0.isDraft', false)
                     ->where('0.technicalPlanCount', 1)

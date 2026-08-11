@@ -14,7 +14,7 @@ import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10RecordLink from '@/components/technical-plan/R10RecordLink.vue';
-import { formatEstonianDate } from '@/lib/date';
+import { formatLocalDate, formatLocalTime } from '@/lib/date';
 import { dashboard } from '@/routes';
 import type { DashboardInvitation } from '@/types';
 import type { TodaysPerformance, UpcomingSummary } from '@/types/dashboard';
@@ -96,7 +96,7 @@ defineOptions({
                         :href="upcoming.next?.performanceUrl"
                         data-test="next-performance-link"
                     >
-                        {{ formatEstonianDate(upcoming.next?.date) }}
+                        {{ formatLocalDate(upcoming.next?.startsAt) }}
                     </R10RecordLink>
                 </div>
                 <div class="mt-3 text-sm text-r10-grey-500">
@@ -109,7 +109,8 @@ defineOptions({
                             {{ upcoming.next.formatName }}
                         </R10RecordLink>
                         <span class="block">
-                            Algus {{ upcoming.next.startTime }}
+                            Algus
+                            {{ formatLocalTime(upcoming.next.startsAt) }}
                         </span>
                         <span v-if="upcoming.next.teamName" class="block">
                             {{ upcoming.next.teamName }}
@@ -196,7 +197,7 @@ defineOptions({
                             class="font-r10-display text-lg font-bold text-r10-ink tabular-nums"
                             data-test="todays-performance-link"
                         >
-                            {{ performance.startTime }}
+                            {{ formatLocalTime(performance.startsAt) }}
                         </R10RecordLink>
                     </div>
 
@@ -293,7 +294,7 @@ defineOptions({
                             <span
                                 class="text-xs text-r10-grey-500 tabular-nums"
                             >
-                                {{ formatEstonianDate(plan.submittedAt) }}
+                                {{ formatLocalDate(plan.submittedAt) }}
                             </span>
                             <R10RecordLink
                                 :href="plan.formatUrl"

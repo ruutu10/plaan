@@ -11,6 +11,7 @@ use App\Models\TechnicalPlan;
 use App\Models\User;
 use App\Notifications\TechnicalPlanReceived;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -195,7 +196,9 @@ class TechnicalPlanAdminTest extends TestCase
                 ->where('plans.0.token', $submitted->token)
                 ->where('plans.0.formatName', 'Festival 2026')
                 ->where('plans.0.teamName', 'Märold')
-                ->where('plans.0.performanceDate', '2026-08-01')
+                ->where('plans.0.performanceStartsAt', fn ($value) => Carbon::parse($value)
+                    ->setTimezone(Performance::venueTimezone())
+                    ->toDateString() === '2026-08-01')
                 ->where('plans.0.submittedBy', 'Mart Naide')
                 ->where('plans.0.submittedByEmail', 'mart@naide.ee')
                 ->where('plans.0.status', TechnicalPlanStatus::Submitted->value)
@@ -328,12 +331,14 @@ class TechnicalPlanAdminTest extends TestCase
                 ->where('plan.token', $plan->token)
                 ->where('plan.formatName', 'Festival 2026')
                 ->where('plan.teamName', 'Märold')
-                ->where('plan.performanceDate', '2026-08-01')
+                ->where('plan.performanceStartsAt', fn ($value) => Carbon::parse($value)
+                    ->setTimezone(Performance::venueTimezone())
+                    ->toDateString() === '2026-08-01')
                 ->where('plan.submittedBy', 'Mart Naide')
                 ->where('plan.submittedByEmail', 'mart@naide.ee')
                 ->where('plan.status', TechnicalPlanStatus::Submitted->value)
                 ->where('plan.statusLabel', TechnicalPlanStatus::Submitted->label())
-                ->where('plan.submittedAt', '2026-07-20')
+                ->where('plan.submittedAt', '2026-07-20T12:00:00+00:00')
                 ->where('plan.url', route('technical-plan.public', $plan))
                 ->has('statuses', count(TechnicalPlanStatus::cases())));
     }

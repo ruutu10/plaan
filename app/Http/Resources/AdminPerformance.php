@@ -28,8 +28,7 @@ class AdminPerformance extends JsonResource
      *     formatName: string,
      *     title: string|null,
      *     teamName: string|null,
-     *     date: string,
-     *     startTime: string,
+     *     startsAt: string,
      *     duration: int|null,
      *     isDraft: bool,
      *     technicalPlanCount: int|null,
@@ -51,8 +50,7 @@ class AdminPerformance extends JsonResource
             // Who plays it — its own group, or the format's. Never read off the
             // format directly; see Performance::performerName().
             'teamName' => $performance->performerName(),
-            'date' => $performance->startDate(),
-            'startTime' => $performance->startTime(),
+            'startsAt' => $performance->date->toIso8601String(),
             'duration' => $performance->duration,
             // Imported and not reviewed yet, which keeps it out of the listing
             // technical plans are written from.

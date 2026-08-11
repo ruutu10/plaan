@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Performance as PerformanceModel;
 use App\Models\TechnicalPlan as TechnicalPlanModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -33,7 +34,9 @@ class TechnicalPlanSummary extends JsonResource
             'title' => trim(($format?->name ?: 'Nimeta plaan').($performer ? ' — '.$performer : '')),
             'sub' => collect([
                 $plan->performance?->startsAt()->format('d.m.Y'),
-                $plan->submitted_at ? 'esitatud '.$plan->submitted_at->format('d.m.Y') : null,
+                $plan->submitted_at
+                    ? 'esitatud '.$plan->submitted_at->setTimezone(PerformanceModel::venueTimezone())->format('d.m.Y')
+                    : null,
             ])->filter()->implode(' · '),
         ];
     }

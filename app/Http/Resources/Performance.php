@@ -18,9 +18,8 @@ class Performance extends JsonResource
     /**
      * Transform the performance into a listable and editable row.
      *
-     * The date and the start time are split apart again here: they are one
-     * stored moment, but two fields on the form, and both are given on the
-     * venue's clock rather than in the UTC they are kept in.
+     * Every moment here travels as the UTC instant it is stored as — the
+     * browser, not this array, is where it becomes the venue's own clock.
      *
      * @return array{
      *     id: int,
@@ -29,8 +28,7 @@ class Performance extends JsonResource
      *     title: string|null,
      *     teamId: int|null,
      *     teamName: string|null,
-     *     date: string,
-     *     startTime: string,
+     *     startsAt: string,
      *     duration: int|null,
      *     isDraft: bool,
      *     technicalPlanCount: int|null,
@@ -59,8 +57,7 @@ class Performance extends JsonResource
             'title' => $performance->title,
             'teamId' => $performance->team_id,
             'teamName' => $performance->team?->name,
-            'date' => $performance->startDate(),
-            'startTime' => $performance->startTime(),
+            'startsAt' => $performance->date->toIso8601String(),
             'duration' => $performance->duration,
             // Imported and not reviewed yet, which keeps it out of the listing
             // plans are written from until somebody clears it here.
@@ -87,11 +84,7 @@ class Performance extends JsonResource
             // nobody remembers choosing was read off a card, and the screens say
             // so rather than leaving it to be guessed.
             'createdBy' => $performance->created_by->value,
-            // Already on the venue's clock, like the date and the start time
-            // above — the browser is never asked to do the arithmetic.
-            'createdAt' => $performance->created_at
-                ?->setTimezone(PerformanceModel::venueTimezone())
-                ->toIso8601String(),
+            'createdAt' => $performance->created_at?->toIso8601String(),
             // Imported and read-only: see App\Services\PerformanceStaffSync.
             // Empty unless eager-loaded, so a listing that has no use for it
             // never pays for the query.

@@ -7,7 +7,7 @@ import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { useResource } from '@/composables/useResource';
-import { formatEstonianTimestamp } from '@/lib/date';
+import { formatLocalTimestamp } from '@/lib/date';
 import { edit, index } from '@/routes/admin/users';
 import { index as usersApi } from '@/routes/api/users';
 import type { ManagedUser } from '@/types';
@@ -103,7 +103,7 @@ defineOptions({
                 <td
                     class="px-5 py-4 align-top text-[13px] whitespace-nowrap text-r10-grey-500"
                 >
-                    {{ formatEstonianTimestamp(user.createdAt) }}
+                    {{ formatLocalTimestamp(user.createdAt) }}
                 </td>
                 <td class="px-5 py-4 text-right align-top">
                     <R10Button

@@ -133,7 +133,7 @@ function submitOnEnter(event: KeyboardEvent): void {
                 autofocus
                 :tabindex="1"
                 autocomplete="email"
-                placeholder="email@example.com"
+                placeholder="trent@pancy.com"
                 :error="errors.email ?? linkForm.errors.email"
                 @keydown.enter="submitOnEnter"
             />

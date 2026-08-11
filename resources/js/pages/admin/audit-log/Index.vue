@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import TextLink from '@/components/TextLink.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
-import { formatEstonianTimestamp } from '@/lib/date';
+import TextLink from '@/components/TextLink.vue';
+import { formatLocalTimestamp } from '@/lib/date';
 import { index } from '@/routes/admin/audit-log';
 import type { AuditLogEntry } from '@/types';
 
@@ -84,7 +84,7 @@ function subjectName(entry: AuditLogEntry): string {
                 <td
                     class="px-5 py-4 align-top font-medium whitespace-nowrap text-r10-ink"
                 >
-                    {{ formatEstonianTimestamp(entry.createdAt) }}
+                    {{ formatLocalTimestamp(entry.createdAt) }}
                 </td>
                 <td class="px-5 py-4 align-top whitespace-nowrap">
                     <R10Pill :tone="eventTone(entry.event)">

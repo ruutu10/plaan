@@ -14,7 +14,7 @@ import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { useResource } from '@/composables/useResource';
-import { formatEstonianDate } from '@/lib/date';
+import { formatLocalDate, formatLocalTime } from '@/lib/date';
 import {
     claudeLogs as reasoningLogsApi,
     show as performanceApi,
@@ -69,7 +69,7 @@ function nameTheTrail(performance: Performance): void {
             { title: performance.formatName, href: edit(props.formatId) },
             {
                 title:
-                    performance.title ?? formatEstonianDate(performance.date),
+                    performance.title ?? formatLocalDate(performance.startsAt),
                 href: performancePage([props.formatId, props.performanceId]),
             },
         ],
@@ -90,7 +90,7 @@ function openReasoningLog(): void {
             :title="performance?.title ?? performance?.formatName ?? 'Etendus'"
             :lead="
                 performance
-                    ? `${performance.formatName} — ${formatEstonianDate(performance.date)} kell ${performance.startTime}`
+                    ? `${performance.formatName} — ${formatLocalDate(performance.startsAt)} kell ${formatLocalTime(performance.startsAt)}`
                     : undefined
             "
         />
@@ -128,14 +128,16 @@ function openReasoningLog(): void {
                         Kuupäev
                     </dt>
                     <dd class="text-r10-ink">
-                        {{ formatEstonianDate(performance.date) }}
+                        {{ formatLocalDate(performance.startsAt) }}
                     </dd>
                 </div>
                 <div>
                     <dt class="text-xs font-bold text-r10-grey-500 uppercase">
                         Algusaeg
                     </dt>
-                    <dd class="text-r10-ink">{{ performance.startTime }}</dd>
+                    <dd class="text-r10-ink">
+                        {{ formatLocalTime(performance.startsAt) }}
+                    </dd>
                 </div>
                 <div>
                     <dt class="text-xs font-bold text-r10-grey-500 uppercase">

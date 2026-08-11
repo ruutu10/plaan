@@ -6,6 +6,7 @@ import PlankaCardField from '@/components/PlankaCardField.vue';
 import R10FormDialog from '@/components/technical-plan/R10FormDialog.vue';
 import R10Input from '@/components/technical-plan/R10Input.vue';
 import R10Select from '@/components/technical-plan/R10Select.vue';
+import { formatLocalTime, toLocalDateInputValue } from '@/lib/date';
 import { store, update } from '@/routes/api/formats/performances';
 import type { FormatTeamOption, Performance } from '@/types';
 
@@ -80,8 +81,12 @@ function fill(): void {
     form.clearErrors();
     form.title = props.performance?.title ?? '';
     form.team_id = props.performance?.teamId ?? FORMAT_S_OWN_TEAM;
-    form.date = props.performance?.date ?? '';
-    form.start_time = props.performance?.startTime ?? USUAL_START_TIME;
+    form.date = props.performance
+        ? toLocalDateInputValue(props.performance.startsAt)
+        : '';
+    form.start_time = props.performance
+        ? formatLocalTime(props.performance.startsAt)
+        : USUAL_START_TIME;
     form.duration = props.performance?.duration?.toString() ?? '';
     // A performance added here is vouched for by the adding; only an imported
     // one starts out waiting to be reviewed.

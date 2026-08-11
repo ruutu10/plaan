@@ -61,7 +61,7 @@ defineOptions({
                 required
                 :tabindex="2"
                 autocomplete="email"
-                placeholder="email@example.com"
+                placeholder="trent@pancy.com"
                 :error="errors.email"
             />
 
