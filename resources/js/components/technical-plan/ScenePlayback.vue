@@ -143,25 +143,50 @@ const cueLinkClass =
         aria-modal="true"
         aria-label="Tehniku vaade"
     >
+        <!-- Equal 1fr flanks keep the middle cell on the true centre line
+             whatever the show name or close button measure. -->
         <header
-            class="flex shrink-0 items-center gap-3 border-b border-white/15 bg-r10-navy px-4 py-3.5 sm:gap-4 sm:px-5"
+            class="grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-white/15 bg-r10-navy px-4 py-2.5 sm:gap-4 sm:px-5 sm:py-3"
         >
             <div class="flex min-w-0 items-center gap-2.5">
                 <Diamond :size="11" />
                 <span
-                    class="font-r10-body text-[11px] font-bold tracking-[0.18em] text-r10-orange uppercase"
+                    class="hidden shrink-0 font-r10-body text-[11px] font-bold tracking-[0.18em] text-r10-orange uppercase sm:inline"
                 >
                     Tehniku vaade
                 </span>
+                <span
+                    class="hidden min-w-0 truncate font-r10-display text-[15px] font-semibold tracking-[0.03em] text-r10-navy-200 uppercase xl:block"
+                >
+                    {{ plan.meta.formatName || 'Nimeta etendus' }}
+                </span>
             </div>
-            <span
-                class="hidden min-w-0 truncate font-r10-display text-[15px] font-semibold tracking-[0.03em] text-white uppercase sm:block"
+
+            <!-- The scene the tech is on titles the view, leaving the body to
+                 the cues themselves. -->
+            <div
+                v-if="activeScene"
+                :key="activeScene.num"
+                class="flex min-w-0 items-center justify-center gap-2.5 sm:gap-3"
             >
-                {{ plan.meta.formatName || 'Nimeta etendus' }}
-            </span>
+                <span
+                    class="shrink-0 font-r10-body text-[11px] font-bold tracking-[0.18em] text-r10-orange uppercase"
+                >
+                    Stseen {{ activeScene.num }} / {{ scenes.length }}
+                </span>
+                <span
+                    class="h-4 w-px shrink-0 bg-white/25"
+                    aria-hidden="true"
+                ></span>
+                <h2
+                    class="min-w-0 truncate font-r10-display text-lg leading-tight font-bold tracking-[0.02em] text-white uppercase sm:text-xl"
+                >
+                    {{ sceneLabel(activeScene.name) }}
+                </h2>
+            </div>
             <button
                 type="button"
-                class="ml-auto shrink-0 cursor-pointer rounded-full border-2 border-white/30 bg-transparent px-4 py-2 font-r10-body text-xs font-bold tracking-[0.06em] text-white uppercase transition hover:border-r10-orange hover:text-r10-orange sm:px-5"
+                class="col-start-3 shrink-0 cursor-pointer justify-self-end rounded-full border-2 border-white/30 bg-transparent px-4 py-2 font-r10-body text-xs font-bold tracking-[0.06em] text-white uppercase transition hover:border-r10-orange hover:text-r10-orange sm:px-5"
                 @click="emit('close')"
             >
                 Sulge vaade
@@ -237,24 +262,13 @@ const cueLinkClass =
             <main
                 v-if="activeScene"
                 ref="mainRef"
-                class="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-10 sm:py-7"
+                class="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-5 sm:px-10 sm:py-6"
             >
                 <div
                     :key="activeScene.num"
                     class="mx-auto max-w-[820px] animate-[r10fade_0.28s_ease]"
                 >
-                    <div
-                        class="font-r10-body text-xs font-bold tracking-[0.18em] text-r10-navy-300 uppercase"
-                    >
-                        Stseen {{ activeScene.num }} / {{ scenes.length }}
-                    </div>
-                    <h2
-                        class="mt-2 font-r10-display text-3xl leading-[1.1] font-bold tracking-[0.02em] break-words text-white uppercase sm:text-4xl"
-                    >
-                        {{ sceneLabel(activeScene.name) }}
-                    </h2>
-
-                    <div class="mt-8 flex flex-col gap-6">
+                    <div class="flex flex-col gap-6">
                         <section
                             class="rounded-[14px] border border-white/15 bg-r10-navy px-4 py-4 sm:px-5"
                         >
