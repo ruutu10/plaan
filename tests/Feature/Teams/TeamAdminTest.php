@@ -423,7 +423,7 @@ class TeamAdminTest extends TestCase
             return true;
         });
 
-        $this->get($loginUrl)->assertRedirect('/dashboard');
+        $this->get($loginUrl)->assertRedirect('/admin/dashboard');
         $this->assertAuthenticatedAs($newcomer);
         $this->assertSame($team->id, $newcomer->fresh()->current_team_id);
     }

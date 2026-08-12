@@ -23,6 +23,13 @@ use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
+// Every screen of the signed-in back office is served under /admin — the
+// dashboard, the formats, the plan overview and the crew's own listings alike.
+// What stays outside it is what a performer meets without an account: the
+// welcome page, the manual, and the technical-plan wizard under /tehnikaplaan,
+// which is the whole of the application for most of the people who use it.
+// The JSON APIs keep to /api, whichever side of that line they are read from.
+
 Route::inertia('/', 'Welcome')->name('home');
 
 // The user manual. Open to everyone: a performer who has not signed in yet is
@@ -62,19 +69,19 @@ Route::prefix('tehnikaplaan')->name('technical-plan.')->group(function () {
 // question rather than the door's: holders of the view-all permission (the
 // "technician" role) are shown the whole house, everybody else their own plans
 // and their groups' — see App\Models\TechnicalPlan::listableBy().
-Route::get('technical-plans', [TechnicalPlanController::class, 'overview'])
+Route::get('admin/technical-plans', [TechnicalPlanController::class, 'overview'])
     ->middleware(['auth'])
     ->name('technical-plans.index');
 
 // A single plan's details, opened from a row of the overview above. Guarded by
 // the same reach as the listing, checked in the controller against the plan.
-Route::get('technical-plans/{plan:token}', [TechnicalPlanController::class, 'showDetails'])
+Route::get('admin/technical-plans/{plan:token}', [TechnicalPlanController::class, 'showDetails'])
     ->middleware(['auth'])
     ->name('technical-plans.show');
 
 // Changing a plan's status from its details page is a right of its own — held
 // by the same "technician" role, but not implied by being able to merely view it.
-Route::patch('technical-plans/{plan:token}', [TechnicalPlanController::class, 'updateStatus'])
+Route::patch('admin/technical-plans/{plan:token}', [TechnicalPlanController::class, 'updateStatus'])
     ->middleware(['auth', 'can:'.TechnicalPlan::EDIT_ALL_PERMISSION])
     ->name('technical-plans.update-status');
 
@@ -101,7 +108,7 @@ Route::prefix('api/tehnikaplaan')
 // Inertia-rendered format-management pages. Each is a shell: what it lists and
 // what it saves travels over the JSON API below, so the browser is served by
 // the same endpoints as any other client.
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
     Route::get('formats', [FormatPageController::class, 'index'])->name('formats.index');
     Route::get('formats/{format}/edit', [FormatPageController::class, 'edit'])->name('formats.edit');
 
@@ -157,20 +164,20 @@ Route::prefix('api/formats')
 // itself reaches; everybody else keeps to their own groups' formats above.
 // Changing a performance is a right of its own and stays with the crew — see
 // Performance::EDIT_ALL_PERMISSION and the API routes above.
-Route::get('performances', [PerformanceController::class, 'overview'])
+Route::get('admin/performances', [PerformanceController::class, 'overview'])
     ->middleware(['auth', 'verified', 'can:'.Performance::VIEW_ALL_PERMISSION])
     ->name('admin.performances.index');
 
 // The audit trail every state change in the house is kept in — see
 // App\Concerns\LogsModelActivity. Open to the technicians alone.
-Route::get('audit-log', [AuditLogController::class, 'index'])
+Route::get('admin/audit-log', [AuditLogController::class, 'index'])
     ->middleware(['auth', 'verified', 'can:'.AuditLogController::VIEW_PERMISSION])
     ->name('admin.audit-log.index');
 
 // Inertia-rendered team-management pages, shells like the show ones above.
 // These are the admin's view of the groups themselves; a user's own team
 // settings live under /settings/teams (see routes/settings.php).
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
     Route::get('teams', [TeamAdminPageController::class, 'index'])->name('admin.teams.index');
     Route::get('teams/{team:id}/edit', [TeamAdminPageController::class, 'edit'])->name('admin.teams.edit');
 });
@@ -204,7 +211,7 @@ Route::prefix('api/teams')
 // house, and the roles handed out on it carry every right the application has.
 // Unlike a team, an account has no owner to ask, so the permission decides the
 // whole screen and the guard sits here rather than inside the controller.
-Route::middleware(['auth', 'verified', 'can:'.User::MANAGE_PERMISSION])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'verified', 'can:'.User::MANAGE_PERMISSION])->group(function () {
     Route::get('users', [UserAdminController::class, 'overview'])->name('admin.users.index');
     Route::get('users/{user}/edit', [UserAdminController::class, 'edit'])->name('admin.users.edit');
 });
@@ -243,7 +250,7 @@ Route::prefix('api/users')
 // Not scoped to a team: the dashboard shows the signed-in user's own
 // invitations, upcoming performances and plans, none of which belong to a
 // particular team, so it must stay reachable for a user who is on none.
-Route::get('dashboard', DashboardController::class)
+Route::get('admin/dashboard', DashboardController::class)
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
