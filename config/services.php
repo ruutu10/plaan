@@ -41,6 +41,10 @@ return [
         'key' => env('ANTHROPIC_API_KEY'),
         'model' => Model::CLAUDE_SONNET_5,
         'max_tokens' => 10000,
+
+        // How long an answer is reused for a request that is identical down to
+        // the last character of its prompt, in seconds.
+        'cache_ttl' => env('ANTHROPIC_CACHE_TTL', 60 * 60 * 24 * 7),
     ],
 
     /*

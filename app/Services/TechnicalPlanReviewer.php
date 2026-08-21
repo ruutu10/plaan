@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Anthropic\Client;
+use App\Concerns\CachesClaudeMessages;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanReviewResource;
 use App\Models\TechnicalPlan;
 use Illuminate\Support\Facades\Log;
@@ -10,6 +11,8 @@ use Spatie\LaravelMarkdown\MarkdownRenderer;
 
 class TechnicalPlanReviewer
 {
+    use CachesClaudeMessages;
+
     protected Client $client;
 
     public function __construct()
@@ -31,21 +34,19 @@ class TechnicalPlanReviewer
             'model' => config('services.anthropic.model'),
         ]);
 
-        $message = $this->client->messages->create(
-            maxTokens: config('services.anthropic.max_tokens'),
-            messages: [
+        $aiResponse = $this->askClaude($this->client, [
+            'maxTokens' => config('services.anthropic.max_tokens'),
+            'messages' => [
                 [
                     'role' => 'user',
                     'content' => $userPrompt,
                 ],
             ],
-            model: config('services.anthropic.model'),
-            system: $this->buildSystemPrompt(),
-            temperature: 1,
-            thinking: ['type' => 'disabled'],
-        );
-        // @phpstan-ignore-next-line property.notFound
-        $aiResponse = trim((string) $message->content[0]->text);
+            'model' => config('services.anthropic.model'),
+            'system' => $this->buildSystemPrompt(),
+            'temperature' => 1,
+            'thinking' => ['type' => 'disabled'],
+        ]);
 
         Log::debug('AI review for plan', [
             'id' => $plan->id,

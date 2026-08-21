@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\PerformanceStaffRole;
 use App\Models\Team;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Tests\Concerns\AnswersAsTheExtractionModel;
 use Tests\TestCase;
@@ -475,5 +476,56 @@ class PlankaPerformanceExtractorTest extends TestCase
         $extractor->extract('Tühi', 'Tühi kaart');
 
         $this->assertNull($extractor->rawResponse());
+    }
+
+    public function test_a_card_read_once_is_not_paid_for_twice(): void
+    {
+        $extractor = $this->extractorAnswering((string) json_encode([
+            'formats' => [
+                [
+                    'format_name' => 'Trupp 1',
+                    'date' => '2025-09-13',
+                    'performances' => [['title' => null]],
+                ],
+            ],
+        ]));
+
+        $first = $extractor->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
+        $second = $extractor->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
+
+        $this->assertCount(1, $this->sentBodies, 'The second reading should have come from the cache.');
+        $this->assertEquals($first, $second);
+    }
+
+    public function test_a_card_that_has_changed_is_read_again(): void
+    {
+        $extractor = $this->extractorAnswering('{"formats": []}');
+
+        $extractor->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
+        $extractor->extract('13.09 õhtu', 'Toimumise kuupäev: 14.09.2025');
+
+        $this->assertCount(2, $this->sentBodies);
+    }
+
+    public function test_an_empty_answer_is_not_remembered(): void
+    {
+        $extractor = $this->extractorAnswering('');
+
+        $extractor->extract('Tühi', 'Tühi kaart');
+        $extractor->extract('Tühi', 'Tühi kaart');
+
+        $this->assertCount(2, $this->sentBodies, 'Silence is worth asking about again.');
+    }
+
+    public function test_an_answer_is_kept_for_a_week(): void
+    {
+        Cache::spy();
+
+        $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
+
+        Cache::shouldHaveReceived('put')
+            ->withArgs(fn (string $key, string $answer, int $ttl): bool => str_starts_with($key, 'claude:message:')
+                && $ttl === 60 * 60 * 24 * 7)
+            ->once();
     }
 }

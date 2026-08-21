@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Anthropic\Client;
+use App\Concerns\CachesClaudeMessages;
 use App\Data\ImportedNight;
 use App\Data\ImportedPerformance;
 use App\Data\ImportedStaffMember;
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\Log;
  */
 class PlankaPerformanceExtractor
 {
+    use CachesClaudeMessages;
+
     /**
      * The groups a format can be handed to, by id, read once per run rather than
      * once per card.
@@ -68,27 +71,24 @@ class PlankaPerformanceExtractor
 
         $startedAt = microtime(true);
 
-        $message = $this->client()->messages->create(
-            maxTokens: config('services.anthropic.max_tokens'),
-            messages: [
+        $aiResponse = $this->askClaude($this->client(), [
+            'maxTokens' => config('services.anthropic.max_tokens'),
+            'messages' => [
                 [
                     'role' => 'user',
                     'content' => $userPrompt,
                 ],
             ],
-            model: config('services.anthropic.model'),
-            outputConfig: [
+            'model' => config('services.anthropic.model'),
+            'outputConfig' => [
                 'format' => [
                     'type' => 'json_schema',
                     'schema' => $this->responseSchema(),
                 ],
             ],
-            system: $this->buildSystemPrompt(),
-            thinking: ['type' => 'disabled'],
-        );
-
-        // @phpstan-ignore-next-line property.notFound
-        $aiResponse = trim((string) $message->content[0]->text);
+            'system' => $this->buildSystemPrompt(),
+            'thinking' => ['type' => 'disabled'],
+        ]);
 
         Log::debug('AI extraction for Planka card', [
             'card' => $cardName,
