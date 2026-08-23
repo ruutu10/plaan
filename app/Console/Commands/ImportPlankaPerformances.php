@@ -40,22 +40,23 @@ use Throwable;
 class ImportPlankaPerformances extends Command
 {
     /**
-     * The formats the house has, by {@see formatKey()}. Formats created during the
-     * run join them, so the second card naming a format finds the first's.
+     * The formats the house has, by {@see Format::nameKey()}. Formats created
+     * during the run join them, so the second card naming a format finds the
+     * first's.
      *
      * @var array<string, Format>
      */
     protected array $formats = [];
 
     /**
-     * The names whose only formats were deleted here, by {@see formatKey()}.
+     * The names whose only formats were deleted here, by {@see Format::nameKey()}.
      *
      * @var array<string, true>
      */
     protected array $deletedFormats = [];
 
     /**
-     * The names a dry run has already reported as new, by {@see formatKey()}.
+     * The names a dry run has already reported as new, by {@see Format::nameKey()}.
      * A dry run writes nothing, so this is all it has to go on.
      *
      * @var array<string, true>
@@ -275,7 +276,7 @@ class ImportPlankaPerformances extends Command
             $summary->formatsCreated++;
         }
 
-        $format = $this->formats[$this->formatKey($night->formatName)] ?? null;
+        $format = $this->formats[Format::nameKey($night->formatName)] ?? null;
 
         if ($this->adoptFormat($format, $night->teamId, $dryRun)) {
             $this->output->writeln(sprintf(
@@ -506,7 +507,7 @@ class ImportPlankaPerformances extends Command
      */
     protected function resolveFormat(string $name, ?int $teamId, bool $dryRun): ImportedFormatStatus
     {
-        $key = $this->formatKey($name);
+        $key = Format::nameKey($name);
 
         if (isset($this->deletedFormats[$key])) {
             return ImportedFormatStatus::Deleted;
@@ -545,11 +546,9 @@ class ImportPlankaPerformances extends Command
 
     /**
      * Take stock of the formats the house already has, so the run can match
-     * against them without asking the database once per performance.
-     *
-     * Matching happens here rather than in SQL because the names are Estonian:
-     * SQLite's `LOWER()` leaves "Ä" alone, so "MÄRTU10" and "Märtu10" would be
-     * read as two different formats. PHP folds them the same.
+     * against them without asking the database once per performance. Matching
+     * happens in PHP rather than in SQL for the reason {@see Format::nameKey()}
+     * gives.
      */
     protected function primeFormats(): void
     {
@@ -558,7 +557,7 @@ class ImportPlankaPerformances extends Command
         $this->plannedFormats = [];
 
         foreach (Format::withTrashed()->get() as $format) {
-            $key = $this->formatKey($format->name);
+            $key = Format::nameKey($format->name);
 
             if ($format->trashed()) {
                 $this->deletedFormats[$key] = true;
@@ -575,15 +574,6 @@ class ImportPlankaPerformances extends Command
     }
 
     /**
-     * The name a format is matched by: its own, without regard to case, so
-     * "JadaJada" and "Jadajada" stay one format.
-     */
-    protected function formatKey(string $name): string
-    {
-        return mb_strtolower(trim($name));
-    }
-
-    /**
      * The acts of this night that are already on the books, by the key the
      * reading of the card gives them. A format that does not exist yet (or was
      * not created, in a dry run) has none.
@@ -595,8 +585,8 @@ class ImportPlankaPerformances extends Command
      * midnights, so a late-night format does not read as the day before.
      *
      * Within the night the acts are told apart by their names, folded in PHP
-     * for the same reason {@see formatKey()} folds there: SQLite's `LOWER()`
-     * leaves "Ä" alone. An act the card left unnamed is matched by its place in
+     * for the reason {@see Format::nameKey()} gives: SQLite's `LOWER()` leaves
+     * "Ä" alone. An act the card left unnamed is matched by its place in
      * the running order, which is how a performance registered before the acts
      * were told apart at all — and every one already on the books is — keeps
      * being recognised.
@@ -643,8 +633,8 @@ class ImportPlankaPerformances extends Command
      * database when {@see actsAlreadyOn()} has already answered for the night.
      *
      * Title is matched folded and trimmed in PHP rather than in SQL, for the
-     * reason {@see primeFormats()} does the same: SQLite's `LOWER()` leaves
-     * Estonian capitals alone.
+     * reason {@see Format::nameKey()} gives: SQLite's `LOWER()` leaves Estonian
+     * capitals alone.
      */
     protected function performanceAlreadyRecorded(Format $format, string $title, Carbon $date): bool
     {

@@ -678,4 +678,23 @@ class FormatManagementTest extends TestCase
             ->get(route('formats.edit', $format))
             ->assertNotFound();
     }
+
+    public function test_a_name_is_keyed_without_regard_to_case_or_surrounding_space(): void
+    {
+        $this->assertSame('jadajada', Format::nameKey('  JadaJada '));
+        $this->assertSame('märtu10', Format::nameKey('MÄRTU10'));
+        $this->assertSame(Format::nameKey('Märtu10'), Format::nameKey('MÄRTU10'));
+    }
+
+    public function test_the_names_of_the_house_are_listed_by_key_in_alphabetical_order(): void
+    {
+        Format::factory()->create(['name' => 'Kogukonna improõhtu']);
+        Format::factory()->create(['name' => 'Duubel']);
+        Format::factory()->trashed()->create(['name' => 'Sügisgala']);
+
+        $this->assertSame([
+            'duubel' => 'Duubel',
+            'kogukonna improõhtu' => 'Kogukonna improõhtu',
+        ], Format::namesByKey());
+    }
 }

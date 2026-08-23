@@ -138,6 +138,35 @@ class Format extends Model
     }
 
     /**
+     * The name a format is matched by: its own, without regard to case or the
+     * spaces around it, so "JadaJada" and "Jadajada" stay one format.
+     *
+     * Folded in PHP rather than in SQL because the names are Estonian:
+     * SQLite's `LOWER()` leaves "Ä" alone, so "MÄRTU10" and "Märtu10" would
+     * read as two different formats. PHP folds them the same.
+     */
+    public static function nameKey(string $name): string
+    {
+        return mb_strtolower(trim($name));
+    }
+
+    /**
+     * The names of the formats the house has, by {@see nameKey()}. Formats put
+     * aside are left out: a name the house no longer plays is not one a card
+     * should be read onto, and the Planka import refuses such a night anyway.
+     *
+     * @return array<string, string>
+     */
+    public static function namesByKey(): array
+    {
+        return static::query()
+            ->orderBy('name')
+            ->pluck('name')
+            ->mapWithKeys(fn (string $name): array => [self::nameKey($name) => $name])
+            ->all();
+    }
+
+    /**
      * Limit the query to the formats the given user may see and edit: the ones
      * owned by a team they belong to. Holders of {@see EDIT_ALL_PERMISSION} are
      * not limited at all — formats without an owning team included, as those are

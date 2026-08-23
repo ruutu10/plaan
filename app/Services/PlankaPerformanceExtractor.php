@@ -34,8 +34,8 @@ class PlankaPerformanceExtractor
     protected ?array $teams = null;
 
     /**
-     * The formats the house already has, by {@see formatKey()}, read once per run
-     * rather than once per card. A card whose title is an existing format's name
+     * The formats the house already has, by {@see Format::nameKey()}, read once
+     * per run rather than once per card. A card whose title is an existing format's name
      * with a troupe or a date tacked onto it belongs to that format, not to a
      * new one of its own, so the model is shown the list and asked to match
      * against it.
@@ -215,7 +215,7 @@ class PlankaPerformanceExtractor
             return [new ImportedPerformance(teamId: $nightTeamId)];
         }
 
-        if (count($performances) === 1 && mb_strtolower((string) $performances[0]->title) === mb_strtolower($formatName)) {
+        if (count($performances) === 1 && Format::nameKey((string) $performances[0]->title) === Format::nameKey($formatName)) {
             $performances[0] = new ImportedPerformance(
                 title: null,
                 startTime: $performances[0]->startTime,
@@ -334,7 +334,7 @@ class PlankaPerformanceExtractor
     {
         $name = trim((string) (is_scalar($formatName) ? $formatName : ''));
 
-        return $this->formats()[$this->formatKey($name)] ?? $name;
+        return $this->formats()[Format::nameKey($name)] ?? $name;
     }
 
     /**
@@ -361,43 +361,24 @@ class PlankaPerformanceExtractor
     }
 
     /**
-     * The formats the house already has, by {@see formatKey()}. Formats put
-     * aside are left out: a name the house no longer plays is not one a card
-     * should be read onto, and the import refuses such a night anyway.
+     * The formats the house already has, by {@see Format::nameKey()}, held for
+     * the length of the run — see {@see $formats}.
      *
      * @return array<string, string>
      */
     protected function formats(): array
     {
-        return $this->formats ??= Format::query()
-            ->orderBy('name')
-            ->pluck('name')
-            ->mapWithKeys(fn (string $name): array => [$this->formatKey($name) => $name])
-            ->all();
+        return $this->formats ??= Format::namesByKey();
     }
 
     /**
-     * The name a format is matched by: its own, without regard to case or the
-     * spaces around it. Folded in PHP rather than in SQL for the reason the
-     * import folds there too — SQLite's `LOWER()` leaves Estonian capitals
-     * alone, so "MÄRTU10" and "Märtu10" would read as two formats.
-     */
-    protected function formatKey(string $name): string
-    {
-        return mb_strtolower(trim($name));
-    }
-
-    /**
-     * The groups a format can be handed to.
+     * The groups a format can be handed to, held for the length of the run.
      *
      * @return array<int, string>
      */
     protected function teams(): array
     {
-        return $this->teams ??= Team::query()
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
+        return $this->teams ??= Team::namesById();
     }
 
     /**

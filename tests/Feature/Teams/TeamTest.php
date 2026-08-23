@@ -389,4 +389,16 @@ class TeamTest extends TestCase
 
         $response->assertRedirect(route('login'));
     }
+
+    public function test_the_groups_of_the_house_are_listed_by_id_in_alphabetical_order(): void
+    {
+        $matu = Team::factory()->create(['name' => 'Mätu']);
+        $bailout = Team::factory()->create(['name' => 'Bailout']);
+        Team::factory()->create(['name' => 'Laiali läinud'])->delete();
+
+        $this->assertSame([
+            $bailout->id => 'Bailout',
+            $matu->id => 'Mätu',
+        ], Team::namesById());
+    }
 }

@@ -82,6 +82,22 @@ class Team extends Model
     }
 
     /**
+     * The name of every group in the house, by id, in alphabetical order. The
+     * form a group is offered in wherever one has to be picked out of the lot
+     * by its id rather than fetched whole — the Planka import's reading of a
+     * card among them.
+     *
+     * @return array<int, string>
+     */
+    public static function namesById(): array
+    {
+        return static::query()
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    /**
      * Get the team owner.
      */
     public function owner(): ?Model
