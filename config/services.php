@@ -44,7 +44,7 @@ return [
 
         // How long an answer is reused for a request that is identical down to
         // the last character of its prompt, in seconds.
-        'cache_ttl' => env('ANTHROPIC_CACHE_TTL', 60 * 60 * 24 * 7),
+        'cache_ttl' => env('ANTHROPIC_CACHE_TTL', 60 * 60 * 24 * 21),
     ],
 
     /*

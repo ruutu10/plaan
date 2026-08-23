@@ -8,6 +8,7 @@ use App\Data\ImportedNight;
 use App\Data\ImportedPerformance;
 use App\Data\ImportedStaffMember;
 use App\Enums\PerformanceStaffRole;
+use App\Models\Format;
 use App\Models\Team;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -31,6 +32,21 @@ class PlankaPerformanceExtractor
      * @var array<int, string>|null
      */
     protected ?array $teams = null;
+
+    /**
+     * The formats the house already has, by {@see formatKey()}, read once per run
+     * rather than once per card. A card whose title is an existing format's name
+     * with a troupe or a date tacked onto it belongs to that format, not to a
+     * new one of its own, so the model is shown the list and asked to match
+     * against it.
+     *
+     * Formats created part-way through a run are not added: the list is the one
+     * every card of the run is read against, which keeps the question — and so
+     * the cached answer to it — the same for a card read twice.
+     *
+     * @var array<string, string>|null
+     */
+    protected ?array $formats = null;
 
     /**
      * How the model said it read the card it was last given, kept here so a run
@@ -140,7 +156,7 @@ class PlankaPerformanceExtractor
                 continue;
             }
 
-            $name = trim((string) ($entry['format_name'] ?? ''));
+            $name = $this->readFormatName($entry['format_name'] ?? null);
             $date = trim((string) ($entry['date'] ?? ''));
 
             if ($name === '' || ! Carbon::hasFormat($date, 'Y-m-d')) {
@@ -303,6 +319,25 @@ class PlankaPerformanceExtractor
     }
 
     /**
+     * The format the model named, spelt as the house already spells it where
+     * the house already has it.
+     *
+     * The model is asked to answer with a listed format's name word for word,
+     * but it is the one part of the answer that cannot be constrained by the
+     * schema, so a name that only differs from a known one by its case — or by
+     * the spaces around it — is folded onto the known one here. The import
+     * matches formats case-insensitively either way; this is so the run's own
+     * output, and any format created from a name close to a deleted one, read
+     * as the house's own spelling rather than the card's.
+     */
+    protected function readFormatName(mixed $formatName): string
+    {
+        $name = trim((string) (is_scalar($formatName) ? $formatName : ''));
+
+        return $this->formats()[$this->formatKey($name)] ?? $name;
+    }
+
+    /**
      * The group the model matched, or null. A group it invented owns nothing;
      * only the ids it was given are worth handing a performance to.
      */
@@ -323,6 +358,33 @@ class PlankaPerformanceExtractor
         $time = trim((string) ($startTime ?? ''));
 
         return $time !== '' && Carbon::hasFormat($time, 'H:i') ? $time : null;
+    }
+
+    /**
+     * The formats the house already has, by {@see formatKey()}. Formats put
+     * aside are left out: a name the house no longer plays is not one a card
+     * should be read onto, and the import refuses such a night anyway.
+     *
+     * @return array<string, string>
+     */
+    protected function formats(): array
+    {
+        return $this->formats ??= Format::query()
+            ->orderBy('name')
+            ->pluck('name')
+            ->mapWithKeys(fn (string $name): array => [$this->formatKey($name) => $name])
+            ->all();
+    }
+
+    /**
+     * The name a format is matched by: its own, without regard to case or the
+     * spaces around it. Folded in PHP rather than in SQL for the reason the
+     * import folds there too — SQLite's `LOWER()` leaves Estonian capitals
+     * alone, so "MÄRTU10" and "Märtu10" would read as two formats.
+     */
+    protected function formatKey(string $name): string
+    {
+        return mb_strtolower(trim($name));
     }
 
     /**
@@ -356,7 +418,7 @@ class PlankaPerformanceExtractor
                         'properties' => [
                             'format_name' => [
                                 'type' => 'string',
-                                'description' => 'The format played that night: the act\'s name when one act fills the evening, otherwise the name of the evening itself.',
+                                'description' => 'The format played that night: the act\'s name when one act fills the evening, otherwise the name of the evening itself. Where one of the formats listed in the message is the same format, its name word for word, rather than the card\'s wording of it.',
                             ],
                             'date' => [
                                 'type' => 'string',
@@ -455,9 +517,14 @@ class PlankaPerformanceExtractor
     /**
      * The card itself. The title carries the format's name when the description
      * names no acts, and the due date supplies the year for the many dates
-     * written on the board as a bare day and month. The groups are listed here
-     * rather than in the system prompt because they are the app's own, and
-     * change as groups come and go.
+     * written on the board as a bare day and month. The groups and the formats
+     * are listed here rather than in the system prompt because they are the
+     * app's own, and change as groups and formats come and go.
+     *
+     * The formats are listed so a card can be read onto one the house already
+     * has: a producer titles a card with the evening's format and whoever is
+     * playing it — "Kogukonna improõhtu HELGED VENNAD" — and without the list
+     * that reads as a format the house has never had.
      *
      * The board's own labels come along too. They are how the producers say
      * what a card is — an etendus, a workshop, a rented evening — in one word
@@ -478,11 +545,19 @@ class PlankaPerformanceExtractor
                 ->map(fn (string $name, int $id): string => "- {$id} — {$name}")
                 ->implode("\n");
 
+        $formats = $this->formats() === []
+            ? 'Ühtki formaati pole veel registreeritud — kõik selle kaardi formaadid on uued.'
+            : collect($this->formats())
+                ->values()
+                ->map(fn (string $name): string => "- {$name}")
+                ->implode("\n");
+
         $cardLabels = $labels === []
             ? 'Sildid puuduvad.'
             : collect($labels)->map(fn (string $label): string => "- {$label}")->implode("\n");
 
-        return "# Registreeritud tiimid\n\n{$teams}\n\n# Kaardi pealkiri\n\n{$cardName}"
+        return "# Registreeritud tiimid\n\n{$teams}\n\n# Registreeritud formaadid\n\n{$formats}"
+            ."\n\n# Kaardi pealkiri\n\n{$cardName}"
             ."\n\n# Planka tähtaeg\n\n{$due}\n\n# Kaardi sildid\n\n{$cardLabels}"
             ."\n\n# Kaardi kirjeldus\n\n{$cardDescription}";
     }

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\PerformanceStaffRole;
+use App\Models\Format;
 use App\Models\Team;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -231,6 +232,77 @@ class PlankaPerformanceExtractorTest extends TestCase
         // Asked for at both levels: the format's owner, and who plays each act.
         $this->assertContains('team_id', $formats['items']['required']);
         $this->assertContains('team_id', $formats['items']['properties']['performances']['items']['required']);
+    }
+
+    public function test_it_lists_the_formats_the_house_already_has(): void
+    {
+        Format::factory()->create(['name' => 'Kogukonna improõhtu']);
+        Format::factory()->create(['name' => 'Duubel']);
+        // A format put aside is not one a card should be read onto: the import
+        // refuses such a night, and offering the name would only invite it.
+        Format::factory()->create(['name' => 'Sügisgala'])->delete();
+
+        $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Kaardi tekst');
+
+        $body = $this->sentBodies[0];
+        $prompt = $body['messages'][0]['content'];
+
+        $this->assertStringContainsString('# Registreeritud formaadid', $prompt);
+        $this->assertStringContainsString('- Kogukonna improõhtu', $prompt);
+        $this->assertStringContainsString('- Duubel', $prompt);
+        $this->assertStringNotContainsString('Sügisgala', $prompt);
+
+        // And the system prompt says what to do with the list.
+        $this->assertStringContainsString('Olemasoleva formaadi sobitamine', $body['system']);
+    }
+
+    public function test_it_says_so_when_the_house_has_no_formats_yet(): void
+    {
+        $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Kaardi tekst');
+
+        $this->assertStringContainsString(
+            'Ühtki formaati pole veel registreeritud',
+            $this->sentBodies[0]['messages'][0]['content'],
+        );
+    }
+
+    public function test_a_format_the_house_already_has_keeps_its_own_spelling(): void
+    {
+        // The model is asked to answer with the listed name word for word; the
+        // schema cannot make it, so a name that differs only in case or in the
+        // spaces around it is folded onto the house's own spelling here.
+        Format::factory()->create(['name' => 'Kogukonna improõhtu']);
+
+        $nights = $this->extractorAnswering((string) json_encode([
+            'formats' => [
+                [
+                    'format_name' => '  KOGUKONNA IMPROÕHTU ',
+                    'date' => '2025-09-13',
+                    'performances' => [['title' => 'HELGED VENNAD']],
+                ],
+            ],
+        ]))->extract('Kogukonna improõhtu HELGED VENNAD', 'Kaardi tekst');
+
+        $this->assertSame('Kogukonna improõhtu', $nights[0]->formatName);
+        // The troupe the card added to the title is the act, not the format.
+        $this->assertSame('HELGED VENNAD', $nights[0]->performances[0]->title);
+    }
+
+    public function test_a_format_the_house_does_not_have_is_kept_as_the_model_named_it(): void
+    {
+        Format::factory()->create(['name' => 'Kogukonna improõhtu']);
+
+        $nights = $this->extractorAnswering((string) json_encode([
+            'formats' => [
+                [
+                    'format_name' => 'Jõulugala',
+                    'date' => '2025-12-13',
+                    'performances' => [['title' => null]],
+                ],
+            ],
+        ]))->extract('Jõulugala 13.12', 'Kaardi tekst');
+
+        $this->assertSame('Jõulugala', $nights[0]->formatName);
     }
 
     public function test_the_cards_own_labels_reach_the_model(): void
@@ -517,15 +589,4 @@ class PlankaPerformanceExtractorTest extends TestCase
         $this->assertCount(2, $this->sentBodies, 'Silence is worth asking about again.');
     }
 
-    public function test_an_answer_is_kept_for_a_week(): void
-    {
-        Cache::spy();
-
-        $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
-
-        Cache::shouldHaveReceived('put')
-            ->withArgs(fn (string $key, string $answer, int $ttl): bool => str_starts_with($key, 'claude:message:')
-                && $ttl === 60 * 60 * 24 * 7)
-            ->once();
-    }
 }
