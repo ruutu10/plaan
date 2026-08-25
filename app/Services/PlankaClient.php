@@ -7,9 +7,10 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * A thin reader for the Planka REST API — enough of it to fetch the cards of
- * the lists we watch and hand their descriptions on. Planka ships no PHP SDK
- * worth pulling in for one endpoint, so this speaks HTTP to it directly.
+ * A thin client for the Planka REST API — enough of it to fetch the cards of
+ * the lists we watch, hand their descriptions on, and write a comment back to
+ * a card. Planka ships no PHP SDK worth pulling in for a handful of endpoints,
+ * so this speaks HTTP to it directly.
  *
  * `GET /api/lists/{id}` is the endpoint used rather than the more obvious
  * `/api/lists/{id}/cards`: the latter caps a page at 50 cards and its `before`
@@ -154,6 +155,45 @@ class PlankaClient
         }
 
         return $cards;
+    }
+
+    /**
+     * What has already been said on a card, as plain text and nothing else —
+     * the only thing anything here asks of a comment is whether we wrote it
+     * before. Planka serves the comments under `items`, newest first.
+     *
+     * @return list<string>
+     */
+    public function commentTexts(string $cardId): array
+    {
+        /** @var array<int, array<string, mixed>> $items */
+        $items = $this->request()
+            ->get("/api/cards/{$cardId}/comments")
+            ->throw()
+            ->json('items') ?? [];
+
+        $texts = [];
+
+        foreach ($items as $item) {
+            if (isset($item['text'])) {
+                $texts[] = (string) $item['text'];
+            }
+        }
+
+        return $texts;
+    }
+
+    /**
+     * Say something on a card, as whoever the API key belongs to. The one
+     * write this client makes: everything else it does is reading the board.
+     */
+    public function comment(string $cardId, string $text): void
+    {
+        $this->request()
+            ->post("/api/cards/{$cardId}/comments", ['text' => $text])
+            ->throw();
+
+        Log::info('Commented on a Planka card', ['card_id' => $cardId]);
     }
 
     /**
