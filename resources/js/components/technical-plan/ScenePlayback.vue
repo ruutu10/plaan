@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useEventListener, useNow } from '@vueuse/core';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { formatVenueClockTime } from '@/lib/date';
+import { hideFeedbackWidget, showFeedbackWidget } from '@/lib/sentry';
 import Diamond from './Diamond.vue';
 import { formatFileSize, playableAudio } from './plan';
 import { usePlan } from './planKey';
 import { normaliseScenes } from './presentPlan';
 import SceneAudio from './SceneAudio.vue';
-import { hideFeedbackWidget, showFeedbackWidget } from '@/lib/sentry';
+import { showSchedule } from './showSchedule';
 
 const plan = usePlan();
 
@@ -117,16 +119,16 @@ function sceneLabel(name: string): string {
 // Ticks every second; `useNow` stops its timer when the view closes.
 const now = useNow({ interval: 1000 });
 
-const clock = computed(() =>
-    now.value.toLocaleTimeString('et-EE', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-    }),
-);
+const clock = computed(() => formatVenueClockTime(now.value));
 
 const clockDateTime = computed(() => now.value.toISOString());
+
+/**
+ * The slot the show is meant to fill. Read under the clock, it is what tells
+ * the tech whether the act is on its way out on time — and once the end has
+ * gone by, the clock itself turns orange rather than making them do the sum.
+ */
+const schedule = computed(() => showSchedule(plan.meta, now.value));
 
 const cueLabelClass =
     'font-r10-body text-[11px] font-bold tracking-[0.18em] text-r10-orange uppercase';
@@ -251,10 +253,43 @@ const cueLinkClass =
                     </div>
                     <time
                         :datetime="clockDateTime"
-                        class="mt-1.5 block font-mono text-4xl leading-none font-bold text-white tabular-nums"
+                        :class="[
+                            'mt-1.5 block font-mono text-4xl leading-none font-bold tabular-nums transition-colors',
+                            schedule?.overrunning
+                                ? 'text-r10-orange'
+                                : 'text-white',
+                        ]"
                     >
                         {{ clock }}
                     </time>
+
+                    <!-- The slot the show is due to fill. Spelt out beside the
+                         orange clock as well, so the warning does not rest on
+                         colour alone. -->
+                    <div
+                        v-if="schedule"
+                        class="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1"
+                    >
+                        <span
+                            class="font-r10-body text-[11px] font-bold tracking-[0.16em] text-r10-navy-300 uppercase"
+                        >
+                            Etendus
+                        </span>
+                        <span
+                            class="font-mono text-sm font-bold text-r10-navy-200 tabular-nums"
+                        >
+                            {{ schedule.start
+                            }}<template v-if="schedule.end"
+                                >–{{ schedule.end }}</template
+                            >
+                        </span>
+                        <span
+                            v-if="schedule.overrunning"
+                            class="font-r10-body text-[11px] font-bold tracking-[0.16em] text-r10-orange uppercase"
+                        >
+                            Üle aja
+                        </span>
+                    </div>
                 </div>
             </aside>
 
