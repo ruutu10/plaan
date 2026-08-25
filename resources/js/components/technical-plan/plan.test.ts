@@ -34,6 +34,20 @@ describe('hydratePlan', () => {
         expect(hydrated.status).toBe(blankPlan().status);
         expect(hydrated.submittedAt).toBeNull();
     });
+
+    it('keeps the author a saved plan names, so the document can show them', () => {
+        const hydrated = hydratePlan({
+            token: 'abc123',
+            authorEmail: 'esineja@naide.ee',
+        });
+
+        expect(hydrated.authorEmail).toBe('esineja@naide.ee');
+    });
+
+    it('leaves a plan nobody has handed in yet without an author', () => {
+        expect(hydratePlan(null).authorEmail).toBeNull();
+        expect(hydratePlan({ token: 'abc123' }).authorEmail).toBeNull();
+    });
 });
 
 describe('soundErrors', () => {

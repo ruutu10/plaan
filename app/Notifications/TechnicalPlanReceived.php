@@ -60,12 +60,6 @@ class TechnicalPlanReceived extends Notification implements ShouldQueue
                 'techEmail' => $techEmail,
             ]);
 
-        // A copy for the crew's own record, unless they are the ones being
-        // told — the tech contact writing to themselves is not a CC.
-        if ($techEmail !== '' && $techEmail !== $recipientEmail) {
-            $mail->cc($techEmail);
-        }
-
         return $mail;
     }
 

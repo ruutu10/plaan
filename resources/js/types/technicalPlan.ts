@@ -106,6 +106,12 @@ export interface Plan {
     token: string | null;
     status: string;
     submittedAt: string | null;
+    /**
+     * The email of whoever handed the plan in — the document's contact, shown
+     * to every reader alike. Null while the plan is still being written (it has
+     * no author yet) and for a guest on a share link, who is not given it.
+     */
+    authorEmail: string | null;
     meta: PlanMeta;
     sound: PlanSound;
     scenes: Scene[];

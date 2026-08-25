@@ -473,6 +473,34 @@ class TechnicalPlanTest extends TestCase
             ->where('initialPlan.meta.performer', $plan->performance->format->team->name));
     }
 
+    public function test_a_plan_names_its_author_as_the_contact_whoever_opens_it(): void
+    {
+        // The document's contact is the person who handed the plan in — not
+        // the technician, team-mate or admin reading it — so it says the same
+        // thing on screen as it did in the mail.
+        $author = User::factory()->create(['email' => 'esineja@naide.ee']);
+        $plan = TechnicalPlan::factory()->submitted()->for($author)->create();
+
+        $response = $this->get(route('technical-plan.public', $plan));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->where('initialPlan.authorEmail', 'esineja@naide.ee'));
+    }
+
+    public function test_the_public_link_does_not_hand_a_guest_the_author_email(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        auth()->logout();
+
+        $response = $this->get(route('technical-plan.public', $plan));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->where('initialPlan.authorEmail', null));
+    }
+
     public function test_the_public_link_opens_the_wizard_on_the_review_step(): void
     {
         // The plan behind the link is already filled in, so it should open on

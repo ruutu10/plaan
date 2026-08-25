@@ -110,6 +110,7 @@ export function blankPlan(): Plan {
         token: null,
         status: 'draft',
         submittedAt: null,
+        authorEmail: null,
         meta: {
             performanceId: null,
             performer: '',
@@ -173,6 +174,7 @@ export function hydratePlan(payload: Partial<Plan> | null | undefined): Plan {
         // has never reached the server is a draft.
         status: payload.status ?? base.status,
         submittedAt: payload.submittedAt ?? null,
+        authorEmail: payload.authorEmail ?? null,
         meta: mergeDefined(base.meta, payload.meta),
         sound: mergeDefined(base.sound, payload.sound),
         scenes:

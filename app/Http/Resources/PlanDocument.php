@@ -30,8 +30,11 @@ class PlanDocument extends JsonResource
     public static $wrap = null;
 
     /**
-     * Who to name as the plan's contact. Not part of the plan itself: the mail
-     * knows the author, the wizard knows the signed-in user.
+     * Who to name as the plan's contact: the person who handed the plan in.
+     * Not rendered from the plan's own values, so it is handed in separately —
+     * the mail reads it off the plan's author, and the wizard off the
+     * `authorEmail` {@see TechnicalPlan} reports, falling back to the signed-in
+     * user for a plan that has no author yet.
      */
     private string $contact = '';
 

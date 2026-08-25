@@ -56,6 +56,7 @@ class TechnicalPlan extends JsonResource
             'token' => $plan->token,
             'status' => $plan->status->value,
             'submittedAt' => $plan->submitted_at?->toIso8601String(),
+            'authorEmail' => self::authorEmail($plan, $request),
             'meta' => [
                 'performanceId' => $plan->performance_id,
                 'performer' => $plan->performance?->performerName() ?? '',
@@ -75,6 +76,21 @@ class TechnicalPlan extends JsonResource
                 )->resolve($request),
             ],
         ];
+    }
+
+    /**
+     * Who to name as the plan's contact: the person who handed it in, not
+     * whoever is reading it. A plan is regularly opened by somebody else — a
+     * technician, a team-mate, the crew — and the document has to keep naming
+     * its author; see {@see PlanDocument::withContact()}, which the mail feeds
+     * from the very same place.
+     *
+     * A guest gets nothing: the share link is open to anyone holding it, and an
+     * email address is not what a link hands out.
+     */
+    private static function authorEmail(TechnicalPlanModel $plan, Request $request): ?string
+    {
+        return $request->user() !== null ? $plan->user?->email : null;
     }
 
     /**

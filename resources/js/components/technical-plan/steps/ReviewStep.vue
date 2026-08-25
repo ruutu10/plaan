@@ -46,9 +46,14 @@ defineEmits<{
 /**
  * The document the performer reads, rendered by the same rules the mail uses —
  * see `presentPlan()` and `App\Http\Resources\PlanDocument`.
+ *
+ * A saved plan names its own author as the contact, so a technician or a
+ * team-mate opening it reads the same document the mail sent out. The signed-in
+ * user stands in only for a plan that has no author yet: the one being written
+ * here, which this user is about to hand in.
  */
 const doc = computed(() =>
-    presentPlan(plan, page.props.auth.user?.email ?? null),
+    presentPlan(plan, plan.authorEmail ?? page.props.auth.user?.email ?? null),
 );
 
 /** Whether the technician's focused scene-by-scene view is open. */

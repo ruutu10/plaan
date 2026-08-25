@@ -481,7 +481,6 @@ class TechnicalPlanAdminTest extends TestCase
         $this->assertStringContainsString(route('technical-plan.public', $plan), $html);
         $this->assertStringContainsString(TechnicalPlanStatus::Received->label(), $html);
         $this->assertStringContainsString('Tiit Tehnik', $html);
-        $this->assertSame([['tehnikud@ruutu10.ee', null]], $mail->cc);
     }
 
     public function test_the_received_mail_includes_the_performances_own_title_when_set(): void

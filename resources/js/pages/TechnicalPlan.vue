@@ -165,6 +165,9 @@ function loadIntoWizard(payload: Partial<Plan> | null, asNew = false): void {
 
     if (asNew) {
         plan.token = null;
+        // Nothing of the source plan's identity carries over: the copy is this
+        // user's plan to hand in, so it is their address the document names.
+        plan.authorEmail = null;
     }
 
     resetTransient();
