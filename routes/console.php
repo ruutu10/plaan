@@ -14,17 +14,13 @@ Schedule::command('planka:import')
     ->cron('5 4 * * 0,2,4') // 4:05 AM on Sunday, Tuesday, and Thursday
     ->description('Import new shows and performances from the Planka board');
 
-// // Hourly, and quiet almost every hour: the run only mails when a reminder has
-// // just fallen due. Often enough that the thirty-hour notice lands within an
-// // hour of its moment, and cheap enough that a missed hour catches up by itself.
-// Schedule::command('performances:remind-missing-plans')
-//     ->hourly()
-//     ->withoutOverlapping()
-//     ->description('Remind performers about technical plans that have not been handed in');
+// Nothing chases performers for a missing technical plan on a schedule: the
+// reminder is sent by hand from the performance's own page, to the members the
+// crew picks — see App\Http\Controllers\PerformanceReminderController.
 
-// Daily, not hourly: unlike the technical-plan reminders this one repeats for
-// as long as the gap lasts, so there is nothing to catch by running it more
-// often — only one digest a day, until a technician signs on.
+// Daily: this one repeats for as long as the gap lasts, so there is nothing to
+// catch by running it more often — only one digest a day, until a technician
+// signs on.
 Schedule::command('performances:remind-missing-technicians')
     ->daily()
     ->withoutOverlapping()

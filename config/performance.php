@@ -33,24 +33,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Technical-plan reminders
-    |--------------------------------------------------------------------------
-    |
-    | Performers are chased for a technical plan that has not been handed in
-    | yet. When the reminders are due is fixed by App\Enums\ReminderSchedule;
-    | this switch only decides whether the scheduled run mails anything at all,
-    | so a house that would rather chase by hand can turn it off.
-    |
-    */
-
-    'reminders' => [
-
-        'enabled' => (bool) env('PERFORMANCE_REMINDERS_ENABLED', true),
-
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Missing-technician reminders
     |--------------------------------------------------------------------------
     |

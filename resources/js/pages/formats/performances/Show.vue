@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import type { UrlMethodPair } from '@inertiajs/core';
 import { Head, router, setLayoutProps, useHttp } from '@inertiajs/vue3';
-import { FileClock, Pencil, Sparkles, Trash2 } from '@lucide/vue';
+import { FileClock, Mail, Pencil, Sparkles, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import ClaudeReasoningLogModal from '@/components/ClaudeReasoningLogModal.vue';
 import DeletePerformanceModal from '@/components/DeletePerformanceModal.vue';
 import PerformanceModal from '@/components/PerformanceModal.vue';
 import PerformanceStaffList from '@/components/PerformanceStaffList.vue';
 import RecordOriginFields from '@/components/RecordOriginFields.vue';
+import SendPlanReminderModal from '@/components/SendPlanReminderModal.vue';
 import R10BackLink from '@/components/technical-plan/R10BackLink.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
@@ -21,15 +22,28 @@ import {
 } from '@/routes/api/formats/performances';
 import { edit, index } from '@/routes/formats';
 import { show as performancePage } from '@/routes/formats/performances';
-import type { BreadcrumbItem, FormatTeamOption, Performance } from '@/types';
+import type {
+    BreadcrumbItem,
+    FormatTeamOption,
+    Performance,
+    PerformanceReminderRecipient,
+} from '@/types';
 
 const props = defineProps<{ formatId: number; performanceId: number }>();
 
 /** The groups this performance may be handed to; the edit form needs it. */
 const teams = ref<FormatTeamOption[]>([]);
 
+/**
+ * The members of the group playing this performance — who a reminder about the
+ * missing technical plan may be sent to. Empty when no group owns the night,
+ * which is what leaves the button switched off.
+ */
+const reminderRecipients = ref<PerformanceReminderRecipient[]>([]);
+
 const editModalOpen = ref(false);
 const deleteModalOpen = ref(false);
+const reminderModalOpen = ref(false);
 /** Where the log dialog reads from; null until the performance has loaded. */
 const chosenLogSource = ref<UrlMethodPair | null>(null);
 const logOpen = ref(false);
@@ -43,9 +57,14 @@ const {
 } = useResource(async () => {
     const response = (await loader.submit(
         performanceApi([props.formatId, props.performanceId]),
-    )) as { data: Performance; teams: FormatTeamOption[] };
+    )) as {
+        data: Performance;
+        teams: FormatTeamOption[];
+        reminderRecipients: PerformanceReminderRecipient[];
+    };
 
     teams.value = response.teams;
+    reminderRecipients.value = response.reminderRecipients;
 
     nameTheTrail(response.data);
     chosenLogSource.value = reasoningLogsApi([
@@ -213,6 +232,23 @@ function openReasoningLog(): void {
                         Põhjendused
                     </R10Button>
 
+                    <!--
+                        Offered only when there is somebody to write to: a
+                        performance whose group has no members — or which no
+                        group plays — has no reminder to send, the same way the
+                        reasoning log is offered only where there is one.
+                    -->
+                    <R10Button
+                        v-if="reminderRecipients.length > 0"
+                        variant="outline"
+                        size="sm"
+                        data-test="send-reminder-button"
+                        @click="reminderModalOpen = true"
+                    >
+                        <Mail class="h-3.5 w-3.5" />
+                        Saada meeldetuletus
+                    </R10Button>
+
                     <R10Button
                         variant="outline"
                         size="sm"
@@ -249,6 +285,13 @@ function openReasoningLog(): void {
             :format-id="formatId"
             :performance="performance"
             @deleted="router.visit(edit(formatId).url)"
+        />
+
+        <SendPlanReminderModal
+            v-model:open="reminderModalOpen"
+            :format-id="formatId"
+            :performance-id="performanceId"
+            :recipients="reminderRecipients"
         />
 
         <ClaudeReasoningLogModal

@@ -6,7 +6,6 @@ use App\Concerns\HasClaudeReasoningLog;
 use App\Concerns\LogsModelActivity;
 use App\Concerns\ScopedByTeamAccess;
 use App\Enums\CreatedBy;
-use App\Enums\ReminderSchedule;
 use App\Services\PerformanceStaffSync;
 use Carbon\CarbonInterface;
 use Database\Factories\PerformanceFactory;
@@ -56,8 +55,6 @@ use Illuminate\Support\Facades\Date;
  * @property-read Team|null $team
  * @property-read Collection<int, TechnicalPlan> $technicalPlans
  * @property-read int|null $technical_plans_count
- * @property-read Collection<int, PerformanceReminder> $reminders
- * @property-read int|null $reminders_count
  * @property-read Collection<int, ClaudeReasoningLog> $reasoningLogs
  * @property-read Collection<int, User> $staff
  */
@@ -328,17 +325,6 @@ class Performance extends Model
     public function technicalPlans(): HasMany
     {
         return $this->hasMany(TechnicalPlan::class);
-    }
-
-    /**
-     * The {@see ReminderSchedule} moments of this performance that have already
-     * been dealt with.
-     *
-     * @return HasMany<PerformanceReminder, $this>
-     */
-    public function reminders(): HasMany
-    {
-        return $this->hasMany(PerformanceReminder::class);
     }
 
     /**

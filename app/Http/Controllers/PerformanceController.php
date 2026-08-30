@@ -9,11 +9,13 @@ use App\Http\Resources\Performance as PerformanceResource;
 use App\Models\Format;
 use App\Models\Performance;
 use App\Models\Team;
+use App\Models\User;
 use App\Policies\PerformancePolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -114,10 +116,11 @@ class PerformanceController extends Controller
     }
 
     /**
-     * Return a single performance, together with the staff imported for it and
-     * the groups it may be handed to — the details screen's own edit form needs
-     * the same choice {@see index()} offers, and one round trip is enough for
-     * both.
+     * Return a single performance, together with the staff imported for it, the
+     * groups it may be handed to, and the people a technical-plan reminder may
+     * be sent to — the details screen's own edit form needs the same choice
+     * {@see index()} offers, its reminder dialog needs the group's members, and
+     * one round trip is enough for all three.
      */
     public function show(Request $request, Format $format, Performance $performance): PerformanceResource
     {
@@ -129,7 +132,35 @@ class PerformanceController extends Controller
             'teams' => Performance::assignableTeams($request->user())
                 ->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])
                 ->values(),
+            'reminderRecipients' => $this->reminderRecipients($performance),
         ]);
+    }
+
+    /**
+     * Who this performance's plan may be chased with: the members of the group
+     * playing it — its own when the evening is shared, the format's otherwise.
+     * Empty when no group owns the night, which is what leaves the screen's
+     * reminder button switched off.
+     *
+     * @return Collection<int, array{id: int, name: string, email: string}>
+     */
+    private function reminderRecipients(Performance $performance): Collection
+    {
+        $members = $performance->performedBy()?->members;
+
+        if ($members === null) {
+            return new Collection;
+        }
+
+        return $members
+            ->sortBy(fn (User $member): string => mb_strtolower($member->name))
+            ->map(fn (User $member): array => [
+                'id' => $member->id,
+                'name' => $member->name,
+                'email' => $member->email,
+            ])
+            ->values()
+            ->toBase();
     }
 
     /**

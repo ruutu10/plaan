@@ -84,6 +84,16 @@ export interface FormatTeamOption {
     name: string;
 }
 
+/**
+ * Somebody a technical-plan reminder may be sent to: a member of the group
+ * playing the performance, as the details endpoint offers them.
+ */
+export interface PerformanceReminderRecipient {
+    id: number;
+    name: string;
+    email: string;
+}
+
 /** A format a new performance may be added to, as offered by the admin overview. */
 export interface FormatOption {
     id: number;

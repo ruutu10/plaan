@@ -5,9 +5,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * What the hourly reminder run had already dealt with, back when reminders went
- * out on a schedule. Kept as it was written; the table is dropped again by a
- * later migration, and reminders are now sent by hand.
+ * What the hourly reminder run had already dealt with. Nothing runs on a
+ * schedule any more: a reminder is sent by hand, to the members the crew picks
+ * on the performance's own page, so there is no moment to claim and nothing to
+ * keep from happening twice.
  */
 return new class extends Migration
 {
@@ -15,6 +16,14 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
+    {
+        Schema::dropIfExists('performance_reminders');
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::create('performance_reminders', function (Blueprint $table) {
             $table->id();
@@ -31,13 +40,5 @@ return new class extends Migration
 
             $table->unique(['performance_id', 'schedule']);
         });
-    }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('performance_reminders');
     }
 };

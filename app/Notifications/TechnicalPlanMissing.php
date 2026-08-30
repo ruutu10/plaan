@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Enums\ReminderSchedule;
+use App\Actions\BuildTechnicalPlanInvite;
 use App\Models\Performance;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -11,31 +11,24 @@ use Illuminate\Notifications\Notification;
 
 /**
  * The nudge that a night is coming up and the technical team still has no plan
- * for it.
+ * for it, sent by hand from the performance's own page to the performers the
+ * crew picks.
  *
- * Both {@see ReminderSchedule} moments send this same letter — the second is
- * not a sterner one, it is the same one arriving when there is no longer time
- * to forget about it — so only the line saying how long is left differs.
- *
- * It goes to two kinds of reader. Each performer gets their own copy carrying
- * their own login link, which is a credential and is why no two performers, and
- * certainly nobody else, ever share a message. The technical team gets a copy
- * of its own — the same facts, the roster of who was chased, and a plain link
- * that signs nobody in.
+ * One recipient per message, always. The link it carries signs its holder in as
+ * them (see {@see BuildTechnicalPlanInvite}), which makes it a
+ * credential, and a credential is not something two people share — so no copy
+ * of this letter is ever addressed, copied or blind-copied to anybody else.
  */
 class TechnicalPlanMissing extends Notification implements ShouldQueue
 {
     use Queueable;
 
     /**
-     * @param  string|null  $planUrl  the recipient's own magic link (see App\Actions\BuildTechnicalPlanInvite), or null for the crew's copy, which must never carry one
-     * @param  list<array{name: string, email: string}>  $chased  who was written to; listed in the crew's copy only
+     * @param  string  $planUrl  the recipient's own magic link, which nobody else may be given
      */
     public function __construct(
         public Performance $performance,
-        public ReminderSchedule $schedule,
-        public ?string $planUrl = null,
-        public array $chased = [],
+        public string $planUrl,
     ) {
         //
     }
@@ -65,37 +58,20 @@ class TechnicalPlanMissing extends Notification implements ShouldQueue
                     : $format->name.' — '.$this->performance->title,
                 'performer' => $this->performance->performerName() ?? '',
                 'startsAt' => $this->performance->startsAt(),
-                'noticeLabel' => $this->schedule->noticeLabel(),
                 'duration' => $this->performance->duration,
-                // The performer's copy opens the wizard signed in; the crew's
-                // points at the overview and asks them to sign in as
-                // themselves.
-                'planUrl' => $this->planUrl ?? route('technical-plans.index'),
-                'isPerformer' => $this->isForPerformer(),
-                'chased' => $this->chased,
+                'planUrl' => $this->planUrl,
                 'techEmail' => (string) config('technical_plan.tech_email'),
             ]);
     }
 
     /**
-     * Whether this is a performer's copy — the one being chased — as against
-     * the technical team's.
-     */
-    public function isForPerformer(): bool
-    {
-        return $this->planUrl !== null;
-    }
-
-    /**
-     * The subject line. The crew's copy is filed rather than acted on, so it
-     * says what it is about; the performer's asks them for something.
+     * The subject line: what is missing, and which night it is missing for.
      */
     private function subject(): string
     {
-        $label = $this->performance->format->name.' · '.$this->performance->startsAt()->format('d.m.Y');
-
-        return $this->isForPerformer()
-            ? 'Tehnikaplaan puudu · '.$label
-            : 'Tehnikaplaani ootel · '.$label;
+        return 'Tehnikaplaan puudu · '
+            .$this->performance->format->name
+            .' · '
+            .$this->performance->startsAt()->format('d.m.Y');
     }
 }

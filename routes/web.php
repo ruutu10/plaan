@@ -10,6 +10,7 @@ use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\PerformancePageController;
+use App\Http\Controllers\PerformanceReminderController;
 use App\Http\Controllers\Teams\TeamAdminController;
 use App\Http\Controllers\Teams\TeamAdminMemberController;
 use App\Http\Controllers\Teams\TeamAdminPageController;
@@ -151,6 +152,12 @@ Route::prefix('api/formats')
                 Route::get('{performance}', [PerformanceController::class, 'show'])->name('show');
                 Route::patch('{performance}', [PerformanceController::class, 'update'])->name('update');
                 Route::delete('{performance}', [PerformanceController::class, 'destroy'])->name('destroy');
+
+                // Chase this night's performers about the technical plan
+                // nobody has handed in. Sent by hand, to the members of the
+                // playing group the crew picks; nothing sends it on a schedule.
+                Route::post('{performance}/reminders', [PerformanceReminderController::class, 'store'])
+                    ->name('reminders.store');
 
                 Route::get('{performance}/claude-logs', [ClaudeReasoningLogController::class, 'forPerformance'])
                     ->middleware('can:'.ClaudeReasoningLog::VIEW_PERMISSION)
