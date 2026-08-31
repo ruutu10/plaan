@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Console\Commands\ImportPlankaPerformances;
+use App\Enums\PerformanceStaffRole;
 use App\Http\Requests\Performances\SavePerformanceRequest;
 use App\Http\Resources\AdminPerformance as AdminPerformanceResource;
 use App\Http\Resources\Performance as PerformanceResource;
 use App\Models\Format;
 use App\Models\Performance;
+use App\Models\PerformanceStaff;
 use App\Models\Team;
 use App\Models\User;
 use App\Policies\PerformancePolicy;
@@ -142,7 +144,16 @@ class PerformanceController extends Controller
      * Empty when no group owns the night, which is what leaves the screen's
      * reminder button switched off.
      *
-     * @return Collection<int, array{id: int, name: string, email: string}>
+     * `staffedAsPerformer` says whether the Planka card cast this member as an
+     * esineja that night, which is who the reminder dialog offers ticked. A
+     * group is more than the people on stage, and it is the people on stage who
+     * owe the plan.
+     *
+     * Names only, no addresses: the screen picks people, and their e-mail is
+     * the server's business — it is where the letter goes, not something the
+     * page needs to hold or show.
+     *
+     * @return Collection<int, array{id: int, name: string, staffedAsPerformer: bool}>
      */
     private function reminderRecipients(Performance $performance): Collection
     {
@@ -152,15 +163,37 @@ class PerformanceController extends Controller
             return new Collection;
         }
 
+        $cast = $this->castOf($performance);
+
         return $members
             ->sortBy(fn (User $member): string => mb_strtolower($member->name))
             ->map(fn (User $member): array => [
                 'id' => $member->id,
                 'name' => $member->name,
-                'email' => $member->email,
+                'staffedAsPerformer' => in_array($member->id, $cast, strict: true),
             ])
             ->values()
             ->toBase();
+    }
+
+    /**
+     * The ids of the people this performance's card names as esinejad. Empty
+     * for a night nothing was imported for, which is a night the screen ticks
+     * nobody on.
+     *
+     * @return list<int>
+     */
+    private function castOf(Performance $performance): array
+    {
+        return array_values($performance->staff
+            ->filter(function (User $member): bool {
+                /** @var PerformanceStaff $staffing */
+                $staffing = $member->getRelation('pivot');
+
+                return $staffing->role === PerformanceStaffRole::Performer;
+            })
+            ->map(fn (User $member): int => $member->id)
+            ->all());
     }
 
     /**

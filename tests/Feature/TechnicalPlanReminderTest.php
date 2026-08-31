@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PerformanceStaffRole;
 use App\Enums\TeamRole;
 use App\Http\Controllers\PerformanceReminderController;
 use App\Models\Format;
@@ -225,9 +226,88 @@ class TechnicalPlanReminderTest extends TestCase
         $this->actingAs($this->technician())
             ->getJson(route('api.formats.performances.show', [$performance->format, $performance]))
             ->assertOk()
-            ->assertJsonPath('reminderRecipients.0.email', $members[1]->email)
+            // Alphabetical: Jaan, Mari, Tiit.
+            ->assertJsonPath('reminderRecipients.0.id', $members[1]->id)
             ->assertJsonPath('reminderRecipients.0.name', $members[1]->name)
             ->assertJsonCount(3, 'reminderRecipients');
+    }
+
+    public function test_the_choice_names_people_without_giving_out_their_addresses(): void
+    {
+        [$performance, $members] = $this->performanceWithGroup();
+
+        $offered = $this->actingAs($this->technician())
+            ->getJson(route('api.formats.performances.show', [$performance->format, $performance]))
+            ->assertOk()
+            ->json('reminderRecipients');
+
+        // Picking somebody is done by id; where the letter goes is the server's
+        // business, so no address travels to the screen.
+        foreach ($offered as $recipient) {
+            $this->assertArrayNotHasKey('email', $recipient);
+        }
+
+        foreach ($members as $member) {
+            $this->assertStringNotContainsString($member->email, json_encode($offered) ?: '');
+        }
+    }
+
+    public function test_the_members_cast_as_performers_are_the_ones_marked(): void
+    {
+        [$performance, $members] = $this->performanceWithGroup();
+
+        // The card names two of the three: one on stage, one behind the sound
+        // desk. Only the one on stage owes a plan.
+        $performance->staff()->attach($members[1], ['role' => PerformanceStaffRole::Performer->value]);
+        $performance->staff()->attach($members[2], ['role' => PerformanceStaffRole::Technician->value]);
+
+        $this->actingAs($this->technician())
+            ->getJson(route('api.formats.performances.show', [$performance->format, $performance]))
+            ->assertOk()
+            // Alphabetical: Jaan, Mari, Tiit.
+            ->assertJsonPath('reminderRecipients.0.staffedAsPerformer', true)
+            ->assertJsonPath('reminderRecipients.1.staffedAsPerformer', false)
+            ->assertJsonPath('reminderRecipients.2.staffedAsPerformer', false);
+    }
+
+    public function test_a_night_with_no_imported_staff_marks_nobody(): void
+    {
+        [$performance] = $this->performanceWithGroup();
+
+        $this->actingAs($this->technician())
+            ->getJson(route('api.formats.performances.show', [$performance->format, $performance]))
+            ->assertOk()
+            ->assertJsonPath('reminderRecipients.0.staffedAsPerformer', false)
+            ->assertJsonPath('reminderRecipients.1.staffedAsPerformer', false)
+            ->assertJsonPath('reminderRecipients.2.staffedAsPerformer', false);
+    }
+
+    public function test_somebody_cast_as_a_performer_outside_the_playing_group_is_not_offered(): void
+    {
+        [$performance] = $this->performanceWithGroup();
+
+        // A guest on the card who is in no group of the house: the plan may not
+        // be chased through them, so they are not among the choices at all.
+        $guest = User::factory()->create();
+        $performance->staff()->attach($guest, ['role' => PerformanceStaffRole::Performer->value]);
+
+        $offered = $this->actingAs($this->technician())
+            ->getJson(route('api.formats.performances.show', [$performance->format, $performance]))
+            ->assertOk()
+            ->assertJsonCount(3, 'reminderRecipients')
+            ->json('reminderRecipients.*.id');
+
+        // On the card — the staff list says so — but not among the people the
+        // reminder may be sent to.
+        $this->assertNotContains($guest->id, $offered);
+
+        Notification::fake();
+
+        $this->actingAs($this->technician())
+            ->postJson($this->reminderUrl($performance), ['user_ids' => [$guest->id]])
+            ->assertUnprocessable();
+
+        Notification::assertNothingSent();
     }
 
     public function test_the_group_playing_an_act_is_offered_rather_than_the_formats_owner(): void

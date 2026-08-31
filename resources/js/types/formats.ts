@@ -91,7 +91,12 @@ export interface FormatTeamOption {
 export interface PerformanceReminderRecipient {
     id: number;
     name: string;
-    email: string;
+    /**
+     * Whether the Planka card casts this member as an esineja that night. Those
+     * are the people the reminder dialog ticks to begin with — a group is more
+     * than the people on stage, and it is the people on stage who owe the plan.
+     */
+    staffedAsPerformer: boolean;
 }
 
 /** A format a new performance may be added to, as offered by the admin overview. */
