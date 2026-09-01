@@ -37,6 +37,7 @@ class AddedToTeam extends Notification implements ShouldQueue
     {
         return (new MailMessage)
             ->subject(__("You've been added to :teamName", ['teamName' => $this->team->name]))
+            ->line(__('Plaan is the technical planning system of the Ruutu10 improv theatre, where performing troupes describe the light and sound needs of their shows, and the technical team gathers those plans and runs the night by them.'))
             ->line(__('You have been added to the :teamName team.', ['teamName' => $this->team->name]))
             ->line(__('Log in with the button below to verify your account and get started.'))
             ->action(__('Log in'), $this->loginUrl);

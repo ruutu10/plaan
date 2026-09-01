@@ -395,6 +395,32 @@ class TeamAdminTest extends TestCase
         Notification::assertSentTo($newcomer, AddedToTeam::class);
     }
 
+    public function test_the_welcome_email_is_written_in_estonian(): void
+    {
+        $newcomer = User::factory()->create();
+        $team = Team::factory()->create(['name' => 'Ruutu10 tehnikud']);
+
+        $mail = (new AddedToTeam($team, 'https://example.test/logi-sisse'))
+            ->toMail($newcomer);
+
+        $this->assertSame('Sind lisati tiimi Ruutu10 tehnikud', $mail->subject);
+        $this->assertSame('Logi sisse', $mail->actionText);
+
+        // The shared notification layout wraps every line, so the greeting and
+        // the fallback-URL subcopy have to come out Estonian as well.
+        $rendered = (string) $mail->render();
+
+        $this->assertStringContainsString('Sind lisati Plaani tiimi Ruutu10 tehnikud.', $rendered);
+        $this->assertStringContainsString('Tere!', $rendered);
+        $this->assertStringContainsString('Parimat,', $rendered);
+        $this->assertStringContainsString('Kui nupp "Logi sisse" ei tööta', $rendered);
+
+        // Every string above comes from lang/et.json, so an untranslated key
+        // would fall back to the English original rather than fail outright.
+        $this->assertStringNotContainsString("If you're having trouble", $rendered);
+        $this->assertStringNotContainsString('Hello!', $rendered);
+    }
+
     public function test_the_welcome_email_logs_the_newcomer_into_the_team_they_were_added_to(): void
     {
         Notification::fake();
