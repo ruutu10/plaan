@@ -395,12 +395,43 @@ class TeamAdminTest extends TestCase
         Notification::assertSentTo($newcomer, AddedToTeam::class);
     }
 
+    public function test_the_welcome_email_names_the_admin_who_added_the_member(): void
+    {
+        Notification::fake();
+
+        $adder = User::factory()->create(['name' => 'Ando Roots']);
+        $team = $this->teamOf($adder);
+
+        // A second admin on the same team, so a mail that named just any
+        // admin of the team rather than the acting one would still pass.
+        $team->memberships()->create([
+            'user_id' => User::factory()->create(['name' => 'Keegi Teine'])->id,
+            'role' => TeamRole::Admin,
+        ]);
+
+        $this->actingAs($adder)
+            ->postJson(route('api.teams.members.store', $team), [
+                'email' => 'keegi@näiteid.ee',
+                'role' => TeamRole::Member->value,
+            ])
+            ->assertCreated();
+
+        $newcomer = User::where('email', 'keegi@näiteid.ee')->firstOrFail();
+
+        Notification::assertSentTo(
+            $newcomer,
+            AddedToTeam::class,
+            fn (AddedToTeam $notification): bool => $notification->addedBy->is($adder),
+        );
+    }
+
     public function test_the_welcome_email_is_written_in_estonian(): void
     {
         $newcomer = User::factory()->create();
+        $addedBy = User::factory()->create(['name' => 'Ando Roots']);
         $team = Team::factory()->create(['name' => 'Ruutu10 tehnikud']);
 
-        $mail = (new AddedToTeam($team, 'https://example.test/logi-sisse'))
+        $mail = (new AddedToTeam($team, 'https://example.test/logi-sisse', $addedBy))
             ->toMail($newcomer);
 
         $this->assertSame('Sind lisati tiimi Ruutu10 tehnikud', $mail->subject);
@@ -410,7 +441,7 @@ class TeamAdminTest extends TestCase
         // the fallback-URL subcopy have to come out Estonian as well.
         $rendered = (string) $mail->render();
 
-        $this->assertStringContainsString('Sind lisati Plaani tiimi Ruutu10 tehnikud.', $rendered);
+        $this->assertStringContainsString('Ando Roots lisas sind Plaani tiimi Ruutu10 tehnikud.', $rendered);
         $this->assertStringContainsString('Tere!', $rendered);
         $this->assertStringContainsString('Parimat,', $rendered);
         $this->assertStringContainsString('Kui nupp "Logi sisse" ei tööta', $rendered);

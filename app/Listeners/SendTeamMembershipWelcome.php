@@ -40,7 +40,7 @@ class SendTeamMembershipWelcome
 
         $url = MagicLink::create($action, lifetime: self::LIFETIME_MINUTES, numMaxVisits: self::MAX_VISITS)->url;
 
-        $event->member->notify(new AddedToTeam($event->team, $url));
+        $event->member->notify(new AddedToTeam($event->team, $url, $event->addedBy));
 
         Log::info('Sent a team membership welcome e-mail to a newly provisioned account', [
             'team_id' => $event->team->id,

@@ -57,7 +57,7 @@ class TeamAdminMemberController extends Controller
         ]);
 
         if ($member->wasRecentlyCreated) {
-            TeamMemberProvisioned::dispatch($team, $member);
+            TeamMemberProvisioned::dispatch($team, $member, $request->user());
         }
 
         return TeamMemberResource::make($this->reread($team, $member))

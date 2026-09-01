@@ -16,9 +16,15 @@ class TeamMemberProvisioned
 {
     use Dispatchable;
 
+    /**
+     * @param  User  $addedBy  the admin who put the member in the team — the
+     *                         welcome mail names them, so the newcomer can see
+     *                         who is behind an account they never asked for
+     */
     public function __construct(
         public Team $team,
         public User $member,
+        public User $addedBy,
     ) {
         //
     }
