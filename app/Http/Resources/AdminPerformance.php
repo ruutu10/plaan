@@ -9,8 +9,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * One row of the crew's overview of every performance in the house: what is
  * played, by whom, when, and how much of it has been planned. A listing row and
- * nothing more — a performance is still corrected on the format it belongs to,
- * which is where the row's link leads.
+ * nothing more — a performance is corrected on its own page, which is where the
+ * row's link leads.
  *
  * @property-read PerformanceModel $resource
  */
@@ -40,8 +40,8 @@ class AdminPerformance extends JsonResource
 
         return [
             'id' => $performance->id,
-            // The format is what the row is opened through: the performance is
-            // edited there, not here.
+            // The format the performance's own page is scoped to, which the row
+            // needs to build that link.
             'formatId' => $performance->format_id,
             'formatName' => $performance->format->name,
             // The act's own name, for an evening several groups share; empty

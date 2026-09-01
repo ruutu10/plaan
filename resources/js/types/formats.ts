@@ -186,7 +186,7 @@ export interface Performance {
  */
 export interface AdminPerformanceRow {
     id: number;
-    /** The format the row opens — where the performance is edited. */
+    /** The format the performance hangs off, which its own page is scoped to. */
     formatId: number;
     formatName: string;
     /** The act's own name, for an evening several groups share. */

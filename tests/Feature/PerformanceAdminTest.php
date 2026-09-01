@@ -52,7 +52,7 @@ class PerformanceAdminTest extends TestCase
     /**
      * Reading the bill does not carry the right to correct it: the staff role
      * gains the listing and nothing more, and the screen hides the way through
-     * to the format because of it.
+     * to the performance because of it.
      */
     public function test_staff_are_not_given_the_edit_all_ability(): void
     {

@@ -10,7 +10,7 @@ import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { formatLocalDate, formatLocalTime } from '@/lib/date';
 import { index } from '@/routes/admin/performances';
-import { edit } from '@/routes/formats';
+import { show as showPerformance } from '@/routes/formats/performances';
 import type {
     AdminPerformanceRow,
     FormatOption,
@@ -34,14 +34,14 @@ function reloadPerformances(): void {
 
 // Reading the whole bill and correcting a night on it are separate rights: the
 // house's own people follow every performance here, but only the crew are
-// offered the way through to the format that changes one.
+// offered the way through to the performance that changes one.
 const canEditEveryPerformance = computed(
     () => page.props.auth?.can?.manageAllPerformances === true,
 );
 
 const lead = computed(() =>
     canEditEveryPerformance.value
-        ? 'Kõik maja etendused, olenemata formaadist ja tiimist. Muutmiseks ava formaat.'
+        ? 'Kõik maja etendused, olenemata formaadist ja tiimist. Muutmiseks ava etendus.'
         : 'Kõik maja etendused, olenemata formaadist ja tiimist. Muuta saab neid oma tiimi formaadi alt.',
 );
 
@@ -150,14 +150,19 @@ defineOptions({
                     {{ performance.technicalPlanCount ?? 0 }}
                 </td>
                 <td class="px-5 py-4 text-right align-top">
-                    <!-- A performance is corrected on the format it hangs off,
-                         which is the one page that knows the whole bill. Offered
-                         only to those the format would let in. -->
+                    <!-- Straight to the performance's own page, which is where
+                         a night is corrected. Offered only to those the format
+                         would let in. -->
                     <R10Button
                         v-if="canEditEveryPerformance"
                         variant="outline"
                         size="sm"
-                        :href="edit(performance.formatId).url"
+                        :href="
+                            showPerformance([
+                                performance.formatId,
+                                performance.id,
+                            ]).url
+                        "
                         data-test="admin-performance-edit-link"
                         class="px-4 py-2"
                     >
