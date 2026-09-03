@@ -44,6 +44,15 @@ class TechnicalPlanController extends Controller
     private const PRIOR_PLANS_PER_FORMAT = 5;
 
     /**
+     * How far back the "pick a sound you already have" listing reaches, and how
+     * many sounds it may offer in the end. A performer picking a cue is looking
+     * for something they used recently; a longer list is not a better one.
+     */
+    private const REUSABLE_SOUND_PLANS = 50;
+
+    private const REUSABLE_SOUNDS = 100;
+
+    /**
      * The last step of the wizard, counting from zero — the review page. Kept
      * in step with `stepComponents` in resources/js/pages/TechnicalPlan.vue,
      * and only used to hold a linked step to a page that exists.
@@ -237,20 +246,29 @@ class TechnicalPlanController extends Controller
         // listing is built out of — and each file's own is then already to hand.
         $plans = TechnicalPlan::query()
             ->visibleTo($request->user())
-            ->with(['media', 'performance.format'])
+            // Only the sound collection is eager-loaded: a plan's general
+            // attachments are no use here, and some plans carry a lot of them.
+            ->with([
+                'media' => fn ($media) => $media->where('collection_name', TechnicalPlan::SOUND_COLLECTION),
+                'performance.format',
+            ])
             ->latest('id')
-            ->limit(50);
+            ->limit(self::REUSABLE_SOUND_PLANS);
 
         if ($exclude !== '') {
             $plans->where('token', '!=', $exclude);
         }
 
-        $sounds = $plans->get()->flatMap(fn (TechnicalPlan $plan): SupportCollection => $plan
-            ->attachments(TechnicalPlan::SOUND_COLLECTION)
-            // Belt and braces: a plan's sound collection is already held to the
-            // audio allowlist on the way in, twice over.
-            ->filter(fn (Media $media): bool => in_array(strtolower($media->extension), $allowed, true))
-            ->map(fn (Media $media): array => ReusableSoundResource::make($media, $plan)->resolve($request)));
+        $sounds = $plans->get()
+            ->flatMap(fn (TechnicalPlan $plan): SupportCollection => $plan
+                ->attachments(TechnicalPlan::SOUND_COLLECTION)
+                // Belt and braces: a plan's sound collection is already held to
+                // the audio allowlist on the way in, twice over.
+                ->filter(fn (Media $media): bool => in_array(strtolower($media->extension), $allowed, true))
+                ->map(fn (Media $media): array => ReusableSoundResource::make($media, $plan)->resolve($request)))
+            // The limit above counts plans, not sounds; this is what the picker
+            // is actually handed, and it is a list somebody has to read.
+            ->take(self::REUSABLE_SOUNDS);
 
         return response()->json(['results' => $sounds->values()->all()]);
     }
@@ -530,6 +548,11 @@ class TechnicalPlanController extends Controller
             'allowedExtensions' => AllowedAttachment::extensionsFor(),
             'soundExtensions' => AllowedAttachment::extensionsFor(TechnicalPlan::SOUND_COLLECTION),
             'maxFileSize' => (int) config('media-library.max_file_size'),
+            // The scene-cue limits the request rules hold a plan to, so the
+            // wizard can stop short of them rather than posting a plan the
+            // server will refuse.
+            'maxSoundsPerScene' => StoreTechnicalPlanRequest::MAX_SOUNDS_PER_SCENE,
+            'maxSoundUrlLength' => StoreTechnicalPlanRequest::MAX_SOUND_URL_LENGTH,
         ];
     }
 

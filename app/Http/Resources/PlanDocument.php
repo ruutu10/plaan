@@ -177,16 +177,20 @@ class PlanDocument extends JsonResource
      */
     private static function scenes(array $scenes): array
     {
-        return array_map(fn (array $scene, int $index): array => [
-            'num' => $index + 1,
-            'name' => self::dash($scene['name'] ?? null),
-            'light' => self::dash($scene['light'] ?? null),
-            'sounds' => self::sounds($scene['sounds'] ?? null),
-            // The cues get their own lines above this, so the text is only
-            // stood in for by a dash when the scene has no sound at all.
-            'soundText' => self::soundText($scene),
-            'notes' => self::dash($scene['notes'] ?? null),
-        ], $scenes, array_keys($scenes));
+        return array_map(function (array $scene, int $index): array {
+            $sounds = self::sounds($scene['sounds'] ?? null);
+
+            return [
+                'num' => $index + 1,
+                'name' => self::dash($scene['name'] ?? null),
+                'light' => self::dash($scene['light'] ?? null),
+                'sounds' => $sounds,
+                // The cues get their own lines above this, so the text is only
+                // stood in for by a dash when the scene has no sound at all.
+                'soundText' => self::soundText($scene, $sounds),
+                'notes' => self::dash($scene['notes'] ?? null),
+            ];
+        }, $scenes, array_keys($scenes));
     }
 
     /**
@@ -220,9 +224,13 @@ class PlanDocument extends JsonResource
     }
 
     /**
+     * The scene's own words about its sound. Handed the cues the caller has
+     * already worked out rather than counting them again.
+     *
      * @param  array<string, mixed>  $scene
+     * @param  array<int, array<string, mixed>>  $sounds
      */
-    private static function soundText(array $scene): string
+    private static function soundText(array $scene, array $sounds): string
     {
         $text = trim((string) ($scene['sound'] ?? ''));
 
@@ -230,7 +238,7 @@ class PlanDocument extends JsonResource
             return $text;
         }
 
-        return self::sounds($scene['sounds'] ?? null) !== [] ? '' : '—';
+        return $sounds !== [] ? '' : '—';
     }
 
     /**

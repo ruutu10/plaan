@@ -208,6 +208,10 @@ export interface WizardConfig {
     soundExtensions: string[];
     /** Maximum accepted upload size in bytes. */
     maxFileSize: number;
+    /** How many cues one scene may carry, per the server's own rules. */
+    maxSoundsPerScene: number;
+    /** How long a cue's link may be, per the server's own rules. */
+    maxSoundUrlLength: number;
 }
 
 export interface LookupResult {

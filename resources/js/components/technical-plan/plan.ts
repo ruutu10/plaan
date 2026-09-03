@@ -4,6 +4,7 @@ import type {
     PlanSound,
     Scene,
     SceneSound,
+    WizardConfig,
 } from '@/types/technicalPlan';
 
 export const STEP_LABELS = [
@@ -20,20 +21,42 @@ export function uid(): string {
     return 's' + Math.random().toString(36).slice(2, 9);
 }
 
-const SCENE_ID_PREFIX = 'stseen-';
+export const SCENE_ID_PREFIX = 'stseen-';
+export const SOUND_ID_PREFIX = 'heli-';
 
 /**
- * Build the next sequential scene id (`stseen-1`, `stseen-2`, …) based on the
- * highest number already used, so ids stay unique after reorders and deletes.
+ * Build the next sequential id under a prefix (`stseen-1`, `heli-2`, …) from the
+ * highest number already used, so ids stay unique after reorders and deletes —
+ * which is what keeps Vue's list keys honest while a row is being dragged.
+ *
+ * The pattern is built from the prefix rather than written out beside it, so
+ * the two cannot drift apart.
  */
-export function nextSceneId(scenes: Scene[]): string {
-    const highest = scenes.reduce((max, scene) => {
-        const match = /^stseen-(\d+)$/.exec(scene.id);
+export function nextSequentialId(ids: string[], prefix: string): string {
+    const pattern = new RegExp(`^${prefix}(\\d+)$`);
+
+    const highest = ids.reduce((max, id) => {
+        const match = pattern.exec(id);
 
         return match ? Math.max(max, Number(match[1])) : max;
     }, 0);
 
-    return `${SCENE_ID_PREFIX}${highest + 1}`;
+    return `${prefix}${highest + 1}`;
+}
+
+export function nextSceneId(scenes: Scene[]): string {
+    return nextSequentialId(
+        scenes.map((scene) => scene.id),
+        SCENE_ID_PREFIX,
+    );
+}
+
+/** The next cue id within one scene — see {@see nextSequentialId}. */
+export function nextSoundId(sounds: SceneSound[]): string {
+    return nextSequentialId(
+        sounds.map((sound) => sound.id),
+        SOUND_ID_PREFIX,
+    );
 }
 
 export function blankScene(id: string = `${SCENE_ID_PREFIX}1`): Scene {
@@ -48,15 +71,6 @@ export function blankScene(id: string = `${SCENE_ID_PREFIX}1`): Scene {
     };
 }
 
-const SOUND_ID_PREFIX = 'heli-';
-
-/**
- * How many cues one scene may carry. Mirrors
- * `StoreTechnicalPlanRequest::MAX_SOUNDS_PER_SCENE`, so the wizard stops
- * offering the button before the server would refuse the plan.
- */
-export const MAX_SOUNDS_PER_SCENE = 10;
-
 /**
  * The one-click sound cues offered under the scene's description. Shared by the
  * scene card and the add-a-sound dialog, which write to the same field.
@@ -67,21 +81,6 @@ export const SOUND_PRESETS = [
     'film noare (vabal valikul)',
     'shakespeare (vabal valikul)',
 ];
-
-/**
- * Build the next sequential cue id (`heli-1`, `heli-2`, …) within one scene,
- * on the same footing as `nextSceneId()`: ids stay unique after reorders and
- * deletes, which is what keeps Vue's list keys honest while a row is dragged.
- */
-export function nextSoundId(sounds: SceneSound[]): string {
-    const highest = sounds.reduce((max, sound) => {
-        const match = /^heli-(\d+)$/.exec(sound.id);
-
-        return match ? Math.max(max, Number(match[1])) : max;
-    }, 0);
-
-    return `${SOUND_ID_PREFIX}${highest + 1}`;
-}
 
 /**
  * The sound step's answers that are still owed a description. Saying "jah" to
@@ -120,6 +119,33 @@ function storedFile(file: PlanFile | null | undefined): PlanFile | null {
 }
 
 /**
+ * A handle the wizard has finished uploading — the only kind worth showing.
+ *
+ * Deliberately permissive about a missing `status`: a handle that arrived from
+ * the server carries no upload state of its own, and neither do the fixtures
+ * the document renderers are tested against. Only the two states that mean
+ * "not there yet" disqualify a file.
+ */
+export function isReady(file: PlanFile | null | undefined): file is PlanFile {
+    return (
+        file != null && file.status !== 'uploading' && file.status !== 'error'
+    );
+}
+
+/**
+ * Whether a cue points at something real: a file that finished uploading, or a
+ * link that was actually typed.
+ *
+ * The one place this question is answered. It decides what the wizard posts,
+ * what it expects back from the save, what the document renders and what
+ * survives hydration — and those four have to agree, or a cue is dropped in one
+ * place and kept in another.
+ */
+export function soundHasSource(sound: SceneSound): boolean {
+    return isReady(sound.file) || (sound.url ?? '').trim() !== '';
+}
+
+/**
  * A scene's cues as they come back from the server, each given the row id the
  * wizard keys its list on. An entry left with neither a file nor a link is
  * dropped: it would show as an empty row nobody could fill in.
@@ -127,11 +153,26 @@ function storedFile(file: PlanFile | null | undefined): PlanFile | null {
 function storedSounds(sounds: SceneSound[] | null | undefined): SceneSound[] {
     return (sounds ?? [])
         .map((sound, index) => ({
-            id: sound.id || `heli-${index + 1}`,
+            id: sound.id || `${SOUND_ID_PREFIX}${index + 1}`,
             url: sound.url ?? '',
             file: storedFile(sound.file),
         }))
-        .filter((sound) => sound.file !== null || sound.url.trim() !== '');
+        .filter(soundHasSource);
+}
+
+/**
+ * Whether any cue anywhere in the plan still names this stored file.
+ *
+ * The same handle may serve several scenes — reusing a sting is the point of
+ * the picker — and a *staged* upload is deleted for real rather than swept up
+ * later, so letting go of one scene's cue must not take the sound out from
+ * under another's. Ask this after the cue has left the plan, so what remains is
+ * what is really still wanted.
+ */
+export function soundFileStillUsed(plan: Plan, id: string): boolean {
+    return plan.scenes.some((scene) =>
+        scene.sounds.some((sound) => sound.file?.id === id),
+    );
 }
 
 /**
@@ -347,8 +388,10 @@ function hasAudioExtension(name: string): boolean {
  */
 function isDirectAudioUrl(url: string): boolean {
     try {
-        // A relative URL needs a base before it will parse.
-        return hasAudioExtension(new URL(url, window.location.origin).pathname);
+        // A relative URL needs *a* base before it will parse, and only the path
+        // is read afterwards — so a stand-in base answers as well as the page's
+        // own origin would, without this needing a browser to run in.
+        return hasAudioExtension(new URL(url, 'https://plaan.invalid').pathname);
     } catch {
         return false;
     }
@@ -372,9 +415,6 @@ export function soundAudioUrl(sound: SceneSound): string | null {
     return url && isDirectAudioUrl(url) ? url : null;
 }
 
-/** How long a cue's link may be. Mirrors the `max:2000` rule on the server. */
-export const MAX_SOUND_URL_LENGTH = 2000;
-
 /**
  * Why a cue's link cannot be used, or `null` when it can.
  *
@@ -384,16 +424,19 @@ export const MAX_SOUND_URL_LENGTH = 2000;
  * does. The link is rendered as an `href` in the mail, on the printout and in
  * the technician's view, so a `javascript:` or `data:` URL would be somebody
  * else's code running under a reader who only opened a plan.
+ *
+ * The length limit is the server's own, handed to the wizard in its config
+ * rather than written down a second time here.
  */
-export function soundLinkError(url: string): string | null {
+export function soundLinkError(url: string, config: WizardConfig): string | null {
     const value = url.trim();
 
     if (value === '') {
         return 'Lisa helifaili link.';
     }
 
-    if (value.length > MAX_SOUND_URL_LENGTH) {
-        return `Link on liiga pikk (max ${MAX_SOUND_URL_LENGTH} märki).`;
+    if (value.length > config.maxSoundUrlLength) {
+        return `Link on liiga pikk (max ${config.maxSoundUrlLength} märki).`;
     }
 
     let parsed: URL;

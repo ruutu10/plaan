@@ -2,15 +2,15 @@
 import { Copy, Plus, Trash2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import type { Scene } from '@/types/technicalPlan';
-import { discardSoundFile } from '../attachments';
+import { discardAttachment } from '../attachments';
 import Diamond from '../Diamond.vue';
 import {
     blankScene,
-    MAX_SOUNDS_PER_SCENE,
     nextSceneId,
+    soundFileStillUsed,
     SOUND_PRESETS,
 } from '../plan';
-import { usePlan } from '../planKey';
+import { usePlan, useWizardConfig } from '../planKey';
 import R10FileChip from '../R10FileChip.vue';
 import R10Input from '../R10Input.vue';
 import R10Textarea from '../R10Textarea.vue';
@@ -18,16 +18,17 @@ import SceneSoundDialog from '../SceneSoundDialog.vue';
 import StepHeader from '../StepHeader.vue';
 
 const plan = usePlan();
+const config = useWizardConfig();
 
 const dragId = ref<string | null>(null);
 
 /* ---- A scene's cues -------------------------------------------------- */
 
-/** The scene whose "add a sound" dialog is open, if any. */
-const addingTo = ref<Scene | null>(null);
+/** The id of the scene whose "add a sound" dialog is open, if any. */
+const addingTo = ref<string | null>(null);
 
 function openSoundDialog(scene: Scene): void {
-    addingTo.value = scene;
+    addingTo.value = scene.id;
 }
 
 const soundDialogOpen = computed({
@@ -40,14 +41,18 @@ const soundDialogOpen = computed({
 });
 
 function canAddSound(scene: Scene): boolean {
-    return scene.sounds.length < MAX_SOUNDS_PER_SCENE;
+    return scene.sounds.length < config.maxSoundsPerScene;
 }
 
 /** Drop one cue from a scene, taking its staged upload with it if it can. */
 async function removeSound(scene: Scene, index: number): Promise<void> {
     const [removed] = scene.sounds.splice(index, 1);
+    const id = removed?.file?.id;
 
-    await discardSoundFile(plan, removed?.file);
+    // After the splice, so a file another scene still names survives.
+    if (id && !soundFileStillUsed(plan, id)) {
+        await discardAttachment(id);
+    }
 }
 
 /**
@@ -131,9 +136,10 @@ async function remove(index: number): Promise<void> {
 
         // After the splice, so a file another scene still names survives.
         await Promise.all(
-            (removed?.sounds ?? []).map((sound) =>
-                discardSoundFile(plan, sound.file),
-            ),
+            (removed?.sounds ?? [])
+                .map((sound) => sound.file?.id)
+                .filter((id) => id && !soundFileStillUsed(plan, id))
+                .map((id) => discardAttachment(id as string)),
         );
     }
 }
@@ -402,7 +408,7 @@ function onDrop(targetId: string): void {
                             </button>
                             <p v-else class="text-xs text-r10-grey-500">
                                 Ühel stseenil saab olla kuni
-                                {{ MAX_SOUNDS_PER_SCENE }} heli.
+                                {{ config.maxSoundsPerScene }} heli.
                             </p>
                             <textarea
                                 v-model="scene.sound"
@@ -450,7 +456,7 @@ function onDrop(targetId: string): void {
         <SceneSoundDialog
             v-if="addingTo"
             v-model:open="soundDialogOpen"
-            :scene-id="addingTo.id"
+            :scene-id="addingTo"
         />
     </section>
 </template>

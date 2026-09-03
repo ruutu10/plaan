@@ -40,11 +40,13 @@ const config = useWizardConfig();
  * The scene being added to, looked up on the injected plan rather than handed
  * in: the dialog writes to it, and the plan is where that write belongs.
  * Scene ids are unique within a plan, so the lookup is exact.
+ *
+ * Left `undefined` when nothing matches. Standing in the first scene would be
+ * the one wrong answer available — a cue quietly landing on somebody else's
+ * scene — so a dialog that cannot find its scene does nothing at all.
  */
-const scene = computed<Scene>(
-    () =>
-        plan.scenes.find((candidate) => candidate.id === props.sceneId) ??
-        plan.scenes[0],
+const scene = computed<Scene | undefined>(() =>
+    plan.scenes.find((candidate) => candidate.id === props.sceneId),
 );
 
 /** The collection a scene's sound file is stored in, server-side. */
@@ -87,12 +89,20 @@ watch(open, (isOpen) => {
  * background — the row it just added to the scene card reports how it went, so
  * a failure is never silent even though the dialog has gone.
  */
-function addSound(sound: Omit<SceneSound, 'id'>): SceneSound {
-    scene.value.sounds.push({ ...sound, id: nextSoundId(scene.value.sounds) });
+function addSound(sound: Omit<SceneSound, 'id'>): SceneSound | null {
+    const target = scene.value;
+
+    if (!target) {
+        open.value = false;
+
+        return null;
+    }
+
+    target.sounds.push({ ...sound, id: nextSoundId(target.sounds) });
 
     // Read the pushed entry back out, so what is handed on is the reactive
     // proxy the scene holds rather than the plain object that went in.
-    const entry = scene.value.sounds[scene.value.sounds.length - 1];
+    const entry = target.sounds[target.sounds.length - 1];
 
     open.value = false;
 
@@ -128,7 +138,9 @@ async function onFile(files: FileList): Promise<void> {
         file: { id: '', name: file.name, size: file.size, status: 'uploading' },
     });
 
-    entry.file = await uploadAttachment(file, SOUND_COLLECTION);
+    if (entry) {
+        entry.file = await uploadAttachment(file, SOUND_COLLECTION);
+    }
 }
 
 /**
@@ -139,7 +151,7 @@ async function onFile(files: FileList): Promise<void> {
 function addLink(): void {
     const value = url.value.trim();
 
-    urlError.value = soundLinkError(value) ?? '';
+    urlError.value = soundLinkError(value, config) ?? '';
 
     if (urlError.value !== '') {
         return;
@@ -173,7 +185,7 @@ const onThisScene = computed(() => {
     const handles = new Set<string>();
     const files = new Set<string>();
 
-    scene.value.sounds.forEach((sound) => {
+    (scene.value?.sounds ?? []).forEach((sound) => {
         if (!sound.file?.id) {
             return;
         }
@@ -242,14 +254,12 @@ const hasReusable = computed(
 );
 
 /**
- * Whether there are sounds to reuse but this scene is already playing all of
- * them — a different thing to tell the performer than having none at all.
+ * Whether there is nothing to offer because this scene is already playing it
+ * all — a different thing to tell the performer than having no sounds at all,
+ * and answered by what the scene holds rather than by re-counting the plan.
  */
 const allAlreadyOnScene = computed(
-    () =>
-        !hasReusable.value &&
-        (plan.scenes.some((scene) => scene.sounds.some((sound) => sound.file)) ||
-            otherSounds.value.length > 0),
+    () => !hasReusable.value && onThisScene.value.handles.size > 0,
 );
 
 // The performer's other plans are only worth fetching once the picker is asked
@@ -285,7 +295,9 @@ async function pickOther(sound: ReusableSound): Promise<void> {
         },
     });
 
-    entry.file = await reuseSound(sound);
+    if (entry) {
+        entry.file = await reuseSound(sound);
+    }
 }
 
 const fieldClass =

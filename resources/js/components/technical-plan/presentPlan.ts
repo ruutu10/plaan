@@ -7,7 +7,7 @@ import type {
     PlanFile,
     SceneSound,
 } from '@/types/technicalPlan';
-import { formatFileSize } from './plan';
+import { formatFileSize, isReady, soundHasSource } from './plan';
 
 export { formatFileSize };
 
@@ -136,13 +136,6 @@ export function statusTone(
     return tones[(status ?? '') as keyof typeof tones] ?? 'neutral';
 }
 
-/** A handle the wizard has finished uploading — the only kind worth showing. */
-function isReady(file: PlanFile | null | undefined): file is PlanFile {
-    return (
-        file != null && file.status !== 'uploading' && file.status !== 'error'
-    );
-}
-
 /**
  * A scene's stored values, tidied but not yet dressed up: numbered as the
  * reader counts them, trimmed, and with a half-finished upload treated as no
@@ -170,13 +163,11 @@ export function normaliseScenes(plan: Plan): NormalisedScene[] {
  * entry left with neither a file nor a link is an empty row nobody meant.
  */
 function normaliseSounds(sounds: SceneSound[]): NormalisedSound[] {
-    return sounds
-        .map((sound) => ({
-            id: sound.id,
-            url: sound.url.trim(),
-            file: isReady(sound.file) ? sound.file : null,
-        }))
-        .filter((sound) => sound.file !== null || sound.url !== '');
+    return sounds.filter(soundHasSource).map((sound) => ({
+        id: sound.id,
+        url: sound.url.trim(),
+        file: isReady(sound.file) ? sound.file : null,
+    }));
 }
 
 export interface NormalisedScene {

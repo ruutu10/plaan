@@ -15,6 +15,13 @@ class StoreTechnicalPlanRequest extends FormRequest
     public const MAX_SOUNDS_PER_SCENE = 10;
 
     /**
+     * How long a cue's link may be. Shared with the wizard through
+     * {@see TechnicalPlanController::wizardConfig()}, so the field stops the
+     * performer at the same place the rules below would.
+     */
+    public const MAX_SOUND_URL_LENGTH = 2000;
+
+    /**
      * Always return validation errors as JSON — these endpoints are consumed
      * by the wizard's XHR client, not by an Inertia form.
      */
@@ -79,7 +86,7 @@ class StoreTechnicalPlanRequest extends FormRequest
             // cue's link is rendered as an `href` in the mail, on the printout
             // and in the technician's view, so a `javascript:` or `data:` URL
             // would be somebody else's code running under whoever opened it.
-            'scenes.*.sounds.*.url' => ['nullable', 'string', 'max:2000', 'url:http,https'],
+            'scenes.*.sounds.*.url' => ['nullable', 'string', 'max:'.self::MAX_SOUND_URL_LENGTH, 'url:http,https'],
             'scenes.*.sounds.*.file' => ['nullable', 'array'],
             'scenes.*.sounds.*.file.id' => ['required_with:scenes.*.sounds.*.file', 'string', 'max:64'],
             'scenes.*.sounds.*.file.name' => ['nullable', 'string', 'max:255'],

@@ -8,7 +8,12 @@ import {
     writeDraft,
 } from '@/components/technical-plan/draftStorage';
 import LoginScreen from '@/components/technical-plan/LoginScreen.vue';
-import { hasSoundErrors, hydratePlan } from '@/components/technical-plan/plan';
+import {
+    hasSoundErrors,
+    hydratePlan,
+    isReady,
+    soundHasSource,
+} from '@/components/technical-plan/plan';
 import {
     configKey,
     planKey,
@@ -305,18 +310,17 @@ function buildPayload(submit: boolean): Record<string, unknown> {
                 // A cue whose upload is still going (or has failed) has no
                 // handle worth sending, and would fail the "link or file"
                 // rule as an empty row. It stays in the wizard, not the plan.
-                .filter((sound) => sound.url !== '' || sound.file?.status === 'ready')
+                .filter(soundHasSource)
                 .map((sound) => ({
                     id: sound.id,
-                    url: sound.url,
-                    file:
-                        sound.file?.status === 'ready'
-                            ? {
-                                  id: sound.file.id,
-                                  name: sound.file.name,
-                                  size: sound.file.size,
-                              }
-                            : null,
+                    url: sound.url.trim(),
+                    file: isReady(sound.file)
+                        ? {
+                              id: sound.file.id,
+                              name: sound.file.name,
+                              size: sound.file.size,
+                          }
+                        : null,
                 })),
             sound: s.sound,
             notes: s.notes,
@@ -397,12 +401,12 @@ async function savePlan(submit: boolean): Promise<boolean> {
             );
 
             scene.sounds = scene.sounds.flatMap((sound) => {
-                const wasSent =
-                    sound.url !== '' || sound.file?.status === 'ready';
-
-                // Still going up: there is nothing to reconcile yet, and the
-                // next save will carry it.
-                if (!wasSent) {
+                // The same rule `buildPayload` filtered on, asked again rather
+                // than restated — the two have to agree or this drops the
+                // wrong cues.
+                if (!soundHasSource(sound)) {
+                    // Still going up: nothing to reconcile yet, and the next
+                    // save will carry it.
                     return [sound];
                 }
 

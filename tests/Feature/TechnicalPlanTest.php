@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\TeamRole;
 use App\Enums\TechnicalPlanStatus;
+use App\Http\Requests\StoreTechnicalPlanRequest;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Models\Format;
 use App\Models\PendingUpload;
@@ -1843,6 +1844,34 @@ class TechnicalPlanTest extends TestCase
         // Sound files are a subset of what may be uploaded in general.
         $config = $response->viewData('page')['props']['config'];
         $this->assertEmpty(array_diff($config['soundExtensions'], $config['allowedExtensions']));
+    }
+
+    /**
+     * The wizard stops the performer at the same limits the rules would, which
+     * only holds while it is told what they are rather than repeating them.
+     */
+    public function test_the_wizard_config_carries_the_scene_sound_limits(): void
+    {
+        $config = $this->get(route('technical-plan.index'))->viewData('page')['props']['config'];
+
+        $this->assertSame(StoreTechnicalPlanRequest::MAX_SOUNDS_PER_SCENE, $config['maxSoundsPerScene']);
+        $this->assertSame(StoreTechnicalPlanRequest::MAX_SOUND_URL_LENGTH, $config['maxSoundUrlLength']);
+    }
+
+    public function test_a_scene_refuses_more_sounds_than_the_wizard_offers(): void
+    {
+        $sounds = [];
+
+        foreach (range(1, StoreTechnicalPlanRequest::MAX_SOUNDS_PER_SCENE + 1) as $position) {
+            $sounds[] = ['id' => 'heli-'.$position, 'url' => 'https://example.com/'.$position.'.mp3', 'file' => null];
+        }
+
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'scenes' => [['sounds' => $sounds]],
+        ]));
+
+        $response->assertUnprocessable();
+        $this->assertArrayHasKey('scenes.0.sounds', $response->json('errors'));
     }
 
     public function test_submitting_mails_the_plan_to_its_author_and_the_technical_team(): void

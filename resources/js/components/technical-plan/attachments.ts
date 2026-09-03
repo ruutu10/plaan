@@ -1,6 +1,5 @@
 import { jsonHeaders } from '@/lib/http';
 import type {
-    Plan,
     PlanFile,
     ReusableSound,
     WizardConfig,
@@ -205,34 +204,4 @@ export async function discardAttachment(id: string): Promise<void> {
     } catch {
         /* best-effort cleanup */
     }
-}
-
-/**
- * Drop a cue's file — but only once no cue anywhere in the plan still names it.
- *
- * The same handle may serve several scenes, which is the whole point of reusing
- * a sting, and a *staged* upload is deleted for real rather than swept up
- * later. Letting go of one scene's cue must therefore not take the sound out
- * from under another's. Call this after the cue has left the plan, so what
- * remains is what is really still wanted.
- */
-export async function discardSoundFile(
-    plan: Plan,
-    file: PlanFile | null | undefined,
-): Promise<void> {
-    const id = file?.id;
-
-    if (!id) {
-        return;
-    }
-
-    const stillUsed = plan.scenes.some((scene) =>
-        scene.sounds.some((sound) => sound.file?.id === id),
-    );
-
-    if (stillUsed) {
-        return;
-    }
-
-    await discardAttachment(id);
 }

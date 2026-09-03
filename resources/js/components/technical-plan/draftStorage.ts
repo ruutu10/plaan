@@ -1,4 +1,5 @@
 import type { Plan, PlanFile, Scene } from '@/types/technicalPlan';
+import { SOUND_ID_PREFIX } from './plan';
 
 /**
  * Where the half-written plan of the browser in front of us lives. Versioned,
@@ -68,12 +69,14 @@ function upgradeDraft(draft: StoredDraft): StoredDraft {
                 delete rest.soundFile;
                 delete rest.soundUpload;
 
+                const first = `${SOUND_ID_PREFIX}1`;
+
                 return {
                     ...(rest as Scene),
                     sounds: file
-                        ? [{ id: 'heli-1', url: '', file }]
+                        ? [{ id: first, url: '', file }]
                         : url !== ''
-                          ? [{ id: 'heli-1', url, file: null }]
+                          ? [{ id: first, url, file: null }]
                           : [],
                 };
             }),
