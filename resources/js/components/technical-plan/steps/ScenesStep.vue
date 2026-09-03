@@ -394,11 +394,11 @@ function onDrop(targetId: string): void {
                             <button
                                 v-if="canAddSound(scene)"
                                 type="button"
-                                class="inline-flex cursor-pointer items-center gap-1.5 self-start rounded-full border-2 border-dashed border-r10-navy-300 bg-transparent px-3.5 py-1.5 font-r10-body text-[11px] font-bold tracking-[0.06em] text-r10-navy uppercase transition hover:border-r10-orange hover:text-r10-orange"
+                                class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border-2 border-r10-navy-300 bg-transparent px-3.5 py-2 font-r10-body text-[11px] font-bold tracking-[0.06em] text-r10-navy uppercase transition hover:border-r10-orange hover:text-r10-orange"
                                 @click="openSoundDialog(scene)"
                             >
                                 <Plus class="h-3.5 w-3.5" />
-                                Lisa heli
+                                Lisa helifail
                             </button>
                             <p v-else class="text-xs text-r10-grey-500">
                                 Ühel stseenil saab olla kuni

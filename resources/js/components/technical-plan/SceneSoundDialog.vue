@@ -291,7 +291,7 @@ const rowClass =
     <R10Dialog
         v-model:open="open"
         title="Lisa heli"
-        description="Kust see heli tuleb? Heli kasutust kirjeldad stseeni enda väljal."
+        description="Kust see heli tuleb? Laadi helifail siia üles või lisa Spotify/Youtube vms link, kust seda mängida saab."
     >
         <div class="flex flex-col gap-4">
             <RadioPills v-model="source" compact :options="SOURCES" />
@@ -325,7 +325,7 @@ const rowClass =
                         ]"
                         @click="addLink"
                     >
-                        Lisa link
+                        Salvesta
                     </button>
                 </div>
             </template>
@@ -417,17 +417,5 @@ const rowClass =
             </template>
         </div>
 
-        <template #actions>
-            <button
-                type="button"
-                :class="[
-                    buttonClass,
-                    'border-r10-grey-200 bg-white text-r10-grey-700 hover:border-r10-navy-300',
-                ]"
-                @click="open = false"
-            >
-                Loobu
-            </button>
-        </template>
     </R10Dialog>
 </template>
