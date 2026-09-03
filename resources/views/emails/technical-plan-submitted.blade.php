@@ -106,14 +106,16 @@
                 <td style="{{ $cell }} font-weight:700; word-break:break-word;">{{ $scene['name'] }}</td>
                 <td style="{{ $cell }} word-break:break-word; white-space:pre-line;">{{ $scene['light'] }}</td>
                 <td style="{{ $cell }} word-break:break-word;">
-                    {{-- The uploaded file gets its own line so it stays clickable. --}}
-                    @if ($scene['soundFile'])
-                        <a href="{{ $scene['soundFile']['url'] }}" style="{{ $link }}">{{ $scene['soundFile']['name'] }}</a>
-                        ({{ $scene['soundFile']['sizeLabel'] }})<br>
-                    @endif
-                    @if ($scene['soundUrl'])
-                        <a href="{{ $scene['soundUrl'] }}" style="{{ $link }}">{{ $scene['soundUrl'] }}</a><br>
-                    @endif
+                    {{-- Each cue gets its own line, in the order it is played,
+                         so they all stay clickable. --}}
+                    @foreach ($scene['sounds'] as $sound)
+                        @if ($sound['file'])
+                            <a href="{{ $sound['file']['url'] }}" style="{{ $link }}">{{ $sound['file']['name'] }}</a>
+                            ({{ $sound['file']['sizeLabel'] }})<br>
+                        @else
+                            <a href="{{ $sound['url'] }}" style="{{ $link }}">{{ $sound['url'] }}</a><br>
+                        @endif
+                    @endforeach
                     <span style="white-space:pre-line;">{{ $scene['soundText'] }}</span>
                 </td>
                 <td style="{{ $cell }} word-break:break-word; white-space:pre-line;">{{ $scene['notes'] }}</td>

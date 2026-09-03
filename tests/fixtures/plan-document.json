@@ -1,6 +1,5 @@
 {
     "_comment": "The contract between App\\Http\\Resources\\PlanDocument (the mail) and resources/js/components/technical-plan/presentPlan.ts (the wizard's review page, the printout and the technician's playback view). Both are asserted against this file, so a display rule changed on one side alone fails a test. See tests/Feature/PlanDocumentTest.php and resources/js/components/technical-plan/presentPlan.test.ts.",
-
     "fileSizes": {
         "0": "0 B",
         "512": "512 B",
@@ -11,7 +10,6 @@
         "3623878": "3.5 MB",
         "5368709120": "5.0 GB"
     },
-
     "statusLabels": {
         "draft": "Mustand",
         "submitted": "Esitatud",
@@ -20,7 +18,6 @@
         "": "Mustand",
         "something-else": "Mustand"
     },
-
     "cases": [
         {
             "name": "a filled-in plan covering every kind of scene sound",
@@ -49,13 +46,23 @@
                         "id": "stseen-1",
                         "name": "  Avastseen  ",
                         "light": "Soe täisvalgus\nAeglane tõus",
-                        "soundUrl": "https://example.com/cue.mp3",
-                        "soundFile": {
-                            "id": "media-1",
-                            "name": "avamäng.mp3",
-                            "size": 3623878,
-                            "url": "https://plaan.test/attachments/media-1"
-                        },
+                        "sounds": [
+                            {
+                                "id": "heli-1",
+                                "url": "",
+                                "file": {
+                                    "id": "media-1",
+                                    "name": "avamäng.mp3",
+                                    "size": 3623878,
+                                    "url": "https://plaan.test/attachments/media-1"
+                                }
+                            },
+                            {
+                                "id": "heli-2",
+                                "url": "https://example.com/cue.mp3",
+                                "file": null
+                            }
+                        ],
                         "sound": "Alusta kohe pärast pimendust",
                         "notes": "Eesriie jääb lahti"
                     },
@@ -63,8 +70,13 @@
                         "id": "stseen-2",
                         "name": "Ainult link",
                         "light": "",
-                        "soundUrl": "  https://example.com/teine.mp3  ",
-                        "soundFile": null,
+                        "sounds": [
+                            {
+                                "id": "heli-1",
+                                "url": "  https://example.com/teine.mp3  ",
+                                "file": null
+                            }
+                        ],
                         "sound": "",
                         "notes": ""
                     },
@@ -72,13 +84,18 @@
                         "id": "stseen-3",
                         "name": "Ainult fail",
                         "light": "Punane",
-                        "soundUrl": "",
-                        "soundFile": {
-                            "id": "media-2",
-                            "name": "lõpp.wav",
-                            "size": 512,
-                            "url": "https://plaan.test/attachments/media-2"
-                        },
+                        "sounds": [
+                            {
+                                "id": "heli-1",
+                                "url": "",
+                                "file": {
+                                    "id": "media-2",
+                                    "name": "lõpp.wav",
+                                    "size": 512,
+                                    "url": "https://plaan.test/attachments/media-2"
+                                }
+                            }
+                        ],
                         "sound": "   ",
                         "notes": ""
                     },
@@ -86,18 +103,72 @@
                         "id": "stseen-4",
                         "name": "",
                         "light": "",
-                        "soundUrl": "",
-                        "soundFile": null,
+                        "sounds": [],
                         "sound": "",
+                        "notes": ""
+                    },
+                    {
+                        "id": "stseen-5",
+                        "name": "Mitu heli",
+                        "light": "Külm üldvalgus",
+                        "sounds": [
+                            {
+                                "id": "heli-1",
+                                "url": "",
+                                "file": {
+                                    "id": "media-3",
+                                    "name": "sisse.mp3",
+                                    "size": 1024,
+                                    "url": "https://plaan.test/attachments/media-3"
+                                }
+                            },
+                            {
+                                "id": "heli-2",
+                                "url": "https://example.com/keskel.ogg",
+                                "file": null
+                            },
+                            {
+                                "id": "heli-3",
+                                "url": "",
+                                "file": {
+                                    "id": "media-4",
+                                    "name": "välja.mp3",
+                                    "size": 123456,
+                                    "url": "https://plaan.test/attachments/media-4"
+                                }
+                            },
+                            {
+                                "id": "heli-4",
+                                "url": "   ",
+                                "file": null
+                            }
+                        ],
+                        "sound": "Sissetulek, vahemuusika, väljaminek",
                         "notes": ""
                     }
                 ],
                 "equipment": {
                     "items": [
-                        { "id": "seade-1", "name": "  Redel  ", "use": "Valguse riputamiseks" },
-                        { "id": "seade-2", "name": "", "use": "" },
-                        { "id": "seade-3", "name": "   ", "use": "  " },
-                        { "id": "seade-4", "name": "Suitsumasin", "use": "" }
+                        {
+                            "id": "seade-1",
+                            "name": "  Redel  ",
+                            "use": "Valguse riputamiseks"
+                        },
+                        {
+                            "id": "seade-2",
+                            "name": "",
+                            "use": ""
+                        },
+                        {
+                            "id": "seade-3",
+                            "name": "   ",
+                            "use": "  "
+                        },
+                        {
+                            "id": "seade-4",
+                            "name": "Suitsumasin",
+                            "use": ""
+                        }
                     ],
                     "smoke": "no",
                     "suggestions": "no",
@@ -133,13 +204,21 @@
                         "num": 1,
                         "name": "Avastseen",
                         "light": "Soe täisvalgus\nAeglane tõus",
-                        "soundFile": {
-                            "name": "avamäng.mp3",
-                            "sizeLabel": "3.5 MB",
-                            "url": "https://plaan.test/attachments/media-1",
-                            "downloadUrl": null
-                        },
-                        "soundUrl": "https://example.com/cue.mp3",
+                        "sounds": [
+                            {
+                                "file": {
+                                    "name": "avamäng.mp3",
+                                    "sizeLabel": "3.5 MB",
+                                    "url": "https://plaan.test/attachments/media-1",
+                                    "downloadUrl": null
+                                },
+                                "url": ""
+                            },
+                            {
+                                "file": null,
+                                "url": "https://example.com/cue.mp3"
+                            }
+                        ],
                         "soundText": "Alusta kohe pärast pimendust",
                         "notes": "Eesriie jääb lahti"
                     },
@@ -147,8 +226,12 @@
                         "num": 2,
                         "name": "Ainult link",
                         "light": "—",
-                        "soundFile": null,
-                        "soundUrl": "https://example.com/teine.mp3",
+                        "sounds": [
+                            {
+                                "file": null,
+                                "url": "https://example.com/teine.mp3"
+                            }
+                        ],
                         "soundText": "",
                         "notes": "—"
                     },
@@ -156,13 +239,17 @@
                         "num": 3,
                         "name": "Ainult fail",
                         "light": "Punane",
-                        "soundFile": {
-                            "name": "lõpp.wav",
-                            "sizeLabel": "512 B",
-                            "url": "https://plaan.test/attachments/media-2",
-                            "downloadUrl": null
-                        },
-                        "soundUrl": "",
+                        "sounds": [
+                            {
+                                "file": {
+                                    "name": "lõpp.wav",
+                                    "sizeLabel": "512 B",
+                                    "url": "https://plaan.test/attachments/media-2",
+                                    "downloadUrl": null
+                                },
+                                "url": ""
+                            }
+                        ],
                         "soundText": "",
                         "notes": "—"
                     },
@@ -170,15 +257,51 @@
                         "num": 4,
                         "name": "—",
                         "light": "—",
-                        "soundFile": null,
-                        "soundUrl": "",
+                        "sounds": [],
                         "soundText": "—",
+                        "notes": "—"
+                    },
+                    {
+                        "num": 5,
+                        "name": "Mitu heli",
+                        "light": "Külm üldvalgus",
+                        "sounds": [
+                            {
+                                "file": {
+                                    "name": "sisse.mp3",
+                                    "sizeLabel": "1.0 KB",
+                                    "url": "https://plaan.test/attachments/media-3",
+                                    "downloadUrl": null
+                                },
+                                "url": ""
+                            },
+                            {
+                                "file": null,
+                                "url": "https://example.com/keskel.ogg"
+                            },
+                            {
+                                "file": {
+                                    "name": "välja.mp3",
+                                    "sizeLabel": "120.6 KB",
+                                    "url": "https://plaan.test/attachments/media-4",
+                                    "downloadUrl": null
+                                },
+                                "url": ""
+                            }
+                        ],
+                        "soundText": "Sissetulek, vahemuusika, väljaminek",
                         "notes": "—"
                     }
                 ],
                 "equipmentItems": [
-                    { "name": "Redel", "use": "Valguse riputamiseks" },
-                    { "name": "Suitsumasin", "use": "—" }
+                    {
+                        "name": "Redel",
+                        "use": "Valguse riputamiseks"
+                    },
+                    {
+                        "name": "Suitsumasin",
+                        "use": "—"
+                    }
                 ],
                 "smokeSummary": "Ei tohi",
                 "suggestionsLine": "Ei — Oleme plaani juba tehnikuga läbi rääkinud",
@@ -222,7 +345,10 @@
                     "suggestions": "yes",
                     "suggestNote": ""
                 },
-                "extra": { "notes": "", "files": [] }
+                "extra": {
+                    "notes": "",
+                    "files": []
+                }
             },
             "expected": {
                 "token": null,
@@ -273,7 +399,10 @@
                     "suggestions": "no",
                     "suggestNote": ""
                 },
-                "extra": { "notes": "", "files": [] }
+                "extra": {
+                    "notes": "",
+                    "files": []
+                }
             },
             "expected": {
                 "token": "R10-2026-000000000000",

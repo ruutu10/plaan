@@ -8,7 +8,12 @@ import {
     writeDraft,
 } from '@/components/technical-plan/draftStorage';
 import LoginScreen from '@/components/technical-plan/LoginScreen.vue';
-import { hasSoundErrors, hydratePlan } from '@/components/technical-plan/plan';
+import {
+    hasSoundErrors,
+    hydratePlan,
+    isReady,
+    soundHasSource,
+} from '@/components/technical-plan/plan';
 import {
     configKey,
     planKey,
@@ -301,16 +306,22 @@ function buildPayload(submit: boolean): Record<string, unknown> {
             id: s.id,
             name: s.name,
             light: s.light,
-            soundUrl: s.soundUrl,
-            // Only a finished upload has a handle worth sending.
-            soundFile:
-                s.soundFile?.status === 'ready'
-                    ? {
-                          id: s.soundFile.id,
-                          name: s.soundFile.name,
-                          size: s.soundFile.size,
-                      }
-                    : null,
+            sounds: s.sounds
+                // A cue whose upload is still going (or has failed) has no
+                // handle worth sending, and would fail the "link or file"
+                // rule as an empty row. It stays in the wizard, not the plan.
+                .filter(soundHasSource)
+                .map((sound) => ({
+                    id: sound.id,
+                    url: sound.url.trim(),
+                    file: isReady(sound.file)
+                        ? {
+                              id: sound.file.id,
+                              name: sound.file.name,
+                              size: sound.file.size,
+                          }
+                        : null,
+                })),
             sound: s.sound,
             notes: s.notes,
         })),
@@ -376,11 +387,47 @@ async function savePlan(submit: boolean): Promise<boolean> {
 
     if (Array.isArray(data.scenes)) {
         (data.scenes as Scene[]).forEach((saved, index) => {
-            if (plan.scenes[index]) {
-                plan.scenes[index].soundFile = saved.soundFile
-                    ? { ...saved.soundFile, status: 'ready' as const }
-                    : null;
+            const scene = plan.scenes[index];
+
+            if (!scene) {
+                return;
             }
+
+            // The payload leaves out cues whose upload had not finished, so the
+            // saved list can be shorter than the one on screen. Cues are
+            // matched by their row id rather than by position.
+            const stored = new Map(
+                (saved.sounds ?? []).map((sound) => [sound.id, sound]),
+            );
+
+            scene.sounds = scene.sounds.flatMap((sound) => {
+                // The same rule `buildPayload` filtered on, asked again rather
+                // than restated — the two have to agree or this drops the
+                // wrong cues.
+                if (!soundHasSource(sound)) {
+                    // Still going up: nothing to reconcile yet, and the next
+                    // save will carry it.
+                    return [sound];
+                }
+
+                const match = stored.get(sound.id);
+
+                // Sent but not returned — the server could not resolve its
+                // file. The cue goes rather than pointing at nothing.
+                if (!match) {
+                    return [];
+                }
+
+                return [
+                    {
+                        ...sound,
+                        url: match.url,
+                        file: match.file
+                            ? { ...match.file, status: 'ready' as const }
+                            : null,
+                    },
+                ];
+            });
         });
     }
 

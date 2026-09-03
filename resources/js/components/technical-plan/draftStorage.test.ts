@@ -89,6 +89,86 @@ describe('readDraft', () => {
     });
 });
 
+describe('readDraft upgrading a draft from before the cue list', () => {
+    /**
+     * Write a draft in the shape the wizard stored before a scene could hold
+     * several cues, bypassing `writeDraft` — the point is to put the old shape
+     * there, which the current types no longer describe.
+     */
+    function storeLegacyDraft(scene: Record<string, unknown>): void {
+        localStorage.setItem(
+            'r10-techplan-v1',
+            JSON.stringify({
+                step: 3,
+                plan: { ...blankPlan(), scenes: [{ ...blankPlan().scenes[0], ...scene }] },
+            }),
+        );
+    }
+
+    const file = { id: 'media-1', name: 'avamuusika.mp3', size: 120 };
+
+    it('carries an uploaded file over as the scene\'s first cue', () => {
+        storeLegacyDraft({ sounds: undefined, soundUrl: '', soundFile: file });
+
+        expect(readDraft()?.plan?.scenes?.[0].sounds).toEqual([
+            { id: 'heli-1', url: '', file },
+        ]);
+    });
+
+    it('carries a link over as the scene\'s first cue', () => {
+        storeLegacyDraft({
+            sounds: undefined,
+            soundUrl: 'https://example.com/lugu.mp3',
+            soundFile: null,
+        });
+
+        expect(readDraft()?.plan?.scenes?.[0].sounds).toEqual([
+            { id: 'heli-1', url: 'https://example.com/lugu.mp3', file: null },
+        ]);
+    });
+
+    it('leaves a scene that had no sound with no cues', () => {
+        storeLegacyDraft({ sounds: undefined, soundUrl: null, soundFile: null });
+
+        expect(readDraft()?.plan?.scenes?.[0].sounds).toEqual([]);
+    });
+
+    it('drops the fields the cue list replaced', () => {
+        storeLegacyDraft({
+            sounds: undefined,
+            soundUrl: '',
+            soundFile: file,
+            soundUpload: true,
+        });
+
+        const scene = readDraft()?.plan?.scenes?.[0] as unknown as Record<
+            string,
+            unknown
+        >;
+
+        expect(scene).not.toHaveProperty('soundUrl');
+        expect(scene).not.toHaveProperty('soundFile');
+        expect(scene).not.toHaveProperty('soundUpload');
+    });
+
+    it('leaves a draft already written in the current shape alone', () => {
+        const sounds = [{ id: 'heli-2', url: '', file }];
+
+        writeDraft(
+            {
+                step: 3,
+                plan: {
+                    ...blankPlan(),
+                    scenes: [{ ...blankPlan().scenes[0], sounds }],
+                },
+            },
+            null,
+        );
+
+        expect(readDraft()?.plan?.scenes?.[0].sounds).toEqual(sounds);
+    });
+});
+
 describe('clearDraft', () => {
     it('forgets the stored draft, as starting over does', () => {
         writeDraft({ step: 4, plan: blankPlan() }, null);

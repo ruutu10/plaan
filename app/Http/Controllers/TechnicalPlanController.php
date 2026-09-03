@@ -12,6 +12,8 @@ use App\Events\TechnicalPlanSubmitted;
 use App\Http\Requests\StoreTechnicalPlanRequest;
 use App\Http\Requests\UpdateTechnicalPlanStatusRequest;
 use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
+use App\Http\Resources\Attachment as AttachmentResource;
+use App\Http\Resources\ReusableSound as ReusableSoundResource;
 use App\Http\Resources\SavedTechnicalPlan as SavedTechnicalPlanResource;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Http\Resources\TechnicalPlanSummary as TechnicalPlanSummaryResource;
@@ -26,9 +28,11 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class TechnicalPlanController extends Controller
@@ -38,6 +42,15 @@ class TechnicalPlanController extends Controller
      * handful is not a choice, it is a list to read through.
      */
     private const PRIOR_PLANS_PER_FORMAT = 5;
+
+    /**
+     * How far back the "pick a sound you already have" listing reaches, and how
+     * many sounds it may offer in the end. A performer picking a cue is looking
+     * for something they used recently; a longer list is not a better one.
+     */
+    private const REUSABLE_SOUND_PLANS = 50;
+
+    private const REUSABLE_SOUNDS = 100;
 
     /**
      * The last step of the wizard, counting from zero — the review page. Kept
@@ -215,6 +228,85 @@ class TechnicalPlanController extends Controller
         ]);
 
         return TechnicalPlanResource::make($plan)->withStagedCopy($stageCopy->handle($plan));
+    }
+
+    /**
+     * The sound files the user could reuse on the plan they are writing:
+     * everything stored against a plan they may open, less the plan being
+     * edited — the wizard already holds that one's cues in its own state and
+     * offers them without asking the server.
+     */
+    public function sounds(Request $request): JsonResponse
+    {
+        $exclude = $request->string('exclude')->toString();
+        $allowed = AllowedAttachment::extensionsFor(TechnicalPlan::SOUND_COLLECTION);
+
+        // Asked from the plans' side rather than the media's: a sound is only
+        // ever offered as "the one from that plan", so the plan is what the
+        // listing is built out of — and each file's own is then already to hand.
+        $plans = TechnicalPlan::query()
+            ->visibleTo($request->user())
+            // Only the sound collection is eager-loaded: a plan's general
+            // attachments are no use here, and some plans carry a lot of them.
+            ->with([
+                'media' => fn ($media) => $media->where('collection_name', TechnicalPlan::SOUND_COLLECTION),
+                'performance.format',
+            ])
+            ->latest('id')
+            ->limit(self::REUSABLE_SOUND_PLANS);
+
+        if ($exclude !== '') {
+            $plans->where('token', '!=', $exclude);
+        }
+
+        $sounds = $plans->get()
+            ->flatMap(fn (TechnicalPlan $plan): SupportCollection => $plan
+                ->attachments(TechnicalPlan::SOUND_COLLECTION)
+                // Belt and braces: a plan's sound collection is already held to
+                // the audio allowlist on the way in, twice over.
+                ->filter(fn (Media $media): bool => in_array(strtolower($media->extension), $allowed, true))
+                ->map(fn (Media $media): array => ReusableSoundResource::make($media, $plan)->resolve($request)))
+            // The limit above counts plans, not sounds; this is what the picker
+            // is actually handed, and it is a list somebody has to read.
+            ->take(self::REUSABLE_SOUNDS);
+
+        return response()->json(['results' => $sounds->values()->all()]);
+    }
+
+    /**
+     * Stage a copy of a sound file the user already has on another plan, so the
+     * plan being written can carry it as its own.
+     *
+     * The source plan is left untouched — the copy is a fresh staged upload,
+     * moved onto this plan on save like any other file. That is what keeps two
+     * plans from sharing one file's lifetime, where dropping a cue from one
+     * would take the sound out from under the other.
+     */
+    public function reuseSound(Request $request, string $uuid): AttachmentResource
+    {
+        $media = Media::query()
+            ->where('uuid', $uuid)
+            ->where('collection_name', TechnicalPlan::SOUND_COLLECTION)
+            ->first();
+
+        $plan = $media?->model instanceof TechnicalPlan ? $media->model : null;
+        $allowed = AllowedAttachment::extensionsFor(TechnicalPlan::SOUND_COLLECTION);
+
+        if (! $media || ! $plan || ! in_array(strtolower($media->extension), $allowed, true)) {
+            abort(404);
+        }
+
+        if (! $plan->isVisibleTo($request->user())) {
+            Log::warning('Refused to reuse a sound file from a plan the user may not open', [
+                'plan_id' => $plan->id,
+                'user_id' => $request->user()->id,
+                'ip' => $request->ip(),
+            ]);
+
+            abort(403);
+        }
+
+        return AttachmentResource::make($plan->duplicateMediaToStaging($media));
     }
 
     /**
@@ -456,6 +548,11 @@ class TechnicalPlanController extends Controller
             'allowedExtensions' => AllowedAttachment::extensionsFor(),
             'soundExtensions' => AllowedAttachment::extensionsFor(TechnicalPlan::SOUND_COLLECTION),
             'maxFileSize' => (int) config('media-library.max_file_size'),
+            // The scene-cue limits the request rules hold a plan to, so the
+            // wizard can stop short of them rather than posting a plan the
+            // server will refuse.
+            'maxSoundsPerScene' => StoreTechnicalPlanRequest::MAX_SOUNDS_PER_SCENE,
+            'maxSoundUrlLength' => StoreTechnicalPlanRequest::MAX_SOUND_URL_LENGTH,
         ];
     }
 

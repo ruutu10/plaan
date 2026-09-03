@@ -2,15 +2,45 @@ export interface Scene {
     id: string;
     name: string;
     light: string;
-    /** Link to the scene's sound file — mutually exclusive with `soundFile`. */
-    soundUrl: string;
-    /** The scene's uploaded sound file (at most one), if not linked instead. */
-    soundFile: PlanFile | null;
+    /** The scene's cues, in the order they are played. */
+    sounds: SceneSound[];
+    /**
+     * How the scene's sound is used, in the performer's own words. One field
+     * for the whole scene — the cues themselves carry no description.
+     */
     sound: string;
     notes: string;
     collapsed?: boolean;
-    /** View state: the upload option is open instead of the link field. */
-    soundUpload?: boolean;
+}
+
+/**
+ * One cue: either a link or an uploaded file, never both and never neither.
+ * The same file may appear on several scenes — reusing a sting is the point of
+ * the picker — so a handle is not a scene's to own.
+ */
+export interface SceneSound {
+    /** Client-side row key, stable across reorders. */
+    id: string;
+    /** Link to the sound — empty when this entry is an uploaded file. */
+    url: string;
+    /** The uploaded file — null when this entry is a link. */
+    file: PlanFile | null;
+}
+
+/**
+ * A sound file the performer already has on one of their other plans, offered
+ * in the "pick one you have uploaded" step. Picking it copies the file, so `id`
+ * names the source rather than the handle this plan will end up carrying.
+ */
+export interface ReusableSound {
+    id: string;
+    name: string;
+    size: number;
+    /** Streams the source file, so it can be auditioned before it is picked. */
+    url: string;
+    planToken: string | null;
+    planLabel: string;
+    performanceDate: string | null;
 }
 
 export interface EquipItem {
@@ -130,11 +160,16 @@ export interface PlanDocumentScene {
     num: number;
     name: string;
     light: string;
-    soundFile: PlanDocumentFile | null;
-    soundUrl: string;
-    /** Empty when the file or the link already says it; an em dash when there is no sound at all. */
+    sounds: PlanDocumentSound[];
+    /** Empty when the cues already say it; an em dash when there is no sound at all. */
     soundText: string;
     notes: string;
+}
+
+/** One cue as the reader sees it: a named file, or a bare link. */
+export interface PlanDocumentSound {
+    file: PlanDocumentFile | null;
+    url: string;
 }
 
 export interface PlanDocumentFile {
@@ -173,6 +208,10 @@ export interface WizardConfig {
     soundExtensions: string[];
     /** Maximum accepted upload size in bytes. */
     maxFileSize: number;
+    /** How many cues one scene may carry, per the server's own rules. */
+    maxSoundsPerScene: number;
+    /** How long a cue's link may be, per the server's own rules. */
+    maxSoundUrlLength: number;
 }
 
 export interface LookupResult {

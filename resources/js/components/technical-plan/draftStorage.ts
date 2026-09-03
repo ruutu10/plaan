@@ -1,4 +1,5 @@
-import type { Plan } from '@/types/technicalPlan';
+import type { Plan, PlanFile, Scene } from '@/types/technicalPlan';
+import { SOUND_ID_PREFIX } from './plan';
 
 /**
  * Where the half-written plan of the browser in front of us lives. Versioned,
@@ -27,12 +28,68 @@ export function readDraft(): StoredDraft | null {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
 
-        return raw ? (JSON.parse(raw) as StoredDraft) : null;
+        return raw ? upgradeDraft(JSON.parse(raw) as StoredDraft) : null;
     } catch {
         /* ignore malformed drafts */
         return null;
     }
 }
+
+/**
+ * Bring a draft written before a scene could hold several cues up to the
+ * current shape, turning its single link-or-file into the first entry of the
+ * scene's list. The same rule the server's migration applies to stored plans.
+ *
+ * Done here rather than by starting the key over at `v2`, because the draft in
+ * a browser is work nobody else has a copy of: an unsaved plan losing its cue
+ * on a deploy is exactly the surprise this file exists to prevent.
+ */
+function upgradeDraft(draft: StoredDraft): StoredDraft {
+    const scenes = draft.plan?.scenes;
+
+    if (!Array.isArray(scenes)) {
+        return draft;
+    }
+
+    return {
+        ...draft,
+        plan: {
+            ...draft.plan,
+            scenes: scenes.map((scene) => {
+                if (Array.isArray(scene?.sounds)) {
+                    return scene;
+                }
+
+                const legacy = scene as LegacyScene;
+                const url = (legacy.soundUrl ?? '').trim();
+                const file = legacy.soundFile ?? null;
+
+                const rest = { ...legacy };
+                delete rest.soundUrl;
+                delete rest.soundFile;
+                delete rest.soundUpload;
+
+                const first = `${SOUND_ID_PREFIX}1`;
+
+                return {
+                    ...(rest as Scene),
+                    sounds: file
+                        ? [{ id: first, url: '', file }]
+                        : url !== ''
+                          ? [{ id: first, url, file: null }]
+                          : [],
+                };
+            }),
+        },
+    };
+}
+
+/** A scene as drafts written before the cue list stored it. */
+type LegacyScene = Scene & {
+    soundUrl?: string;
+    soundFile?: PlanFile | null;
+    soundUpload?: boolean;
+};
 
 /**
  * Write the wizard's state down as this browser's draft — unless the wizard

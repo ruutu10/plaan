@@ -1,4 +1,11 @@
-import type { Plan, PlanFile, PlanSound, Scene } from '@/types/technicalPlan';
+import type {
+    Plan,
+    PlanFile,
+    PlanSound,
+    Scene,
+    SceneSound,
+    WizardConfig,
+} from '@/types/technicalPlan';
 
 export const STEP_LABELS = [
     'Etendus',
@@ -14,20 +21,42 @@ export function uid(): string {
     return 's' + Math.random().toString(36).slice(2, 9);
 }
 
-const SCENE_ID_PREFIX = 'stseen-';
+export const SCENE_ID_PREFIX = 'stseen-';
+export const SOUND_ID_PREFIX = 'heli-';
 
 /**
- * Build the next sequential scene id (`stseen-1`, `stseen-2`, …) based on the
- * highest number already used, so ids stay unique after reorders and deletes.
+ * Build the next sequential id under a prefix (`stseen-1`, `heli-2`, …) from the
+ * highest number already used, so ids stay unique after reorders and deletes —
+ * which is what keeps Vue's list keys honest while a row is being dragged.
+ *
+ * The pattern is built from the prefix rather than written out beside it, so
+ * the two cannot drift apart.
  */
-export function nextSceneId(scenes: Scene[]): string {
-    const highest = scenes.reduce((max, scene) => {
-        const match = /^stseen-(\d+)$/.exec(scene.id);
+export function nextSequentialId(ids: string[], prefix: string): string {
+    const pattern = new RegExp(`^${prefix}(\\d+)$`);
+
+    const highest = ids.reduce((max, id) => {
+        const match = pattern.exec(id);
 
         return match ? Math.max(max, Number(match[1])) : max;
     }, 0);
 
-    return `${SCENE_ID_PREFIX}${highest + 1}`;
+    return `${prefix}${highest + 1}`;
+}
+
+export function nextSceneId(scenes: Scene[]): string {
+    return nextSequentialId(
+        scenes.map((scene) => scene.id),
+        SCENE_ID_PREFIX,
+    );
+}
+
+/** The next cue id within one scene — see {@see nextSequentialId}. */
+export function nextSoundId(sounds: SceneSound[]): string {
+    return nextSequentialId(
+        sounds.map((sound) => sound.id),
+        SOUND_ID_PREFIX,
+    );
 }
 
 export function blankScene(id: string = `${SCENE_ID_PREFIX}1`): Scene {
@@ -35,13 +64,23 @@ export function blankScene(id: string = `${SCENE_ID_PREFIX}1`): Scene {
         id,
         name: '',
         light: '',
-        soundUrl: '',
-        soundFile: null,
+        sounds: [],
         sound: '',
         notes: '',
         collapsed: false,
     };
 }
+
+/**
+ * The one-click sound cues offered under the scene's description. Shared by the
+ * scene card and the add-a-sound dialog, which write to the same field.
+ */
+export const SOUND_PRESETS = [
+    'ruutu10 tunnus 3s',
+    'ruutu10 tunnus 15s',
+    'film noare (vabal valikul)',
+    'shakespeare (vabal valikul)',
+];
 
 /**
  * The sound step's answers that are still owed a description. Saying "jah" to
@@ -77,6 +116,63 @@ export function hasSoundErrors(sound: PlanSound): boolean {
  */
 function storedFile(file: PlanFile | null | undefined): PlanFile | null {
     return file?.id ? { ...file, status: 'ready' as const } : null;
+}
+
+/**
+ * A handle the wizard has finished uploading — the only kind worth showing.
+ *
+ * Deliberately permissive about a missing `status`: a handle that arrived from
+ * the server carries no upload state of its own, and neither do the fixtures
+ * the document renderers are tested against. Only the two states that mean
+ * "not there yet" disqualify a file.
+ */
+export function isReady(file: PlanFile | null | undefined): file is PlanFile {
+    return (
+        file != null && file.status !== 'uploading' && file.status !== 'error'
+    );
+}
+
+/**
+ * Whether a cue points at something real: a file that finished uploading, or a
+ * link that was actually typed.
+ *
+ * The one place this question is answered. It decides what the wizard posts,
+ * what it expects back from the save, what the document renders and what
+ * survives hydration — and those four have to agree, or a cue is dropped in one
+ * place and kept in another.
+ */
+export function soundHasSource(sound: SceneSound): boolean {
+    return isReady(sound.file) || (sound.url ?? '').trim() !== '';
+}
+
+/**
+ * A scene's cues as they come back from the server, each given the row id the
+ * wizard keys its list on. An entry left with neither a file nor a link is
+ * dropped: it would show as an empty row nobody could fill in.
+ */
+function storedSounds(sounds: SceneSound[] | null | undefined): SceneSound[] {
+    return (sounds ?? [])
+        .map((sound, index) => ({
+            id: sound.id || `${SOUND_ID_PREFIX}${index + 1}`,
+            url: sound.url ?? '',
+            file: storedFile(sound.file),
+        }))
+        .filter(soundHasSource);
+}
+
+/**
+ * Whether any cue anywhere in the plan still names this stored file.
+ *
+ * The same handle may serve several scenes — reusing a sting is the point of
+ * the picker — and a *staged* upload is deleted for real rather than swept up
+ * later, so letting go of one scene's cue must not take the sound out from
+ * under another's. Ask this after the cue has left the plan, so what remains is
+ * what is really still wanted.
+ */
+export function soundFileStillUsed(plan: Plan, id: string): boolean {
+    return plan.scenes.some((scene) =>
+        scene.sounds.some((sound) => sound.file?.id === id),
+    );
 }
 
 /**
@@ -182,7 +278,7 @@ export function hydratePlan(payload: Partial<Plan> | null | undefined): Plan {
                 ? payload.scenes.map((s, index) => ({
                       ...mergeDefined(blankScene(), s),
                       id: `${SCENE_ID_PREFIX}${index + 1}`,
-                      soundFile: storedFile(s.soundFile),
+                      sounds: storedSounds(s.sounds),
                       collapsed: false,
                   }))
                 : [blankScene()],
@@ -292,27 +388,70 @@ function hasAudioExtension(name: string): boolean {
  */
 function isDirectAudioUrl(url: string): boolean {
     try {
-        // A relative URL needs a base before it will parse.
-        return hasAudioExtension(new URL(url, window.location.origin).pathname);
+        // A relative URL needs *a* base before it will parse, and only the path
+        // is read afterwards — so a stand-in base answers as well as the page's
+        // own origin would, without this needing a browser to run in.
+        return hasAudioExtension(new URL(url, 'https://plaan.invalid').pathname);
     } catch {
         return false;
     }
 }
 
 /**
- * The URL a scene's sound can actually be played from, or `null` when it is
- * only reachable through a link a player cannot read. An upload is judged by
- * its stored name — the URL that streams it carries no extension — while a
- * link is judged by its path.
+ * The URL a cue can actually be played from, or `null` when it is only
+ * reachable through a link a player cannot read. An upload is judged by its
+ * stored name — the URL that streams it carries no extension — while a link is
+ * judged by its path.
  */
-export function playableAudio(scene: Scene): string | null {
-    const file = scene.soundFile?.status === 'ready' ? scene.soundFile : null;
+export function soundAudioUrl(sound: SceneSound): string | null {
+    const file = sound.file?.status === 'ready' ? sound.file : null;
 
     if (file?.url && hasAudioExtension(file.name)) {
         return file.url;
     }
 
-    const url = scene.soundUrl.trim();
+    const url = sound.url.trim();
 
     return url && isDirectAudioUrl(url) ? url : null;
+}
+
+/**
+ * Why a cue's link cannot be used, or `null` when it can.
+ *
+ * Mirrors the `url:http,https` rule in `StoreTechnicalPlanRequest`, so the
+ * wizard refuses a bad link where the performer typed it rather than leaving
+ * the save to fail later — and it refuses it for the same reason the server
+ * does. The link is rendered as an `href` in the mail, on the printout and in
+ * the technician's view, so a `javascript:` or `data:` URL would be somebody
+ * else's code running under a reader who only opened a plan.
+ *
+ * The length limit is the server's own, handed to the wizard in its config
+ * rather than written down a second time here.
+ */
+export function soundLinkError(url: string, config: WizardConfig): string | null {
+    const value = url.trim();
+
+    if (value === '') {
+        return 'Lisa helifaili link.';
+    }
+
+    if (value.length > config.maxSoundUrlLength) {
+        return `Link on liiga pikk (max ${config.maxSoundUrlLength} märki).`;
+    }
+
+    let parsed: URL;
+
+    try {
+        // No base URL on purpose: a cue's link has to stand on its own, so a
+        // bare `example.com/lugu.mp3` is as unusable as a relative path.
+        parsed = new URL(value);
+    } catch {
+        return 'Link peab olema täielik aadress, nt https://example.com/muusika.mp3';
+    }
+
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return 'Link peab algama http:// või https:// aadressiga.';
+    }
+
+    return null;
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Diamond from './Diamond.vue';
 import type { PlanDocument } from '@/types/technicalPlan';
+import Diamond from './Diamond.vue';
 
 /**
  * The plan as the performer and the technician read it: on screen at the end of
@@ -165,27 +165,32 @@ const linkClass =
                             {{ scene.light }}
                         </td>
                         <td :class="[cellClass, 'break-words']">
-                            <!-- The uploaded file and the link each get their
-                                 own line so they stay clickable. -->
-                            <span v-if="scene.soundFile" class="block">
+                            <!-- Each cue gets its own line, in the order it is
+                                 played, so they all stay clickable. -->
+                            <span
+                                v-for="(sound, position) in scene.sounds"
+                                :key="position"
+                                class="block"
+                            >
+                                <template v-if="sound.file">
+                                    <a
+                                        :href="sound.file.url ?? undefined"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        :class="linkClass"
+                                    >
+                                        {{ sound.file.name }}
+                                    </a>
+                                    ({{ sound.file.sizeLabel }})
+                                </template>
                                 <a
-                                    :href="scene.soundFile.url ?? undefined"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    :class="linkClass"
-                                >
-                                    {{ scene.soundFile.name }}
-                                </a>
-                                ({{ scene.soundFile.sizeLabel }})
-                            </span>
-                            <span v-if="scene.soundUrl" class="block">
-                                <a
-                                    :href="scene.soundUrl"
+                                    v-else
+                                    :href="sound.url"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     :class="[linkClass, 'break-all']"
                                 >
-                                    {{ scene.soundUrl }}
+                                    {{ sound.url }}
                                 </a>
                             </span>
                             <span

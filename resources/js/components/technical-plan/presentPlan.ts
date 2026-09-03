@@ -1,11 +1,13 @@
-import { formatFileSize } from './plan';
 import type {
     Plan,
     PlanDocument,
     PlanDocumentFile,
     PlanDocumentScene,
+    PlanDocumentSound,
     PlanFile,
+    SceneSound,
 } from '@/types/technicalPlan';
+import { formatFileSize, isReady, soundHasSource } from './plan';
 
 export { formatFileSize };
 
@@ -134,13 +136,6 @@ export function statusTone(
     return tones[(status ?? '') as keyof typeof tones] ?? 'neutral';
 }
 
-/** A handle the wizard has finished uploading — the only kind worth showing. */
-function isReady(file: PlanFile | null | undefined): file is PlanFile {
-    return (
-        file != null && file.status !== 'uploading' && file.status !== 'error'
-    );
-}
-
 /**
  * A scene's stored values, tidied but not yet dressed up: numbered as the
  * reader counts them, trimmed, and with a half-finished upload treated as no
@@ -156,10 +151,22 @@ export function normaliseScenes(plan: Plan): NormalisedScene[] {
         num: index + 1,
         name: scene.name.trim(),
         light: scene.light.trim(),
-        soundUrl: scene.soundUrl.trim(),
-        soundFile: isReady(scene.soundFile) ? scene.soundFile : null,
+        sounds: normaliseSounds(scene.sounds),
         sound: scene.sound.trim(),
         notes: scene.notes.trim(),
+    }));
+}
+
+/**
+ * A scene's cues, less the ones that are not really there: a file still going
+ * up, or one that failed, is not a cue the technician will receive, and an
+ * entry left with neither a file nor a link is an empty row nobody meant.
+ */
+function normaliseSounds(sounds: SceneSound[]): NormalisedSound[] {
+    return sounds.filter(soundHasSource).map((sound) => ({
+        id: sound.id,
+        url: sound.url.trim(),
+        file: isReady(sound.file) ? sound.file : null,
     }));
 }
 
@@ -167,10 +174,15 @@ export interface NormalisedScene {
     num: number;
     name: string;
     light: string;
-    soundUrl: string;
-    soundFile: PlanFile | null;
+    sounds: NormalisedSound[];
     sound: string;
     notes: string;
+}
+
+export interface NormalisedSound {
+    id: string;
+    url: string;
+    file: PlanFile | null;
 }
 
 function presentScene(scene: NormalisedScene): PlanDocumentScene {
@@ -178,17 +190,23 @@ function presentScene(scene: NormalisedScene): PlanDocumentScene {
         num: scene.num,
         name: dash(scene.name),
         light: dash(scene.light),
-        soundFile: scene.soundFile ? presentFile(scene.soundFile) : null,
-        soundUrl: scene.soundUrl,
-        // The file and the link get their own lines above this, so the text is
-        // only stood in for by a dash when the scene has no sound at all.
+        sounds: scene.sounds.map(presentSound),
+        // The cues get their own lines above this, so the text is only stood in
+        // for by a dash when the scene has no sound at all.
         soundText:
             scene.sound !== ''
                 ? scene.sound
-                : scene.soundFile || scene.soundUrl !== ''
+                : scene.sounds.length > 0
                   ? ''
                   : '—',
         notes: dash(scene.notes),
+    };
+}
+
+function presentSound(sound: NormalisedSound): PlanDocumentSound {
+    return {
+        file: sound.file ? presentFile(sound.file) : null,
+        url: sound.url,
     };
 }
 

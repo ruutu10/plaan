@@ -1,108 +1,85 @@
 <script setup lang="ts">
-import { Copy, Link, Trash2, Upload } from '@lucide/vue';
+import { Copy, Plus, Trash2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
-import type { Component } from 'vue';
-import {
-    acceptAttribute,
-    discardAttachment,
-    extensionHint,
-    uploadAttachment,
-    validationError,
-} from '../attachments';
+import type { Scene } from '@/types/technicalPlan';
+import { discardAttachment } from '../attachments';
 import Diamond from '../Diamond.vue';
-import { blankScene, nextSceneId } from '../plan';
+import {
+    blankScene,
+    nextSceneId,
+    soundFileStillUsed,
+    SOUND_PRESETS,
+} from '../plan';
 import { usePlan, useWizardConfig } from '../planKey';
-import R10Dropzone from '../R10Dropzone.vue';
 import R10FileChip from '../R10FileChip.vue';
 import R10Input from '../R10Input.vue';
 import R10Textarea from '../R10Textarea.vue';
-import RadioPills from '../RadioPills.vue';
+import SceneSoundDialog from '../SceneSoundDialog.vue';
 import StepHeader from '../StepHeader.vue';
-import type { Scene } from '@/types/technicalPlan';
 
 const plan = usePlan();
 const config = useWizardConfig();
 
 const dragId = ref<string | null>(null);
 
-/** The collection a scene's sound file is stored in, server-side. */
-const SOUND_COLLECTION = 'sound';
+/* ---- A scene's cues -------------------------------------------------- */
 
-type SoundMode = 'url' | 'file';
+/** The id of the scene whose "add a sound" dialog is open, if any. */
+const addingTo = ref<string | null>(null);
 
-const SOUND_MODES: { value: SoundMode; label: string; icon: Component }[] = [
-    { value: 'url', label: 'Link', icon: Link },
-    { value: 'file', label: 'Laadi fail üles', icon: Upload },
-];
-
-const soundAccept = computed(() => acceptAttribute(config.soundExtensions));
-
-const soundExtensionHint = computed(() =>
-    extensionHint(config.soundExtensions),
-);
-
-/**
- * Which of the two ways of giving a scene's sound is open. A scene that
- * already has a file opens on the upload; otherwise the link field shows
- * until the user asks for the upload.
- */
-function soundMode(scene: Scene): SoundMode {
-    return scene.soundFile || scene.soundUpload ? 'file' : 'url';
+function openSoundDialog(scene: Scene): void {
+    addingTo.value = scene.id;
 }
 
-/**
- * Switch between linking and uploading, clearing whatever the other way held
- * so the plan never carries both.
- */
-async function setSoundMode(scene: Scene, mode: SoundMode): Promise<void> {
-    scene.soundUpload = mode === 'file';
+const soundDialogOpen = computed({
+    get: () => addingTo.value !== null,
+    set: (open: boolean) => {
+        if (!open) {
+            addingTo.value = null;
+        }
+    },
+});
 
-    if (mode === 'url') {
-        await removeSoundFile(scene);
-    } else {
-        scene.soundUrl = '';
+function canAddSound(scene: Scene): boolean {
+    return scene.sounds.length < config.maxSoundsPerScene;
+}
+
+/** Drop one cue from a scene, taking its staged upload with it if it can. */
+async function removeSound(scene: Scene, index: number): Promise<void> {
+    const [removed] = scene.sounds.splice(index, 1);
+    const id = removed?.file?.id;
+
+    // After the splice, so a file another scene still names survives.
+    if (id && !soundFileStillUsed(plan, id)) {
+        await discardAttachment(id);
     }
 }
 
-async function onSoundFile(scene: Scene, files: FileList): Promise<void> {
-    const file = files[0];
+/**
+ * Reorder the cues within a scene. Separate from the scene drag above it and
+ * deliberately stopped from bubbling: the scene card is itself a drop target,
+ * so a cue dropped without this would reorder the scenes as well.
+ */
+const dragSound = ref<{ scene: string; id: string } | null>(null);
 
-    if (!file) {
+function onSoundDrop(scene: Scene, targetId: string): void {
+    const dragged = dragSound.value;
+    dragSound.value = null;
+
+    // A cue only ever moves within its own scene.
+    if (!dragged || dragged.scene !== scene.id) {
         return;
     }
 
-    // A scene holds one sound file, so a new upload replaces the old one.
-    await removeSoundFile(scene);
+    const from = scene.sounds.findIndex((sound) => sound.id === dragged.id);
+    const to = scene.sounds.findIndex((sound) => sound.id === targetId);
 
-    const error = validationError(file, config, config.soundExtensions);
-
-    if (error) {
-        scene.soundFile = {
-            id: '',
-            name: file.name,
-            size: file.size,
-            status: 'error',
-            error,
-        };
-
+    if (from < 0 || to < 0 || from === to) {
         return;
     }
 
-    scene.soundFile = {
-        id: '',
-        name: file.name,
-        size: file.size,
-        status: 'uploading',
-    };
-
-    scene.soundFile = await uploadAttachment(file, SOUND_COLLECTION);
-}
-
-async function removeSoundFile(scene: Scene): Promise<void> {
-    const removed = scene.soundFile;
-    scene.soundFile = null;
-
-    await discardAttachment(removed?.id ?? '');
+    const [moved] = scene.sounds.splice(from, 1);
+    scene.sounds.splice(to, 0, moved);
 }
 
 const LIGHT_PRESETS = [
@@ -111,13 +88,6 @@ const LIGHT_PRESETS = [
     'spot valgus lava keskel',
     'väga hämar sinine valgus',
     'fadeout 1s',
-];
-
-const SOUND_PRESETS = [
-    'ruutu10 tunnus 3s',
-    'ruutu10 tunnus 15s',
-    'film noare (vabal valikul)',
-    'shakespeare (vabal valikul)',
 ];
 
 function appendLight(scene: Scene, text: string): void {
@@ -145,9 +115,15 @@ function duplicate(index: number): void {
     const copy: Scene = {
         ...plan.scenes[index],
         id: nextSceneId(plan.scenes),
-        // The sound file stays with the scene it was uploaded for — a handle
-        // may only belong to one scene, so the copy starts without one.
-        soundFile: null,
+        // The copy keeps the cues, naming the very same stored files. Two
+        // scenes sharing one sound is ordinary now — it is what the "pick one
+        // you already have" step does — so a duplicated scene need not lose
+        // its music. Copied out of the source's array rather than sharing it,
+        // or editing one scene's cues would edit the other's.
+        sounds: plan.scenes[index].sounds.map((sound) => ({
+            ...sound,
+            file: sound.file ? { ...sound.file } : null,
+        })),
         collapsed: false,
     };
     plan.scenes.forEach((s) => (s.collapsed = true));
@@ -158,7 +134,13 @@ async function remove(index: number): Promise<void> {
     if (plan.scenes.length > 1) {
         const [removed] = plan.scenes.splice(index, 1);
 
-        await discardAttachment(removed?.soundFile?.id ?? '');
+        // After the splice, so a file another scene still names survives.
+        await Promise.all(
+            (removed?.sounds ?? [])
+                .map((sound) => sound.file?.id)
+                .filter((id) => id && !soundFileStillUsed(plan, id))
+                .map((id) => discardAttachment(id as string)),
+        );
     }
 }
 
@@ -347,37 +329,87 @@ function onDrop(targetId: string): void {
                                     (fade, järsk katkestus).
                                 </li>
                             </ul>
-                            <RadioPills
-                                compact
-                                :model-value="soundMode(scene)"
-                                :options="SOUND_MODES"
-                                @update:model-value="
-                                    setSoundMode(scene, $event)
-                                "
-                            />
-                            <input
-                                v-if="soundMode(scene) === 'url'"
-                                v-model="scene.soundUrl"
-                                type="url"
-                                placeholder="Link helifailile (https://…)"
-                                class="w-full rounded-lg border-2 border-r10-grey-200 bg-white px-3.5 py-2.5 font-r10-body text-[13px] text-r10-ink outline-none focus:border-r10-orange"
-                            />
-                            <template v-else>
-                                <R10Dropzone
-                                    v-if="!scene.soundFile"
-                                    compact
-                                    label="Vali helifail"
-                                    :hint="`Üks fail stseeni kohta · lubatud: ${soundExtensionHint}`"
-                                    :accept="soundAccept"
-                                    @files="onSoundFile(scene, $event)"
-                                />
+                            <!-- The scene's cues, in the order they are
+                                 played. Each row drags within its own scene;
+                                 the drop is stopped from bubbling because the
+                                 scene card around it is a drop target too. -->
+                            <div
+                                v-for="(sound, position) in scene.sounds"
+                                :key="sound.id"
+                                class="flex items-center gap-2"
+                                @dragover.prevent
+                                @drop.stop.prevent="onSoundDrop(scene, sound.id)"
+                            >
+                                <span
+                                    draggable="true"
+                                    title="Lohista ümberjärjestamiseks"
+                                    class="flex shrink-0 cursor-grab text-r10-grey-500"
+                                    @dragstart.stop="
+                                        dragSound = {
+                                            scene: scene.id,
+                                            id: sound.id,
+                                        }
+                                    "
+                                >
+                                    <svg
+                                        width="10"
+                                        height="16"
+                                        viewBox="0 0 12 18"
+                                        fill="currentColor"
+                                    >
+                                        <circle cx="3" cy="3" r="1.5" />
+                                        <circle cx="9" cy="3" r="1.5" />
+                                        <circle cx="3" cy="9" r="1.5" />
+                                        <circle cx="9" cy="9" r="1.5" />
+                                        <circle cx="3" cy="15" r="1.5" />
+                                        <circle cx="9" cy="15" r="1.5" />
+                                    </svg>
+                                </span>
+
                                 <R10FileChip
-                                    v-else
-                                    :file="scene.soundFile"
+                                    v-if="sound.file"
+                                    class="min-w-0 flex-1"
+                                    :file="sound.file"
                                     open-label="Ava uues aknas"
-                                    @remove="removeSoundFile(scene)"
+                                    @remove="removeSound(scene, position)"
                                 />
-                            </template>
+                                <span
+                                    v-else
+                                    class="flex min-w-0 flex-1 items-center gap-3 rounded-[10px] border border-r10-grey-200 bg-white px-3.5 py-2.5"
+                                >
+                                    <Diamond :size="8" />
+                                    <a
+                                        :href="sound.url"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="min-w-0 flex-1 truncate text-sm font-medium text-r10-navy underline decoration-r10-navy/30 transition hover:text-r10-orange hover:decoration-r10-orange"
+                                    >
+                                        {{ sound.url }}
+                                    </a>
+                                    <button
+                                        type="button"
+                                        title="Eemalda"
+                                        class="shrink-0 cursor-pointer border-none bg-transparent text-[15px] leading-none text-r10-grey-500 transition hover:text-r10-error"
+                                        @click="removeSound(scene, position)"
+                                    >
+                                        ✕
+                                    </button>
+                                </span>
+                            </div>
+
+                            <button
+                                v-if="canAddSound(scene)"
+                                type="button"
+                                class="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-full border-2 border-r10-navy-300 bg-transparent px-3.5 py-2 font-r10-body text-[11px] font-bold tracking-[0.06em] text-r10-navy uppercase transition hover:border-r10-orange hover:text-r10-orange"
+                                @click="openSoundDialog(scene)"
+                            >
+                                <Plus class="h-3.5 w-3.5" />
+                                Lisa helifail
+                            </button>
+                            <p v-else class="text-xs text-r10-grey-500">
+                                Ühel stseenil saab olla kuni
+                                {{ config.maxSoundsPerScene }} heli.
+                            </p>
                             <textarea
                                 v-model="scene.sound"
                                 placeholder="Heli kasutuse kirjeldus, nt „alusta 10. sekundist, pane mängima siis kui esinejad tarduvad“"
@@ -418,5 +450,13 @@ function onDrop(targetId: string): void {
         >
             <span class="text-lg leading-none">+</span> Lisa stseen
         </button>
+
+        <!-- One dialog for the whole step, pointed at whichever scene asked
+             for it, so a scene card carries no modal of its own. -->
+        <SceneSoundDialog
+            v-if="addingTo"
+            v-model:open="soundDialogOpen"
+            :scene-id="addingTo"
+        />
     </section>
 </template>
