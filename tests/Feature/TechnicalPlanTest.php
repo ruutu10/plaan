@@ -69,7 +69,7 @@ class TechnicalPlanTest extends TestCase
                 'musicianDetail' => '',
             ],
             'scenes' => [
-                ['id' => 'stseen-1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'soundFile' => null, 'sound' => '', 'notes' => ''],
+                ['id' => 'stseen-1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'sounds' => [], 'sound' => '', 'notes' => ''],
             ],
             'equipment' => [
                 'items' => [
@@ -577,7 +577,7 @@ class TechnicalPlanTest extends TestCase
         // fields as it renders, so a null would break the review step.
         $plan = TechnicalPlan::factory()->submitted()->create([
             'sound' => ['micsMode' => null, 'micsDetail' => null, 'musicianMode' => null, 'musicianDetail' => null],
-            'scenes' => [['id' => null, 'name' => null, 'light' => null, 'soundUrl' => null, 'soundFile' => null, 'sound' => null, 'notes' => null]],
+            'scenes' => [['id' => null, 'name' => null, 'light' => null, 'sounds' => null, 'sound' => null, 'notes' => null]],
             'equipment' => [
                 'items' => [['id' => null, 'name' => null, 'use' => null]],
                 'smoke' => null,
@@ -595,7 +595,7 @@ class TechnicalPlanTest extends TestCase
             ->where('initialPlan.sound.musicianDetail', '')
             ->where('initialPlan.scenes.0.name', '')
             ->where('initialPlan.scenes.0.light', '')
-            ->where('initialPlan.scenes.0.soundUrl', '')
+            ->where('initialPlan.scenes.0.sounds', [])
             ->where('initialPlan.scenes.0.sound', '')
             ->where('initialPlan.scenes.0.notes', '')
             ->where('initialPlan.equipment.items.0.name', '')
@@ -1003,14 +1003,14 @@ class TechnicalPlanTest extends TestCase
             ->andReturnUsing(function (TechnicalPlan $plan) use ($handle): string {
                 $scene = (new TechnicalPlanResource($plan))->toArray(request())['scenes'][0];
 
-                $this->assertSame($handle, $scene['soundFile']['id']);
-                $this->assertSame('muusika.mp3', $scene['soundFile']['name']);
+                $this->assertSame($handle, $scene['sounds'][0]['file']['id']);
+                $this->assertSame('muusika.mp3', $scene['sounds'][0]['file']['name']);
 
                 return 'Tagasiside';
             });
 
         $this->postJson(route('technical-plan.ai'), $this->validPayload([
-            'scenes' => [['soundFile' => ['id' => $handle, 'name' => 'muusika.mp3', 'size' => 120]]],
+            'scenes' => [['sounds' => [$this->soundCue($handle, 'muusika.mp3')]]],
         ]))->assertOk();
     }
 
@@ -1424,7 +1424,7 @@ class TechnicalPlanTest extends TestCase
 
         $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
             'scenes' => [
-                ['soundFile' => ['id' => $handle, 'name' => 'muusika.mp3', 'size' => 120]],
+                ['sounds' => [$this->soundCue($handle, 'muusika.mp3')]],
             ],
         ]));
 
@@ -1441,12 +1441,12 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame(0, PendingUpload::count());
 
         // Moving the file re-keys it, so the scene now carries the new handle…
-        $stored = $plan->scenes[0]['soundFile'];
+        $stored = $plan->scenes[0]['sounds'][0]['file'];
         $this->assertSame((string) $sound->first()->uuid, $stored['id']);
         $this->assertSame('muusika.mp3', $stored['name']);
 
         // …and the client is handed that same handle back, with its links.
-        $returned = $response->json('scenes.0.soundFile');
+        $returned = $response->json('scenes.0.sounds.0.file');
         $this->assertSame($stored['id'], $returned['id']);
         $this->assertSame(route('attachments.show', $stored['id']), $returned['url']);
         $this->assertSame(
@@ -1460,21 +1460,21 @@ class TechnicalPlanTest extends TestCase
         Storage::fake('local');
 
         $token = $this->postJson(route('technical-plan.store'), $this->validPayload([
-            'scenes' => [['soundFile' => ['id' => $this->soundHandle()]]],
+            'scenes' => [['sounds' => [$this->soundCue($this->soundHandle())]]],
         ]))->json('token');
 
-        $handle = TechnicalPlan::first()->scenes[0]['soundFile']['id'];
+        $handle = TechnicalPlan::first()->scenes[0]['sounds'][0]['file']['id'];
 
         // The wizard re-submits the handle it got back; the file must survive.
         $this->postJson(route('technical-plan.store'), $this->validPayload([
             'token' => $token,
             'submit' => true,
-            'scenes' => [['soundFile' => ['id' => $handle]]],
+            'scenes' => [['sounds' => [$this->soundCue($handle)]]],
         ]))->assertOk();
 
         $plan = TechnicalPlan::first();
         $this->assertCount(1, $plan->getMedia(TechnicalPlan::SOUND_COLLECTION));
-        $this->assertSame($handle, $plan->scenes[0]['soundFile']['id']);
+        $this->assertSame($handle, $plan->scenes[0]['sounds'][0]['file']['id']);
         $this->assertSame(1, Media::count());
     }
 
@@ -1483,17 +1483,17 @@ class TechnicalPlanTest extends TestCase
         Storage::fake('local');
 
         $token = $this->postJson(route('technical-plan.store'), $this->validPayload([
-            'scenes' => [['soundFile' => ['id' => $this->soundHandle()]]],
+            'scenes' => [['sounds' => [$this->soundCue($this->soundHandle())]]],
         ]))->json('token');
 
         $this->postJson(route('technical-plan.store'), $this->validPayload([
             'token' => $token,
-            'scenes' => [['soundFile' => null]],
+            'scenes' => [['sounds' => []]],
         ]))->assertOk();
 
         $plan = TechnicalPlan::first();
         $this->assertCount(0, $plan->getMedia(TechnicalPlan::SOUND_COLLECTION));
-        $this->assertNull($plan->scenes[0]['soundFile']);
+        $this->assertSame([], $plan->scenes[0]['sounds']);
         $this->assertSame(0, Media::count());
     }
 
@@ -1502,28 +1502,128 @@ class TechnicalPlanTest extends TestCase
         Storage::fake('local');
 
         $this->postJson(route('technical-plan.store'), $this->validPayload([
-            'scenes' => [['soundFile' => ['id' => 'does-not-exist', 'name' => 'ghost.mp3']]],
+            'scenes' => [['sounds' => [$this->soundCue('does-not-exist', 'ghost.mp3')]]],
         ]))->assertOk();
 
         $plan = TechnicalPlan::first();
         $this->assertCount(0, $plan->getMedia(TechnicalPlan::SOUND_COLLECTION));
-        $this->assertNull($plan->scenes[0]['soundFile']);
+        $this->assertSame([], $plan->scenes[0]['sounds']);
     }
 
-    public function test_a_scene_cannot_have_both_a_sound_link_and_a_sound_file(): void
+    public function test_one_sound_cannot_be_both_a_link_and_a_file(): void
     {
         Storage::fake('local');
 
         $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
-            'scenes' => [[
-                'soundUrl' => 'https://example.com/muusika.mp3',
-                'soundFile' => ['id' => $this->soundHandle()],
-            ]],
+            'scenes' => [['sounds' => [[
+                'id' => 'heli-1',
+                'url' => 'https://example.com/muusika.mp3',
+                'file' => ['id' => $this->soundHandle()],
+            ]]]],
         ]));
 
         $response->assertUnprocessable();
-        $this->assertArrayHasKey('scenes.0.soundFile', $response->json('errors'));
+        $this->assertArrayHasKey('scenes.0.sounds.0', $response->json('errors'));
         $this->assertSame(0, TechnicalPlan::count());
+    }
+
+    public function test_a_sound_must_be_either_a_link_or_a_file(): void
+    {
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'scenes' => [['sounds' => [['id' => 'heli-1', 'url' => '', 'file' => null]]]],
+        ]));
+
+        $response->assertUnprocessable();
+        $this->assertArrayHasKey('scenes.0.sounds.0', $response->json('errors'));
+        $this->assertSame(0, TechnicalPlan::count());
+    }
+
+    public function test_a_scene_carries_several_sounds_in_the_order_they_are_played(): void
+    {
+        Storage::fake('local');
+
+        $entry = $this->soundHandle('sisse.mp3');
+        $exit = $this->soundHandle('valja.mp3');
+
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'scenes' => [['sounds' => [
+                $this->soundCue($entry, 'sisse.mp3'),
+                ['id' => 'heli-2', 'url' => 'https://example.com/vahepeal.ogg', 'file' => null],
+                $this->soundCue($exit, 'valja.mp3', 'heli-3'),
+            ]]],
+        ]))->json('token');
+
+        $plan = TechnicalPlan::first();
+        $sounds = $plan->scenes[0]['sounds'];
+
+        $this->assertCount(3, $sounds);
+        $this->assertCount(2, $plan->getMedia(TechnicalPlan::SOUND_COLLECTION));
+
+        // The order is the order they play in, and the link sits between the
+        // two files exactly where it was put.
+        $this->assertSame('sisse.mp3', $sounds[0]['file']['name']);
+        $this->assertSame('https://example.com/vahepeal.ogg', $sounds[1]['url']);
+        $this->assertNull($sounds[1]['file']);
+        $this->assertSame('valja.mp3', $sounds[2]['file']['name']);
+
+        // Re-submitting the handles the client got back keeps every file.
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $token,
+            'scenes' => [['sounds' => array_map(
+                fn (array $sound, int $index): array => [
+                    'id' => 'heli-'.($index + 1),
+                    'url' => $sound['url'],
+                    'file' => $sound['file'] ? ['id' => $sound['file']['id']] : null,
+                ],
+                $sounds,
+                array_keys($sounds),
+            )]],
+        ]))->assertOk();
+
+        $this->assertCount(3, TechnicalPlan::first()->scenes[0]['sounds']);
+        $this->assertSame(2, Media::count());
+    }
+
+    public function test_two_scenes_may_share_one_sound_file(): void
+    {
+        Storage::fake('local');
+
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'scenes' => [['sounds' => [$this->soundCue($this->soundHandle())]]],
+        ]))->json('token');
+
+        $handle = TechnicalPlan::first()->scenes[0]['sounds'][0]['file']['id'];
+
+        // The same stored file named by two scenes — what picking a sound the
+        // plan already has does.
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $token,
+            'scenes' => [
+                ['sounds' => [$this->soundCue($handle)]],
+                ['sounds' => [$this->soundCue($handle)]],
+            ],
+        ]))->assertOk();
+
+        $plan = TechnicalPlan::first();
+
+        $this->assertSame(1, Media::count());
+        $this->assertSame($handle, $plan->scenes[0]['sounds'][0]['file']['id']);
+        $this->assertSame($handle, $plan->scenes[1]['sounds'][0]['file']['id']);
+
+        // One scene letting go of it leaves the other's cue playing.
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $token,
+            'scenes' => [
+                ['sounds' => []],
+                ['sounds' => [$this->soundCue($handle)]],
+            ],
+        ]))->assertOk();
+
+        $plan = TechnicalPlan::first();
+
+        $this->assertSame(1, Media::count());
+        $this->assertSame([], $plan->scenes[0]['sounds']);
+        $this->assertSame($handle, $plan->scenes[1]['sounds'][0]['file']['id']);
     }
 
     public function test_a_sound_upload_only_accepts_sound_file_types(): void
@@ -1555,15 +1655,15 @@ class TechnicalPlanTest extends TestCase
         $handle = $this->uploadHandle();
 
         $this->postJson(route('technical-plan.store'), $this->validPayload([
-            'scenes' => [['soundFile' => ['id' => $handle, 'name' => 'plaan.pdf', 'size' => 120]]],
+            'scenes' => [['sounds' => [$this->soundCue($handle, 'plaan.pdf')]]],
         ]))->assertOk();
 
         $plan = TechnicalPlan::first();
 
         // The handle is refused on the stored file's own type: nothing lands in
-        // the sound collection and the scene is left without a file.
+        // the sound collection and the scene is left without the cue.
         $this->assertCount(0, $plan->getMedia(TechnicalPlan::SOUND_COLLECTION));
-        $this->assertNull($plan->scenes[0]['soundFile']);
+        $this->assertSame([], $plan->scenes[0]['sounds']);
     }
 
     public function test_a_sound_upload_rejects_an_unknown_collection(): void
@@ -1579,19 +1679,108 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame(0, Media::count());
     }
 
+    public function test_the_reusable_sound_listing_offers_the_users_other_plans(): void
+    {
+        Storage::fake('local');
+
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'scenes' => [['sounds' => [$this->soundCue($this->soundHandle('tunnus.mp3'))]]],
+        ]))->json('token');
+
+        $sounds = $this->getJson(route('technical-plan.sounds'))->assertOk()->json('results');
+
+        $this->assertCount(1, $sounds);
+        $this->assertSame('tunnus.mp3', $sounds[0]['name']);
+        $this->assertSame($token, $sounds[0]['planToken']);
+
+        // The plan being written is left out: the wizard is already holding
+        // its own cues and offers them without asking.
+        $this->assertSame(
+            [],
+            $this->getJson(route('technical-plan.sounds', ['exclude' => $token]))->json('results'),
+        );
+    }
+
+    public function test_the_reusable_sound_listing_hides_other_peoples_plans(): void
+    {
+        Storage::fake('local');
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'scenes' => [['sounds' => [$this->soundCue($this->soundHandle())]]],
+        ]))->assertOk();
+
+        $this->actingAs(User::factory()->create());
+
+        $this->assertSame([], $this->getJson(route('technical-plan.sounds'))->json('results'));
+    }
+
+    public function test_reusing_a_sound_stages_a_copy_for_the_new_plan(): void
+    {
+        Storage::fake('local');
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'scenes' => [['sounds' => [$this->soundCue($this->soundHandle())]]],
+        ]))->assertOk();
+
+        $source = TechnicalPlan::first();
+        $sourceMedia = $source->getMedia(TechnicalPlan::SOUND_COLLECTION)->first();
+
+        $copied = $this->postJson(route('technical-plan.sounds.reuse', $sourceMedia->uuid))
+            ->assertOk()
+            ->json();
+
+        // A staged copy under a fresh handle — the plan it came from is left
+        // exactly as it was.
+        $this->assertNotSame((string) $sourceMedia->uuid, $copied['id']);
+        $this->assertSame('muusika.mp3', $copied['name']);
+        $this->assertInstanceOf(PendingUpload::class, Media::where('uuid', $copied['id'])->first()->model);
+        $this->assertCount(1, $source->refresh()->getMedia(TechnicalPlan::SOUND_COLLECTION));
+    }
+
+    public function test_a_sound_cannot_be_reused_from_a_plan_the_user_may_not_open(): void
+    {
+        Storage::fake('local');
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'scenes' => [['sounds' => [$this->soundCue($this->soundHandle())]]],
+        ]))->assertOk();
+
+        $uuid = TechnicalPlan::first()->getMedia(TechnicalPlan::SOUND_COLLECTION)->first()->uuid;
+
+        $this->actingAs(User::factory()->create());
+
+        $this->postJson(route('technical-plan.sounds.reuse', $uuid))->assertForbidden();
+        $this->assertSame(0, PendingUpload::count());
+    }
+
+    public function test_only_a_stored_scene_sound_can_be_reused(): void
+    {
+        Storage::fake('local');
+
+        // A plain attachment is not a scene's cue, whoever it belongs to.
+        $handle = $this->uploadHandle();
+
+        $this->postJson(route('technical-plan.sounds.reuse', $handle))->assertNotFound();
+        $this->postJson(route('technical-plan.sounds.reuse', 'does-not-exist'))->assertNotFound();
+    }
+
     public function test_copying_a_plan_duplicates_its_scene_sound_files(): void
     {
         Storage::fake('local');
 
         $token = $this->postJson(route('technical-plan.store'), $this->validPayload([
             'submit' => true,
-            'scenes' => [['soundFile' => ['id' => $this->soundHandle()]]],
+            'scenes' => [['sounds' => [$this->soundCue($this->soundHandle())]]],
         ]))->json('token');
 
         $source = TechnicalPlan::where('token', $token)->first();
         $sourceMedia = $source->getMedia(TechnicalPlan::SOUND_COLLECTION)->first();
 
-        $copied = $this->postJson(route('technical-plan.copy', $source))->json('scenes.0.soundFile');
+        $copied = $this->postJson(route('technical-plan.copy', $source))->json('scenes.0.sounds.0.file');
 
         // A fresh handle on a staged copy — the source keeps its own file.
         $this->assertNotSame((string) $sourceMedia->uuid, $copied['id']);
@@ -1601,7 +1790,7 @@ class TechnicalPlanTest extends TestCase
         // Submitting the copy moves the duplicate onto the new plan.
         $newToken = $this->postJson(route('technical-plan.store'), $this->validPayload([
             'submit' => true,
-            'scenes' => [['soundFile' => $copied]],
+            'scenes' => [['sounds' => [['id' => 'heli-1', 'url' => '', 'file' => $copied]]]],
         ]))->json('token');
 
         $new = TechnicalPlan::where('token', $newToken)->first();
@@ -1674,6 +1863,7 @@ class TechnicalPlanTest extends TestCase
 
         $handle = $this->uploadHandle('tehnikaplaan.pdf');
         $sound = $this->soundHandle('avamuusika.mp3');
+        $outro = $this->soundHandle('lopumuusika.mp3');
         // The mail names the performance the plan is attached to, not the meta
         // the wizard posted, so the duration it prints is this one.
         $performance = Performance::factory()
@@ -1684,7 +1874,11 @@ class TechnicalPlanTest extends TestCase
             'submit' => true,
             'meta' => ['performanceId' => $performance->id],
             'scenes' => [
-                ['id' => 'stseen-1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'soundUrl' => '', 'soundFile' => ['id' => $sound], 'sound' => 'Fade sisse', 'notes' => 'Kõik laval'],
+                ['id' => 'stseen-1', 'name' => 'Lavale tulek', 'light' => 'Soe üldvalgus', 'sounds' => [
+                    $this->soundCue($sound, 'avamuusika.mp3'),
+                    ['id' => 'heli-2', 'url' => 'https://example.com/vahemuusika.ogg', 'file' => null],
+                    $this->soundCue($outro, 'lopumuusika.mp3', 'heli-3'),
+                ], 'sound' => 'Fade sisse', 'notes' => 'Kõik laval'],
             ],
             'extra' => ['files' => [['id' => $handle]]],
         ]))->assertOk();
@@ -1703,7 +1897,11 @@ class TechnicalPlanTest extends TestCase
         $this->assertStringContainsString('2 käsimikrofoni', $html);
         $this->assertStringContainsString('Lavale tulek', $html);
         $this->assertStringContainsString('Soe üldvalgus', $html);
+        // Every cue of the scene reaches the mail, links included — the
+        // technician plays them off this document.
         $this->assertStringContainsString('avamuusika.mp3', $html);
+        $this->assertStringContainsString('https://example.com/vahemuusika.ogg', $html);
+        $this->assertStringContainsString('lopumuusika.mp3', $html);
         $this->assertStringContainsString('Suitsumasin', $html);
         $this->assertStringContainsString('Palun jälgida ajakava.', $html);
         $this->assertStringContainsString('tehnikaplaan.pdf', $html);
@@ -1753,5 +1951,19 @@ class TechnicalPlanTest extends TestCase
             'file' => UploadedFile::fake()->create($name, 120, 'audio/mpeg'),
             'collection' => TechnicalPlan::SOUND_COLLECTION,
         ])->json('id');
+    }
+
+    /**
+     * One of a scene's cues, as the wizard submits an uploaded file.
+     *
+     * @return array{id: string, url: string, file: array{id: string, name: string, size: int}}
+     */
+    private function soundCue(string $handle, string $name = 'muusika.mp3', string $id = 'heli-1'): array
+    {
+        return [
+            'id' => $id,
+            'url' => '',
+            'file' => ['id' => $handle, 'name' => $name, 'size' => 120],
+        ];
     }
 }

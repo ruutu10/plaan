@@ -201,13 +201,30 @@ Igal stseenil on **nimi**, **valgus**, **heli** ja **märkused**. Valgusel ja he
 on ühe klikiga valmisnupud (nt „kiire blackout“, „üldvalgus“, „ruutu10 tunnus
 3s“), mis lisatakse juba kirjutatu järele.
 
-Stseeni heli antakse **kas** lingina **või** üleslaaditud failina - mitte kunagi
-mõlemana; ühelt teisele vahetamine tühjendab teise. Üks helifail stseeni kohta ja
-uus üleslaadimine asendab vana. Kui fail (või otsene helilink) on brauseris
-mängitav, saab seda kohapeal kuulata.
+Ühel stseenil võib olla **mitu heli** - näiteks sissetuleku- ja
+väljaminekumuusika samas stseenis. Helid on nimekirjas mängimise järjekorras ja
+neid saab lohistades ümber järjestada; ühte stseeni mahub kuni 10 heli.
+
+Heli lisamine käib kolmes sammus: vajuta **„Lisa heli“**, vali **kust heli
+tuleb**, seejärel **kirjelda selle kasutust**. Allikaid on kolm:
+
+- **Laadi üles** - fail arvutist (lubatud mp3, wav, ogg).
+- **Link** - viide helifailile mujal (nt YouTube või pilvekaust).
+- **Vali olemasolev** - heli, mille oled juba lisanud. Valida saab nii selle
+  sama plaani teiste stseenide helide seast kui ka oma varasematelt plaanidelt.
+  Varasemalt plaanilt valitud failist tehakse koopia - plaan, kust valisid, jääb
+  puutumata. Sama plaani sees viitavad mõlemad stseenid ühele failile; ühest
+  stseenist eemaldamine jätab teise heli alles.
+
+Iga üksik heli on **kas** link **või** üleslaaditud fail, mitte mõlemat. Kui fail
+(või otsene helilink) on brauseris mängitav, saab seda kohapeal kuulata.
+
+Kirjeldus on stseenil **üks**, kogu heli kasutuse kohta - ka siis, kui heli on
+mitu. Nii et mitme heli puhul kirjuta kirjeldusse, milline neist millal mängib
+(nt „sissetulekul esimene, kummarduse ajal teine“).
 
 Stseene saab lohistades ümber järjestada, dubleerida, kokku voltida ja kustutada.
-Dubleeritud stseen ei võta algse stseeni helifaili kaasa.
+Dubleeritud stseen võtab algse stseeni helid kaasa.
 
 **5. Erivahendid.**
 Valikuline nimekiri esemetest (nimi + kuidas seda kasutatakse või millised on
@@ -229,7 +246,8 @@ Valmis plaan dokumendina. Siit saad:
 - **AI ülevaatus** - küsida AI-tehnikult ülevaatust (§4.6).
 - **Esita tehnikutiimile** - plaan salvestada ja esitada.
 - Avada **tehniku mängimisvaate** - plaani keskendunud, stseenihaaval lugemise,
-  mis on mõeldud puldi taha.
+  mis on mõeldud puldi taha. Iga stseeni juures on kõik selle helid järjekorras,
+  igaüks oma mängijaga; heli, mida brauser lahti ei saa, jääb lingiks.
 
 ### 4.3 Salvestamine ja mustandid
 
@@ -301,10 +319,10 @@ dokument, mis on koostatud samade reeglite järgi.
 
 - **Manused:** kuni 20 MB faili kohta. Lubatud tüübid: doc, docx, pdf, jpg, jpeg,
   png, gif, mp4, mov, avi, mkv, mp3, wav, ogg, qlc, txt, webp.
-- **Stseeni helifailid:** ainult mp3, wav, ogg.
+- **Stseeni helifailid:** ainult mp3, wav, ogg. Kuni 10 heli ühe stseeni kohta.
 - Väljade pikkused: formaadi kirjeldus 5000 märki; stseeni valgus/heli/märkused
-  ja heli täpsustusväljad 2000 igaüks; erivahendi kasutus 1000; vaba tekst
-  10 000; kestus 1–240 minutit.
+  ja heli täpsustusväljad 2000 igaüks; helilink 2000; erivahendi kasutus 1000;
+  vaba tekst 10 000; kestus 1–240 minutit.
 
 ---
 

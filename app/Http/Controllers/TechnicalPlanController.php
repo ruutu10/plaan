@@ -12,6 +12,8 @@ use App\Events\TechnicalPlanSubmitted;
 use App\Http\Requests\StoreTechnicalPlanRequest;
 use App\Http\Requests\UpdateTechnicalPlanStatusRequest;
 use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
+use App\Http\Resources\Attachment as AttachmentResource;
+use App\Http\Resources\ReusableSound as ReusableSoundResource;
 use App\Http\Resources\SavedTechnicalPlan as SavedTechnicalPlanResource;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Http\Resources\TechnicalPlanSummary as TechnicalPlanSummaryResource;
@@ -26,9 +28,11 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class TechnicalPlanController extends Controller
@@ -215,6 +219,76 @@ class TechnicalPlanController extends Controller
         ]);
 
         return TechnicalPlanResource::make($plan)->withStagedCopy($stageCopy->handle($plan));
+    }
+
+    /**
+     * The sound files the user could reuse on the plan they are writing:
+     * everything stored against a plan they may open, less the plan being
+     * edited — the wizard already holds that one's cues in its own state and
+     * offers them without asking the server.
+     */
+    public function sounds(Request $request): JsonResponse
+    {
+        $exclude = $request->string('exclude')->toString();
+        $allowed = AllowedAttachment::extensionsFor(TechnicalPlan::SOUND_COLLECTION);
+
+        // Asked from the plans' side rather than the media's: a sound is only
+        // ever offered as "the one from that plan", so the plan is what the
+        // listing is built out of — and each file's own is then already to hand.
+        $plans = TechnicalPlan::query()
+            ->visibleTo($request->user())
+            ->with(['media', 'performance.format'])
+            ->latest('id')
+            ->limit(50);
+
+        if ($exclude !== '') {
+            $plans->where('token', '!=', $exclude);
+        }
+
+        $sounds = $plans->get()->flatMap(fn (TechnicalPlan $plan): SupportCollection => $plan
+            ->attachments(TechnicalPlan::SOUND_COLLECTION)
+            // Belt and braces: a plan's sound collection is already held to the
+            // audio allowlist on the way in, twice over.
+            ->filter(fn (Media $media): bool => in_array(strtolower($media->extension), $allowed, true))
+            ->map(fn (Media $media): array => ReusableSoundResource::make($media, $plan)->resolve($request)));
+
+        return response()->json(['results' => $sounds->values()->all()]);
+    }
+
+    /**
+     * Stage a copy of a sound file the user already has on another plan, so the
+     * plan being written can carry it as its own.
+     *
+     * The source plan is left untouched — the copy is a fresh staged upload,
+     * moved onto this plan on save like any other file. That is what keeps two
+     * plans from sharing one file's lifetime, where dropping a cue from one
+     * would take the sound out from under the other.
+     */
+    public function reuseSound(Request $request, string $uuid): AttachmentResource
+    {
+        $media = Media::query()
+            ->where('uuid', $uuid)
+            ->where('collection_name', TechnicalPlan::SOUND_COLLECTION)
+            ->first();
+
+        $plan = $media?->model instanceof TechnicalPlan ? $media->model : null;
+        $allowed = AllowedAttachment::extensionsFor(TechnicalPlan::SOUND_COLLECTION);
+
+        if (! $media || ! $plan || ! in_array(strtolower($media->extension), $allowed, true)) {
+            abort(404);
+        }
+
+        if (! $plan->isVisibleTo($request->user())) {
+            Log::warning('Refused to reuse a sound file from a plan the user may not open', [
+                'plan_id' => $plan->id,
+                'user_id' => $request->user()->id,
+                'ip' => $request->ip(),
+            ]);
+
+            abort(403);
+        }
+
+        return AttachmentResource::make($plan->duplicateMediaToStaging($media));
     }
 
     /**

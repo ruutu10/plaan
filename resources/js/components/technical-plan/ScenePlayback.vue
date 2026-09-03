@@ -4,7 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { formatVenueClockTime } from '@/lib/date';
 import { hideFeedbackWidget, showFeedbackWidget } from '@/lib/sentry';
 import Diamond from './Diamond.vue';
-import { formatFileSize, playableAudio } from './plan';
+import { formatFileSize, soundAudioUrl } from './plan';
 import { usePlan } from './planKey';
 import { normaliseScenes } from './presentPlan';
 import SceneAudio from './SceneAudio.vue';
@@ -22,10 +22,14 @@ const emit = defineEmits<{ close: [] }>();
  * technician reads off during the show.
  */
 const scenes = computed(() =>
-    normaliseScenes(plan).map((scene, index) => ({
+    normaliseScenes(plan).map((scene) => ({
         ...scene,
-        // Null for sound that only exists behind a link no player can read.
-        audio: playableAudio(plan.scenes[index]),
+        // Each cue gets its own player. `audio` is null for sound that only
+        // exists behind a link no player can read — that keeps its link line.
+        sounds: scene.sounds.map((sound) => ({
+            ...sound,
+            audio: soundAudioUrl(sound),
+        })),
     })),
 );
 
@@ -321,52 +325,54 @@ const cueLinkClass =
                         >
                             <div :class="cueLabelClass">Heli</div>
 
-                            <!-- Keyed so switching scenes builds a fresh
-                                 player instead of re-sourcing a playing one.
-                                 The file itself is named by the link below. -->
-                            <SceneAudio
-                                v-if="activeScene.audio"
-                                :key="activeScene.audio"
+                            <!-- One cue per row, in the order they are played:
+                                 the player where the browser can read the
+                                 sound, and always the name or link under it.
+                                 Keyed on the row so switching scenes builds
+                                 fresh players instead of re-sourcing playing
+                                 ones. -->
+                            <div
+                                v-for="sound in activeScene.sounds"
+                                :key="`${activeScene.num}-${sound.id}`"
                                 class="mt-3"
-                                :src="activeScene.audio"
-                            />
+                            >
+                                <SceneAudio v-if="sound.audio" :src="sound.audio" />
 
-                            <div :class="cueBodyClass">
                                 <a
-                                    v-if="activeScene.soundFile"
-                                    :href="activeScene.soundFile.url"
+                                    v-if="sound.file"
+                                    :href="sound.file.url"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="block"
-                                    :class="cueLinkClass"
+                                    class="mt-1.5 block"
+                                    :class="[cueBodyClass, cueLinkClass]"
                                 >
-                                    {{ activeScene.soundFile.name }}
+                                    {{ sound.file.name }}
                                     <span class="text-r10-navy-200"
                                         >({{
-                                            formatFileSize(
-                                                activeScene.soundFile.size,
-                                            )
+                                            formatFileSize(sound.file.size)
                                         }})</span
                                     >
                                 </a>
                                 <a
-                                    v-if="activeScene.soundUrl"
-                                    :href="activeScene.soundUrl"
+                                    v-else
+                                    :href="sound.url"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="block break-all"
-                                    :class="cueLinkClass"
+                                    class="mt-1.5 block break-all"
+                                    :class="[cueBodyClass, cueLinkClass]"
                                 >
-                                    {{ activeScene.soundUrl }}
+                                    {{ sound.url }}
                                 </a>
+                            </div>
+
+                            <!-- How the cues are used, in the performer's own
+                                 words. One description for the whole scene. -->
+                            <div :class="cueBodyClass">
                                 <template v-if="activeScene.sound">{{
                                     activeScene.sound
                                 }}</template>
                                 <span
-                                    v-else-if="
-                                        !activeScene.soundFile &&
-                                        !activeScene.soundUrl
-                                    "
+                                    v-else-if="!activeScene.sounds.length"
                                     class="text-r10-navy-300"
                                     >—</span
                                 >

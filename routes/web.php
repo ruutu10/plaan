@@ -100,6 +100,10 @@ Route::prefix('api/tehnikaplaan')
                 Route::post('/', [TechnicalPlanController::class, 'store'])->name('store');
                 Route::post('lookup', [TechnicalPlanController::class, 'lookup'])->name('lookup');
                 Route::get('performances', [TechnicalPlanController::class, 'performances'])->name('performances');
+                // Reusing a cue the performer already has on an earlier plan:
+                // the listing, and the copy that stages one for this plan.
+                Route::get('sounds', [TechnicalPlanController::class, 'sounds'])->name('sounds');
+                Route::post('sounds/{uuid}/reuse', [TechnicalPlanController::class, 'reuseSound'])->name('sounds.reuse');
                 Route::post('ai-review', [TechnicalPlanController::class, 'aiReview'])->name('ai')->middleware('throttle:15,10');
                 Route::get('plans/{plan:token}', [TechnicalPlanController::class, 'show'])->name('show');
                 Route::post('plans/{plan:token}/copy', [TechnicalPlanController::class, 'copy'])->name('copy');

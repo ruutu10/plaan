@@ -120,6 +120,10 @@ class TechnicalPlan extends Model implements HasMedia
      * The scenes' submitted sound-file handles, less any that do not point at
      * a file the sound collection accepts.
      *
+     * A scene names several, and two scenes may name the same file — reusing a
+     * cue is the point of the picker — so the list is deliberately left with
+     * its duplicates. Reconciliation keys by handle and copes.
+     *
      * The upload endpoint already holds an upload destined for this collection
      * to the audio allowlist, but that destination is the client's word — a
      * file uploaded as a plain attachment could otherwise be passed off as a
@@ -129,10 +133,15 @@ class TechnicalPlan extends Model implements HasMedia
      */
     private function submittedSoundFileHandles(): array
     {
-        $handles = array_values(array_filter(array_map(
-            fn (array $scene): ?array => $scene['soundFile'] ?? null,
-            $this->scenes,
-        )));
+        $handles = [];
+
+        foreach ($this->scenes as $scene) {
+            foreach ($scene['sounds'] ?? [] as $sound) {
+                if (is_array($sound) && is_array($sound['file'] ?? null)) {
+                    $handles[] = $sound['file'];
+                }
+            }
+        }
 
         $allowed = AllowedAttachment::extensionsFor(self::SOUND_COLLECTION);
 
@@ -151,11 +160,13 @@ class TechnicalPlan extends Model implements HasMedia
     /**
      * Reconcile the scenes' sound files with the handles the client submitted:
      * move each newly staged upload into the plan's sound collection, drop the
-     * files no scene refers to any more, and rewrite every scene's handle to
-     * the file as it is now stored (moving a staged upload re-keys it).
+     * files no scene refers to any more, and rewrite every scene's handles to
+     * the files as they are now stored (moving a staged upload re-keys it).
      *
-     * A scene holds at most one sound file, and never a file and a link at the
-     * same time — the request rules enforce both.
+     * A scene holds an ordered list of sounds, each of them either a link or an
+     * uploaded file but never both — the request rules hold every entry to
+     * exactly one of the two. Two scenes may name the same stored file, so a
+     * file only goes when the last scene naming it has let it go.
      */
     public function syncSceneSoundFiles(): void
     {
@@ -168,20 +179,44 @@ class TechnicalPlan extends Model implements HasMedia
         $lost = 0;
 
         $this->scenes = array_map(function (array $scene) use ($moved, $stored, &$lost): array {
-            $handle = $scene['soundFile']['id'] ?? null;
-            $media = $handle ? $stored->get($moved[$handle] ?? '') : null;
+            $sounds = [];
 
-            // A handle that resolved to nothing (unknown or already gone)
-            // leaves the scene without a sound file.
-            if ($handle && ! $media) {
-                $lost++;
+            foreach ($scene['sounds'] ?? [] as $sound) {
+                if (! is_array($sound)) {
+                    continue;
+                }
+
+                $handle = $sound['file']['id'] ?? null;
+
+                // A link carries nothing to resolve against the media library.
+                if ($handle === null) {
+                    $sound['file'] = null;
+                    $sounds[] = $sound;
+
+                    continue;
+                }
+
+                $media = $stored->get($moved[$handle] ?? '');
+
+                // A handle that resolved to nothing (unknown or already gone)
+                // leaves nothing behind worth keeping: the entry held only the
+                // file, so it goes with it.
+                if (! $media) {
+                    $lost++;
+
+                    continue;
+                }
+
+                $sound['file'] = [
+                    'id' => (string) $media->uuid,
+                    'name' => $media->file_name,
+                    'size' => (int) $media->size,
+                ];
+
+                $sounds[] = $sound;
             }
 
-            $scene['soundFile'] = $media ? [
-                'id' => (string) $media->uuid,
-                'name' => $media->file_name,
-                'size' => (int) $media->size,
-            ] : null;
+            $scene['sounds'] = $sounds;
 
             return $scene;
         }, $this->scenes);
@@ -189,9 +224,9 @@ class TechnicalPlan extends Model implements HasMedia
         // Sound cues going missing between the wizard and the plan is the kind
         // of thing that is only discovered at the desk on the night.
         if ($lost > 0) {
-            Log::warning('Scenes lost their sound file while saving a plan', [
+            Log::warning('Scenes lost a sound file while saving a plan', [
                 'plan_id' => $this->id,
-                'scenes_affected' => $lost,
+                'sounds_affected' => $lost,
                 'scenes' => count($this->scenes),
             ]);
         }

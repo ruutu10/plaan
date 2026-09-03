@@ -9,6 +9,12 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 class StoreTechnicalPlanRequest extends FormRequest
 {
     /**
+     * How many cues one scene may carry. A scene wanting more than this is
+     * really two scenes, and the technician has to read the list at the desk.
+     */
+    public const MAX_SOUNDS_PER_SCENE = 10;
+
+    /**
      * Always return validation errors as JSON — these endpoints are consumed
      * by the wizard's XHR client, not by an Inertia form.
      */
@@ -67,11 +73,13 @@ class StoreTechnicalPlanRequest extends FormRequest
             'scenes.*.id' => ['nullable', 'string', 'max:40'],
             'scenes.*.name' => ['nullable', 'string', 'max:255'],
             'scenes.*.light' => ['nullable', 'string', 'max:2000'],
-            'scenes.*.soundUrl' => ['nullable', 'string', 'max:2000'],
-            'scenes.*.soundFile' => ['nullable', 'array'],
-            'scenes.*.soundFile.id' => ['required_with:scenes.*.soundFile', 'string', 'max:64'],
-            'scenes.*.soundFile.name' => ['nullable', 'string', 'max:255'],
-            'scenes.*.soundFile.size' => ['nullable', 'integer', 'min:0'],
+            'scenes.*.sounds' => ['nullable', 'array', 'max:'.self::MAX_SOUNDS_PER_SCENE],
+            'scenes.*.sounds.*.id' => ['nullable', 'string', 'max:40'],
+            'scenes.*.sounds.*.url' => ['nullable', 'string', 'max:2000'],
+            'scenes.*.sounds.*.file' => ['nullable', 'array'],
+            'scenes.*.sounds.*.file.id' => ['required_with:scenes.*.sounds.*.file', 'string', 'max:64'],
+            'scenes.*.sounds.*.file.name' => ['nullable', 'string', 'max:255'],
+            'scenes.*.sounds.*.file.size' => ['nullable', 'integer', 'min:0'],
             'scenes.*.sound' => ['nullable', 'string', 'max:2000'],
             'scenes.*.notes' => ['nullable', 'string', 'max:2000'],
 
@@ -109,8 +117,10 @@ class StoreTechnicalPlanRequest extends FormRequest
     }
 
     /**
-     * A scene's sound is either linked or uploaded, never both — the wizard
-     * offers the two as a choice, and the stored plan must reflect that.
+     * A scene carries as many sounds as it needs, but each one of them is
+     * either a link or an uploaded file — the wizard offers the two as a
+     * choice, and the stored plan must reflect that. An entry that is neither
+     * is an empty row nobody meant to add.
      *
      * @return array<int, callable>
      */
@@ -119,11 +129,18 @@ class StoreTechnicalPlanRequest extends FormRequest
         return [
             function (Validator $validator): void {
                 foreach ((array) $this->input('scenes', []) as $index => $scene) {
-                    if (filled($scene['soundUrl'] ?? null) && filled($scene['soundFile']['id'] ?? null)) {
-                        $validator->errors()->add(
-                            "scenes.{$index}.soundFile",
-                            'Stseenil saab olla kas helifaili link või üleslaaditud fail, mitte mõlemad.',
-                        );
+                    foreach ((array) ($scene['sounds'] ?? []) as $position => $sound) {
+                        $hasUrl = filled($sound['url'] ?? null);
+                        $hasFile = filled($sound['file']['id'] ?? null);
+
+                        if ($hasUrl === $hasFile) {
+                            $validator->errors()->add(
+                                "scenes.{$index}.sounds.{$position}",
+                                $hasUrl
+                                    ? 'Helil saab olla kas link või üleslaaditud fail, mitte mõlemad.'
+                                    : 'Igal helil peab olema kas link või üleslaaditud fail.',
+                            );
+                        }
                     }
                 }
             },

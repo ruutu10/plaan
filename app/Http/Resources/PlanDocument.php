@@ -181,13 +181,42 @@ class PlanDocument extends JsonResource
             'num' => $index + 1,
             'name' => self::dash($scene['name'] ?? null),
             'light' => self::dash($scene['light'] ?? null),
-            'soundFile' => self::soundFile($scene['soundFile'] ?? null),
-            'soundUrl' => trim((string) ($scene['soundUrl'] ?? '')),
-            // The file and the link get their own lines above this, so the text
-            // is only stood in for by a dash when the scene has no sound at all.
+            'sounds' => self::sounds($scene['sounds'] ?? null),
+            // The cues get their own lines above this, so the text is only
+            // stood in for by a dash when the scene has no sound at all.
             'soundText' => self::soundText($scene),
             'notes' => self::dash($scene['notes'] ?? null),
         ], $scenes, array_keys($scenes));
+    }
+
+    /**
+     * A scene's cues, in the order they are played. Each is a file or a link,
+     * never both, so the template can render a row from whichever it finds.
+     * Entries holding neither were never a cue and are dropped.
+     *
+     * @param  array<int, mixed>|null  $sounds
+     * @return array<int, array<string, mixed>>
+     */
+    private static function sounds(?array $sounds): array
+    {
+        $rows = [];
+
+        foreach ($sounds ?? [] as $sound) {
+            if (! is_array($sound)) {
+                continue;
+            }
+
+            $file = is_array($sound['file'] ?? null) ? self::file($sound['file']) : null;
+            $url = trim((string) ($sound['url'] ?? ''));
+
+            if ($file === null && $url === '') {
+                continue;
+            }
+
+            $rows[] = ['file' => $file, 'url' => $url];
+        }
+
+        return $rows;
     }
 
     /**
@@ -201,18 +230,7 @@ class PlanDocument extends JsonResource
             return $text;
         }
 
-        $hasOtherSound = ($scene['soundFile'] ?? null) || trim((string) ($scene['soundUrl'] ?? '')) !== '';
-
-        return $hasOtherSound ? '' : '—';
-    }
-
-    /**
-     * @param  array<string, mixed>|null  $file
-     * @return array<string, mixed>|null
-     */
-    private static function soundFile(?array $file): ?array
-    {
-        return $file ? self::file($file) : null;
+        return self::sounds($scene['sounds'] ?? null) !== [] ? '' : '—';
     }
 
     /**

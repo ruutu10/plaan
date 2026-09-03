@@ -1,4 +1,10 @@
-import type { Plan, PlanFile, PlanSound, Scene } from '@/types/technicalPlan';
+import type {
+    Plan,
+    PlanFile,
+    PlanSound,
+    Scene,
+    SceneSound,
+} from '@/types/technicalPlan';
 
 export const STEP_LABELS = [
     'Etendus',
@@ -35,12 +41,46 @@ export function blankScene(id: string = `${SCENE_ID_PREFIX}1`): Scene {
         id,
         name: '',
         light: '',
-        soundUrl: '',
-        soundFile: null,
+        sounds: [],
         sound: '',
         notes: '',
         collapsed: false,
     };
+}
+
+const SOUND_ID_PREFIX = 'heli-';
+
+/**
+ * How many cues one scene may carry. Mirrors
+ * `StoreTechnicalPlanRequest::MAX_SOUNDS_PER_SCENE`, so the wizard stops
+ * offering the button before the server would refuse the plan.
+ */
+export const MAX_SOUNDS_PER_SCENE = 10;
+
+/**
+ * The one-click sound cues offered under the scene's description. Shared by the
+ * scene card and the add-a-sound dialog, which write to the same field.
+ */
+export const SOUND_PRESETS = [
+    'ruutu10 tunnus 3s',
+    'ruutu10 tunnus 15s',
+    'film noare (vabal valikul)',
+    'shakespeare (vabal valikul)',
+];
+
+/**
+ * Build the next sequential cue id (`heli-1`, `heli-2`, …) within one scene,
+ * on the same footing as `nextSceneId()`: ids stay unique after reorders and
+ * deletes, which is what keeps Vue's list keys honest while a row is dragged.
+ */
+export function nextSoundId(sounds: SceneSound[]): string {
+    const highest = sounds.reduce((max, sound) => {
+        const match = /^heli-(\d+)$/.exec(sound.id);
+
+        return match ? Math.max(max, Number(match[1])) : max;
+    }, 0);
+
+    return `${SOUND_ID_PREFIX}${highest + 1}`;
 }
 
 /**
@@ -77,6 +117,21 @@ export function hasSoundErrors(sound: PlanSound): boolean {
  */
 function storedFile(file: PlanFile | null | undefined): PlanFile | null {
     return file?.id ? { ...file, status: 'ready' as const } : null;
+}
+
+/**
+ * A scene's cues as they come back from the server, each given the row id the
+ * wizard keys its list on. An entry left with neither a file nor a link is
+ * dropped: it would show as an empty row nobody could fill in.
+ */
+function storedSounds(sounds: SceneSound[] | null | undefined): SceneSound[] {
+    return (sounds ?? [])
+        .map((sound, index) => ({
+            id: sound.id || `heli-${index + 1}`,
+            url: sound.url ?? '',
+            file: storedFile(sound.file),
+        }))
+        .filter((sound) => sound.file !== null || sound.url.trim() !== '');
 }
 
 /**
@@ -182,7 +237,7 @@ export function hydratePlan(payload: Partial<Plan> | null | undefined): Plan {
                 ? payload.scenes.map((s, index) => ({
                       ...mergeDefined(blankScene(), s),
                       id: `${SCENE_ID_PREFIX}${index + 1}`,
-                      soundFile: storedFile(s.soundFile),
+                      sounds: storedSounds(s.sounds),
                       collapsed: false,
                   }))
                 : [blankScene()],
@@ -300,19 +355,19 @@ function isDirectAudioUrl(url: string): boolean {
 }
 
 /**
- * The URL a scene's sound can actually be played from, or `null` when it is
- * only reachable through a link a player cannot read. An upload is judged by
- * its stored name — the URL that streams it carries no extension — while a
- * link is judged by its path.
+ * The URL a cue can actually be played from, or `null` when it is only
+ * reachable through a link a player cannot read. An upload is judged by its
+ * stored name — the URL that streams it carries no extension — while a link is
+ * judged by its path.
  */
-export function playableAudio(scene: Scene): string | null {
-    const file = scene.soundFile?.status === 'ready' ? scene.soundFile : null;
+export function soundAudioUrl(sound: SceneSound): string | null {
+    const file = sound.file?.status === 'ready' ? sound.file : null;
 
     if (file?.url && hasAudioExtension(file.name)) {
         return file.url;
     }
 
-    const url = scene.soundUrl.trim();
+    const url = sound.url.trim();
 
     return url && isDirectAudioUrl(url) ? url : null;
 }
