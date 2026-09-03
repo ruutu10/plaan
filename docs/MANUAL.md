@@ -205,8 +205,8 @@ on ühe klikiga valmisnupud (nt „kiire blackout“, „üldvalgus“, „ruutu
 väljaminekumuusika samas stseenis. Helid on nimekirjas mängimise järjekorras ja
 neid saab lohistades ümber järjestada; ühte stseeni mahub kuni 10 heli.
 
-Heli lisamine käib kolmes sammus: vajuta **„Lisa heli“**, vali **kust heli
-tuleb**, seejärel **kirjelda selle kasutust**. Allikaid on kolm:
+Heli lisamiseks vajuta **„Lisa heli“** ja vali, **kust heli tuleb**. Kui oled
+heli andnud, aken sulgub ja heli ilmub stseeni nimekirja. Allikaid on kolm:
 
 - **Laadi üles** - fail arvutist (lubatud mp3, wav, ogg).
 - **Link** - viide helifailile mujal (nt YouTube või pilvekaust).
@@ -220,8 +220,9 @@ Iga üksik heli on **kas** link **või** üleslaaditud fail, mitte mõlemat. Kui
 (või otsene helilink) on brauseris mängitav, saab seda kohapeal kuulata.
 
 Kirjeldus on stseenil **üks**, kogu heli kasutuse kohta - ka siis, kui heli on
-mitu. Nii et mitme heli puhul kirjuta kirjeldusse, milline neist millal mängib
-(nt „sissetulekul esimene, kummarduse ajal teine“).
+mitu. See on stseeni enda väli helide nimekirja all, mitte lisamise aknas. Nii et
+mitme heli puhul kirjuta sinna, milline neist millal mängib (nt „sissetulekul
+esimene, kummarduse ajal teine“).
 
 Stseene saab lohistades ümber järjestada, dubleerida, kokku voltida ja kustutada.
 Dubleeritud stseen võtab algse stseeni helid kaasa.

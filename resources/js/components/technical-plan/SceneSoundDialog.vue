@@ -10,27 +10,24 @@ import type {
 } from '@/types/technicalPlan';
 import {
     acceptAttribute,
-    discardSoundFile,
     extensionHint,
     fetchReusableSounds,
     reuseSound,
     uploadAttachment,
     validationError,
 } from './attachments';
-import { formatFileSize, nextSoundId, SOUND_PRESETS } from './plan';
+import { formatFileSize, nextSoundId } from './plan';
 import { usePlan, useWizardConfig } from './planKey';
 import R10Dialog from './R10Dialog.vue';
 import R10Dropzone from './R10Dropzone.vue';
-import R10FileChip from './R10FileChip.vue';
 import RadioPills from './RadioPills.vue';
 
 /**
- * Adding a cue to a scene, in three steps: press the button, say where the
- * sound comes from, then describe how it is used.
+ * Adding a cue to a scene: pick where the sound comes from, give it, done.
  *
- * The third step writes to the scene's own description — the one field the plan
- * has ever had for this — rather than to the cue. A scene's sound is described
- * once, as a whole, whether it plays one file or four.
+ * The cue is not described here. A scene's sound is described once, as a whole,
+ * in the scene's own field — whether it plays one file or four — so the dialog
+ * closes on the cue landing and leaves the writing to the card behind it.
  */
 const props = defineProps<{ sceneId: string }>();
 
@@ -61,13 +58,9 @@ const SOURCES: { value: Source; label: string; icon: Component }[] = [
     { value: 'reuse', label: 'Vali olemasolev', icon: Music },
 ];
 
-const step = ref<'source' | 'description'>('source');
 const source = ref<Source>('upload');
 const url = ref('');
 const urlError = ref('');
-
-/** The cue just added, shown on the description step so its upload is visible. */
-const added = ref<SceneSound | null>(null);
 
 const soundAccept = computed(() => acceptAttribute(config.soundExtensions));
 
@@ -81,20 +74,18 @@ watch(open, (isOpen) => {
         return;
     }
 
-    step.value = 'source';
     source.value = 'upload';
     url.value = '';
     urlError.value = '';
-    added.value = null;
     loadedOthers.value = false;
 });
 
-/* ---- Step 2: where the sound comes from ------------------------------ */
+/* ---- Where the sound comes from -------------------------------------- */
 
 /**
- * Put the cue on the scene and move on to describing it. The upload (or the
- * copy) carries on in the background — the chip on the next step reports how
- * it went, so a failure is never silent.
+ * Put the cue on the scene and close. An upload (or a copy) carries on in the
+ * background — the row it just added to the scene card reports how it went, so
+ * a failure is never silent even though the dialog has gone.
  */
 function addSound(sound: Omit<SceneSound, 'id'>): SceneSound {
     scene.value.sounds.push({ ...sound, id: nextSoundId(scene.value.sounds) });
@@ -103,8 +94,7 @@ function addSound(sound: Omit<SceneSound, 'id'>): SceneSound {
     // proxy the scene holds rather than the plain object that went in.
     const entry = scene.value.sounds[scene.value.sounds.length - 1];
 
-    added.value = entry;
-    step.value = 'description';
+    open.value = false;
 
     return entry;
 }
@@ -227,41 +217,11 @@ async function pickOther(sound: ReusableSound): Promise<void> {
     entry.file = await reuseSound(sound);
 }
 
-/* ---- Step 3: how the sound is used ----------------------------------- */
-
-/** Undo the cue just added, without leaving the step describing it. */
-async function removeAdded(): Promise<void> {
-    const entry = added.value;
-
-    if (!entry) {
-        return;
-    }
-
-    const index = scene.value.sounds.indexOf(entry);
-
-    if (index >= 0) {
-        scene.value.sounds.splice(index, 1);
-    }
-
-    added.value = null;
-
-    await discardSoundFile(plan, entry.file);
-}
-
-function appendSound(text: string): void {
-    scene.value.sound = scene.value.sound.trim()
-        ? `${scene.value.sound.trimEnd()}\n${text}`
-        : text;
-}
-
 const fieldClass =
     'w-full rounded-lg border-2 border-r10-grey-200 bg-white px-3.5 py-2.5 font-r10-body text-[13px] text-r10-ink outline-none focus:border-r10-orange';
 
 const buttonClass =
     'cursor-pointer rounded-full border-2 px-5 py-2 font-r10-body text-xs font-bold tracking-[0.06em] uppercase transition';
-
-const presetClass =
-    'cursor-pointer rounded-full border border-r10-grey-200 bg-r10-grey-100 px-3 py-1 font-r10-body text-[11px] font-bold tracking-[0.03em] text-r10-navy transition hover:border-r10-orange hover:text-r10-orange';
 
 const rowClass =
     'flex w-full cursor-pointer items-center gap-3 rounded-[10px] border-2 border-r10-grey-200 bg-white px-3.5 py-2.5 text-left transition hover:border-r10-orange';
@@ -270,15 +230,10 @@ const rowClass =
 <template>
     <R10Dialog
         v-model:open="open"
-        :title="step === 'source' ? 'Lisa heli' : 'Kirjelda heli kasutust'"
-        :description="
-            step === 'source'
-                ? 'Kust see heli tuleb?'
-                : 'Kirjeldus käib kogu stseeni heli kohta — nii ühe kui mitme faili puhul.'
-        "
+        title="Lisa heli"
+        description="Kust see heli tuleb? Heli kasutust kirjeldad stseeni enda väljal."
     >
-        <!-- Step 2: the source -->
-        <div v-if="step === 'source'" class="flex flex-col gap-4">
+        <div class="flex flex-col gap-4">
             <RadioPills v-model="source" compact :options="SOURCES" />
 
             <R10Dropzone
@@ -395,40 +350,8 @@ const rowClass =
             </template>
         </div>
 
-        <!-- Step 3: the description -->
-        <div v-else class="flex flex-col gap-3">
-            <R10FileChip
-                v-if="added?.file"
-                :file="added.file"
-                open-label="Ava uues aknas"
-                @remove="removeAdded"
-            />
-            <p v-else-if="added" class="truncate text-sm text-r10-grey-500">
-                {{ added.url }}
-            </p>
-
-            <textarea
-                v-model="scene.sound"
-                placeholder="Heli kasutuse kirjeldus, nt „sissetulekumuusika kuni esinejad on kohal, väljaminekul sama lugu uuesti“"
-                class="min-h-[96px] w-full resize-y rounded-lg border-2 border-r10-grey-200 bg-white px-3.5 py-2.5 font-r10-body text-sm leading-normal text-r10-ink outline-none focus:border-r10-orange"
-            ></textarea>
-
-            <div class="flex flex-wrap gap-1.5">
-                <button
-                    v-for="preset in SOUND_PRESETS"
-                    :key="preset"
-                    type="button"
-                    :class="presetClass"
-                    @click="appendSound(preset)"
-                >
-                    + {{ preset }}
-                </button>
-            </div>
-        </div>
-
         <template #actions>
             <button
-                v-if="step === 'source'"
                 type="button"
                 :class="[
                     buttonClass,
@@ -437,17 +360,6 @@ const rowClass =
                 @click="open = false"
             >
                 Loobu
-            </button>
-            <button
-                v-else
-                type="button"
-                :class="[
-                    buttonClass,
-                    'border-r10-orange bg-r10-orange text-r10-navy hover:bg-r10-orange-600',
-                ]"
-                @click="open = false"
-            >
-                Valmis
             </button>
         </template>
     </R10Dialog>
