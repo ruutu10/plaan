@@ -212,9 +212,10 @@ heli andnud, aken sulgub ja heli ilmub stseeni nimekirja. Allikaid on kolm:
 - **Link** - viide helifailile mujal (nt YouTube või pilvekaust).
 - **Vali olemasolev** - heli, mille oled juba lisanud. Valida saab nii selle
   sama plaani teiste stseenide helide seast kui ka oma varasematelt plaanidelt.
-  Varasemalt plaanilt valitud failist tehakse koopia - plaan, kust valisid, jääb
-  puutumata. Sama plaani sees viitavad mõlemad stseenid ühele failile; ühest
-  stseenist eemaldamine jätab teise heli alles.
+  Helid, mis on juba **selles samas stseenis**, jäetakse nimekirjast välja - nii
+  ei teki ühte stseeni topeltkirjeid. Varasemalt plaanilt valitud failist tehakse
+  koopia - plaan, kust valisid, jääb puutumata. Sama plaani sees viitavad mõlemad
+  stseenid ühele failile; ühest stseenist eemaldamine jätab teise heli alles.
 
 Iga üksik heli on **kas** link **või** üleslaaditud fail, mitte mõlemat. Kui fail
 (või otsene helilink) on brauseris mängitav, saab seda kohapeal kuulata.

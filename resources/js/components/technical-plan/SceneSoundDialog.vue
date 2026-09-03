@@ -143,12 +143,49 @@ function addLink(): void {
     addSound({ url: value, file: null });
 }
 
-/* ---- Step 2c: a sound the performer already has ---------------------- */
+/* ---- A sound the performer already has ------------------------------- */
 
 /**
- * The cues already on this plan. Offered without asking the server — the wizard
- * is holding them — and picked without copying: two scenes name one stored
- * file, which stays until the last of them lets it go.
+ * What this scene already plays, ready to be recognised again.
+ *
+ * A sound the scene has is not worth offering it a second time: picking it
+ * would either name one stored file twice on the same scene, or — from another
+ * plan — copy in a file the scene is already playing. Other scenes of this plan
+ * are a different matter, and so are the performer's other plans; the exclusion
+ * is only ever about *this* scene.
+ *
+ * Handles identify a file within this plan. A copy taken from another plan is
+ * given a fresh one, so nothing links it back to its source and the file's name
+ * and size have to stand in for identity there.
+ */
+const onThisScene = computed(() => {
+    const handles = new Set<string>();
+    const files = new Set<string>();
+
+    scene.value.sounds.forEach((sound) => {
+        if (!sound.file?.id) {
+            return;
+        }
+
+        handles.add(sound.file.id);
+        files.add(`${sound.file.name}:${sound.file.size}`);
+    });
+
+    return { handles, files };
+});
+
+function isOnThisScene(id: string, name: string, size: number): boolean {
+    return (
+        onThisScene.value.handles.has(id) ||
+        onThisScene.value.files.has(`${name}:${size}`)
+    );
+}
+
+/**
+ * The cues already on this plan, less the ones this scene plays. Offered
+ * without asking the server — the wizard is holding them — and picked without
+ * copying: two scenes name one stored file, which stays until the last of them
+ * lets it go.
  */
 const ownSounds = computed(() => {
     const seen = new Set<string>();
@@ -163,6 +200,11 @@ const ownSounds = computed(() => {
             }
 
             seen.add(file.id);
+
+            if (isOnThisScene(file.id, file.name, file.size)) {
+                return;
+            }
+
             rows.push({
                 file,
                 scene: scene.name.trim() || `Stseen ${index + 1}`,
@@ -177,8 +219,26 @@ const otherSounds = ref<ReusableSound[]>([]);
 const loadingOthers = ref(false);
 const loadedOthers = ref(false);
 
+/** The other plans' sounds this scene has not already taken a copy of. */
+const offeredOtherSounds = computed(() =>
+    otherSounds.value.filter(
+        (sound) => !isOnThisScene(sound.id, sound.name, sound.size),
+    ),
+);
+
 const hasReusable = computed(
-    () => ownSounds.value.length > 0 || otherSounds.value.length > 0,
+    () => ownSounds.value.length > 0 || offeredOtherSounds.value.length > 0,
+);
+
+/**
+ * Whether there are sounds to reuse but this scene is already playing all of
+ * them — a different thing to tell the performer than having none at all.
+ */
+const allAlreadyOnScene = computed(
+    () =>
+        !hasReusable.value &&
+        (plan.scenes.some((scene) => scene.sounds.some((sound) => sound.file)) ||
+            otherSounds.value.length > 0),
 );
 
 // The performer's other plans are only worth fetching once the picker is asked
@@ -275,6 +335,13 @@ const rowClass =
                     Otsin varem lisatud helisid…
                 </p>
                 <p
+                    v-else-if="allAlreadyOnScene"
+                    class="text-sm text-r10-grey-500"
+                >
+                    Kõik su üleslaaditud helifailid on juba selles stseenis.
+                    Laadi uus üles või lisa link.
+                </p>
+                <p
                     v-else-if="!hasReusable"
                     class="text-sm text-r10-grey-500"
                 >
@@ -315,14 +382,14 @@ const rowClass =
                         </button>
                     </div>
 
-                    <div v-if="otherSounds.length" class="flex flex-col gap-1.5">
+                    <div v-if="offeredOtherSounds.length" class="flex flex-col gap-1.5">
                         <div
                             class="font-r10-body text-[11px] font-bold tracking-[0.16em] text-r10-grey-500 uppercase"
                         >
                             Sinu teistelt plaanidelt
                         </div>
                         <button
-                            v-for="sound in otherSounds"
+                            v-for="sound in offeredOtherSounds"
                             :key="sound.id"
                             type="button"
                             :class="rowClass"
