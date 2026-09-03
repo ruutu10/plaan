@@ -75,7 +75,11 @@ class StoreTechnicalPlanRequest extends FormRequest
             'scenes.*.light' => ['nullable', 'string', 'max:2000'],
             'scenes.*.sounds' => ['nullable', 'array', 'max:'.self::MAX_SOUNDS_PER_SCENE],
             'scenes.*.sounds.*.id' => ['nullable', 'string', 'max:40'],
-            'scenes.*.sounds.*.url' => ['nullable', 'string', 'max:2000'],
+            // Held to a real http(s) address, not merely to being a string: a
+            // cue's link is rendered as an `href` in the mail, on the printout
+            // and in the technician's view, so a `javascript:` or `data:` URL
+            // would be somebody else's code running under whoever opened it.
+            'scenes.*.sounds.*.url' => ['nullable', 'string', 'max:2000', 'url:http,https'],
             'scenes.*.sounds.*.file' => ['nullable', 'array'],
             'scenes.*.sounds.*.file.id' => ['required_with:scenes.*.sounds.*.file', 'string', 'max:64'],
             'scenes.*.sounds.*.file.name' => ['nullable', 'string', 'max:255'],
@@ -113,6 +117,7 @@ class StoreTechnicalPlanRequest extends FormRequest
             'meta.performanceId.exists' => 'Valitud etendust ei leitud. Vali etendus uuesti.',
             'sound.micsDetail.required_if' => 'Kirjelda mikrofonide kogust ja paigutust laval.',
             'sound.musicianDetail.required_if' => 'Kirjelda instrumenti ja muusiku paigutust laval.',
+            'scenes.*.sounds.*.url.url' => 'Heli link peab olema täielik http:// või https:// aadress.',
         ];
     }
 

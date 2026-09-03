@@ -371,3 +371,44 @@ export function soundAudioUrl(sound: SceneSound): string | null {
 
     return url && isDirectAudioUrl(url) ? url : null;
 }
+
+/** How long a cue's link may be. Mirrors the `max:2000` rule on the server. */
+export const MAX_SOUND_URL_LENGTH = 2000;
+
+/**
+ * Why a cue's link cannot be used, or `null` when it can.
+ *
+ * Mirrors the `url:http,https` rule in `StoreTechnicalPlanRequest`, so the
+ * wizard refuses a bad link where the performer typed it rather than leaving
+ * the save to fail later — and it refuses it for the same reason the server
+ * does. The link is rendered as an `href` in the mail, on the printout and in
+ * the technician's view, so a `javascript:` or `data:` URL would be somebody
+ * else's code running under a reader who only opened a plan.
+ */
+export function soundLinkError(url: string): string | null {
+    const value = url.trim();
+
+    if (value === '') {
+        return 'Lisa helifaili link.';
+    }
+
+    if (value.length > MAX_SOUND_URL_LENGTH) {
+        return `Link on liiga pikk (max ${MAX_SOUND_URL_LENGTH} märki).`;
+    }
+
+    let parsed: URL;
+
+    try {
+        // No base URL on purpose: a cue's link has to stand on its own, so a
+        // bare `example.com/lugu.mp3` is as unusable as a relative path.
+        parsed = new URL(value);
+    } catch {
+        return 'Link peab olema täielik aadress, nt https://example.com/muusika.mp3';
+    }
+
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return 'Link peab algama http:// või https:// aadressiga.';
+    }
+
+    return null;
+}

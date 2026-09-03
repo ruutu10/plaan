@@ -1527,6 +1527,37 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame(0, TechnicalPlan::count());
     }
 
+    /**
+     * A cue's link is rendered as an `href` in the mail, on the printout and in
+     * the technician's view, so a scheme that is not the web is somebody else's
+     * code waiting for a reader who only opened a plan.
+     */
+    public function test_a_sound_link_must_be_a_web_address(): void
+    {
+        foreach (['javascript:alert(1)', 'data:audio/mp3;base64,AAAA', 'ftp://example.com/lugu.mp3', 'lihtsalt teksti'] as $link) {
+            $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+                'scenes' => [['sounds' => [['id' => 'heli-1', 'url' => $link, 'file' => null]]]],
+            ]));
+
+            $response->assertUnprocessable();
+            $this->assertArrayHasKey('scenes.0.sounds.0.url', $response->json('errors'), $link);
+        }
+
+        $this->assertSame(0, TechnicalPlan::count());
+    }
+
+    public function test_a_sound_link_may_be_an_ordinary_http_address(): void
+    {
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'scenes' => [['sounds' => [['id' => 'heli-1', 'url' => 'https://example.com/lugu.mp3', 'file' => null]]]],
+        ]))->assertOk();
+
+        $this->assertSame(
+            'https://example.com/lugu.mp3',
+            TechnicalPlan::first()->scenes[0]['sounds'][0]['url'],
+        );
+    }
+
     public function test_a_sound_must_be_either_a_link_or_a_file(): void
     {
         $response = $this->postJson(route('technical-plan.store'), $this->validPayload([

@@ -16,7 +16,7 @@ import {
     uploadAttachment,
     validationError,
 } from './attachments';
-import { formatFileSize, nextSoundId } from './plan';
+import { formatFileSize, nextSoundId, soundLinkError } from './plan';
 import { usePlan, useWizardConfig } from './planKey';
 import R10Dialog from './R10Dialog.vue';
 import R10Dropzone from './R10Dropzone.vue';
@@ -131,17 +131,28 @@ async function onFile(files: FileList): Promise<void> {
     entry.file = await uploadAttachment(file, SOUND_COLLECTION);
 }
 
+/**
+ * Take the typed link, if it is one. A link that will not do keeps the dialog
+ * open with the reason under the field — the performer is standing right at
+ * the input that needs fixing, which is the only place the message helps.
+ */
 function addLink(): void {
     const value = url.value.trim();
 
-    if (!value) {
-        urlError.value = 'Lisa helifaili link.';
+    urlError.value = soundLinkError(value) ?? '';
 
+    if (urlError.value !== '') {
         return;
     }
 
     addSound({ url: value, file: null });
 }
+
+// Typing is the performer answering the complaint; the message goes as soon as
+// they do, rather than sitting there until they press the button again.
+watch(url, () => {
+    urlError.value = '';
+});
 
 /* ---- A sound the performer already has ------------------------------- */
 
