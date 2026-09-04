@@ -11,6 +11,7 @@ import LoginScreen from '@/components/technical-plan/LoginScreen.vue';
 import {
     hasSoundErrors,
     hydratePlan,
+    isDelivered,
     isReady,
     soundHasSource,
 } from '@/components/technical-plan/plan';
@@ -106,6 +107,8 @@ const loginSentTo = ref('');
 // Save state
 const submitting = ref(false);
 const justSubmitted = ref(false);
+/** Whether the submission just made updated a plan the crew already held. */
+const justUpdated = ref(false);
 const publicLink = ref('');
 const linkCopied = ref(false);
 const saveError = ref('');
@@ -156,6 +159,7 @@ function scrollTop(): void {
 
 function resetTransient(): void {
     justSubmitted.value = false;
+    justUpdated.value = false;
     publicLink.value = '';
     linkCopied.value = false;
     saveError.value = '';
@@ -449,12 +453,16 @@ async function submitPlan(): Promise<void> {
         return;
     }
 
+    // Asked before the save, which moves the plan to Submitted either way.
+    const wasDelivered = isDelivered(plan.status);
+
     submitting.value = true;
     const ok = await savePlan(true);
     submitting.value = false;
 
     if (ok) {
         justSubmitted.value = true;
+        justUpdated.value = wasDelivered;
         clearDraft();
         window.scrollTo({
             top: document.body.scrollHeight,
@@ -624,6 +632,7 @@ watch(
                         :read-only="!canEdit"
                         :submitting="submitting"
                         :just-submitted="justSubmitted"
+                        :just-updated="justUpdated"
                         :save-error="saveError"
                         :public-link="publicLink"
                         :link-copied="linkCopied"

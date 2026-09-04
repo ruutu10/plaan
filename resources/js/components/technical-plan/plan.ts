@@ -201,6 +201,16 @@ function defaultScenes(): Scene[] {
     ];
 }
 
+/**
+ * Whether the technical team is already holding this plan — submitted, or
+ * confirmed by a technician since. Mirrors `TechnicalPlanStatus::delivered()`:
+ * submitting such a plan again is an update to one the crew has, not a first
+ * hand-in, and the server mails nobody for it.
+ */
+export function isDelivered(status: string): boolean {
+    return status === 'submitted' || status === 'received';
+}
+
 export function blankPlan(): Plan {
     return {
         token: null,

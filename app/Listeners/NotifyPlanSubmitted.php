@@ -9,14 +9,30 @@ use Illuminate\Support\Facades\Notification;
 
 /**
  * Mail a submitted plan out: the performer keeps a copy of what they sent, and
- * the technical team gets the plan they will run the format from. Resubmitting
- * notifies again — the plan the team holds has to be the current one.
+ * the technical team gets the plan they will run the format from.
+ *
+ * Only the first submission is mailed. A plan the team already holds — one
+ * submitted before, or one a technician has since confirmed — is resubmitted
+ * from the wizard as a matter of course while the performer keeps tidying it
+ * up, and a letter for every pass is noise the crew learns to ignore. The
+ * plan's own link always opens the current version, so the mail they were sent
+ * stays a way in to what the plan says now.
  */
 class NotifyPlanSubmitted
 {
     public function handle(TechnicalPlanSubmittedEvent $event): void
     {
         $plan = $event->plan;
+
+        if ($event->isResubmission()) {
+            Log::info('An already-submitted plan was updated; no mail sent', [
+                'plan_id' => $plan->id,
+                'previous_status' => $event->previousStatus->value,
+            ]);
+
+            return;
+        }
+
         $notification = new TechnicalPlanSubmittedNotification($plan);
 
         $plan->user?->notify($notification);

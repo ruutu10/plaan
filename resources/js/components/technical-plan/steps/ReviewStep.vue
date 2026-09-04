@@ -4,6 +4,7 @@ import { Spotlight } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import type { User } from '@/types';
 import Diamond from '../Diamond.vue';
+import { isDelivered } from '../plan';
 import PlanDocument from '../PlanDocument.vue';
 import { usePlan } from '../planKey';
 import { presentPlan } from '../presentPlan';
@@ -15,10 +16,17 @@ import StepHeader from '../StepHeader.vue';
 const plan = usePlan();
 const page = usePage<{ auth: { user: User | null } }>();
 
-withDefaults(
+const props = withDefaults(
     defineProps<{
         submitting: boolean;
         justSubmitted: boolean;
+        /**
+         * Whether the submission just made was an update to a plan the crew
+         * already held, rather than a first hand-in. Read from the status the
+         * plan carried before the save, so it does not change under the notice
+         * once that save has moved the plan to Submitted.
+         */
+        justUpdated: boolean;
         saveError: string;
         publicLink: string;
         linkCopied: boolean;
@@ -58,6 +66,21 @@ const doc = computed(() =>
 
 /** Whether the technician's focused scene-by-scene view is open. */
 const playbackOpen = ref(false);
+
+/**
+ * A plan the technical team is already holding is not handed in again — it is
+ * updated — and the button says so, so nobody presses it expecting the crew to
+ * be told all over again.
+ */
+const alreadySubmitted = computed(() => isDelivered(plan.status));
+
+const submitLabel = computed(() => {
+    if (alreadySubmitted.value) {
+        return props.submitting ? 'Uuendan…' : 'Uuenda esitatud plaani';
+    }
+
+    return props.submitting ? 'Esitan…' : 'Esita tehnikutiimile';
+});
 </script>
 
 <template>
@@ -127,7 +150,7 @@ const playbackOpen = ref(false);
                     :disabled="submitting"
                     @click="$emit('submit')"
                 >
-                    {{ submitting ? 'Esitan…' : 'Esita tehnikutiimile' }}
+                    {{ submitLabel }}
                 </R10Button>
             </template>
         </div>
@@ -182,7 +205,16 @@ const playbackOpen = ref(false);
             tone="success"
             class="r10-no-print mt-4"
         >
-            <div>
+            <div v-if="justUpdated">
+                <div class="mb-0.5 font-r10-body text-sm font-bold text-white">
+                    Esitatud plaan on uuendatud.
+                </div>
+                <div class="text-[13px] leading-normal text-r10-navy-200">
+                    Tehnikutiimile uut teadet ei saadetud — nad näevad plaani
+                    lingilt alati kõige värskemat versiooni.
+                </div>
+            </div>
+            <div v-else>
                 <div class="mb-0.5 font-r10-body text-sm font-bold text-white">
                     Plaan on esitatud tehnikutiimile.
                 </div>

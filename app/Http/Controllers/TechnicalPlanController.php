@@ -352,12 +352,16 @@ class TechnicalPlanController extends Controller
             ]);
         }
 
+        // Read before the save overwrites it: whether the technical team was
+        // already holding this plan is what decides if submitting mails again.
+        $previousStatus = $plan->exists ? $plan->status : null;
+
         $plan = $save->handle($plan, $data, $user, $submitting);
 
         // Only once the files are in place does the plan mail out complete —
         // the notification links to the plan's stored attachments.
         if ($submitting) {
-            TechnicalPlanSubmitted::dispatch($plan);
+            TechnicalPlanSubmitted::dispatch($plan, $previousStatus);
         }
 
         return SavedTechnicalPlanResource::make($plan);

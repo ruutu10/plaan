@@ -10,6 +10,7 @@ import {
     blankPlan,
     hasSoundErrors,
     hydratePlan,
+    isDelivered,
     isReady,
     nextSequentialId,
     soundAudioUrl,
@@ -166,6 +167,22 @@ describe('soundLinkError', () => {
             'https://example.com/' + 'a'.repeat(config.maxSoundUrlLength);
 
         expect(soundLinkError(tooLong, config)).not.toBeNull();
+    });
+});
+
+describe('isDelivered', () => {
+    it('counts the statuses the technical team is already holding', () => {
+        expect(isDelivered('submitted')).toBe(true);
+        expect(isDelivered('received')).toBe(true);
+    });
+
+    it('leaves out a plan the crew has not been handed', () => {
+        // A blank plan is a draft, which is what makes the review step offer to
+        // submit rather than to update.
+        expect(isDelivered(blankPlan().status)).toBe(false);
+        // Archived: its night has been played, so submitting again is a fresh
+        // hand-in and the crew is told about it.
+        expect(isDelivered('archived')).toBe(false);
     });
 });
 

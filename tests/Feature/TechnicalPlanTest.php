@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Tests\TestCase;
 
@@ -1914,6 +1915,67 @@ class TechnicalPlanTest extends TestCase
         $this->postJson(route('technical-plan.store'), $this->validPayload(['submit' => true]))->assertOk();
 
         Notification::assertSentTimes(TechnicalPlanSubmitted::class, 1);
+        Notification::assertSentTo($this->user, TechnicalPlanSubmitted::class);
+    }
+
+    public function test_resubmitting_a_submitted_plan_mails_no_one_again(): void
+    {
+        config(['technical_plan.tech_email' => 'tehnikud@ruutu10.ee']);
+
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload(['submit' => true]))
+            ->json('token');
+
+        Notification::fake();
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $token,
+            'submit' => true,
+            'extra' => ['notes' => 'Parandatud lõpustseen.'],
+        ]))->assertOk();
+
+        Notification::assertNothingSent();
+
+        // The plan itself is still updated, and the update still reaches the
+        // audit trail — only the letter is held back.
+        $plan = TechnicalPlan::firstWhere('token', $token);
+
+        $this->assertSame('Parandatud lõpustseen.', $plan->extra['notes']);
+        $this->assertSame(2, Activity::query()->forSubject($plan)->forEvent('submitted')->count());
+    }
+
+    public function test_resubmitting_a_plan_the_technician_confirmed_mails_no_one_again(): void
+    {
+        config(['technical_plan.tech_email' => 'tehnikud@ruutu10.ee']);
+
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload(['submit' => true]))
+            ->json('token');
+
+        TechnicalPlan::firstWhere('token', $token)->update(['status' => TechnicalPlanStatus::Received]);
+
+        Notification::fake();
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $token,
+            'submit' => true,
+        ]))->assertOk();
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_submitting_a_plan_saved_as_a_draft_still_mails_it_out(): void
+    {
+        config(['technical_plan.tech_email' => 'tehnikud@ruutu10.ee']);
+
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload())->json('token');
+
+        Notification::fake();
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $token,
+            'submit' => true,
+        ]))->assertOk();
+
+        Notification::assertCount(2);
         Notification::assertSentTo($this->user, TechnicalPlanSubmitted::class);
     }
 
