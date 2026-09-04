@@ -4,7 +4,7 @@ import { Spotlight } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import type { User } from '@/types';
 import Diamond from '../Diamond.vue';
-import { isDelivered } from '../plan';
+import { canSaveDraft, isDelivered } from '../plan';
 import PlanDocument from '../PlanDocument.vue';
 import { usePlan } from '../planKey';
 import { presentPlan } from '../presentPlan';
@@ -19,7 +19,11 @@ const page = usePage<{ auth: { user: User | null } }>();
 const props = withDefaults(
     defineProps<{
         submitting: boolean;
+        /** Whether the save in flight is a draft save rather than a hand-in. */
+        savingDraft: boolean;
         justSubmitted: boolean;
+        /** Whether the plan was just written down as a draft. */
+        justSavedDraft: boolean;
         /**
          * Whether the submission just made was an update to a plan the crew
          * already held, rather than a first hand-in. Read from the status the
@@ -45,6 +49,7 @@ const props = withDefaults(
 
 defineEmits<{
     submit: [];
+    'save-draft': [];
     download: [];
     'create-link': [];
     'copy-link': [];
@@ -81,6 +86,34 @@ const submitLabel = computed(() => {
 
     return props.submitting ? 'Esitan…' : 'Esita tehnikutiimile';
 });
+
+/**
+ * A plan the crew is holding is not saved as a draft any more — the only thing
+ * left to do with it is update it — so the draft button goes once it has been
+ * handed in. See {@see canSaveDraft}.
+ */
+const showDraftButton = computed(() => canSaveDraft(plan));
+
+const draftLabel = computed(() => {
+    if (props.savingDraft) {
+        return 'Salvestan…';
+    }
+
+    return plan.token ? 'Uuenda mustandit' : 'Salvesta mustand';
+});
+
+/** Whether either save is in flight, and so both buttons are shut. */
+const busy = computed(() => props.submitting || props.savingDraft);
+
+/**
+ * Whether the plan on screen is saved but still nobody's but its author's. A
+ * saved draft looks finished — it has a link, it prints, it is in the plans
+ * listing — so for as long as it is one, the review page says outright that the
+ * technical team has not been handed it.
+ */
+const savedAsDraft = computed(
+    () => !props.readOnly && showDraftButton.value && Boolean(plan.token),
+);
 </script>
 
 <template>
@@ -97,7 +130,7 @@ const submitLabel = computed(() => {
                 v-else
                 eyebrow="Samm 7 / 7 · Ülevaade"
                 title="Vaata üle & saada"
-                lead="Kontrolli plaan üle. Seejärel esita see tehnikutiimile, laadi PDF-ina alla või loo jagatav link."
+                lead="Kontrolli plaan üle. Salvesta see mustandina, et hiljem edasi teha, või esita tehnikutiimile. Plaani saab ka PDF-ina alla laadida või jagatava lingina välja saata."
             />
 
             <R10Notice v-if="readOnly" class="mb-6">
@@ -122,6 +155,28 @@ const submitLabel = computed(() => {
             </template>
         </PlanDocument>
 
+        <!-- A saved draft is nobody's but its author's until the button below
+             is pressed, and this is what says so. -->
+        <R10Notice
+            v-if="savedAsDraft"
+            class="r10-no-print mt-[26px]"
+            data-test="draft-warning"
+        >
+            <div class="mb-0.5 font-r10-body text-sm font-bold">
+                <template v-if="justSavedDraft">
+                    Mustand on salvestatud, aga tehnikutiimile ei ole seda veel
+                    esitatud.
+                </template>
+                <template v-else>
+                    See plaan on mustand — tehnikutiim ei ole seda veel saanud.
+                </template>
+            </div>
+            <div>
+                Kui plaan on valmis, vajuta „Esita tehnikutiimile“ — alles siis
+                saab tehnikutiim sellest teate.
+            </div>
+        </R10Notice>
+
         <!-- Actions -->
         <div class="r10-no-print mt-[26px] flex flex-wrap gap-3.5">
             <R10Button variant="outline" size="lg" @click="$emit('download')"
@@ -131,7 +186,7 @@ const submitLabel = computed(() => {
                 <R10Button
                     variant="outline"
                     size="lg"
-                    :disabled="submitting"
+                    :disabled="busy"
                     @click="$emit('create-link')"
                 >
                     avalik link
@@ -145,9 +200,20 @@ const submitLabel = computed(() => {
                     AI ülevaatus
                 </R10Button>
                 <R10Button
+                    v-if="showDraftButton"
+                    variant="outline"
+                    size="lg"
+                    :disabled="busy"
+                    data-test="save-draft"
+                    @click="$emit('save-draft')"
+                >
+                    {{ draftLabel }}
+                </R10Button>
+                <R10Button
                     variant="primary"
                     size="lg"
-                    :disabled="submitting"
+                    :disabled="busy"
+                    data-test="submit-plan"
                     @click="$emit('submit')"
                 >
                     {{ submitLabel }}

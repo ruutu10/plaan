@@ -106,7 +106,11 @@ const loginSentTo = ref('');
 
 // Save state
 const submitting = ref(false);
+/** Whether a draft save — not a hand-in — is the one in flight. */
+const savingDraft = ref(false);
 const justSubmitted = ref(false);
+/** Whether the draft just saved was written to the server. */
+const justSavedDraft = ref(false);
 /** Whether the submission just made updated a plan the crew already held. */
 const justUpdated = ref(false);
 const publicLink = ref('');
@@ -159,6 +163,7 @@ function scrollTop(): void {
 
 function resetTransient(): void {
     justSubmitted.value = false;
+    justSavedDraft.value = false;
     justUpdated.value = false;
     publicLink.value = '';
     linkCopied.value = false;
@@ -166,6 +171,7 @@ function resetTransient(): void {
     aiResult.value = '';
     aiError.value = '';
     submitting.value = false;
+    savingDraft.value = false;
     showValidation.value = false;
 }
 
@@ -344,8 +350,36 @@ function buildPayload(submit: boolean): Record<string, unknown> {
     };
 }
 
+/**
+ * Move the wizard to the address a plan has just been given. Until this save
+ * the plan lived in this browser alone; from here on it has a home on the
+ * server, and the watch below stops keeping it as the local draft — so without
+ * this a reload would show a blank wizard and the work would only be findable
+ * through the plans listing.
+ *
+ * The visit `reset()` makes, in the other direction. It is the same page
+ * component at both addresses, so keeping the state keeps the wizard exactly as
+ * it stands — the plan on screen, the step it is on — and the `initialPlan` the
+ * server sends back with the new address never overwrites what is being edited.
+ */
+function adoptPlanUrl(url: string): void {
+    const { pathname } = new URL(url, window.location.origin);
+
+    if (window.location.pathname === pathname) {
+        return;
+    }
+
+    router.visit(pathname, {
+        replace: true,
+        preserveState: true,
+        preserveScroll: true,
+    });
+}
+
 async function savePlan(submit: boolean): Promise<boolean> {
     saveError.value = '';
+
+    const wasUnsaved = plan.token === null;
 
     const { ok, status, data } = await requestJson(
         '/api/tehnikaplaan',
@@ -377,6 +411,12 @@ async function savePlan(submit: boolean): Promise<boolean> {
 
     if (data.publicUrl) {
         publicLink.value = data.publicUrl as string;
+
+        // The plan has just been written down for the first time: the wizard
+        // follows it to its own address.
+        if (wasUnsaved) {
+            adoptPlanUrl(publicLink.value);
+        }
     }
 
     // Adopt the canonical attachment list — the server may have re-keyed files
@@ -438,10 +478,35 @@ async function savePlan(submit: boolean): Promise<boolean> {
     return true;
 }
 
-async function submitPlan(): Promise<void> {
-    if (submitting.value) {
+/**
+ * Write the plan down as it stands without handing it in. Half an answer is
+ * exactly what a draft is for, so nothing is gated here the way submitting is —
+ * the server's rules ask for the missing detail only on a hand-in; see
+ * App\Http\Requests\StoreTechnicalPlanRequest.
+ */
+async function saveDraft(): Promise<void> {
+    if (savingDraft.value || submitting.value) {
         return;
     }
+
+    justSubmitted.value = false;
+    justSavedDraft.value = false;
+
+    savingDraft.value = true;
+    const ok = await savePlan(false);
+    savingDraft.value = false;
+
+    if (ok) {
+        justSavedDraft.value = true;
+    }
+}
+
+async function submitPlan(): Promise<void> {
+    if (submitting.value || savingDraft.value) {
+        return;
+    }
+
+    justSavedDraft.value = false;
 
     // A plan that reached the review step some other way — copied in, or opened
     // straight at it by a link — never passed the sound step's own gate, and
@@ -472,7 +537,7 @@ async function submitPlan(): Promise<void> {
 }
 
 async function createPublicLink(): Promise<void> {
-    if (submitting.value) {
+    if (submitting.value || savingDraft.value) {
         return;
     }
 
@@ -631,7 +696,9 @@ watch(
                         v-else
                         :read-only="!canEdit"
                         :submitting="submitting"
+                        :saving-draft="savingDraft"
                         :just-submitted="justSubmitted"
+                        :just-saved-draft="justSavedDraft"
                         :just-updated="justUpdated"
                         :save-error="saveError"
                         :public-link="publicLink"
@@ -640,6 +707,7 @@ watch(
                         :ai-result="aiResult"
                         :ai-error="aiError"
                         @submit="submitPlan"
+                        @save-draft="saveDraft"
                         @download="download"
                         @create-link="createPublicLink"
                         @copy-link="copyLink"

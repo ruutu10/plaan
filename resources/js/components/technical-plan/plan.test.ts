@@ -8,9 +8,11 @@ import type {
 } from '@/types/technicalPlan';
 import {
     blankPlan,
+    canSaveDraft,
     hasSoundErrors,
     hydratePlan,
     isDelivered,
+    isDraft,
     isReady,
     nextSequentialId,
     soundAudioUrl,
@@ -183,6 +185,49 @@ describe('isDelivered', () => {
         // Archived: its night has been played, so submitting again is a fresh
         // hand-in and the crew is told about it.
         expect(isDelivered('archived')).toBe(false);
+    });
+});
+
+describe('isDraft', () => {
+    it('counts a plan nobody has been handed', () => {
+        expect(isDraft('draft')).toBe(true);
+        expect(isDraft(blankPlan().status)).toBe(true);
+    });
+
+    it('leaves out every status a plan reaches after it is submitted', () => {
+        expect(isDraft('submitted')).toBe(false);
+        expect(isDraft('received')).toBe(false);
+        expect(isDraft('archived')).toBe(false);
+        expect(isDraft(null)).toBe(false);
+    });
+});
+
+describe('canSaveDraft', () => {
+    it('offers a draft save on a plan that has never been saved', () => {
+        expect(canSaveDraft(blankPlan())).toBe(true);
+    });
+
+    it('offers one again on a plan saved and left as a draft', () => {
+        expect(canSaveDraft({ token: 'R10-2026-abc', status: 'draft' })).toBe(
+            true,
+        );
+    });
+
+    it('stops offering one once the crew is holding the plan', () => {
+        expect(
+            canSaveDraft({ token: 'R10-2026-abc', status: 'submitted' }),
+        ).toBe(false);
+        expect(
+            canSaveDraft({ token: 'R10-2026-abc', status: 'received' }),
+        ).toBe(false);
+    });
+
+    it('stops offering one on a plan whose night has been played', () => {
+        // Archived is not a draft to go back to: saving one could not put it
+        // back to draft anyway — see App\Actions\SaveTechnicalPlan.
+        expect(
+            canSaveDraft({ token: 'R10-2026-abc', status: 'archived' }),
+        ).toBe(false);
     });
 });
 

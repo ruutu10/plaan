@@ -280,6 +280,32 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame(TechnicalPlanStatus::Draft, TechnicalPlan::first()->status);
     }
 
+    public function test_saving_a_plan_the_crew_already_holds_without_submitting_leaves_it_submitted(): void
+    {
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload(['submit' => true]))
+            ->json('token');
+
+        $submittedAt = TechnicalPlan::firstWhere('token', $token)->submitted_at;
+
+        Notification::fake();
+
+        // The wizard offers no draft save on a plan that has been handed in,
+        // but the share link and the AI review both write without submitting:
+        // none of them may quietly take the plan back off the crew.
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'token' => $token,
+            'submit' => false,
+            'extra' => ['notes' => 'Väike täpsustus.'],
+        ]))->assertOk();
+
+        $plan = TechnicalPlan::firstWhere('token', $token);
+
+        $this->assertSame(TechnicalPlanStatus::Submitted, $plan->status);
+        $this->assertTrue($submittedAt->equalTo($plan->submitted_at));
+        $this->assertSame('Väike täpsustus.', $plan->extra['notes']);
+        Notification::assertNothingSent();
+    }
+
     public function test_storing_with_an_existing_token_updates_the_plan(): void
     {
         $first = Performance::factory()->create();
@@ -473,6 +499,25 @@ class TechnicalPlanTest extends TestCase
             ->component('TechnicalPlan')
             ->where('initialPlan.token', $plan->token)
             ->where('initialPlan.meta.performer', $plan->performance->format->team->name));
+    }
+
+    public function test_the_author_of_a_draft_carries_on_writing_it_at_its_own_address(): void
+    {
+        // Where saving a draft leaves the wizard: the plan has an address of
+        // its own now, and the author coming back to it must land in a wizard
+        // they can still write in rather than on a read-only copy of their own
+        // half-finished plan.
+        $token = $this->postJson(route('technical-plan.store'), $this->validPayload())->json('token');
+
+        $plan = TechnicalPlan::firstWhere('token', $token);
+
+        $this->get(route('technical-plan.public', $plan))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('TechnicalPlan')
+                ->where('initialPlan.token', $token)
+                ->where('initialPlan.status', TechnicalPlanStatus::Draft->value)
+                ->where('canEdit', true));
     }
 
     public function test_a_plan_names_its_author_as_the_contact_whoever_opens_it(): void
