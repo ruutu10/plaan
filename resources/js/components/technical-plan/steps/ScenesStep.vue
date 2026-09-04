@@ -6,6 +6,7 @@ import { discardAttachment } from '../attachments';
 import Diamond from '../Diamond.vue';
 import {
     blankScene,
+    collapseScenes,
     nextSceneId,
     soundFileStillUsed,
     SOUND_PRESETS,
@@ -19,6 +20,11 @@ import StepHeader from '../StepHeader.vue';
 
 const plan = usePlan();
 const config = useWizardConfig();
+
+// The step is mounted afresh every time it is stepped into, so arriving here
+// always starts from the closed overview of the scenes rather than from
+// whatever was left open last time.
+collapseScenes(plan.scenes);
 
 const dragId = ref<string | null>(null);
 
@@ -103,7 +109,7 @@ function appendSound(scene: Scene, text: string): void {
 }
 
 function addScene(): void {
-    plan.scenes.forEach((s) => (s.collapsed = true));
+    collapseScenes(plan.scenes);
     plan.scenes.push(blankScene(nextSceneId(plan.scenes)));
 }
 
@@ -126,7 +132,7 @@ function duplicate(index: number): void {
         })),
         collapsed: false,
     };
-    plan.scenes.forEach((s) => (s.collapsed = true));
+    collapseScenes(plan.scenes);
     plan.scenes.splice(index + 1, 0, copy);
 }
 

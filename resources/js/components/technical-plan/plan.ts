@@ -59,6 +59,17 @@ export function nextSoundId(sounds: SceneSound[]): string {
     );
 }
 
+/**
+ * Close every scene card. A plan of a dozen scenes is unreadable with all of
+ * them open, so the step opens on the list of headings and the scene being
+ * worked on is the one opened by hand.
+ */
+export function collapseScenes(scenes: Scene[]): void {
+    scenes.forEach((scene) => {
+        scene.collapsed = true;
+    });
+}
+
 export function blankScene(id: string = `${SCENE_ID_PREFIX}1`): Scene {
     return {
         id,

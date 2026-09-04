@@ -8,7 +8,9 @@ import type {
 } from '@/types/technicalPlan';
 import {
     blankPlan,
+    blankScene,
     canSaveDraft,
+    collapseScenes,
     hasSoundErrors,
     hydratePlan,
     isDelivered,
@@ -247,6 +249,28 @@ describe('nextSequentialId', () => {
         expect(nextSequentialId(['muu', 'heli-2x', 'heli-2'], 'heli-')).toBe(
             'heli-3',
         );
+    });
+});
+
+describe('collapseScenes', () => {
+    it('closes every card, whatever each was left at', () => {
+        const scenes = [
+            { ...blankScene('stseen-1'), collapsed: false },
+            { ...blankScene('stseen-2'), collapsed: true },
+            { ...blankScene('stseen-3') },
+        ];
+
+        collapseScenes(scenes);
+
+        expect(scenes.map((scene) => scene.collapsed)).toEqual([
+            true,
+            true,
+            true,
+        ]);
+    });
+
+    it('has nothing to do to an empty list', () => {
+        expect(() => collapseScenes([])).not.toThrow();
     });
 });
 
