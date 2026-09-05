@@ -56,7 +56,6 @@ const FORMAT_S_OWN_TEAM = '';
 const form = useHttp({
     format_id: null as number | null,
     title: '',
-    location: '',
     team_id: FORMAT_S_OWN_TEAM as string | number,
     date: '',
     start_time: '',
@@ -65,7 +64,6 @@ const form = useHttp({
     planka_card_id: '',
 }).transform((data) => ({
     title: data.title,
-    location: data.location,
     team_id: data.team_id === FORMAT_S_OWN_TEAM ? null : Number(data.team_id),
     date: data.date,
     start_time: data.start_time,
@@ -112,7 +110,6 @@ function fill(): void {
         props.formats?.[0]?.id ??
         null;
     form.title = props.performance?.title ?? '';
-    form.location = props.performance?.location ?? '';
     form.team_id = props.performance?.teamId ?? FORMAT_S_OWN_TEAM;
     form.date = props.performance
         ? toLocalDateInputValue(props.performance.startsAt)
@@ -220,15 +217,6 @@ async function save(): Promise<void> {
             hint="Etenduse eeldatav pikkus minutites"
             placeholder="90"
             :error="form.errors.duration"
-        />
-
-        <R10Input
-            v-model="form.location"
-            label="Asukoht"
-            hint="Kus etendus toimub. Jäta täitmata, kui mängitakse maja enda saalis."
-            placeholder="Nt improkeskus"
-            data-test="performance-location-input"
-            :error="form.errors.location"
         />
 
         <PlankaCardField

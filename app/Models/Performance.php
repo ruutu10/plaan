@@ -39,9 +39,12 @@ use Illuminate\Support\Facades\Date;
  * {@see startsAt()} and {@see momentFrom()}, which are the two ends of that
  * conversion and the only places it should happen.
  *
- * `location` is where it is played, free text as the board writes it. Empty
- * means the house's own room — the ordinary case, and the reason every listing
- * shows the venue only when there is one rather than standing an absence in.
+ * `location` is where it is played, free text as the board writes it. It is the
+ * Planka card's to say and read-only here — like {@see staff()}, and for the
+ * same reason: every import rewrites it, so anything typed over it would not
+ * survive the week. Empty means the card places the night nowhere, and every
+ * listing shows a venue only when there is one rather than standing an absence
+ * in.
  *
  * @property int $id
  * @property int $format_id
@@ -424,14 +427,11 @@ class Performance extends Model
     protected static function booted(): void
     {
         // An act carrying no name of its own is one the format's name already
-        // names, and a night nobody placed is one in the house's own room, so
-        // an empty string is stored as the absence it means rather than as a
-        // value every screen would then have to render.
+        // names, so an empty string is stored as an absence rather than as a
+        // title nobody can see.
         static::saving(function (Performance $performance): void {
-            foreach (['title', 'location'] as $field) {
-                if ($performance->{$field} !== null && trim($performance->{$field}) === '') {
-                    $performance->{$field} = null;
-                }
+            if ($performance->title !== null && trim($performance->title) === '') {
+                $performance->title = null;
             }
         });
     }

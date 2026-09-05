@@ -127,8 +127,9 @@ export interface Performance {
      */
     title: string | null;
     /**
-     * Where it is played, as the board writes it. Null means the house's own
-     * room, which is why every listing shows a venue only when there is one.
+     * Where it is played, as the board writes it. Read-only: the Planka card
+     * owns it and every import rewrites it. Null when the card places the night
+     * nowhere, which is why listings show a venue only when there is one.
      */
     location: string | null;
     /**
@@ -212,7 +213,6 @@ export interface AdminPerformanceRow {
 export interface PerformanceFormData {
     /** The act's own name; empty leaves the performance under the format's. */
     title: string;
-    location: string;
     /** The performing group; null leaves the performance to the format's own. */
     team_id: number | null;
     date: string;

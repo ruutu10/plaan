@@ -120,6 +120,27 @@ class ImportPlankaPerformancesTest extends TestCase
     }
 
     /**
+     * What the AI reads off the board on one run after another: the first array
+     * is what a first `planka:import` sees, the second what the next one sees.
+     *
+     * Queued onto a single mock rather than re-mocked between the runs. The
+     * command takes its extractor by constructor injection and Artisan holds on
+     * to the command it built, so a second {@see fakeExtraction()} call never
+     * reaches the run — it would leave the second run reading the first run's
+     * answer, and a test asserting nothing changed would pass without ever
+     * having changed the card. One card per run here, so one answer per run.
+     *
+     * @param  list<ImportedNight>  ...$runs
+     */
+    private function fakeExtractionRuns(array ...$runs): void
+    {
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) use ($runs) {
+            $mock->shouldReceive('extract')->andReturnValues($runs);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
+    }
+
+    /**
      * One night as the AI would have read it off a card: a format played once, by
      * whoever the format belongs to. The start time defaults to none, which is
      * the common case — most cards name a date and leave the hour to the house.
@@ -256,34 +277,87 @@ class ImportPlankaPerformancesTest extends TestCase
         );
     }
 
-    public function test_a_venue_corrected_by_hand_survives_the_next_run(): void
+    public function test_a_night_that_moved_on_the_card_moves_here_too(): void
     {
-        // Everything about an act already on the books is left as it is, and a
-        // place somebody corrected here is exactly the kind of thing a weekly
-        // job must not put back the way the card had it.
+        // The board is the only place a venue is written, so a card that moves
+        // the night rewrites it even though the performance itself is one the
+        // run otherwise adds nothing to.
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->night('Trupp 1', location: 'improkeskus')]);
+        $this->fakeExtractionRuns(
+            [$this->night('Trupp 1', location: 'improkeskus')],
+            [$this->night('Trupp 1', location: 'Vaba Lava, Telliskivi')],
+        );
 
         $this->artisan('planka:import')->assertSuccessful();
-
-        Performance::sole()->update(['location' => 'Vaba Lava, Telliskivi']);
-
         $this->artisan('planka:import')->assertSuccessful();
 
+        $this->assertSame(1, Performance::query()->count());
         $this->assertSame('Vaba Lava, Telliskivi', Performance::sole()->location);
+    }
+
+    public function test_a_venue_dropped_from_the_card_is_cleared_here(): void
+    {
+        // The card is believed both ways round: a night it has stopped placing
+        // is emptied rather than left at an address nothing stands behind.
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtractionRuns(
+            [$this->night('Trupp 1', location: 'improkeskus')],
+            [$this->night('Trupp 1')],
+        );
+
+        $this->artisan('planka:import')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertNull(Performance::sole()->location);
+    }
+
+    public function test_a_dry_run_moves_nothing(): void
+    {
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtractionRuns(
+            [$this->night('Trupp 1', location: 'improkeskus')],
+            [$this->night('Trupp 1', location: 'Vaba Lava')],
+        );
+
+        $this->artisan('planka:import')->assertSuccessful();
+        $this->artisan('planka:import', ['--dry-run' => true])->assertSuccessful();
+
+        $this->assertSame('improkeskus', Performance::sole()->location);
+    }
+
+    public function test_a_performance_put_aside_is_not_moved(): void
+    {
+        // Put aside is how an admin says the night is not happening. Its venue
+        // is not worth reviving along with it — the same line syncStaff() draws.
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtractionRuns(
+            [$this->night('Trupp 1', location: 'improkeskus')],
+            [$this->night('Trupp 1', location: 'Vaba Lava')],
+        );
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $performance = Performance::sole();
+        $performance->delete();
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame('improkeskus', $performance->fresh()?->location);
     }
 
     public function test_a_night_already_imported_is_not_imported_again_when_the_card_gains_an_hour(): void
     {
         $this->fakeBoard([$this->card()]);
-        $this->fakeExtraction([$this->night('Trupp 1')]);
+
+        // The board is tidied up between the runs and the card now says when
+        // the act is on. It is the same night, so it stays one performance at
+        // the hour it was first registered at.
+        $this->fakeExtractionRuns(
+            [$this->night('Trupp 1')],
+            [$this->night('Trupp 1', startTime: '21:45')],
+        );
 
         $this->artisan('planka:import')->assertSuccessful();
-
-        // The board is tidied up and the card now says when the act is on. It
-        // is the same night, so it stays one performance.
-        $this->fakeExtraction([$this->night('Trupp 1', startTime: '21:45')]);
-
         $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertSame(1, Performance::query()->count());

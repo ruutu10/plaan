@@ -311,10 +311,11 @@ class ImportPlankaPerformances extends Command
 
                 // Everything else about an act already on the books is left
                 // exactly as it is — see importCard()'s doc comment — but the
-                // staff table is the one thing nobody edits by hand, so a card
-                // that changed its crew still overwrites it, even on a night
-                // that adds nothing new.
+                // crew and the venue are not the app's to edit, so a card that
+                // moved the night or changed its people still overwrites both,
+                // even on a night that adds nothing new.
                 $this->syncStaff($known[$key], $act, $dryRun);
+                $this->syncLocation($known[$key], $night, $dryRun);
 
                 continue;
             }
@@ -337,6 +338,29 @@ class ImportPlankaPerformances extends Command
         }
 
         $this->staffing->sync($performance, $act->staff);
+    }
+
+    /**
+     * Move this act to the venue the card now names. The board is the only
+     * place a venue is written — the app shows it and never offers it for
+     * editing — so the card is simply believed, and a night it has stopped
+     * placing is emptied rather than left at an address nothing stands behind.
+     *
+     * Put aside and dry runs are spared for the same reasons as
+     * {@see syncStaff()}.
+     */
+    protected function syncLocation(Performance $performance, ImportedNight $night, bool $dryRun): void
+    {
+        if ($dryRun || $performance->trashed() || $performance->location === $night->location) {
+            return;
+        }
+
+        $performance->update(['location' => $night->location]);
+
+        Log::info('Moved a performance to the venue its card now names', [
+            'performance_id' => $performance->id,
+            'location' => $night->location,
+        ]);
     }
 
     /**

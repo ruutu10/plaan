@@ -453,13 +453,16 @@ kustutamine - jääb formaadi tiimi kätte.
 
 Neid hallatakse formaadi muutmislehel. Etendusel on kuupäev ja algusaeg,
 valikuliselt kestus, valikuliselt oma pealkiri ja oma esinev tiim (jagatud
-õhtute jaoks), valikuliselt asukoht ning mustandi märge.
+õhtute jaoks) ning mustandi märge.
 
 **Asukoht** on vabatekstiline koht, kus etendus toimub - nii nagu Planka kaardil
-kirjas (nt `improkeskus`, `Vaba Lava, Telliskivi`). Täitmata asukoht tähendab
-maja enda saali, seega ekraanid näitavad kohta ainult siis, kui see on täidetud.
-Asukoht on näha etenduse enda lehel, formaadi etenduste nimekirjas, kogu maja
-ülevaates, töölaual ja tehnikaplaani etenduse valikus ning plaani dokumendis.
+kirjas (nt `improkeskus`, `Vaba Lava, Telliskivi`). See on **puhtalt loetav**,
+nagu meeskondki (vt §11.2): koht kuulub Planka kaardile ja iga import kirjutab
+selle üle, seega siin seda muuta ei saa - vale koht tuleb parandada kaardil.
+Kohata etendus tähendab, et kaart kohta ei nimeta; ekraanid näitavad kohta
+ainult siis, kui see on olemas. Asukoht on näha etenduse enda lehel, formaadi
+etenduste nimekirjas, kogu maja ülevaates, töölaual ja tehnikaplaani etenduse
+valikus ning plaani dokumendis.
 
 - **Etenduse lisamine** on ainuüksi formaadi tiimi õigus - külalistrupp võib oma
   lõiku parandada, kuid mitte kavva enda omi juurde panna.
@@ -604,10 +607,15 @@ et sama kaardi uuesti importimine ei lisa midagi.
 
 Kaardilt loetakse ka õhtu **asukoht** - tüüpiliselt realt `Asukoht:` või
 `Toimumiskoht:` - ja see pannakse kõigile selle õhtu etteastetele, sest kaart
-nimetab ühe koha terve õhtu kohta. Kui kaart kohta ei nimeta, jääb asukoht
-tühjaks ehk maja enda saaliks. Nagu ülejäänud etenduse väljad, ei kirjutata ka
-asukohta uuesti üle: kui keegi on selle siin ära parandanud, jääb parandus
-püsima ka järgmise impordi järel.
+nimetab ühe koha terve õhtu kohta. Koht kirjutatakse alati välja, ka siis, kui
+see on maja enda saal; tühi asukoht tähendab ainult seda, et kaart kohta ei
+nimeta.
+
+Asukoht on **erand** reeglist, et juba raamatus olevat etendust import enam ei
+puutu: nagu meeskonda (§11.2), kirjutatakse ka asukohta iga impordiga uuesti.
+Kui koht kaardil muutub, muutub see ka siin; kui koht kaardilt kaob, tühjeneb
+see ka siin. Kõrvale pandud etendust ei liigutata ja kuivkäivitus ei muuda
+midagi.
 
 Kuna lugemist teeb AI, **säilitatakse iga imporditud kirje taga olev
 arutluskäik** ning tehnikud ja majarahvas saavad selle formaadi ja etenduse

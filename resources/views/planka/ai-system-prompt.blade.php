@@ -72,7 +72,8 @@ Moodulite lõpuetenduste puhul võib kaart kirjeldada esinejaid stiilis "<juhend
 - **Kirjuta koht sõna-sõnalt nii, nagu kaardil seisab** — ära paranda suur- ja väiketähti, ära tõlgi ega täienda aadressiga, mida kaardil pole.
 - Võta ainult ruumi või maja nimi. Jäta välja ukseavamise kellaaeg, parkimisjuhis, kontaktisik ja muu, mis samal real juhtub olema: `Asukoht: improkeskus (uksed 18:30)` → `improkeskus`.
 - Kui kaart katab mitut päeva ja iga päev on eri kohas, on igal õhtul oma `location`. Kui kaart nimetab ühe koha kõigi päevade kohta, on see kõigil õhtutel sama.
-- **Kui kaart kohta ei nimeta, kasuta `null`.** Ära oleta maja nime kaardi pealkirjast, formaadi nimest ega sellest, kus seda formaati tavaliselt mängitakse — puuduv koht tähendab rakenduses maja enda saali.
+- **Kui kaart koha nimetab, kirjuta see alati välja** — ka siis, kui see on maja enda saal (`improkeskus`, `Ruutu10`, `improteater`). Tavaline koht on ikka koht: ära jäta seda `null`-iks sellepärast, et sinu meelest on see niigi teada või enamik etendusi toimub seal.
+- **`null` tähendab ainult üht: kaart ei nimeta kohta.** Kui kohta pole kirjas, ära oleta seda kaardi pealkirjast, formaadi nimest ega sellest, kus seda formaati tavaliselt mängitakse.
 
 ## Tiim (`team_id`)
 

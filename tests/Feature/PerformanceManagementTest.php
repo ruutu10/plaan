@@ -282,7 +282,28 @@ class PerformanceManagementTest extends TestCase
         $this->assertSame('2026-08-02', $this->venueMoment($response->json('data.startsAt'))->format('Y-m-d'));
     }
 
-    public function test_a_performance_can_be_played_somewhere_the_house_names(): void
+    public function test_the_venue_is_reported_but_cannot_be_written_here(): void
+    {
+        // The Planka card owns the venue and every import rewrites it, so the
+        // API shows it and quietly refuses to take one — anything accepted here
+        // would be gone by the next run.
+        [$user, $format] = $this->formatOfOwnTeam();
+        $performance = Performance::factory()
+            ->playedAt('improkeskus')
+            ->create(['format_id' => $format->id]);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.formats.performances.update', [$format, $performance]), [
+                'date' => $performance->startDate(),
+                'location' => 'Vaba Lava, Telliskivi',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.location', 'improkeskus');
+
+        $this->assertSame('improkeskus', $performance->fresh()?->location);
+    }
+
+    public function test_a_venue_cannot_be_smuggled_in_when_a_performance_is_added(): void
     {
         [$user, $format] = $this->formatOfOwnTeam();
 
@@ -292,39 +313,9 @@ class PerformanceManagementTest extends TestCase
                 'location' => 'Vaba Lava, Telliskivi',
             ])
             ->assertCreated()
-            ->assertJsonPath('data.location', 'Vaba Lava, Telliskivi');
-
-        $this->assertSame('Vaba Lava, Telliskivi', Performance::sole()->location);
-    }
-
-    public function test_a_blank_venue_puts_the_performance_back_in_the_houses_own_room(): void
-    {
-        [$user, $format] = $this->formatOfOwnTeam();
-        $performance = Performance::factory()
-            ->playedAt('improkeskus')
-            ->create(['format_id' => $format->id]);
-
-        $this->actingAs($user)
-            ->patchJson(route('api.formats.performances.update', [$format, $performance]), [
-                'date' => $performance->startDate(),
-                'location' => '',
-            ])
-            ->assertOk()
             ->assertJsonPath('data.location', null);
 
-        $this->assertNull($performance->fresh()?->location);
-    }
-
-    public function test_a_venue_longer_than_the_column_holds_is_refused(): void
-    {
-        [$user, $format] = $this->formatOfOwnTeam();
-
-        $this->actingAs($user)
-            ->postJson(route('api.formats.performances.store', $format), [
-                'date' => '2026-08-14',
-                'location' => str_repeat('a', 256),
-            ])
-            ->assertJsonValidationErrors('location');
+        $this->assertNull(Performance::sole()->location);
     }
 
     public function test_the_planka_card_can_be_written_down_by_hand(): void
