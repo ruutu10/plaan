@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
-import { Spotlight } from '@lucide/vue';
+import {
+    Download,
+    Link2,
+    RefreshCw,
+    Save,
+    Send,
+    Sparkles,
+    Spotlight,
+} from '@lucide/vue';
 import { computed, ref } from 'vue';
 import type { User } from '@/types';
 import Diamond from '../Diamond.vue';
@@ -86,6 +94,9 @@ const submitLabel = computed(() => {
 
     return props.submitting ? 'Esitan…' : 'Esita tehnikutiimile';
 });
+
+/** The icon says what the label says: a hand-in sends, an update refreshes. */
+const submitIcon = computed(() => (alreadySubmitted.value ? RefreshCw : Send));
 
 /**
  * A plan the crew is holding is not saved as a draft any more — the only thing
@@ -179,44 +190,57 @@ const savedAsDraft = computed(
 
         <!-- Actions -->
         <div class="r10-no-print mt-[26px] flex flex-wrap gap-3.5">
-            <R10Button variant="outline" size="lg" @click="$emit('download')"
-                >Laadi alla PDF</R10Button
-            >
+            <!-- Icons trail the label, as they do on the plans listing. They
+                 label nothing the words do not already say, so they stay
+                 `aria-hidden` and the button reads the same to a screen
+                 reader as it did without them. -->
+            <R10Button variant="outline" size="lg" @click="$emit('download')">
+                Ava PDF
+                <Download class="h-4 w-4" aria-hidden="true" />
+            </R10Button>
             <template v-if="!readOnly">
                 <R10Button
                     variant="outline"
-                    size="lg"
+                    size="md"
                     :disabled="busy"
                     @click="$emit('create-link')"
                 >
-                    avalik link
+                    Jagatav link
+                    <Link2 class="h-4 w-4" aria-hidden="true" />
                 </R10Button>
                 <R10Button
                     variant="outline"
-                    size="lg"
+                    size="md"
                     :disabled="aiLoading"
                     @click="$emit('ai-review')"
                 >
                     AI ülevaatus
+                    <Sparkles class="h-4 w-4" aria-hidden="true" />
                 </R10Button>
                 <R10Button
                     v-if="showDraftButton"
                     variant="outline"
-                    size="lg"
+                    size="md"
                     :disabled="busy"
                     data-test="save-draft"
                     @click="$emit('save-draft')"
                 >
                     {{ draftLabel }}
+                    <Save class="h-4 w-4" aria-hidden="true" />
                 </R10Button>
                 <R10Button
                     variant="primary"
-                    size="lg"
+                    size="md"
                     :disabled="busy"
                     data-test="submit-plan"
                     @click="$emit('submit')"
                 >
                     {{ submitLabel }}
+                    <component
+                        :is="submitIcon"
+                        class="h-4 w-4"
+                        aria-hidden="true"
+                    />
                 </R10Button>
             </template>
         </div>

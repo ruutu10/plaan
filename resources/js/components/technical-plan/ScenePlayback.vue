@@ -130,9 +130,21 @@ const clockDateTime = computed(() => now.value.toISOString());
 /**
  * The slot the show is meant to fill. Read under the clock, it is what tells
  * the tech whether the act is on its way out on time — and once the end has
- * gone by, the clock itself turns orange rather than making them do the sum.
+ * gone by, the whole panel inverts rather than making them do the sum.
  */
 const schedule = computed(() => showSchedule(plan.meta, now.value));
+
+/**
+ * Running over turns the clock panel inside out: the orange the rest of the
+ * view spends on accents fills it, and the navy the view is built on becomes
+ * the ink. It is the one block on screen that changes shape, so the tech
+ * catches it from across the booth instead of reading the small print.
+ */
+const overrunning = computed(() => schedule.value?.overrunning === true);
+
+const clockLabelClass = computed(() =>
+    overrunning.value ? 'text-r10-navy/70' : 'text-r10-navy-300',
+);
 
 const cueLabelClass =
     'font-r10-body text-[11px] font-bold tracking-[0.18em] text-r10-orange uppercase';
@@ -249,9 +261,19 @@ const cueLinkClass =
                 </div>
 
                 <!-- Wall clock: the tech calls cues against the running time. -->
-                <div class="shrink-0 border-t border-white/15 px-5 py-4">
+                <div
+                    :class="[
+                        'shrink-0 border-t px-5 py-4 transition-colors',
+                        overrunning
+                            ? 'border-r10-orange bg-r10-orange'
+                            : 'border-white/15',
+                    ]"
+                >
                     <div
-                        class="font-r10-body text-[11px] font-bold tracking-[0.16em] text-r10-navy-300 uppercase"
+                        :class="[
+                            'font-r10-body text-[11px] font-bold tracking-[0.16em] uppercase',
+                            clockLabelClass,
+                        ]"
                     >
                         Kell
                     </div>
@@ -259,28 +281,34 @@ const cueLinkClass =
                         :datetime="clockDateTime"
                         :class="[
                             'mt-1.5 block font-mono text-4xl leading-none font-bold tabular-nums transition-colors',
-                            schedule?.overrunning
-                                ? 'text-r10-orange'
-                                : 'text-white',
+                            overrunning ? 'text-r10-navy' : 'text-white',
                         ]"
                     >
                         {{ clock }}
                     </time>
 
-                    <!-- The slot the show is due to fill. Spelt out beside the
-                         orange clock as well, so the warning does not rest on
+                    <!-- The slot the show is due to fill. Spelt out inside the
+                         inverted panel as well, so the warning does not rest on
                          colour alone. -->
                     <div
                         v-if="schedule"
                         class="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1"
                     >
                         <span
-                            class="font-r10-body text-[11px] font-bold tracking-[0.16em] text-r10-navy-300 uppercase"
+                            :class="[
+                                'font-r10-body text-[11px] font-bold tracking-[0.16em] uppercase',
+                                clockLabelClass,
+                            ]"
                         >
                             Etendus
                         </span>
                         <span
-                            class="font-mono text-sm font-bold text-r10-navy-200 tabular-nums"
+                            :class="[
+                                'font-mono text-sm font-bold tabular-nums',
+                                overrunning
+                                    ? 'text-r10-navy'
+                                    : 'text-r10-navy-200',
+                            ]"
                         >
                             {{ schedule.start
                             }}<template v-if="schedule.end"
@@ -289,7 +317,7 @@ const cueLinkClass =
                         </span>
                         <span
                             v-if="schedule.overrunning"
-                            class="font-r10-body text-[11px] font-bold tracking-[0.16em] text-r10-orange uppercase"
+                            class="rounded-full bg-r10-navy px-2 py-0.5 font-r10-body text-[11px] font-bold tracking-[0.16em] text-r10-orange uppercase"
                         >
                             Üle aja
                         </span>
@@ -336,7 +364,10 @@ const cueLinkClass =
                                 :key="`${activeScene.num}-${sound.id}`"
                                 class="mt-3"
                             >
-                                <SceneAudio v-if="sound.audio" :src="sound.audio" />
+                                <SceneAudio
+                                    v-if="sound.audio"
+                                    :src="sound.audio"
+                                />
 
                                 <a
                                     v-if="sound.file"

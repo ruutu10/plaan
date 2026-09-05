@@ -36,11 +36,11 @@ const linkClass =
                     <span
                         class="font-r10-body text-[11px] font-bold tracking-[0.18em] text-r10-orange uppercase"
                     >
-                        Ruutu10 · Tehnikaplaan
+                        Ruutu10 | Tehnikaplaan
                     </span>
                 </div>
                 <div
-                    class="font-r10-display text-[22px] leading-[1.05] font-bold tracking-[0.02em] break-words text-r10-navy uppercase sm:text-[26px]"
+                    class="font-r10-display text-[22px] leading-[1.05] font-bold tracking-[0.02em] break-words text-r10-navy uppercase sm:text-[26px] py-3"
                 >
                     {{ doc.formatName }}
                 </div>

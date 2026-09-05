@@ -52,7 +52,7 @@ const classes = computed(() => {
 
     const size = {
         sm: 'text-xs px-3 py-2',
-        md: 'text-sm px-6 py-3',
+        md: 'text-sm px-4 py-3',
         lg: 'text-[15px] px-7 py-[15px]',
     }[props.size];
 
