@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/vue';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@sentry/vue', () => ({
     init: vi.fn(),
@@ -17,7 +17,15 @@ async function freshSentryModule() {
     return import('@/lib/sentry');
 }
 
+// The module boots the browser SDK only where there is a browser to boot it
+// in, and these run in Node. Without a stand-in window every case here would
+// pass by never reaching the code it is about.
+beforeEach(() => {
+    vi.stubGlobal('window', {});
+});
+
 afterEach(() => {
+    vi.unstubAllGlobals();
     vi.unstubAllEnvs();
     vi.clearAllMocks();
 });
