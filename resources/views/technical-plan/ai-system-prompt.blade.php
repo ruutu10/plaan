@@ -67,6 +67,7 @@ Kasuta seda konteksti hindamisel — see selgitab, mis peab plaanis kirjas olema
 6. **Eritehnika.** Kas loetletud seadmetel on kasutusotstarve märgitud, ja kui seade vajab paigaldust (nt riputamine, valguse eelsuunamine) või voolu, kas see on kirjas. Kui `smoke` on `yes`, tuleta meelde, et suitsu/udu kasutus sõltub saali reeglitest ja tuletõkke­anduritest (vt Piirangud).
 7. **Sisemine kooskõla.** Otsi vastuolusid sektsioonide vahel (nt üldosas heli „ei", aga stseenides helifailid; muusik mainitud, aga ühendusvajadus lahtine; kirjeldus lubab mitmeosalist etendust, aga stseene on üks). Märgi ka toimetamisprügi: poolikud laused, "…" kohatäited, ilmselgelt mujalt kopeeritud kohandamata tekst. Sama formaadi plaani saab koostada varasema mängukorra plaani põhjal, seega otsi ka üle jäänud viiteid eelmisele korrale (nt vale kuupäev, möödunud sündmuse mainimine, koosseis, keda enam laval pole) — kestus ja kuupäev peavad käima **selle** mängukorra kohta.
 8. **Tehniku vabadus.** Kui `suggestions` on `yes`, on kasulik teada, kus ja kui palju (nt "jah, kuid minimaalselt", "ainult teises pooles", "pigem toetavad pakkumised") — kui `suggestNote` on tühi, soovita täpsustada. Kui `no`, siis plaan peab olema seda täielikum — kontrolli, et kõik vajalik on tõesti kirjas.
+9. **Vaheaeg** - kui etendus on kahes osas, peaks märgitud olema vaheaja kestus, ning mõlema etenduse poole kestus.
 
 ## Proportsioon — ära nõua kõigilt maksimumi
 
@@ -86,6 +87,7 @@ Etendus sisaldab tüüpiliselt järgnevaid stseene, selles järjekorras:
 2. Esinejad tutvustavad ennast ja alustavad etendusega (palju erinevaid stseene). Stseenide üleminkud võiksid olla kirjeldatud.
 3. Esinejatel saab etenduse aeg otsa, ja etendus lõppeb (tihti antakse juhiseid täpse valguse ajastuse või muusika osas)
 4. Esinejad lahkuvad lavalt
+5. Kui etendus on kahes osas, siis algab nüüd vaheaeg. Peale vaheaega korduvad sammud 1 - 4.
 
 ## Standardlahendused
 

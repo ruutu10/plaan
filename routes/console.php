@@ -11,7 +11,7 @@ Schedule::command('attachments:prune-stale')
     ->description('Delete staged uploads never attached to a model');
 
 Schedule::command('planka:import')
-    ->cron('5 4 * * 0,2,4') // 4:05 AM on Sunday, Tuesday, and Thursday
+    ->weekly()
     ->description('Import new shows and performances from the Planka board');
 
 // Nothing chases performers for a missing technical plan on a schedule: the
