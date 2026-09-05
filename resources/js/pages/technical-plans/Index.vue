@@ -114,7 +114,8 @@ defineOptions({
                     {{ plan.teamName ?? '—' }}
                 </td>
                 <td class="px-5 py-4 align-top whitespace-nowrap">
-                    {{ formatLocalDate(plan.performanceStartsAt) }} {{ formatLocalTime(plan.performanceStartsAt) }}
+                    {{ formatLocalDate(plan.performanceStartsAt) }}
+                    {{ formatLocalTime(plan.performanceStartsAt) }}
                 </td>
                 <td class="px-5 py-4 align-top">
                     <span class="block text-r10-ink">

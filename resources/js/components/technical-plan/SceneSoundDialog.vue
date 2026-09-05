@@ -265,7 +265,12 @@ const allAlreadyOnScene = computed(
 // The performer's other plans are only worth fetching once the picker is asked
 // for, and once per opening of the dialog.
 watch([open, source], async ([isOpen, mode]) => {
-    if (!isOpen || mode !== 'reuse' || loadedOthers.value || loadingOthers.value) {
+    if (
+        !isOpen ||
+        mode !== 'reuse' ||
+        loadedOthers.value ||
+        loadingOthers.value
+    ) {
         return;
     }
 
@@ -364,10 +369,7 @@ const rowClass =
                     Kõik su üleslaaditud helifailid on juba selles stseenis.
                     Laadi uus üles või lisa link.
                 </p>
-                <p
-                    v-else-if="!hasReusable"
-                    class="text-sm text-r10-grey-500"
-                >
+                <p v-else-if="!hasReusable" class="text-sm text-r10-grey-500">
                     Sul pole veel ühtegi üleslaaditud helifaili. Laadi esimene
                     üles või lisa link.
                 </p>
@@ -405,7 +407,10 @@ const rowClass =
                         </button>
                     </div>
 
-                    <div v-if="offeredOtherSounds.length" class="flex flex-col gap-1.5">
+                    <div
+                        v-if="offeredOtherSounds.length"
+                        class="flex flex-col gap-1.5"
+                    >
                         <div
                             class="font-r10-body text-[11px] font-bold tracking-[0.16em] text-r10-grey-500 uppercase"
                         >
@@ -424,7 +429,9 @@ const rowClass =
                                 >
                                     {{ sound.name }}
                                 </span>
-                                <span class="truncate text-xs text-r10-grey-500">
+                                <span
+                                    class="truncate text-xs text-r10-grey-500"
+                                >
                                     {{ sound.planLabel
                                     }}<template v-if="sound.performanceDate">
                                         · {{ sound.performanceDate }}</template
@@ -439,6 +446,5 @@ const rowClass =
                 </div>
             </template>
         </div>
-
     </R10Dialog>
 </template>

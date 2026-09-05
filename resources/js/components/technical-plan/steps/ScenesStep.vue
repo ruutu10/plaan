@@ -344,7 +344,9 @@ function onDrop(targetId: string): void {
                                 :key="sound.id"
                                 class="flex items-center gap-2"
                                 @dragover.prevent
-                                @drop.stop.prevent="onSoundDrop(scene, sound.id)"
+                                @drop.stop.prevent="
+                                    onSoundDrop(scene, sound.id)
+                                "
                             >
                                 <span
                                     draggable="true"
@@ -440,10 +442,10 @@ function onDrop(targetId: string): void {
                             label="Märkmed"
                             placeholder="Muu oluline…"
                         />
-                        <p
-                                class="gap-1 text-xs text-r10-grey-500"
-                            >
-                                Kas on selge, mis lõpetab selle stseeni ja alustab järgmist? Kui ei, siis täpsusta märkmete väljas.</p>
+                        <p class="gap-1 text-xs text-r10-grey-500">
+                            Kas on selge, mis lõpetab selle stseeni ja alustab
+                            järgmist? Kui ei, siis täpsusta märkmete väljas.
+                        </p>
                     </div>
                 </div>
             </div>

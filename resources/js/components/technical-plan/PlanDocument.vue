@@ -40,7 +40,7 @@ const linkClass =
                     </span>
                 </div>
                 <div
-                    class="font-r10-display text-[22px] leading-[1.05] font-bold tracking-[0.02em] break-words text-r10-navy uppercase sm:text-[26px] py-3"
+                    class="py-3 font-r10-display text-[22px] leading-[1.05] font-bold tracking-[0.02em] break-words text-r10-navy uppercase sm:text-[26px]"
                 >
                     {{ doc.formatName }}
                 </div>
