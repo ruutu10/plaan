@@ -256,6 +256,7 @@ export function blankPlan(): Plan {
             formatName: '',
             performanceDate: '',
             startTime: '',
+            location: '',
             duration: null,
             description: '',
         },
@@ -434,7 +435,9 @@ function isDirectAudioUrl(url: string): boolean {
         // A relative URL needs *a* base before it will parse, and only the path
         // is read afterwards — so a stand-in base answers as well as the page's
         // own origin would, without this needing a browser to run in.
-        return hasAudioExtension(new URL(url, 'https://plaan.invalid').pathname);
+        return hasAudioExtension(
+            new URL(url, 'https://plaan.invalid').pathname,
+        );
     } catch {
         return false;
     }
@@ -471,7 +474,10 @@ export function soundAudioUrl(sound: SceneSound): string | null {
  * The length limit is the server's own, handed to the wizard in its config
  * rather than written down a second time here.
  */
-export function soundLinkError(url: string, config: WizardConfig): string | null {
+export function soundLinkError(
+    url: string,
+    config: WizardConfig,
+): string | null {
     const value = url.trim();
 
     if (value === '') {

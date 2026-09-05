@@ -59,6 +59,7 @@ class TechnicalPlanMissing extends Notification implements ShouldQueue
                 'performer' => $this->performance->performerName() ?? '',
                 'startsAt' => $this->performance->startsAt(),
                 'duration' => $this->performance->duration,
+                'location' => $this->performance->location,
                 'planUrl' => $this->planUrl,
                 'techEmail' => (string) config('technical_plan.tech_email'),
             ]);

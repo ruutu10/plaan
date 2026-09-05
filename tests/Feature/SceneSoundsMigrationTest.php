@@ -40,6 +40,13 @@ class SceneSoundsMigrationTest extends TestCase
     }
 
     /**
+     * The migration under test, named rather than counted: rolling back "the
+     * last one" would follow whichever migration was added most recently, and
+     * this test is about one particular migration however many come after it.
+     */
+    private const MIGRATION = 'database/migrations/2026_09_02_190826_move_scene_sound_into_a_sounds_list.php';
+
+    /**
      * Put a plan in the database as the version before this migration stored
      * it, then let the migration find it.
      *
@@ -51,11 +58,11 @@ class SceneSoundsMigrationTest extends TestCase
      */
     private function upgradeStoredScenes(array $scenes): TechnicalPlan
     {
-        $this->artisan('migrate:rollback', ['--step' => 1])->assertSuccessful();
+        $this->artisan('migrate:rollback', ['--path' => self::MIGRATION])->assertSuccessful();
 
         $plan = $this->planWithStoredScenes($scenes);
 
-        $this->artisan('migrate')->assertSuccessful();
+        $this->artisan('migrate', ['--path' => self::MIGRATION])->assertSuccessful();
 
         return $plan;
     }
@@ -148,7 +155,7 @@ class SceneSoundsMigrationTest extends TestCase
             'notes' => '',
         ]]);
 
-        $this->artisan('migrate:rollback', ['--step' => 1])->assertSuccessful();
+        $this->artisan('migrate:rollback', ['--path' => self::MIGRATION])->assertSuccessful();
 
         $scene = TechnicalPlan::find($plan->id)->scenes[0];
 

@@ -27,6 +27,7 @@ class AdminPerformance extends JsonResource
      *     formatId: int,
      *     formatName: string,
      *     title: string|null,
+     *     location: string|null,
      *     teamName: string|null,
      *     startsAt: string,
      *     duration: int|null,
@@ -47,6 +48,7 @@ class AdminPerformance extends JsonResource
             // The act's own name, for an evening several groups share; empty
             // when the format's name already says what is played.
             'title' => $performance->title,
+            'location' => $performance->location,
             // Who plays it — its own group, or the format's. Never read off the
             // format directly; see Performance::performerName().
             'teamName' => $performance->performerName(),

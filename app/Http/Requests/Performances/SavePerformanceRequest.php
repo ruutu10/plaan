@@ -53,6 +53,10 @@ class SavePerformanceRequest extends FormRequest
             // The act's own name, for an evening several groups share. Left
             // out, the format's name is what the performance is listed under.
             'title' => ['nullable', 'string', 'max:255'],
+            // `location` is deliberately absent: the venue belongs to the
+            // Planka card and is rewritten from it on every run, so nothing
+            // typed here would outlive the next import — see
+            // ImportPlankaPerformances::syncLocation().
             // The group playing this performance, when it is not the format's
             // own. Held to the groups the user may hand a performance to, the
             // way a format's owner is held by SaveFormatRequest.

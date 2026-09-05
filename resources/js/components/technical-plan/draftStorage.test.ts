@@ -100,14 +100,17 @@ describe('readDraft upgrading a draft from before the cue list', () => {
             'r10-techplan-v1',
             JSON.stringify({
                 step: 3,
-                plan: { ...blankPlan(), scenes: [{ ...blankPlan().scenes[0], ...scene }] },
+                plan: {
+                    ...blankPlan(),
+                    scenes: [{ ...blankPlan().scenes[0], ...scene }],
+                },
             }),
         );
     }
 
     const file = { id: 'media-1', name: 'avamuusika.mp3', size: 120 };
 
-    it('carries an uploaded file over as the scene\'s first cue', () => {
+    it("carries an uploaded file over as the scene's first cue", () => {
         storeLegacyDraft({ sounds: undefined, soundUrl: '', soundFile: file });
 
         expect(readDraft()?.plan?.scenes?.[0].sounds).toEqual([
@@ -115,7 +118,7 @@ describe('readDraft upgrading a draft from before the cue list', () => {
         ]);
     });
 
-    it('carries a link over as the scene\'s first cue', () => {
+    it("carries a link over as the scene's first cue", () => {
         storeLegacyDraft({
             sounds: undefined,
             soundUrl: 'https://example.com/lugu.mp3',
@@ -128,7 +131,11 @@ describe('readDraft upgrading a draft from before the cue list', () => {
     });
 
     it('leaves a scene that had no sound with no cues', () => {
-        storeLegacyDraft({ sounds: undefined, soundUrl: null, soundFile: null });
+        storeLegacyDraft({
+            sounds: undefined,
+            soundUrl: null,
+            soundFile: null,
+        });
 
         expect(readDraft()?.plan?.scenes?.[0].sounds).toEqual([]);
     });

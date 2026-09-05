@@ -455,6 +455,11 @@ Neid hallatakse formaadi muutmislehel. Etendusel on kuupäev ja algusaeg,
 valikuliselt kestus, valikuliselt oma pealkiri ja oma esinev tiim (jagatud
 õhtute jaoks) ning mustandi märge.
 
+**Asukoht** on vabatekstiline koht, kus etendus toimub - nii nagu Planka kaardil
+kirjas (nt `improkeskus`, `Vaba Lava, Telliskivi`). See on **puhtalt loetav**,
+nagu meeskondki: koht kuulub Planka kaardile ja iga import kirjutab
+selle üle.
+
 - **Etenduse lisamine** on ainuüksi formaadi tiimi õigus - külalistrupp võib oma
   lõiku parandada, kuid mitte kavva enda omi juurde panna.
 - **Etenduse muutmine ja kustutamine** on lubatud formaadi tiimile, seda
@@ -595,6 +600,15 @@ täidab üks trupp, saab korra mängitav formaat; Õppelavast saab üks korra
 mängitav formaat, millel on iga tiimi kohta üks etendus. Sobitamine käib nime
 (formaat), formaadi + kuupäeva (õhtu) ja õhtusisese nime (etteaste) järgi, nii
 et sama kaardi uuesti importimine ei lisa midagi.
+
+Kaardilt loetakse ka õhtu **asukoht** - tüüpiliselt realt `Asukoht:` või
+`Toimumiskoht:` - ja see pannakse kõigile selle õhtu etteastetele, sest kaart
+nimetab ühe koha terve õhtu kohta. Koht kirjutatakse alati välja, ka siis, kui
+see on maja enda saal; tühi asukoht tähendab ainult seda, et kaart kohta ei
+nimeta.
+
+Asukoht on **erand** reeglist, et juba raamatus olevat etendust import enam ei
+puutu: nagu meeskonda (§11.2), kirjutatakse ka asukohta iga impordiga uuesti.
 
 Kuna lugemist teeb AI, **säilitatakse iga imporditud kirje taga olev
 arutluskäik** ning tehnikud ja majarahvas saavad selle formaadi ja etenduse

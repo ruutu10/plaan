@@ -6,6 +6,8 @@ export type UpcomingFormat = {
     /** The performance's own screen, or null when the reader may not open it. */
     performanceUrl: string | null;
     teamName: string | null;
+    /** Where it is played; null means the house's own room. */
+    location: string | null;
     /** ISO 8601 UTC instant the performance starts at. */
     startsAt: string;
 };
@@ -52,6 +54,7 @@ export type TodaysPerformance = {
     performanceUrl: string | null;
     /** The act's own name, on an evening several groups share. */
     title: string | null;
+    location: string | null;
     teamName: string | null;
     /** ISO 8601 UTC instant the performance starts at. */
     startsAt: string;

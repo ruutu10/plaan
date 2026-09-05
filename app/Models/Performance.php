@@ -39,10 +39,18 @@ use Illuminate\Support\Facades\Date;
  * {@see startsAt()} and {@see momentFrom()}, which are the two ends of that
  * conversion and the only places it should happen.
  *
+ * `location` is where it is played, free text as the board writes it. It is the
+ * Planka card's to say and read-only here — like {@see staff()}, and for the
+ * same reason: every import rewrites it, so anything typed over it would not
+ * survive the week. Empty means the card places the night nowhere, and every
+ * listing shows a venue only when there is one rather than standing an absence
+ * in.
+ *
  * @property int $id
  * @property int $format_id
  * @property int|null $team_id
  * @property string|null $title
+ * @property string|null $location
  * @property string|null $planka_card_id
  * @property Carbon $date
  * @property int|null $duration
@@ -62,6 +70,7 @@ use Illuminate\Support\Facades\Date;
     'format_id',
     'team_id',
     'title',
+    'location',
     'planka_card_id',
     'date',
     'duration',
@@ -434,6 +443,6 @@ class Performance extends Model
      */
     protected function activityLogAttributes(): array
     {
-        return ['format_id', 'team_id', 'title', 'date', 'duration', 'is_draft', 'created_by', 'planka_card_id'];
+        return ['format_id', 'team_id', 'title', 'location', 'date', 'duration', 'is_draft', 'created_by', 'planka_card_id'];
     }
 }

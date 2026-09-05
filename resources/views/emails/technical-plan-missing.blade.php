@@ -70,6 +70,12 @@
             <td style="{{ $labelCell }}">Kestus</td>
             <td style="{{ $cell }}">{{ $duration ? $duration.' min' : '—' }}</td>
         </tr>
+        @if ($location)
+            <tr>
+                <td style="{{ $labelCell }}">Asukoht</td>
+                <td style="{{ $cell }}">{{ $location }}</td>
+            </tr>
+        @endif
     </table>
 
     <p style="margin:24px 0 0 0; font-size:13px; line-height:1.6; color:#6b7386;">

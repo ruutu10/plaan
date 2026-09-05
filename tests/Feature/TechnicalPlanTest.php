@@ -661,7 +661,10 @@ class TechnicalPlanTest extends TestCase
 
     public function test_the_performances_endpoint_returns_only_upcoming_performances(): void
     {
-        $upcoming = Performance::factory()->for(Format::factory()->state(['name' => 'Tulevane etendus']))->create();
+        $upcoming = Performance::factory()
+            ->playedAt('improkeskus')
+            ->for(Format::factory()->state(['name' => 'Tulevane etendus']))
+            ->create();
         Performance::factory()->past()->for(Format::factory()->state(['name' => 'Möödunud etendus']))->create();
 
         $response = $this->getJson(route('technical-plan.performances'));
@@ -672,6 +675,9 @@ class TechnicalPlanTest extends TestCase
             'id' => $upcoming->id,
             'formatName' => 'Tulevane etendus',
             'performer' => $upcoming->format->team->name,
+            // A plan for a night at a rented hall is written against a
+            // different room than one at home, so the picker says which.
+            'location' => 'improkeskus',
         ]);
         $response->assertJsonMissing(['formatName' => 'Möödunud etendus']);
     }
@@ -1065,6 +1071,8 @@ class TechnicalPlanTest extends TestCase
     {
         $plan = TechnicalPlan::factory()->submitted()->create();
 
+        $plan->performance->update(['location' => 'improkeskus']);
+
         $data = (new TechnicalPlanResource($plan))->toArray(request());
 
         // Identity and status come straight off the model.
@@ -1075,6 +1083,9 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame($plan->performance->format->team->name, $data['meta']['performer']);
         $this->assertSame($plan->performance->format->name, $data['meta']['formatName']);
         $this->assertSame($plan->performance->startTime(), $data['meta']['startTime']);
+        // The venue is read live off the performance too, so one corrected
+        // after the plan was handed in is the one the technician reads.
+        $this->assertSame('improkeskus', $data['meta']['location']);
 
         // The full plan content is present…
         $this->assertArrayHasKey('sound', $data);

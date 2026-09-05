@@ -120,6 +120,27 @@ class ImportPlankaPerformancesTest extends TestCase
     }
 
     /**
+     * What the AI reads off the board on one run after another: the first array
+     * is what a first `planka:import` sees, the second what the next one sees.
+     *
+     * Queued onto a single mock rather than re-mocked between the runs. The
+     * command takes its extractor by constructor injection and Artisan holds on
+     * to the command it built, so a second {@see fakeExtraction()} call never
+     * reaches the run — it would leave the second run reading the first run's
+     * answer, and a test asserting nothing changed would pass without ever
+     * having changed the card. One card per run here, so one answer per run.
+     *
+     * @param  list<ImportedNight>  ...$runs
+     */
+    private function fakeExtractionRuns(array ...$runs): void
+    {
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) use ($runs) {
+            $mock->shouldReceive('extract')->andReturnValues($runs);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
+    }
+
+    /**
      * One night as the AI would have read it off a card: a format played once, by
      * whoever the format belongs to. The start time defaults to none, which is
      * the common case — most cards name a date and leave the hour to the house.
@@ -131,11 +152,13 @@ class ImportPlankaPerformancesTest extends TestCase
         ?int $teamId = null,
         ?string $startTime = null,
         array $staff = [],
+        ?string $location = null,
     ): ImportedNight {
         return new ImportedNight(
             formatName: $name,
             date: Carbon::parse($date),
             teamId: $teamId,
+            location: $location,
             performances: [
                 new ImportedPerformance(
                     startTime: $startTime,
@@ -152,12 +175,13 @@ class ImportPlankaPerformancesTest extends TestCase
      *
      * @param  list<ImportedPerformance>  $acts
      */
-    private function sharedNight(string $name, array $acts, string $date = '2025-10-09'): ImportedNight
+    private function sharedNight(string $name, array $acts, string $date = '2025-10-09', ?string $location = null): ImportedNight
     {
         return new ImportedNight(
             formatName: $name,
             date: Carbon::parse($date),
             teamId: null,
+            location: $location,
             performances: $acts,
         );
     }
@@ -213,17 +237,127 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame('2025-09-13', $performance->startDate());
     }
 
-    public function test_a_night_already_imported_is_not_imported_again_when_the_card_gains_an_hour(): void
+    public function test_an_imported_performance_keeps_the_venue_the_card_named(): void
+    {
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([$this->night('Trupp 1', location: 'improkeskus')]);
+
+        $this->artisan('planka:import')
+            ->expectsOutputToContain('in improkeskus')
+            ->assertSuccessful();
+
+        $this->assertSame('improkeskus', Performance::sole()->location);
+    }
+
+    public function test_a_card_naming_no_venue_leaves_the_performance_in_the_houses_own_room(): void
     {
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([$this->night('Trupp 1')]);
 
         $this->artisan('planka:import')->assertSuccessful();
 
-        // The board is tidied up and the card now says when the act is on. It
-        // is the same night, so it stays one performance.
-        $this->fakeExtraction([$this->night('Trupp 1', startTime: '21:45')]);
+        $this->assertNull(Performance::sole()->location);
+    }
 
+    public function test_every_act_of_a_shared_night_is_played_at_the_nights_venue(): void
+    {
+        // The card names one place for the whole evening, and the groups taking
+        // the stage in turn are all standing in it.
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+        $this->fakeExtraction([$this->sharedNight('Õppelava', [
+            $this->act('Märtu10', startTime: '20:00'),
+            $this->act('Improräpp', startTime: '20:20'),
+        ], location: 'Vaba Lava')]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame(
+            ['Vaba Lava', 'Vaba Lava'],
+            Performance::query()->orderBy('date')->pluck('location')->all(),
+        );
+    }
+
+    public function test_a_night_that_moved_on_the_card_moves_here_too(): void
+    {
+        // The board is the only place a venue is written, so a card that moves
+        // the night rewrites it even though the performance itself is one the
+        // run otherwise adds nothing to.
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtractionRuns(
+            [$this->night('Trupp 1', location: 'improkeskus')],
+            [$this->night('Trupp 1', location: 'Vaba Lava, Telliskivi')],
+        );
+
+        $this->artisan('planka:import')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame(1, Performance::query()->count());
+        $this->assertSame('Vaba Lava, Telliskivi', Performance::sole()->location);
+    }
+
+    public function test_a_venue_dropped_from_the_card_is_cleared_here(): void
+    {
+        // The card is believed both ways round: a night it has stopped placing
+        // is emptied rather than left at an address nothing stands behind.
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtractionRuns(
+            [$this->night('Trupp 1', location: 'improkeskus')],
+            [$this->night('Trupp 1')],
+        );
+
+        $this->artisan('planka:import')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertNull(Performance::sole()->location);
+    }
+
+    public function test_a_dry_run_moves_nothing(): void
+    {
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtractionRuns(
+            [$this->night('Trupp 1', location: 'improkeskus')],
+            [$this->night('Trupp 1', location: 'Vaba Lava')],
+        );
+
+        $this->artisan('planka:import')->assertSuccessful();
+        $this->artisan('planka:import', ['--dry-run' => true])->assertSuccessful();
+
+        $this->assertSame('improkeskus', Performance::sole()->location);
+    }
+
+    public function test_a_performance_put_aside_is_not_moved(): void
+    {
+        // Put aside is how an admin says the night is not happening. Its venue
+        // is not worth reviving along with it — the same line syncStaff() draws.
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtractionRuns(
+            [$this->night('Trupp 1', location: 'improkeskus')],
+            [$this->night('Trupp 1', location: 'Vaba Lava')],
+        );
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $performance = Performance::sole();
+        $performance->delete();
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame('improkeskus', $performance->fresh()?->location);
+    }
+
+    public function test_a_night_already_imported_is_not_imported_again_when_the_card_gains_an_hour(): void
+    {
+        $this->fakeBoard([$this->card()]);
+
+        // The board is tidied up between the runs and the card now says when
+        // the act is on. It is the same night, so it stays one performance at
+        // the hour it was first registered at.
+        $this->fakeExtractionRuns(
+            [$this->night('Trupp 1')],
+            [$this->night('Trupp 1', startTime: '21:45')],
+        );
+
+        $this->artisan('planka:import')->assertSuccessful();
         $this->artisan('planka:import')->assertSuccessful();
 
         $this->assertSame(1, Performance::query()->count());
@@ -241,7 +375,7 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->fakeBoard([[
             'id' => 'card-1',
             'name' => 'Õppelava 9.10',
-            'description' => "- **Toimumise kuupäev:** 9.10.2025\n- **Etteaste algus:** 20:00\n"
+            'description' => "- **Toimumise kuupäev:** 9.10.2025\n- **Asukoht:** improkeskus\n- **Etteaste algus:** 20:00\n"
                 ."- Esinejad: Märtu10 (20min), Tõnis ilma Tanelita külalisega (30min), Mätu (30min), Improräpp (30min)\n"
                 .'- Heli- ja valgus: Tom',
             'dueDate' => '2025-10-09T15:00:00.000Z',
@@ -253,6 +387,7 @@ class ImportPlankaPerformancesTest extends TestCase
                 'format_name' => 'Õppelava',
                 'date' => '2025-10-09',
                 'team_id' => null,
+                'location' => 'improkeskus',
                 'performances' => [
                     ['title' => 'Märtu10', 'start_time' => '20:00', 'duration_minutes' => 20, 'team_id' => $marturu->id],
                     ['title' => 'Tõnis ilma Tanelita külalisega', 'start_time' => '20:20', 'duration_minutes' => 30, 'team_id' => null],
@@ -275,6 +410,8 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame(['Märtu10', null, 'Mätu', null], $performances->map(
             fn (Performance $p): ?string => $p->team?->name,
         )->all());
+        // One venue for the evening, on every act of it.
+        $this->assertSame(['improkeskus'], $performances->pluck('location')->unique()->all());
         // The crew is not on the bill.
         $this->assertSame(0, Performance::query()->where('title', 'like', '%Tom%')->count());
     }

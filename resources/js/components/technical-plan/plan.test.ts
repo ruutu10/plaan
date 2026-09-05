@@ -140,12 +140,18 @@ describe('soundErrors', () => {
 
 describe('soundLinkError', () => {
     it('accepts a plain http(s) address', () => {
-        expect(soundLinkError('https://example.com/muusika.mp3', config)).toBeNull();
-        expect(soundLinkError('http://example.com/muusika.mp3', config)).toBeNull();
+        expect(
+            soundLinkError('https://example.com/muusika.mp3', config),
+        ).toBeNull();
+        expect(
+            soundLinkError('http://example.com/muusika.mp3', config),
+        ).toBeNull();
     });
 
     it('accepts a link the performer padded with whitespace', () => {
-        expect(soundLinkError('  https://example.com/lugu.mp3  ', config)).toBeNull();
+        expect(
+            soundLinkError('  https://example.com/lugu.mp3  ', config),
+        ).toBeNull();
     });
 
     it('refuses a link that is not there at all', () => {
@@ -160,10 +166,13 @@ describe('soundLinkError', () => {
     });
 
     it('refuses a scheme that is not the web — the link becomes an href', () => {
-         
         expect(soundLinkError('javascript:alert(1)', config)).not.toBeNull();
-        expect(soundLinkError('data:audio/mp3;base64,AAAA', config)).not.toBeNull();
-        expect(soundLinkError('ftp://example.com/lugu.mp3', config)).not.toBeNull();
+        expect(
+            soundLinkError('data:audio/mp3;base64,AAAA', config),
+        ).not.toBeNull();
+        expect(
+            soundLinkError('ftp://example.com/lugu.mp3', config),
+        ).not.toBeNull();
     });
 
     it('refuses a link longer than the server would store', () => {
@@ -282,16 +291,28 @@ describe('soundHasSource', () => {
     it('counts a file the server handed back without an upload status', () => {
         // The document fixtures carry files in exactly this shape, so the
         // permissive reading of `isReady` is load-bearing, not incidental.
-        expect(isReady({ id: 'media-1', name: 'lugu.mp3', size: 1 })).toBe(true);
+        expect(isReady({ id: 'media-1', name: 'lugu.mp3', size: 1 })).toBe(
+            true,
+        );
     });
 
     it('does not count a file that is still going up, or failed', () => {
-        expect(soundHasSource(cue({ file: { ...cue().file!, status: 'uploading' } }))).toBe(false);
-        expect(soundHasSource(cue({ file: { ...cue().file!, status: 'error' } }))).toBe(false);
+        expect(
+            soundHasSource(
+                cue({ file: { ...cue().file!, status: 'uploading' } }),
+            ),
+        ).toBe(false);
+        expect(
+            soundHasSource(cue({ file: { ...cue().file!, status: 'error' } })),
+        ).toBe(false);
     });
 
     it('counts a link, but not one that is only whitespace', () => {
-        expect(soundHasSource(cue({ url: 'https://example.com/a.mp3', file: null }))).toBe(true);
+        expect(
+            soundHasSource(
+                cue({ url: 'https://example.com/a.mp3', file: null }),
+            ),
+        ).toBe(true);
         expect(soundHasSource(cue({ url: '   ', file: null }))).toBe(false);
         expect(soundHasSource(cue({ url: '', file: null }))).toBe(false);
     });
@@ -313,7 +334,10 @@ describe('soundFileStillUsed', () => {
     it('holds on to a file a second scene is still playing', () => {
         // Reusing one sting across two scenes: dropping it from one must not
         // delete it out from under the other.
-        const plan = planWith([], [cue({ file: { id: 'media-1', name: 'a.mp3', size: 1 } })]);
+        const plan = planWith(
+            [],
+            [cue({ file: { id: 'media-1', name: 'a.mp3', size: 1 } })],
+        );
 
         expect(soundFileStillUsed(plan, 'media-1')).toBe(true);
     });
@@ -323,7 +347,9 @@ describe('soundFileStillUsed', () => {
     });
 
     it('does not confuse one file for another', () => {
-        const plan = planWith([cue({ file: { id: 'media-2', name: 'b.mp3', size: 1 } })]);
+        const plan = planWith([
+            cue({ file: { id: 'media-2', name: 'b.mp3', size: 1 } }),
+        ]);
 
         expect(soundFileStillUsed(plan, 'media-1')).toBe(false);
     });
@@ -351,13 +377,17 @@ describe('soundAudioUrl', () => {
 
     it('will not play an upload that has not finished', () => {
         expect(
-            soundAudioUrl(cue({ file: { ...stored('lugu.mp3'), status: 'uploading' } })),
+            soundAudioUrl(
+                cue({ file: { ...stored('lugu.mp3'), status: 'uploading' } }),
+            ),
         ).toBeNull();
     });
 
     it('plays a link that points straight at a file', () => {
         expect(
-            soundAudioUrl(cue({ url: 'https://example.com/lugu.mp3', file: null })),
+            soundAudioUrl(
+                cue({ url: 'https://example.com/lugu.mp3', file: null }),
+            ),
         ).toBe('https://example.com/lugu.mp3');
     });
 
@@ -365,10 +395,14 @@ describe('soundAudioUrl', () => {
         // A YouTube page names no audio file, and a query string that mentions
         // one is not the resource being fetched.
         expect(
-            soundAudioUrl(cue({ url: 'https://youtube.com/watch?v=abc', file: null })),
+            soundAudioUrl(
+                cue({ url: 'https://youtube.com/watch?v=abc', file: null }),
+            ),
         ).toBeNull();
         expect(
-            soundAudioUrl(cue({ url: 'https://example.com/d?file=lugu.mp3', file: null })),
+            soundAudioUrl(
+                cue({ url: 'https://example.com/d?file=lugu.mp3', file: null }),
+            ),
         ).toBeNull();
     });
 });

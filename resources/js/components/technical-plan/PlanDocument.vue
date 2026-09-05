@@ -40,7 +40,7 @@ const linkClass =
                     </span>
                 </div>
                 <div
-                    class="font-r10-display text-[22px] leading-[1.05] font-bold tracking-[0.02em] break-words text-r10-navy uppercase sm:text-[26px] py-3"
+                    class="py-3 font-r10-display text-[22px] leading-[1.05] font-bold tracking-[0.02em] break-words text-r10-navy uppercase sm:text-[26px]"
                 >
                     {{ doc.formatName }}
                 </div>
@@ -69,6 +69,10 @@ const linkClass =
                     <span class="font-mono text-xs">{{
                         doc.durationLabel
                     }}</span>
+                </div>
+                <div>
+                    <span class="font-bold text-r10-navy">Asukoht: </span>
+                    {{ doc.location }}
                 </div>
                 <!-- Only a saved plan has a key; it is what the wizard reopens
                      the plan by, so it belongs on the printout. -->

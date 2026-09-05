@@ -171,6 +171,17 @@ function openReasoningLog(): void {
                     </dd>
                 </div>
                 <div>
+                    <dt
+                        class="text-xs font-bold text-r10-grey-500 uppercase"
+                        title="Loetud Planka kaardilt — seda ei saa siin muuta, ainult uus import uuendab seda."
+                    >
+                        Asukoht
+                    </dt>
+                    <dd class="text-r10-ink" data-test="performance-location">
+                        {{ performance.location ?? '—' }}
+                    </dd>
+                </div>
+                <div>
                     <dt class="text-xs font-bold text-r10-grey-500 uppercase">
                         Esineja tiim
                     </dt>

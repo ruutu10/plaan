@@ -9,6 +9,7 @@ function meta(overrides: Partial<PlanMeta> = {}): PlanMeta {
         formatName: 'Lühivormid',
         performanceDate: '2026-07-15',
         startTime: '19:00',
+        location: '',
         duration: 75,
         description: '',
         ...overrides,

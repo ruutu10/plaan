@@ -315,7 +315,9 @@ class TechnicalPlanAdminTest extends TestCase
         $author = User::factory()->create(['name' => 'Mart Naide', 'email' => 'mart@naide.ee']);
         $team = Team::factory()->create(['name' => 'Märold']);
         $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
-        $performance = Performance::factory()->create(['format_id' => $format->id, 'date' => '2026-08-01']);
+        $performance = Performance::factory()
+            ->playedAt('Vaba Lava, Telliskivi')
+            ->create(['format_id' => $format->id, 'date' => '2026-08-01']);
 
         $plan = TechnicalPlan::factory()->submitted()->create([
             'user_id' => $author->id,
@@ -331,6 +333,7 @@ class TechnicalPlanAdminTest extends TestCase
                 ->where('plan.token', $plan->token)
                 ->where('plan.formatName', 'Festival 2026')
                 ->where('plan.teamName', 'Märold')
+                ->where('plan.performanceLocation', 'Vaba Lava, Telliskivi')
                 ->where('plan.performanceStartsAt', fn ($value) => Carbon::parse($value)
                     ->setTimezone(Performance::venueTimezone())
                     ->toDateString() === '2026-08-01')

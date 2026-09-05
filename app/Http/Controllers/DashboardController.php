@@ -146,7 +146,7 @@ class DashboardController extends Controller
      *     performances: int,
      *     missingPlans: int,
      *     planExpectedWithinDays: int,
-     *     next: array{formatName: string, formatUrl: string|null, performanceUrl: string|null, teamName: string|null, startsAt: string}|null,
+     *     next: array{formatName: string, formatUrl: string|null, performanceUrl: string|null, teamName: string|null, location: string|null, startsAt: string}|null,
      * }
      */
     private function upcomingSummary(?Performance $next, RecordLinks $links): array
@@ -170,6 +170,7 @@ class DashboardController extends Controller
                 'formatUrl' => $links->formatUrl($next),
                 'performanceUrl' => $links->performanceUrl($next),
                 'teamName' => $next->performerName(),
+                'location' => $next->location,
                 'startsAt' => $next->date->toIso8601String(),
             ] : null,
         ];

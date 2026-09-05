@@ -14,6 +14,10 @@ use Illuminate\Support\Carbon;
  * read them. A card describing an evening several groups share yields a night
  * with an act each, and the format is named after the evening. Either way it is
  * one format and one date; the importer splits the night across the two models.
+ *
+ * The venue is the night's rather than the act's: a card names one place for
+ * the evening, and the three groups taking an Õppelava's stage in turn are all
+ * standing in the same room. Every act the night carries is registered there.
  */
 readonly class ImportedNight
 {
@@ -24,6 +28,7 @@ readonly class ImportedNight
         public string $formatName,
         public Carbon $date,
         public ?int $teamId = null,
+        public ?string $location = null,
         public array $performances = [],
     ) {
         //

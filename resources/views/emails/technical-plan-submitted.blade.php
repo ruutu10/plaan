@@ -74,6 +74,10 @@
             <td style="{{ $cell }}">{{ $doc['durationLabel'] }}</td>
         </tr>
         <tr>
+            <td style="{{ $labelCell }}">Asukoht</td>
+            <td style="{{ $cell }}">{{ $doc['location'] }}</td>
+        </tr>
+        <tr>
             <td style="{{ $labelCell }}">Lühikirjeldus</td>
             <td style="{{ $cell }} white-space:pre-line;">{{ $doc['description'] }}</td>
         </tr>

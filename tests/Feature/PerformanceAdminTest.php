@@ -110,6 +110,7 @@ class PerformanceAdminTest extends TestCase
 
         $performance = Performance::factory()
             ->startingAt('2026-09-01', '19:30')
+            ->playedAt('Vaba Lava, Telliskivi')
             ->create(['format_id' => $ours->id, 'duration' => 75]);
 
         TechnicalPlan::factory()->submitted()->create(['performance_id' => $performance->id]);
@@ -135,6 +136,7 @@ class PerformanceAdminTest extends TestCase
                     ->where('0.isDraft', false)
                     ->where('0.technicalPlanCount', 1)
                     ->where('0.title', null)
+                    ->where('0.location', 'Vaba Lava, Telliskivi')
                     ->etc()));
     }
 

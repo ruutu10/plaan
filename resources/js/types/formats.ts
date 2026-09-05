@@ -127,6 +127,12 @@ export interface Performance {
      */
     title: string | null;
     /**
+     * Where it is played, as the board writes it. Read-only: the Planka card
+     * owns it and every import rewrites it. Null when the card places the night
+     * nowhere, which is why listings show a venue only when there is one.
+     */
+    location: string | null;
+    /**
      * The group playing this performance, when it is not the format's own. Null
      * for the ordinary performance, which the format's group plays.
      */
@@ -191,6 +197,7 @@ export interface AdminPerformanceRow {
     formatName: string;
     /** The act's own name, for an evening several groups share. */
     title: string | null;
+    location: string | null;
     /** Who plays it: the performance's own group, or the format's. */
     teamName: string | null;
     /** ISO 8601 UTC instant the performance starts at. */

@@ -311,10 +311,11 @@ class ImportPlankaPerformances extends Command
 
                 // Everything else about an act already on the books is left
                 // exactly as it is — see importCard()'s doc comment — but the
-                // staff table is the one thing nobody edits by hand, so a card
-                // that changed its crew still overwrites it, even on a night
-                // that adds nothing new.
+                // crew and the venue are not the app's to edit, so a card that
+                // moved the night or changed its people still overwrites both,
+                // even on a night that adds nothing new.
                 $this->syncStaff($known[$key], $act, $dryRun);
+                $this->syncLocation($known[$key], $night, $dryRun);
 
                 continue;
             }
@@ -337,6 +338,29 @@ class ImportPlankaPerformances extends Command
         }
 
         $this->staffing->sync($performance, $act->staff);
+    }
+
+    /**
+     * Move this act to the venue the card now names. The board is the only
+     * place a venue is written — the app shows it and never offers it for
+     * editing — so the card is simply believed, and a night it has stopped
+     * placing is emptied rather than left at an address nothing stands behind.
+     *
+     * Put aside and dry runs are spared for the same reasons as
+     * {@see syncStaff()}.
+     */
+    protected function syncLocation(Performance $performance, ImportedNight $night, bool $dryRun): void
+    {
+        if ($dryRun || $performance->trashed() || $performance->location === $night->location) {
+            return;
+        }
+
+        $performance->update(['location' => $night->location]);
+
+        Log::info('Moved a performance to the venue its card now names', [
+            'performance_id' => $performance->id,
+            'location' => $night->location,
+        ]);
     }
 
     /**
@@ -377,13 +401,14 @@ class ImportPlankaPerformances extends Command
         }
 
         $this->info(sprintf(
-            '  %s performance: %s%s on %s at %s%s%s',
+            '  %s performance: %s%s on %s at %s%s%s%s',
             $dryRun ? 'Would create' : 'Creating',
             $night->formatName,
             $act->title === null ? '' : " — {$act->title}",
             $night->date->toDateString(),
             $startsAt->copy()->setTimezone(Performance::venueTimezone())->format('H:i'),
             $act->startTime === null ? ' (the house\'s usual hour; the card named none)' : '',
+            $night->location === null ? '' : " in {$night->location}",
             $this->teamNote($act->teamId, 'performed by'),
         ));
         $summary->performancesCreated++;
@@ -398,6 +423,7 @@ class ImportPlankaPerformances extends Command
             // Empty unless the night was shared: the format's own name says who
             // is playing, and its own group is who that is.
             'title' => $act->title,
+            'location' => $night->location,
             'team_id' => $act->teamId,
             'planka_card_id' => $this->cardId,
             // What a card announces is a claim, not a booking: it waits as a
@@ -429,6 +455,7 @@ class ImportPlankaPerformances extends Command
             'start_time_from_card' => $act->startTime !== null,
             'duration' => $act->duration,
             'title' => $act->title,
+            'location' => $night->location,
             'team_id' => $act->teamId,
             'is_draft' => true,
             'created_by' => CreatedBy::PlankaImport->value,

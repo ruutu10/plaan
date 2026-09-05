@@ -27,6 +27,8 @@ class PerformanceFactory extends Factory
             // ordinary case. A shared evening says otherwise; see performedBy().
             'team_id' => null,
             'title' => null,
+            // A night elsewhere says so — see playedAt().
+            'location' => null,
             'date' => Performance::momentFrom(
                 fake()->dateTimeBetween('now', '+2 months')->format('Y-m-d'),
                 fake()->randomElement(['18:00', '19:00', '20:00', '21:30']),
@@ -70,6 +72,17 @@ class PerformanceFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'team_id' => $team->id,
             'title' => $title,
+        ]);
+    }
+
+    /**
+     * Play the performance somewhere the house names, rather than in its own
+     * room — a rented hall, a festival tent, whatever the card called it.
+     */
+    public function playedAt(string $location): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'location' => $location,
         ]);
     }
 

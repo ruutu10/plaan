@@ -63,6 +63,9 @@ class TechnicalPlan extends JsonResource
                 'formatName' => $plan->performance?->format->name ?? '',
                 'performanceDate' => $plan->performance?->startDate() ?? '',
                 'startTime' => $plan->performance?->startTime() ?? '',
+                // No nullsafe, unlike its neighbours: this one reads a nullable
+                // property, so the coalesce already covers a plan with no night.
+                'location' => $plan->performance->location ?? '',
                 'duration' => $plan->performance?->duration,
                 'description' => $plan->performance?->format->description ?? '',
             ],
