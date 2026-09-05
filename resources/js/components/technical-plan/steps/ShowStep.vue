@@ -85,6 +85,7 @@ function selectPerformance(performance: UpcomingPerformance): void {
     plan.meta.formatName = performance.formatName;
     plan.meta.performanceDate = performance.performanceDate;
     plan.meta.startTime = performance.startTime;
+    plan.meta.location = performance.location ?? '';
     plan.meta.duration = performance.duration;
     plan.meta.description = performance.description;
     freshStart();
@@ -203,6 +204,11 @@ onMounted(loadPerformances);
                             </template>
                             <template v-if="performance.duration">
                                 · {{ performance.duration }} min
+                            </template>
+                            <!-- Named only when it is not the house's own room,
+                                 which is what an empty venue means. -->
+                            <template v-if="performance.location">
+                                · {{ performance.location }}
                             </template>
                         </span>
                         <!-- A night that runs itself. Said here rather than left

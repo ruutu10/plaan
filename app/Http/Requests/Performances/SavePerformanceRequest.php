@@ -28,11 +28,12 @@ class SavePerformanceRequest extends FormRequest
      * A cleared field arrives as an empty string from a plain HTML client. None
      * of these is a bad value: a performance nobody has timed, one nobody has
      * given an hour, an act the format's own name already names, a slot played by
-     * the format's own group. All are handled further down as an absence.
+     * the format's own group, a night in the house's own room. All are handled
+     * further down as an absence.
      */
     protected function prepareForValidation(): void
     {
-        foreach (['duration', 'start_time', 'title', 'team_id', 'planka_card_id'] as $field) {
+        foreach (['duration', 'start_time', 'title', 'location', 'team_id', 'planka_card_id'] as $field) {
             if ($this->input($field) === '') {
                 $this->merge([$field => null]);
             }
@@ -53,6 +54,9 @@ class SavePerformanceRequest extends FormRequest
             // The act's own name, for an evening several groups share. Left
             // out, the format's name is what the performance is listed under.
             'title' => ['nullable', 'string', 'max:255'],
+            // Where the night is played, free text as the board writes it.
+            // Left out, the performance is in the house's own room.
+            'location' => ['nullable', 'string', 'max:255'],
             // The group playing this performance, when it is not the format's
             // own. Held to the groups the user may hand a performance to, the
             // way a format's owner is held by SaveFormatRequest.
@@ -113,6 +117,7 @@ class SavePerformanceRequest extends FormRequest
             'start_time.date_format' => __('Etenduse algusaeg pole korrektne.'),
             'duration.max' => __('Etenduse kestus saab olla kuni 1440 minutit.'),
             'title.max' => __('Etteaste nimi saab olla kuni 255 tähemärki.'),
+            'location.max' => __('Etenduse asukoht saab olla kuni 255 tähemärki.'),
             'team_id.in' => __('Vali tiim, kuhu sa ise kuulud.'),
         ];
     }

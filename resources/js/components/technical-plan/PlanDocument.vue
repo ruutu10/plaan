@@ -70,6 +70,10 @@ const linkClass =
                         doc.durationLabel
                     }}</span>
                 </div>
+                <div>
+                    <span class="font-bold text-r10-navy">Asukoht: </span>
+                    {{ doc.location }}
+                </div>
                 <!-- Only a saved plan has a key; it is what the wizard reopens
                      the plan by, so it belongs on the printout. -->
                 <div v-if="doc.token" class="mt-1">

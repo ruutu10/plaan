@@ -186,7 +186,7 @@ class DashboardTest extends TestCase
         $team = Team::factory()->create(['name' => 'Märold']);
         $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
 
-        Performance::factory()->create([
+        Performance::factory()->playedAt('Vaba Lava')->create([
             'format_id' => $format->id,
             'date' => now()->addDays(3)->toDateString(),
         ]);
@@ -199,6 +199,7 @@ class DashboardTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('upcoming.next.formatName', 'Festival 2026')
                 ->where('upcoming.next.teamName', 'Märold')
+                ->where('upcoming.next.location', 'Vaba Lava')
                 ->where('upcoming.next.startsAt', fn ($value) => Carbon::parse($value)
                     ->setTimezone(Performance::venueTimezone())
                     ->toDateString() === now()->addDays(3)->toDateString()));
@@ -353,7 +354,7 @@ class DashboardTest extends TestCase
     {
         $team = Team::factory()->create(['name' => 'Märold']);
         $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Festival 2026']);
-        $performance = Performance::factory()->create([
+        $performance = Performance::factory()->playedAt('improkeskus')->create([
             'format_id' => $format->id,
             'date' => $this->tonight(),
         ]);
@@ -371,6 +372,8 @@ class DashboardTest extends TestCase
                 ->has('today', 1)
                 ->where('today.0.formatName', 'Festival 2026')
                 ->where('today.0.teamName', 'Märold')
+                // Where tonight's crew has to be.
+                ->where('today.0.location', 'improkeskus')
                 ->has('today.0.plans', 0));
     }
 

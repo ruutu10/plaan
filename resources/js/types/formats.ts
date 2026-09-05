@@ -127,6 +127,11 @@ export interface Performance {
      */
     title: string | null;
     /**
+     * Where the performance is played, as the board writes it. Null for a night
+     * in the house's own room, which is most of them.
+     */
+    location: string | null;
+    /**
      * The group playing this performance, when it is not the format's own. Null
      * for the ordinary performance, which the format's group plays.
      */
@@ -191,6 +196,8 @@ export interface AdminPerformanceRow {
     formatName: string;
     /** The act's own name, for an evening several groups share. */
     title: string | null;
+    /** Where it is played; null for a night in the house's own room. */
+    location: string | null;
     /** Who plays it: the performance's own group, or the format's. */
     teamName: string | null;
     /** ISO 8601 UTC instant the performance starts at. */
@@ -206,6 +213,8 @@ export interface AdminPerformanceRow {
 export interface PerformanceFormData {
     /** The act's own name; empty leaves the performance under the format's. */
     title: string;
+    /** Where it is played; empty leaves it in the house's own room. */
+    location: string;
     /** The performing group; null leaves the performance to the format's own. */
     team_id: number | null;
     date: string;

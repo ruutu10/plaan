@@ -52,6 +52,7 @@ class TodaysPerformance extends JsonResource
      *     formatUrl: string|null,
      *     performanceUrl: string|null,
      *     title: string|null,
+     *     location: string|null,
      *     teamName: string|null,
      *     startsAt: string,
      *     plans: array<int, array{visible: bool, token: string|null, url: string|null, status: string|null, statusLabel: string, submittedBy: string|null}>,
@@ -71,6 +72,8 @@ class TodaysPerformance extends JsonResource
             // The act's own name, when the evening is shared and the format's
             // name alone would leave three identical rows to read.
             'title' => $performance->title,
+            // Where tonight's crew has to be. Empty for the house's own room.
+            'location' => $performance->location,
             'teamName' => $performance->performerName(),
             'startsAt' => $performance->date->toIso8601String(),
             'plans' => $performance->technicalPlans

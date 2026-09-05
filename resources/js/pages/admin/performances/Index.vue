@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { FileClock, Pencil, Plus } from '@lucide/vue';
+import { FileClock, MapPin, Pencil, Plus } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PerformanceModal from '@/components/PerformanceModal.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
@@ -119,6 +119,16 @@ defineOptions({
                         data-test="admin-performance-team"
                     >
                         {{ performance.teamName ?? '—' }}
+                    </span>
+                    <!-- Named only when the night is played somewhere other
+                         than the house's own room. -->
+                    <span
+                        v-if="performance.location"
+                        class="mt-0.5 flex items-center gap-1 text-xs text-r10-grey-500"
+                        data-test="admin-performance-location"
+                    >
+                        <MapPin class="h-3 w-3 shrink-0" />
+                        {{ performance.location }}
                     </span>
                 </td>
                 <td class="px-5 py-4 align-top whitespace-nowrap">

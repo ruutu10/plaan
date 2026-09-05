@@ -105,6 +105,20 @@ function confirmStatus(): void {
                 <dt
                     class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-grey-500 uppercase"
                 >
+                    Asukoht
+                </dt>
+                <dd
+                    class="mt-1 text-r10-ink"
+                    data-test="technical-plan-location"
+                >
+                    {{ plan.performanceLocation ?? '—' }}
+                </dd>
+            </div>
+
+            <div>
+                <dt
+                    class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-grey-500 uppercase"
+                >
                     Esitaja
                 </dt>
                 <dd class="mt-1 text-r10-ink">

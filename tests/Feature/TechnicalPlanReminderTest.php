@@ -147,6 +147,34 @@ class TechnicalPlanReminderTest extends TestCase
                 ->where('initialPerformance.formatName', 'Öine impro'));
     }
 
+    public function test_the_reminder_names_the_venue_only_when_the_night_is_played_away(): void
+    {
+        Notification::fake();
+
+        [$performance, $members] = $this->performanceWithGroup();
+
+        // A night in the house's own room names no venue, and the letter says
+        // nothing about one rather than showing a blank row.
+        $this->assertStringNotContainsString('Asukoht', $this->reminderBodyFor($performance, $members[0]));
+
+        $performance->update(['location' => 'Vaba Lava, Telliskivi']);
+
+        $body = $this->reminderBodyFor($performance, $members[0]);
+
+        $this->assertStringContainsString('Asukoht', $body);
+        $this->assertStringContainsString('Vaba Lava, Telliskivi', $body);
+    }
+
+    /**
+     * The letter one member would be sent about one performance, rendered.
+     */
+    private function reminderBodyFor(Performance $performance, User $member): string
+    {
+        return (string) (new TechnicalPlanMissing($performance, 'https://plaan.test/plan'))
+            ->toMail($member)
+            ->render();
+    }
+
     public function test_somebody_outside_the_playing_group_cannot_be_chased(): void
     {
         Notification::fake();

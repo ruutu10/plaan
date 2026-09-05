@@ -377,13 +377,14 @@ class ImportPlankaPerformances extends Command
         }
 
         $this->info(sprintf(
-            '  %s performance: %s%s on %s at %s%s%s',
+            '  %s performance: %s%s on %s at %s%s%s%s',
             $dryRun ? 'Would create' : 'Creating',
             $night->formatName,
             $act->title === null ? '' : " — {$act->title}",
             $night->date->toDateString(),
             $startsAt->copy()->setTimezone(Performance::venueTimezone())->format('H:i'),
             $act->startTime === null ? ' (the house\'s usual hour; the card named none)' : '',
+            $night->location === null ? '' : " in {$night->location}",
             $this->teamNote($act->teamId, 'performed by'),
         ));
         $summary->performancesCreated++;
@@ -398,6 +399,9 @@ class ImportPlankaPerformances extends Command
             // Empty unless the night was shared: the format's own name says who
             // is playing, and its own group is who that is.
             'title' => $act->title,
+            // The night's venue, shared by every act on it. Empty when the card
+            // named none, which reads as the house's own room.
+            'location' => $night->location,
             'team_id' => $act->teamId,
             'planka_card_id' => $this->cardId,
             // What a card announces is a claim, not a booking: it waits as a
@@ -429,6 +433,7 @@ class ImportPlankaPerformances extends Command
             'start_time_from_card' => $act->startTime !== null,
             'duration' => $act->duration,
             'title' => $act->title,
+            'location' => $night->location,
             'team_id' => $act->teamId,
             'is_draft' => true,
             'created_by' => CreatedBy::PlankaImport->value,

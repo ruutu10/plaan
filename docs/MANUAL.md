@@ -453,7 +453,13 @@ kustutamine - jääb formaadi tiimi kätte.
 
 Neid hallatakse formaadi muutmislehel. Etendusel on kuupäev ja algusaeg,
 valikuliselt kestus, valikuliselt oma pealkiri ja oma esinev tiim (jagatud
-õhtute jaoks) ning mustandi märge.
+õhtute jaoks), valikuliselt asukoht ning mustandi märge.
+
+**Asukoht** on vabatekstiline koht, kus etendus toimub - nii nagu Planka kaardil
+kirjas (nt `improkeskus`, `Vaba Lava, Telliskivi`). Täitmata asukoht tähendab
+maja enda saali, seega ekraanid näitavad kohta ainult siis, kui see on täidetud.
+Asukoht on näha etenduse enda lehel, formaadi etenduste nimekirjas, kogu maja
+ülevaates, töölaual ja tehnikaplaani etenduse valikus ning plaani dokumendis.
 
 - **Etenduse lisamine** on ainuüksi formaadi tiimi õigus - külalistrupp võib oma
   lõiku parandada, kuid mitte kavva enda omi juurde panna.
@@ -595,6 +601,13 @@ täidab üks trupp, saab korra mängitav formaat; Õppelavast saab üks korra
 mängitav formaat, millel on iga tiimi kohta üks etendus. Sobitamine käib nime
 (formaat), formaadi + kuupäeva (õhtu) ja õhtusisese nime (etteaste) järgi, nii
 et sama kaardi uuesti importimine ei lisa midagi.
+
+Kaardilt loetakse ka õhtu **asukoht** - tüüpiliselt realt `Asukoht:` või
+`Toimumiskoht:` - ja see pannakse kõigile selle õhtu etteastetele, sest kaart
+nimetab ühe koha terve õhtu kohta. Kui kaart kohta ei nimeta, jääb asukoht
+tühjaks ehk maja enda saaliks. Nagu ülejäänud etenduse väljad, ei kirjutata ka
+asukohta uuesti üle: kui keegi on selle siin ära parandanud, jääb parandus
+püsima ka järgmise impordi järel.
 
 Kuna lugemist teeb AI, **säilitatakse iga imporditud kirje taga olev
 arutluskäik** ning tehnikud ja majarahvas saavad selle formaadi ja etenduse

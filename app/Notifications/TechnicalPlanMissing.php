@@ -59,6 +59,9 @@ class TechnicalPlanMissing extends Notification implements ShouldQueue
                 'performer' => $this->performance->performerName() ?? '',
                 'startsAt' => $this->performance->startsAt(),
                 'duration' => $this->performance->duration,
+                // Named only when the night is played somewhere other than the
+                // house's own room; see the template.
+                'location' => $this->performance->location,
                 'planUrl' => $this->planUrl,
                 'techEmail' => (string) config('technical_plan.tech_email'),
             ]);

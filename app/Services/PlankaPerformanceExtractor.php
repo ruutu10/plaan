@@ -26,6 +26,12 @@ class PlankaPerformanceExtractor
     use CachesClaudeMessages;
 
     /**
+     * How long a venue may be before it stops being one — see
+     * {@see readLocation()}. The width of the column that holds it.
+     */
+    protected const LOCATION_MAX_LENGTH = 255;
+
+    /**
      * The groups a format can be handed to, by id, read once per run rather than
      * once per card.
      *
@@ -169,6 +175,7 @@ class PlankaPerformanceExtractor
                 formatName: $name,
                 date: Carbon::createFromFormat('Y-m-d', $date)->startOfDay(),
                 teamId: $teamId,
+                location: $this->readLocation($entry['location'] ?? null),
                 performances: $this->readPerformances($entry['performances'] ?? null, $name, $teamId),
             );
         }
@@ -347,6 +354,23 @@ class PlankaPerformanceExtractor
     }
 
     /**
+     * The venue the model read off the card — "improkeskus", "Vaba Lava" — or
+     * null when the card named none. Free text, because the board writes it
+     * that way and no list of rooms would survive the next rented hall.
+     *
+     * A place is only worth carrying if a person could act on it, so anything
+     * longer than the column holds is dropped rather than cut off mid-word:
+     * that length means the model handed back a paragraph about the evening
+     * instead of the room it happens in.
+     */
+    protected function readLocation(mixed $location): ?string
+    {
+        $place = trim((string) (is_scalar($location) ? $location : ''));
+
+        return $place !== '' && mb_strlen($place) <= self::LOCATION_MAX_LENGTH ? $place : null;
+    }
+
+    /**
      * The curtain-up the model read off the card, as "19:00", or null when it
      * found none — or returned something that is not a time of day. A board is
      * written by hand, so "kell 7" and "õhtul" both turn up; anything the
@@ -412,6 +436,13 @@ class PlankaPerformanceExtractor
                                 ],
                                 'description' => 'Id of the group that owns the format, from the list given, or null when no group is a clear match.',
                             ],
+                            'location' => [
+                                'anyOf' => [
+                                    ['type' => 'string'],
+                                    ['type' => 'null'],
+                                ],
+                                'description' => 'Where the night is played, as the card writes it — the room or the house, nothing more. Null when the card names no venue.',
+                            ],
                             'performances' => [
                                 'type' => 'array',
                                 'description' => 'The acts taking the stage that night, in running order. One entry when a single act fills the evening.',
@@ -472,7 +503,7 @@ class PlankaPerformanceExtractor
                                 ],
                             ],
                         ],
-                        'required' => ['format_name', 'date', 'team_id', 'performances'],
+                        'required' => ['format_name', 'date', 'team_id', 'location', 'performances'],
                         'additionalProperties' => false,
                     ],
                 ],

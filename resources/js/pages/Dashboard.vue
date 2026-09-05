@@ -6,6 +6,7 @@ import {
     Drama,
     ExternalLink,
     FileWarning,
+    MapPin,
 } from '@lucide/vue';
 import { computed } from 'vue';
 import PendingInvitationsModal from '@/components/PendingInvitationsModal.vue';
@@ -115,6 +116,15 @@ defineOptions({
                         <span v-if="upcoming.next.teamName" class="block">
                             {{ upcoming.next.teamName }}
                         </span>
+                        <!-- Named only when it is not the house's own room. -->
+                        <span
+                            v-if="upcoming.next.location"
+                            class="flex items-center gap-1"
+                            data-test="next-performance-location"
+                        >
+                            <MapPin class="h-3.5 w-3.5 shrink-0" />
+                            {{ upcoming.next.location }}
+                        </span>
                     </template>
                     <template v-else> Ühtegi etendust pole plaanis. </template>
                 </div>
@@ -190,6 +200,16 @@ defineOptions({
                             </R10RecordLink>
                             <span class="block text-sm text-r10-grey-500">
                                 {{ performance.teamName ?? '—' }}
+                            </span>
+                            <!-- Where tonight's crew has to be, said only when
+                                 it is not the house's own room. -->
+                            <span
+                                v-if="performance.location"
+                                class="flex items-center gap-1 text-sm text-r10-grey-500"
+                                data-test="todays-performance-location"
+                            >
+                                <MapPin class="h-3.5 w-3.5 shrink-0" />
+                                {{ performance.location }}
                             </span>
                         </div>
                         <R10RecordLink

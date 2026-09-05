@@ -6,7 +6,6 @@ use App\Enums\PerformanceStaffRole;
 use App\Models\Format;
 use App\Models\Team;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Tests\Concerns\AnswersAsTheExtractionModel;
 use Tests\TestCase;
@@ -165,6 +164,51 @@ class PlankaPerformanceExtractorTest extends TestCase
         }
     }
 
+    public function test_it_reads_the_venue_a_card_names(): void
+    {
+        $nights = $this->extractorAnswering((string) json_encode([
+            'formats' => [
+                [
+                    'format_name' => 'Trupp 1',
+                    'date' => '2025-09-13',
+                    // Written on the card with the spacing a person typed it
+                    // with; the reading keeps the words and drops the padding.
+                    'location' => '  improkeskus ',
+                    'performances' => [['title' => null]],
+                ],
+            ],
+        ]))->extract('13.09 õhtu', 'Asukoht: improkeskus', null);
+
+        $this->assertSame('improkeskus', $nights[0]->location);
+    }
+
+    public function test_a_venue_the_card_does_not_name_is_left_to_the_house(): void
+    {
+        // Most cards name no venue at all, and a few name something that is not
+        // one: an empty line, a paragraph the model wrote instead of a room.
+        // None of them is worth carrying — the house's own room is what an
+        // empty venue means.
+        $unreadable = [null, '', '   ', 42, ['improkeskus'], str_repeat('a', 256)];
+
+        foreach ($unreadable as $venue) {
+            $nights = $this->extractorAnswering((string) json_encode([
+                'formats' => [
+                    [
+                        'format_name' => 'Trupp 1',
+                        'date' => '2025-09-13',
+                        'location' => $venue,
+                        'performances' => [['title' => null]],
+                    ],
+                ],
+            ]))->extract('13.09 õhtu', 'Kaardi tekst', null);
+
+            $this->assertNull(
+                $nights[0]->location,
+                sprintf('Expected "%s" to be left to the house.', var_export($venue, true)),
+            );
+        }
+    }
+
     public function test_it_asks_for_a_schema_constrained_answer(): void
     {
         $this->extractorAnswering('{"formats": []}')->extract(
@@ -178,7 +222,7 @@ class PlankaPerformanceExtractorTest extends TestCase
 
         $this->assertSame('json_schema', $body['output_config']['format']['type']);
         $this->assertSame(
-            ['format_name', 'date', 'team_id', 'performances'],
+            ['format_name', 'date', 'team_id', 'location', 'performances'],
             $formats['items']['required'],
         );
         $this->assertSame(
@@ -588,5 +632,4 @@ class PlankaPerformanceExtractorTest extends TestCase
 
         $this->assertCount(2, $this->sentBodies, 'Silence is worth asking about again.');
     }
-
 }

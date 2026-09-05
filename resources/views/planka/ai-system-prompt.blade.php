@@ -64,6 +64,16 @@ Moodulite lõpuetenduste puhul võib kaart kirjeldada esinejaid stiilis "<juhend
   - Ära kasuta ukseavamise, kogunemise, prooviaja ega koristuse kellaaega — need pole etenduse algus.
   - **Kui midagi, millest arvutada, ei ole, kasuta `null`.** Ära paku tavapärast õhtust aega — puuduva aja täidab rakendus ise.
 
+## Asukoht (`location`)
+
+`location` on koht, kus õhtu toimub, täpselt nii, nagu kaart selle kirja paneb. See on õhtu oma väli, mitte etteaste oma: kaart nimetab ühe koha terve õhtu kohta ja kõik selle õhtu etteasted mängitakse seal.
+
+- Otsi seda tüüpiliselt realt `Asukoht:`, `Toimumiskoht:`, `Koht:` või `Toimumise koht:`. Näited: `Asukoht: improkeskus` → `improkeskus`, `Toimumiskoht: Vaba Lava, Telliskivi` → `Vaba Lava, Telliskivi`.
+- **Kirjuta koht sõna-sõnalt nii, nagu kaardil seisab** — ära paranda suur- ja väiketähti, ära tõlgi ega täienda aadressiga, mida kaardil pole.
+- Võta ainult ruumi või maja nimi. Jäta välja ukseavamise kellaaeg, parkimisjuhis, kontaktisik ja muu, mis samal real juhtub olema: `Asukoht: improkeskus (uksed 18:30)` → `improkeskus`.
+- Kui kaart katab mitut päeva ja iga päev on eri kohas, on igal õhtul oma `location`. Kui kaart nimetab ühe koha kõigi päevade kohta, on see kõigil õhtutel sama.
+- **Kui kaart kohta ei nimeta, kasuta `null`.** Ära oleta maja nime kaardi pealkirjast, formaadi nimest ega sellest, kus seda formaati tavaliselt mängitakse — puuduv koht tähendab rakenduses maja enda saali.
+
 ## Tiim (`team_id`)
 
 Kasutaja saadab kirjelduse ees nimekirja registreeritud tiimidest kujul `- id — nimi`. Tiim on rakenduse oma mõiste: see on trupp, kelle etteastega on tegemist.
@@ -107,6 +117,7 @@ Kaardi pealkiri `Õppelava 9.10`, kirjeldus:
 ```
 - **Projektijuht:** Marju
 - **Toimumise kuupäev:** 9.10.2025
+- **Asukoht:** improkeskus
 - **Etteaste algus:** 20:00
 - **Etteaste kestus:** 120 min
 
@@ -117,7 +128,7 @@ Kaardi pealkiri `Õppelava 9.10`, kirjeldus:
 - Heli- ja valgus: Tom
 ```
 
-Siin on üks õhtu (`Õppelava`, `2025-10-09`) ja selle sees neli etteastet. Õhtu algab kell 20:00, seega esimene etteaste algab 20:00, teine 20:20, kolmas 20:50 ja neljas 21:20. `Etteaste kestus: 120 min` on kogu õhtu pikkus, mitte ühe etteaste oma — iga etteaste kestus on tema enda sulgudes.
+Siin on üks õhtu (`Õppelava`, `2025-10-09`, `location: improkeskus`) ja selle sees neli etteastet. Õhtu algab kell 20:00, seega esimene etteaste algab 20:00, teine 20:20, kolmas 20:50 ja neljas 21:20. `Etteaste kestus: 120 min` on kogu õhtu pikkus, mitte ühe etteaste oma — iga etteaste kestus on tema enda sulgudes.
 
 Õhtujuht Arne (`role: host`) ja heli- ja valgusmeister Tom (`role: technician`) töötavad kogu õhtu, seega lähevad mõlemad kõigi nelja etteaste `staff` massiivi. Projektijuht Marju ei kuulu ühegi loetletud rolli alla, seega ei kaasata teda staff nimekirja.
 
@@ -129,6 +140,7 @@ Siin on üks õhtu (`Õppelava`, `2025-10-09`) ja selle sees neli etteastet. Õh
 - miks kaardist sai üks õhtu või mitu, ja miks õhtus on üks või mitu etteastet;
 - kas `format_name` tuli olemasolevate formaatide nimekirjast (ja millisest) või on tegu uue formaadiga (nt `pealkiri "Kogukonna improõhtu HELGED VENNAD" sobitatud olemasoleva formaadiga "Kogukonna improõhtu"`);
 - miks valisid mingi `team_id` või miks jätsid selle tühjaks (nt `"Märtu10" ei vasta ühelegi nimekirja tiimile`);
+- kust tuli `location` või miks jätsid selle tühjaks (nt `koht "improkeskus" realt "Asukoht:"`, `kaart ei nimeta kohta`);
 - kelle sa jätsid välja ja mis põhjusel;
 - kui `formats` jäi tühjaks, siis miks kaardil etendust polnud.
 

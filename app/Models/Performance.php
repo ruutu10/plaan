@@ -43,6 +43,7 @@ use Illuminate\Support\Facades\Date;
  * @property int $format_id
  * @property int|null $team_id
  * @property string|null $title
+ * @property string|null $location
  * @property string|null $planka_card_id
  * @property Carbon $date
  * @property int|null $duration
@@ -62,6 +63,7 @@ use Illuminate\Support\Facades\Date;
     'format_id',
     'team_id',
     'title',
+    'location',
     'planka_card_id',
     'date',
     'duration',
@@ -419,10 +421,13 @@ class Performance extends Model
     {
         // An act carrying no name of its own is one the format's name already
         // names, so an empty string is stored as an absence rather than as a
-        // title nobody can see.
+        // title nobody can see. A venue nobody named reads the same way: the
+        // house's own room, not a blank line on every screen that shows it.
         static::saving(function (Performance $performance): void {
-            if ($performance->title !== null && trim($performance->title) === '') {
-                $performance->title = null;
+            foreach (['title', 'location'] as $field) {
+                if ($performance->{$field} !== null && trim($performance->{$field}) === '') {
+                    $performance->{$field} = null;
+                }
             }
         });
     }
@@ -434,6 +439,6 @@ class Performance extends Model
      */
     protected function activityLogAttributes(): array
     {
-        return ['format_id', 'team_id', 'title', 'date', 'duration', 'is_draft', 'created_by', 'planka_card_id'];
+        return ['format_id', 'team_id', 'title', 'location', 'date', 'duration', 'is_draft', 'created_by', 'planka_card_id'];
     }
 }

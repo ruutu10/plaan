@@ -82,7 +82,7 @@ class PerformanceDetailsTest extends TestCase
         $user = User::factory()->create();
         $team = $this->teamOf($user);
         $format = Format::factory()->create(['team_id' => $team->id, 'name' => 'Trupp 1']);
-        $performance = Performance::factory()->for($format)->create();
+        $performance = Performance::factory()->for($format)->playedAt('improkeskus')->create();
 
         $host = User::factory()->create(['name' => 'Arne', 'email' => 'arne@ruutu10.ee']);
         $performance->staff()->attach($host, ['role' => PerformanceStaffRole::Host->value]);
@@ -92,6 +92,7 @@ class PerformanceDetailsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.formatId', $format->id)
             ->assertJsonPath('data.formatName', 'Trupp 1')
+            ->assertJsonPath('data.location', 'improkeskus')
             ->assertJsonCount(1, 'data.staff')
             ->assertJsonPath('data.staff.0.id', $host->id)
             ->assertJsonPath('data.staff.0.name', 'Arne')

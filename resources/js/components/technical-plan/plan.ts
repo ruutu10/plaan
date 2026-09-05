@@ -256,6 +256,7 @@ export function blankPlan(): Plan {
             formatName: '',
             performanceDate: '',
             startTime: '',
+            location: '',
             duration: null,
             description: '',
         },

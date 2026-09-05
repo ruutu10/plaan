@@ -64,6 +64,7 @@ class PlanDocument extends JsonResource
             'contact' => self::dash($this->contact),
             'performanceDate' => self::dash($meta['performanceDate'] ?? null),
             'startTime' => self::dash($meta['startTime'] ?? null),
+            'location' => self::dash($meta['location'] ?? null),
             'durationLabel' => self::duration($meta['duration'] ?? null),
             'description' => self::dash($meta['description'] ?? null),
 

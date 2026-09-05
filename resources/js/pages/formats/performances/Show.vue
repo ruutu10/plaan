@@ -172,6 +172,14 @@ function openReasoningLog(): void {
                 </div>
                 <div>
                     <dt class="text-xs font-bold text-r10-grey-500 uppercase">
+                        Asukoht
+                    </dt>
+                    <dd class="text-r10-ink" data-test="performance-location">
+                        {{ performance.location ?? '—' }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-bold text-r10-grey-500 uppercase">
                         Esineja tiim
                     </dt>
                     <dd class="text-r10-ink">

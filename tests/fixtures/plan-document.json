@@ -32,6 +32,7 @@
                     "formatName": "Öölaul",
                     "performanceDate": "2026-08-14",
                     "startTime": "19:00",
+                    "location": "  Improkeskus  ",
                     "duration": 90,
                     "description": "Kahevaatuseline  "
                 },
@@ -195,6 +196,7 @@
                 "contact": "esineja@example.com",
                 "performanceDate": "2026-08-14",
                 "startTime": "19:00",
+                "location": "Improkeskus",
                 "durationLabel": "90 min",
                 "description": "Kahevaatuseline",
                 "micsSummary": "Jah — Kaks peamikrofoni",
@@ -329,6 +331,7 @@
                     "formatName": "",
                     "performanceDate": "",
                     "startTime": "",
+                    "location": "",
                     "duration": null,
                     "description": ""
                 },
@@ -358,6 +361,7 @@
                 "contact": "—",
                 "performanceDate": "—",
                 "startTime": "—",
+                "location": "—",
                 "durationLabel": "—",
                 "description": "—",
                 "micsSummary": "Ei",
@@ -383,6 +387,7 @@
                     "formatName": "Proov",
                     "performanceDate": "2026-09-01",
                     "startTime": "20:30",
+                    "location": "Vaba Lava, Telliskivi",
                     "duration": 0,
                     "description": ""
                 },
@@ -412,6 +417,7 @@
                 "contact": "tehnik@example.com",
                 "performanceDate": "2026-09-01",
                 "startTime": "20:30",
+                "location": "Vaba Lava, Telliskivi",
                 "durationLabel": "—",
                 "description": "—",
                 "micsSummary": "Jah",

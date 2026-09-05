@@ -4,6 +4,7 @@ import { Head, Link, useHttp } from '@inertiajs/vue3';
 import {
     ExternalLink,
     FileClock,
+    MapPin,
     Pencil,
     Plus,
     Sparkles,
@@ -311,6 +312,16 @@ async function save(): Promise<void> {
                             {{
                                 performance.teamName ?? format?.teamName ?? '—'
                             }}
+                        </span>
+                        <!-- Named only when the night is played somewhere
+                             other than the house's own room. -->
+                        <span
+                            v-if="performance.location"
+                            class="mt-0.5 flex items-center gap-1 text-xs text-r10-grey-500"
+                            data-test="performance-location"
+                        >
+                            <MapPin class="h-3 w-3 shrink-0" />
+                            {{ performance.location }}
                         </span>
                     </td>
                     <td class="px-5 py-4 whitespace-nowrap">
