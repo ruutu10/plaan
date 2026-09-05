@@ -355,13 +355,11 @@ class PlankaPerformanceExtractor
 
     /**
      * The venue the model read off the card — "improkeskus", "Vaba Lava" — or
-     * null when the card named none. Free text, because the board writes it
-     * that way and no list of rooms would survive the next rented hall.
+     * null when it named none.
      *
-     * A place is only worth carrying if a person could act on it, so anything
-     * longer than the column holds is dropped rather than cut off mid-word:
-     * that length means the model handed back a paragraph about the evening
-     * instead of the room it happens in.
+     * Anything longer than the column holds is dropped rather than cut off
+     * mid-word: that length means the model handed back a paragraph about the
+     * evening instead of the room it happens in.
      */
     protected function readLocation(mixed $location): ?string
     {

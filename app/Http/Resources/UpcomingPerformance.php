@@ -44,8 +44,6 @@ class UpcomingPerformance extends JsonResource
             // The act's own name, when the evening is shared and the format's
             // name alone would leave three identical rows to choose between.
             'title' => $performance->title,
-            // Where it is played, so a plan written for a night at a rented
-            // hall is not written against the house's own room by mistake.
             'location' => $performance->location,
             'performanceDate' => $performance->startDate(),
             'startTime' => $performance->startTime(),

@@ -120,8 +120,6 @@ defineOptions({
                     >
                         {{ performance.teamName ?? '—' }}
                     </span>
-                    <!-- Named only when the night is played somewhere other
-                         than the house's own room. -->
                     <span
                         v-if="performance.location"
                         class="mt-0.5 flex items-center gap-1 text-xs text-r10-grey-500"

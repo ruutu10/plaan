@@ -56,8 +56,6 @@ class Performance extends JsonResource
             // what is played and by whom; filled for an act on an evening
             // several groups share.
             'title' => $performance->title,
-            // Where it is played, as the board writes it. Empty for a night in
-            // the house's own room, which is most of them.
             'location' => $performance->location,
             'teamId' => $performance->team_id,
             'teamName' => $performance->team?->name,

@@ -22,7 +22,6 @@ use Illuminate\Support\Carbon;
 readonly class ImportedNight
 {
     /**
-     * @param  ?string  $location  where the night is played, as the card writes it; null when the card names no venue
      * @param  list<ImportedPerformance>  $performances  the acts, in the order they take the stage
      */
     public function __construct(

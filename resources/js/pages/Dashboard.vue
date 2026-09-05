@@ -116,7 +116,6 @@ defineOptions({
                         <span v-if="upcoming.next.teamName" class="block">
                             {{ upcoming.next.teamName }}
                         </span>
-                        <!-- Named only when it is not the house's own room. -->
                         <span
                             v-if="upcoming.next.location"
                             class="flex items-center gap-1"
@@ -201,8 +200,6 @@ defineOptions({
                             <span class="block text-sm text-r10-grey-500">
                                 {{ performance.teamName ?? '—' }}
                             </span>
-                            <!-- Where tonight's crew has to be, said only when
-                                 it is not the house's own room. -->
                             <span
                                 v-if="performance.location"
                                 class="flex items-center gap-1 text-sm text-r10-grey-500"

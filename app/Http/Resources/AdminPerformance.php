@@ -48,8 +48,6 @@ class AdminPerformance extends JsonResource
             // The act's own name, for an evening several groups share; empty
             // when the format's name already says what is played.
             'title' => $performance->title,
-            // Where it is played. Empty for a night in the house's own room,
-            // which is what naming no venue means.
             'location' => $performance->location,
             // Who plays it — its own group, or the format's. Never read off the
             // format directly; see Performance::performerName().

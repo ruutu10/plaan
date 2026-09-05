@@ -54,8 +54,6 @@ class SavePerformanceRequest extends FormRequest
             // The act's own name, for an evening several groups share. Left
             // out, the format's name is what the performance is listed under.
             'title' => ['nullable', 'string', 'max:255'],
-            // Where the night is played, free text as the board writes it.
-            // Left out, the performance is in the house's own room.
             'location' => ['nullable', 'string', 'max:255'],
             // The group playing this performance, when it is not the format's
             // own. Held to the groups the user may hand a performance to, the

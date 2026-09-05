@@ -75,10 +75,7 @@ export interface PlanMeta {
     performanceDate: string;
     /** Curtain-up as "19:00", on the venue's clock. */
     startTime: string;
-    /**
-     * Where the night is played, as the board writes it. Empty for a night in
-     * the house's own room, which is most of them.
-     */
+    /** Where it is played; empty means the house's own room. */
     location: string;
     duration: number | null;
     description: string;
@@ -102,7 +99,6 @@ export interface UpcomingPerformance {
      * would leave several identical rows to choose between.
      */
     title: string | null;
-    /** Where the night is played; null for the house's own room. */
     location: string | null;
     /** ISO date (YYYY-MM-DD), on the venue's clock. */
     performanceDate: string;
@@ -235,10 +231,7 @@ export interface AdminPlanRow {
     /** The format's own screen, or null when the reader may not open it. */
     formatUrl: string | null;
     teamName: string | null;
-    /**
-     * Where the night is played; null for the house's own room, and for a plan
-     * with no night of its own.
-     */
+    /** Null for a plan with no night of its own. */
     performanceLocation: string | null;
     /** ISO 8601 UTC instant the performance starts at, if the plan names one. */
     performanceStartsAt: string | null;

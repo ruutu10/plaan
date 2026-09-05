@@ -39,6 +39,10 @@ use Illuminate\Support\Facades\Date;
  * {@see startsAt()} and {@see momentFrom()}, which are the two ends of that
  * conversion and the only places it should happen.
  *
+ * `location` is where it is played, free text as the board writes it. Empty
+ * means the house's own room — the ordinary case, and the reason every listing
+ * shows the venue only when there is one rather than standing an absence in.
+ *
  * @property int $id
  * @property int $format_id
  * @property int|null $team_id
@@ -420,9 +424,9 @@ class Performance extends Model
     protected static function booted(): void
     {
         // An act carrying no name of its own is one the format's name already
-        // names, so an empty string is stored as an absence rather than as a
-        // title nobody can see. A venue nobody named reads the same way: the
-        // house's own room, not a blank line on every screen that shows it.
+        // names, and a night nobody placed is one in the house's own room, so
+        // an empty string is stored as the absence it means rather than as a
+        // value every screen would then have to render.
         static::saving(function (Performance $performance): void {
             foreach (['title', 'location'] as $field) {
                 if ($performance->{$field} !== null && trim($performance->{$field}) === '') {

@@ -170,7 +170,6 @@ class DashboardController extends Controller
                 'formatUrl' => $links->formatUrl($next),
                 'performanceUrl' => $links->performanceUrl($next),
                 'teamName' => $next->performerName(),
-                // Where it is played, when that is not the house's own room.
                 'location' => $next->location,
                 'startsAt' => $next->date->toIso8601String(),
             ] : null,

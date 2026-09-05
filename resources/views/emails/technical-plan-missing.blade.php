@@ -70,8 +70,6 @@
             <td style="{{ $labelCell }}">Kestus</td>
             <td style="{{ $cell }}">{{ $duration ? $duration.' min' : '—' }}</td>
         </tr>
-        {{-- A night in the house's own room names no venue, and this letter
-             says nothing about it rather than showing a blank. --}}
         @if ($location)
             <tr>
                 <td style="{{ $labelCell }}">Asukoht</td>

@@ -66,8 +66,6 @@ class AdminTechnicalPlan extends JsonResource
             // names what was staged as well as the plan written for it.
             'formatUrl' => ($this->links ?? RecordLinks::none())->formatUrl($plan->performance),
             'teamName' => $plan->performance?->performerName(),
-            // Where the night this plan describes is played. Empty for the
-            // house's own room, and for a plan with no night of its own.
             'performanceLocation' => $plan->performance?->location,
             'performanceStartsAt' => $plan->performance?->date->toIso8601String(),
             'submittedBy' => $plan->user?->name,

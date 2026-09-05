@@ -399,8 +399,6 @@ class ImportPlankaPerformances extends Command
             // Empty unless the night was shared: the format's own name says who
             // is playing, and its own group is who that is.
             'title' => $act->title,
-            // The night's venue, shared by every act on it. Empty when the card
-            // named none, which reads as the house's own room.
             'location' => $night->location,
             'team_id' => $act->teamId,
             'planka_card_id' => $this->cardId,

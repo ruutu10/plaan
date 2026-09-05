@@ -72,7 +72,6 @@ class TodaysPerformance extends JsonResource
             // The act's own name, when the evening is shared and the format's
             // name alone would leave three identical rows to read.
             'title' => $performance->title,
-            // Where tonight's crew has to be. Empty for the house's own room.
             'location' => $performance->location,
             'teamName' => $performance->performerName(),
             'startsAt' => $performance->date->toIso8601String(),

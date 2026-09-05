@@ -27,8 +27,7 @@ class PerformanceFactory extends Factory
             // ordinary case. A shared evening says otherwise; see performedBy().
             'team_id' => null,
             'title' => null,
-            // Played in the house's own room, which is what naming no venue
-            // means; a night elsewhere says so — see playedAt().
+            // A night elsewhere says so — see playedAt().
             'location' => null,
             'date' => Performance::momentFrom(
                 fake()->dateTimeBetween('now', '+2 months')->format('Y-m-d'),

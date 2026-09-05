@@ -63,12 +63,8 @@ class TechnicalPlan extends JsonResource
                 'formatName' => $plan->performance?->format->name ?? '',
                 'performanceDate' => $plan->performance?->startDate() ?? '',
                 'startTime' => $plan->performance?->startTime() ?? '',
-                // Where the night is played. Read off the performance like the
-                // rest of this block, so a venue corrected after the plan was
-                // handed in is the one the technician reads. The venue is
-                // itself optional, so the coalesce below covers both a plan
-                // without a night and a night in the house's own room, and the
-                // nullsafe its neighbours need would be redundant here.
+                // No nullsafe, unlike its neighbours: this one reads a nullable
+                // property, so the coalesce already covers a plan with no night.
                 'location' => $plan->performance->location ?? '',
                 'duration' => $plan->performance?->duration,
                 'description' => $plan->performance?->format->description ?? '',

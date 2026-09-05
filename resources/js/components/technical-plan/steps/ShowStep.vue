@@ -205,8 +205,6 @@ onMounted(loadPerformances);
                             <template v-if="performance.duration">
                                 · {{ performance.duration }} min
                             </template>
-                            <!-- Named only when it is not the house's own room,
-                                 which is what an empty venue means. -->
                             <template v-if="performance.location">
                                 · {{ performance.location }}
                             </template>
