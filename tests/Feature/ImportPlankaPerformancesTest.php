@@ -1342,6 +1342,70 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame(0, Performance::query()->count());
     }
 
+    public function test_a_title_filter_leaves_every_other_card_unread(): void
+    {
+        $this->fakeBoard([
+            $this->card('card-1', 'Õppelava 9.10'),
+            $this->card('card-2', '13.09 õhtu'),
+        ]);
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')
+                ->once()
+                ->with('Õppelava 9.10', \Mockery::any(), \Mockery::any(), \Mockery::any())
+                ->andReturn([$this->night('Trupp 1')]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
+
+        $this->artisan('planka:import', ['--filter-title' => 'Õppelava'])
+            ->expectsOutputToContain('Kept 1 card(s) whose title contains "Õppelava".')
+            ->assertSuccessful();
+
+        $this->assertSame(1, Performance::query()->count());
+    }
+
+    public function test_a_title_filter_matches_a_substring_whatever_the_casing(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+        $this->fakeExtraction([$this->night('Trupp 1')]);
+
+        $this->artisan('planka:import', ['--filter-title' => 'ÕPPELAVA 9'])->assertSuccessful();
+
+        $this->assertSame(1, Performance::query()->count());
+    }
+
+    public function test_a_title_filter_nothing_matches_imports_nothing(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+        $this->mock(
+            PlankaPerformanceExtractor::class,
+            fn (MockInterface $mock) => $mock->shouldNotReceive('extract'),
+        );
+
+        $this->artisan('planka:import', ['--filter-title' => 'Töötuba'])
+            ->expectsOutputToContain('Kept 0 card(s) whose title contains "Töötuba".')
+            ->assertSuccessful();
+
+        $this->assertSame(0, Performance::query()->count());
+    }
+
+    public function test_a_run_naming_no_title_filter_reads_every_card(): void
+    {
+        $this->fakeBoard([
+            $this->card('card-1', 'Õppelava 9.10'),
+            $this->card('card-2', '13.09 õhtu'),
+        ]);
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')->twice()->andReturn([$this->night('Trupp 1')]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
+
+        $this->artisan('planka:import')
+            ->doesntExpectOutputToContain('whose title contains')
+            ->assertSuccessful();
+    }
+
     public function test_a_card_carrying_no_label_is_read(): void
     {
         $this->fakeBoard([$this->card()]);

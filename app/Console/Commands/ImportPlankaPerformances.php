@@ -35,7 +35,9 @@ use Throwable;
  * has never had is created; records an admin has put aside are left alone
  * rather than resurrected — a weekly job must not undo a deletion.
  */
-#[Signature('planka:import {--dry-run : Report what would be imported without writing anything}')]
+#[Signature('planka:import
+    {--dry-run : Report what would be imported without writing anything}
+    {--filter-title= : Read only the cards whose title contains this text}')]
 #[Description('Import new formats and performances from the cards of the configured Planka list.')]
 class ImportPlankaPerformances extends Command
 {
@@ -99,10 +101,12 @@ class ImportPlankaPerformances extends Command
         }
 
         $dryRun = (bool) $this->option('dry-run');
+        $titleFilter = (string) $this->option('filter-title');
         $listIds = PlankaClient::listIds();
 
         Log::info('Planka import started', [
             'dry_run' => $dryRun,
+            'filter_title' => blank($titleFilter) ? null : $titleFilter,
             'lists' => count($listIds),
         ]);
 
@@ -126,6 +130,17 @@ class ImportPlankaPerformances extends Command
             'lists' => count($listIds),
         ]);
 
+        if (filled($titleFilter)) {
+            $cards = $this->cardsTitled($cards, $titleFilter);
+
+            $this->info(sprintf('Kept %d card(s) whose title contains "%s".', count($cards), $titleFilter));
+
+            Log::info('Narrowed the Planka cards to a title', [
+                'filter_title' => $titleFilter,
+                'cards' => count($cards),
+            ]);
+        }
+
         $this->primeFormats();
 
         $summary = new ImportSummary;
@@ -144,6 +159,28 @@ class ImportPlankaPerformances extends Command
         ]);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The cards whose title contains the given text, matched without regard to
+     * case as the board's own labels are. Meant for running the import against
+     * one card by hand — the weekly job names no filter and reads them all.
+     *
+     * A card the filter drops is dropped whole: it is not read, not counted as
+     * passed over, and nothing it announces reaches the books. This is a
+     * narrowing of the run, not a decision about the card.
+     *
+     * @param  list<array{id: string, name: string, description: string|null, dueDate: string|null, labels: list<string>}>  $cards
+     * @return list<array{id: string, name: string, description: string|null, dueDate: string|null, labels: list<string>}>
+     */
+    protected function cardsTitled(array $cards, string $title): array
+    {
+        $wanted = mb_strtolower($title);
+
+        return array_values(array_filter(
+            $cards,
+            fn (array $card): bool => str_contains(mb_strtolower($card['name']), $wanted),
+        ));
     }
 
     /**

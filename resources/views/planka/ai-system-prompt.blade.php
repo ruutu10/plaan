@@ -104,7 +104,6 @@ Iga etteaste küljes on massiiv `staff`, kus iga element on üks inimene: `{ nam
 
 ## Mida mitte kaasata
 
-- **Meeskond, mitte esinejad:** õhtujuht, heli- ja valgusmeister, operaator, videoprodutsent, fotograaf, piletimüüja, baarivahetused, projektijuht, vastutaja, turundus ja vastuvõtja ei ole kunagi omaette etteaste ega etteaste `title` — nad ei astu lavale. Osa neist kuulub `staff` väljale, ülejäänud jäetakse sootuks välja.
 - **Kohatäited:** `???`, `nimi`, `ei ole vaja`, `min 4`, `-`. Need tähendavad, et esinejat pole veel paika pandud.
 - **Koolitus, mitte etendus:** töötoad, moodulid, näidistunnid ja kursused ei ole etendused. Kui aga sellisel kaardil on eraldi välja toodud lõpuetendus või etendus, siis **see** on etendus ja tuleb kaasata.
 
@@ -124,11 +123,12 @@ Kaardi pealkiri `Õppelava 9.10`, kirjeldus:
 - Õhtujuht: Arne
 - Esinejad: Märtu10 (20min), Tõnis ilma Tanelita külalisega (30min), Mätu (30min), Improräpp (30min)
 - Heli- ja valgus: Tom
+- Baar: Karolina
 ```
 
 Üks õhtu (`Õppelava`, `2025-10-09`, `location: improkeskus`) ja selle sees neli etteastet. Õhtu algab 20:00, seega algused arvutatakse kestustest: 20:00, 20:20, 20:50 ja 21:20. `Etteaste kestus: 120 min` on kogu õhtu pikkus, mitte ühe etteaste oma — iga etteaste kestus on tema enda sulgudes.
 
-Õhtujuht Arne (`host`) ja heli- ja valgusmeister Tom (`technician`) töötavad kogu õhtu, seega lähevad mõlemad kõigi nelja etteaste `staff` massiivi. Projektijuht Marju ei kuulu ühegi loetletud rolli alla, seega teda ei kaasata.
+Õhtujuht Arne (`role: host`) ja heli- ja valgusmeister Tom (`role: technician`), baarirahvas Karolina (`role: bar`) töötavad kogu õhtu, seega lähevad mõlemad kõigi nelja etteaste `staff` massiivi. Projektijuht Marju ei kuulu ühegi loetletud rolli alla, seega ei kaasata teda staff nimekirja.
 
 ## Põhjendused (`reasoningNotes`)
 
