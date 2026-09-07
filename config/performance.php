@@ -36,8 +36,9 @@ return [
     | Missing-technician reminders
     |--------------------------------------------------------------------------
     |
-    | The technical team is chased daily about upcoming performances nobody
-    | has signed on to run sound and light for — see
+    | The technical team is chased every second day, at nine in the morning
+    | on the venue clock above, about upcoming performances nobody has
+    | signed on to run sound and light for — see
     | App\Console\Commands\RemindAboutMissingTechnicians. `lead_days` decides
     | how far ahead a performance starts showing up on the digest; `enabled`
     | is a switch of its own, separate from the technical-plan reminders

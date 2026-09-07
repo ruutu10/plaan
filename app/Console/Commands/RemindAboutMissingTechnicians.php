@@ -17,10 +17,11 @@ use Illuminate\Support\Facades\Notification;
  * Chase the technical team about the upcoming nights nobody has signed on to
  * run sound and light for.
  *
- * Meant to run daily, and — unlike {@see RemindAboutMissingTechnicalPlans} —
- * to keep chasing: nothing here is recorded as dealt with, so a performance
- * stays on tomorrow's digest for as long as it is inside the lead window and
- * still has no {@see PerformanceStaffRole::Technician} among its {@see
+ * Meant to run every second day, and — unlike {@see
+ * RemindAboutMissingTechnicalPlans} — to keep chasing: nothing here is
+ * recorded as dealt with, so a performance stays on the next digest for as
+ * long as it is inside the lead window and still has no {@see
+ * PerformanceStaffRole::Technician} among its {@see
  * Performance::staff()}, and drops off the moment one signs on or the night
  * is played. One mail names every performance still open, rather than one
  * mail per performance: the reader is the technical team itself, so there is
@@ -79,7 +80,7 @@ class RemindAboutMissingTechnicians extends Command
 
         $this->info(sprintf('Chased the technical team about %d performance(s) missing a technician.', $performances->count()));
 
-        // The line the daily run is read by. A digest going out is the normal
+        // The line a run is read by. A digest going out is the normal
         // case whenever a gap exists; a season where it is never empty is the
         // thing worth spotting, and only the tally shows it.
         Log::info('Missing-technician reminder run finished', [

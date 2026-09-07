@@ -603,8 +603,8 @@ tekstiks.
 | Töö | Millal | Mida ta teeb |
 | --- | --- | --- |
 | **Planka import** | Iga päev | Loeb projektide kaarte ja registreerib formaadid ja etendused, mille kohta on kaart. Uued etendused saabuvad **mustanditena**, mis ootavad ülevaatamist. Formaate ja etendusi, mille admin on siin kõrvale pannud, ei äratata kunagi ellu; jäädavalt kustutatud kirje aga luuakse sama kaardi pealt uuesti. Kaarte saab sildi järgi välja jätta. |
-| **Meeldetuletused** | Iga tund | Saadab välja iga tehnikaplaani meeldetuletuse, mille aeg on äsja kätte jõudnud (§6). Enamikul tundidel vaikne. |
 | **Arhiveerimine** | Iga päev | Viib esitatud ja kinnitatud plaanid staatusesse **Arhiveeritud**, kui nende etendus mängiti ära rohkem kui 24 tundi tagasi. Esineja enda mustandit ei arhiveerita kunagi - seda ei antud kunagi üle. |
+| **Tehnikuta etenduste koond** | Üle päeva kell 9 hommikul | Saadab tehnikatiimile ühe kirja kõigist lähinädala etendustest, millele ei ole ükski tehnik end kirja pannud. Etendus püsib koondis seni, kuni keegi end kirja paneb või õhtu on möödas. |
 | **Kutsete koristus** | Iga päev | Kustutab aegunud tiimikutsed. |
 | **Üleslaadimiste koristus** | Kord nädalas | Kustutab üle 72 tunni vanused ootel failid, mis ei jõudnud ühegi plaani külge. |
 

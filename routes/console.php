@@ -18,11 +18,20 @@ Schedule::command('planka:import')
 // reminder is sent by hand from the performance's own page, to the members the
 // crew picks — see App\Http\Controllers\PerformanceReminderController.
 
-// Daily: this one repeats for as long as the gap lasts, so there is nothing to
-// catch by running it more often — only one digest a day, until a technician
-// signs on.
+// Every second day at nine in the morning: this one repeats for as long as the
+// gap lasts, so a daily digest was mostly the same letter twice. The lead
+// window is a week, which still leaves three or four chances to be read before
+// the night arrives, and a morning one is read the same day it lands.
+//
+// Nine o'clock in the theatre, not on the server — the app runs in UTC, so the
+// hour is pinned to the venue zone and stays at nine across a daylight-saving
+// change, like every other clock time the house reads.
+//
+// `*/2` counts days of the month, so a 31-day month runs the 31st and the 1st
+// back to back — a day early once in a while, never a run missed.
 Schedule::command('performances:remind-missing-technicians')
-    ->daily()
+    ->cron('0 9 */2 * *')
+    ->timezone(config('performance.timezone'))
     ->withoutOverlapping()
     ->description('Remind the technical team about upcoming performances missing a technician');
 
