@@ -10,6 +10,7 @@ use App\Http\Controllers\MagicLoginController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\PerformancePageController;
+use App\Http\Controllers\PerformancePlankaImportController;
 use App\Http\Controllers\PerformanceReminderController;
 use App\Http\Controllers\Teams\TeamAdminController;
 use App\Http\Controllers\Teams\TeamAdminMemberController;
@@ -162,6 +163,13 @@ Route::prefix('api/formats')
                 // playing group the crew picks; nothing sends it on a schedule.
                 Route::post('{performance}/reminders', [PerformanceReminderController::class, 'store'])
                     ->name('reminders.store');
+
+                // Read the board again for this one performance, now, instead
+                // of waiting for the nightly run. Narrowed to the cards its own
+                // name appears on; the crew alone may ask — see
+                // App\Policies\PerformancePolicy::reimportFromPlanka().
+                Route::post('{performance}/planka-import', [PerformancePlankaImportController::class, 'store'])
+                    ->name('planka-import');
 
                 Route::get('{performance}/claude-logs', [ClaudeReasoningLogController::class, 'forPerformance'])
                     ->middleware('can:'.ClaudeReasoningLog::VIEW_PERMISSION)

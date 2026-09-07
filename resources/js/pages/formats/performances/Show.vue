@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import type { UrlMethodPair } from '@inertiajs/core';
 import { Head, router, setLayoutProps, useHttp } from '@inertiajs/vue3';
-import { FileClock, Mail, Pencil, Sparkles, Trash2 } from '@lucide/vue';
+import {
+    FileClock,
+    Mail,
+    Pencil,
+    RefreshCw,
+    Sparkles,
+    Trash2,
+} from '@lucide/vue';
 import { ref } from 'vue';
+import { toast } from 'vue-sonner';
 import ClaudeReasoningLogModal from '@/components/ClaudeReasoningLogModal.vue';
 import DeletePerformanceModal from '@/components/DeletePerformanceModal.vue';
 import PerformanceModal from '@/components/PerformanceModal.vue';
@@ -18,6 +26,7 @@ import { useResource } from '@/composables/useResource';
 import { formatLocalDate, formatLocalTime } from '@/lib/date';
 import {
     claudeLogs as reasoningLogsApi,
+    plankaImport as plankaImportApi,
     show as performanceApi,
 } from '@/routes/api/formats/performances';
 import { edit, index } from '@/routes/formats';
@@ -97,6 +106,31 @@ function nameTheTrail(performance: Performance): void {
 
 function openReasoningLog(): void {
     logOpen.value = true;
+}
+
+/** The re-read has its own request, so it never fights the page's own loader. */
+const reimport = useHttp();
+
+/**
+ * Ask for this performance's cards to be read off the Planka board again.
+ *
+ * Nothing on the page changes when the answer comes back: the run happens on a
+ * queue, minutes after the request, so the page says the reading was ordered
+ * rather than pretending to show its result. Whoever wants that reloads once
+ * the board has been read.
+ */
+async function refreshFromPlanka(): Promise<void> {
+    try {
+        await reimport.submit(
+            plankaImportApi([props.formatId, props.performanceId]),
+        );
+
+        toast.success(
+            'Planka import käivitatud. Muudatused ilmuvad mõne minuti pärast.',
+        );
+    } catch {
+        toast.error('Planka impordi käivitamine ebaõnnestus. Proovi uuesti.');
+    }
 }
 </script>
 
@@ -258,6 +292,26 @@ function openReasoningLog(): void {
                     >
                         <Mail class="h-3.5 w-3.5" />
                         Saada meeldetuletus
+                    </R10Button>
+
+                    <!--
+                        Offered to the crew alone, and only where a board is
+                        configured — the server says which, so the button is
+                        never shown where the API would refuse it.
+                    -->
+                    <R10Button
+                        v-if="performance.canReimportFromPlanka"
+                        variant="outline"
+                        size="sm"
+                        :disabled="reimport.processing"
+                        data-test="refresh-from-planka-button"
+                        @click="refreshFromPlanka"
+                    >
+                        <RefreshCw
+                            class="h-3.5 w-3.5"
+                            :class="{ 'animate-spin': reimport.processing }"
+                        />
+                        Värskenda Plankast
                     </R10Button>
 
                     <R10Button

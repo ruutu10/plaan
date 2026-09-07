@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Format;
 use App\Models\Performance;
 use App\Models\User;
+use App\Services\PlankaClient;
 
 /**
  * Who may touch a format's dated performances: a member of the group that owns the
@@ -61,5 +62,21 @@ class PerformancePolicy
     public function delete(User $user, Performance $performance): bool
     {
         return $performance->isEditableBy($user);
+    }
+
+    /**
+     * Determine whether the user can set the Planka board being read again for
+     * this performance.
+     *
+     * Narrower than editing it: the run is not confined to this performance, or
+     * even to this format — it reads every card whose title matches and writes
+     * whatever they announce — so it stays with the crew holding
+     * {@see Performance::EDIT_ALL_PERMISSION} rather than with the group whose
+     * night it happens to be. There is also nothing to read when no board is
+     * configured, which is what keeps the button off a house without one.
+     */
+    public function reimportFromPlanka(User $user, Performance $performance): bool
+    {
+        return PlankaClient::isConfigured() && $user->can(Performance::EDIT_ALL_PERMISSION);
     }
 }

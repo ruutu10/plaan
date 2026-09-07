@@ -169,6 +169,12 @@ export interface Performance {
     plankaCardId: string | null;
     /** That card on the board, ready to open. Null when none is configured. */
     plankaCardUrl: string | null;
+    /**
+     * Whether this reader may have the Planka board read again for this
+     * performance. False for everyone when no board is configured, which is
+     * what keeps the button off the page entirely.
+     */
+    canReimportFromPlanka: boolean;
     /** Whether the performance was entered by hand or read off a Planka card. */
     createdBy: CreatedBy;
     /**

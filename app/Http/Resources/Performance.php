@@ -7,6 +7,7 @@ use App\Models\Performance as PerformanceModel;
 use App\Services\PlankaClient;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * One dated performance of a format, as the management screens list and edit it.
@@ -37,6 +38,7 @@ class Performance extends JsonResource
      *     reasoningLogCount: int,
      *     plankaCardId: string|null,
      *     plankaCardUrl: string|null,
+     *     canReimportFromPlanka: bool,
      *     createdBy: string,
      *     createdAt: string|null,
      *     staff: mixed,
@@ -82,6 +84,11 @@ class Performance extends JsonResource
             // follow. The link is empty when no board is configured.
             'plankaCardId' => $performance->planka_card_id,
             'plankaCardUrl' => PlankaClient::cardUrl($performance->planka_card_id),
+            // Whether this reader may have the board read again for this
+            // performance, so the screen offers the button only where the API
+            // would honour it. False for the whole house when no board is
+            // configured.
+            'canReimportFromPlanka' => Gate::allows('reimportFromPlanka', $performance),
             // Where the performance came from and when, both read-only: a date
             // nobody remembers choosing was read off a card, and the screens say
             // so rather than leaving it to be guessed.

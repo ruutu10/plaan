@@ -483,6 +483,21 @@ Igal etendusel on ka oma leht (avatav muutmisnimekirja pliiatsinupust), kus
 lisaks eelnimetatud väljadele näeb ka etenduse **meeskonda**, kui see on
 Plankast imporditud - vt §11.2.
 
+**„Värskenda Plankast“** on sellelsamal lehel nupp, mis paneb Planka impordi
+käima kohe, ootamata igaöist jooksu. Loetakse ainult neid kaarte, mille
+pealkirjas seisab selle etenduse nimi (oma pealkiri, või formaadi nimi, kui
+etendusel oma pealkirja pole) - ülejäänud tahvel jäetakse puutumata. Muus osas
+teeb see täpselt sedasama, mida igaöine import (§10): olemasolevat kirjet ei
+kirjutata üle ja kõrvale pandut ei äratata ellu.
+
+- Nuppu näevad **ainult tehnikud**, ja ainult siis, kui Planka on üldse
+  seadistatud - jooks ise ulatub kogu tahvlile, mitte üksnes selle etenduse
+  formaadini.
+- Lugemine käib **taustal** ja võtab mõne minuti. Leht ei uuene ise: kui muudatus
+  on tahvlil olemas, laadi leht mõne minuti pärast uuesti.
+- Sama nime kohta korraga rohkem kui üht jooksu ei käivitata, nii et
+  kannatamatust topeltvajutusest kahte importi ei teki.
+
 ### 7.3 Mustandietendused
 
 Mustandiks märgitud etendus on selline, mille automaatne import registreeris ja

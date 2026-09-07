@@ -309,6 +309,21 @@ class Performance extends Model
     }
 
     /**
+     * The text a Planka import is narrowed to when this one performance is read
+     * off the board again: the act's own name, or the format's when the card
+     * announces a whole evening under it.
+     *
+     * It is the same name the screens head the performance with, and it is
+     * matched against card titles rather than against anything stored here, so
+     * it narrows the run without promising an exact card — a title that fits
+     * two cards reads both, which is what re-reading the board should do.
+     */
+    public function plankaImportFilter(): string
+    {
+        return $this->title ?? $this->format->name;
+    }
+
+    /**
      * The same group as an id — see {@see performerName()}.
      */
     public function performingTeamId(): ?int
