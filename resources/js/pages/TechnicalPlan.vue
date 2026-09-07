@@ -13,6 +13,7 @@ import {
     hydratePlan,
     isDelivered,
     isReady,
+    isSmokeAllowedAt,
     soundHasSource,
 } from '@/components/technical-plan/plan';
 import {
@@ -84,6 +85,26 @@ const showValidation = ref(false);
 provide(planKey, plan);
 provide(configKey, props.config);
 provide(showValidationKey, showValidation);
+
+/**
+ * Keep the smoke answer true to the venue. The equipment step leaves the
+ * question out for a hall that cannot take smoke, so the answer has to be given
+ * here — a plan carrying the wizard's default "jah" into such a night would
+ * tell the crew the opposite of the house rule.
+ *
+ * The answer is watched alongside the venue, not just the venue: starting the
+ * plan over and copying an earlier one both write the whole equipment block,
+ * and either can put a "jah" back without the location having moved.
+ */
+watch(
+    () => [plan.meta.location, plan.equipment.smoke] as const,
+    ([location, smoke]) => {
+        if (smoke !== 'no' && !isSmokeAllowedAt(location, props.config)) {
+            plan.equipment.smoke = 'no';
+        }
+    },
+    { immediate: true },
+);
 
 const step = ref(props.initialStep);
 

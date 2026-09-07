@@ -1,11 +1,22 @@
 <script setup lang="ts">
-import { uid } from '../plan';
-import { usePlan } from '../planKey';
+import { computed } from 'vue';
+import { isSmokeAllowedAt, uid } from '../plan';
+import { usePlan, useWizardConfig } from '../planKey';
 import R10Textarea from '../R10Textarea.vue';
 import RadioPills from '../RadioPills.vue';
 import StepHeader from '../StepHeader.vue';
 
 const plan = usePlan();
+const config = useWizardConfig();
+
+/**
+ * Whether the smoke question is worth asking at all. A hall that cannot take
+ * smoke leaves it out — the answer is already "ei tohi", and `TechnicalPlan`
+ * keeps the plan saying so.
+ */
+const smokeAllowed = computed(() =>
+    isSmokeAllowedAt(plan.meta.location, config),
+);
 
 function addEquip(): void {
     plan.equipment.items.push({ id: uid(), name: '', use: '' });
@@ -88,7 +99,7 @@ const suggestOptions = [
         <div
             class="mt-[30px] flex flex-col gap-[26px] border-t border-r10-grey-200 pt-6"
         >
-            <div>
+            <div v-if="smokeAllowed" data-test="smoke-question">
                 <div
                     class="mb-1.5 font-r10-body text-xs font-bold tracking-[0.12em] text-r10-ink uppercase"
                 >
@@ -105,7 +116,11 @@ const suggestOptions = [
                 />
             </div>
 
-            <div class="border-t border-r10-grey-200 pt-[22px]">
+            <div
+                :class="
+                    smokeAllowed ? 'border-t border-r10-grey-200 pt-[22px]' : ''
+                "
+            >
                 <div
                     class="mb-1.5 font-r10-body text-xs font-bold tracking-[0.12em] text-r10-ink uppercase"
                 >

@@ -1915,6 +1915,26 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame(StoreTechnicalPlanRequest::MAX_SOUND_URL_LENGTH, $config['maxSoundUrlLength']);
     }
 
+    /**
+     * The halls that cannot take smoke are the house's to name, so the wizard
+     * is handed them rather than knowing them.
+     */
+    public function test_the_wizard_config_names_the_venues_where_smoke_is_not_possible(): void
+    {
+        config()->set('technical_plan.smoke_not_possible', ['improkeskus', 'saal']);
+
+        $config = $this->get(route('technical-plan.index'))->viewData('page')['props']['config'];
+
+        $this->assertSame(['improkeskus', 'saal'], $config['smokeNotPossible']);
+    }
+
+    public function test_the_wizard_config_names_improkeskus_as_smoke_free_by_default(): void
+    {
+        $config = $this->get(route('technical-plan.index'))->viewData('page')['props']['config'];
+
+        $this->assertContains('improkeskus', $config['smokeNotPossible']);
+    }
+
     public function test_a_scene_refuses_more_sounds_than_the_wizard_offers(): void
     {
         $sounds = [];

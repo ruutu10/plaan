@@ -216,6 +216,11 @@ export interface WizardConfig {
     maxSoundsPerScene: number;
     /** How long a cue's link may be, per the server's own rules. */
     maxSoundUrlLength: number;
+    /**
+     * Venue names whose halls cannot take smoke, from
+     * `config/technical_plan.php` — see {@link isSmokeAllowedAt}.
+     */
+    smokeNotPossible: string[];
 }
 
 export interface LookupResult {

@@ -16,6 +16,7 @@ import {
     isDelivered,
     isDraft,
     isReady,
+    isSmokeAllowedAt,
     nextSequentialId,
     soundAudioUrl,
     soundErrors,
@@ -33,6 +34,7 @@ const config = {
     maxFileSize: 20971520,
     maxSoundsPerScene: 10,
     maxSoundUrlLength: 2000,
+    smokeNotPossible: ['improkeskus'],
 } satisfies WizardConfig;
 
 /** One cue, defaulting to a stored file the way the server hands one back. */
@@ -135,6 +137,37 @@ describe('soundErrors', () => {
 
     it('asks nothing of a question answered "ei", however empty', () => {
         expect(hasSoundErrors(blankPlan().sound)).toBe(false);
+    });
+});
+
+describe('isSmokeAllowedAt', () => {
+    it('rules smoke out at a hall the house has named', () => {
+        expect(isSmokeAllowedAt('improkeskus', config)).toBe(false);
+        expect(isSmokeAllowedAt('Improkeskus', config)).toBe(false);
+        expect(isSmokeAllowedAt('  improkeskus  ', config)).toBe(false);
+    });
+
+    it('reads the venue out of the free text the board writes', () => {
+        expect(isSmokeAllowedAt('Tartu improkeskus', config)).toBe(false);
+        expect(isSmokeAllowedAt('improkeskuse BB, PR1, PR2', config)).toBe(
+            false,
+        );
+    });
+
+    it('allows smoke anywhere the house has not named', () => {
+        expect(isSmokeAllowedAt('IMPEERIUM teatrisaal', config)).toBe(true);
+        expect(isSmokeAllowedAt('Von Krahli teater', config)).toBe(true);
+    });
+
+    it('asks about smoke when no venue is named, rather than guessing', () => {
+        expect(isSmokeAllowedAt('', config)).toBe(true);
+        expect(isSmokeAllowedAt('   ', config)).toBe(true);
+    });
+
+    it('allows smoke everywhere when the house has named no hall', () => {
+        expect(isSmokeAllowedAt('improkeskus', { smokeNotPossible: [] })).toBe(
+            true,
+        );
     });
 });
 

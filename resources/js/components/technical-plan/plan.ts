@@ -122,6 +122,34 @@ export function hasSoundErrors(sound: PlanSound): boolean {
 }
 
 /**
+ * Whether the technician may use smoke at the venue this plan is filed under.
+ *
+ * The halls that cannot take it are named server-side in
+ * `config/technical_plan.php` and handed to the wizard, because the rule
+ * belongs to the house rather than to the browser. A performance's location is
+ * free text as the board writes it, so each name is looked for anywhere inside
+ * it: "improkeskus" catches "Tartu improkeskus" and "improkeskuse BB" too.
+ *
+ * A night with no location named is still asked the question. An absent venue
+ * is an unknown one, not the house's own room, and guessing "no" there would
+ * take away a choice the hall might well allow.
+ */
+export function isSmokeAllowedAt(
+    location: string,
+    config: Pick<WizardConfig, 'smokeNotPossible'>,
+): boolean {
+    const venue = location.trim().toLowerCase();
+
+    if (venue === '') {
+        return true;
+    }
+
+    return !config.smokeNotPossible.some((name) =>
+        venue.includes(name.trim().toLowerCase()),
+    );
+}
+
+/**
  * A file handle as it comes back from the server, ready to be shown. Handles
  * without an id never made it server-side and are dropped.
  */

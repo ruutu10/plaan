@@ -34,4 +34,24 @@ return [
         'ogg',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Venues that cannot take smoke
+    |--------------------------------------------------------------------------
+    |
+    | Halls whose fire alarm rules out smoke and haze altogether. A plan for a
+    | night in one of them is never asked whether the technician may use smoke
+    | effects — the question has only one answer there, and the wizard gives it
+    | rather than offering a choice the hall would refuse.
+    |
+    | A performance's location is free text as the Planka board writes it, so
+    | each name here is matched case-insensitively anywhere within it:
+    | "improkeskus" also covers "Tartu improkeskus" and "improkeskuse BB".
+    |
+    */
+
+    'smoke_not_possible' => [
+        'improkeskus',
+    ],
+
 ];
