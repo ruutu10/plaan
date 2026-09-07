@@ -148,71 +148,90 @@ const linkClass =
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="scene in doc.scenes" :key="scene.num">
-                        <td
-                            :class="[
-                                cellClass,
-                                'text-center font-bold text-r10-navy',
-                            ]"
-                        >
-                            {{ scene.num }}
-                        </td>
-                        <td :class="[cellClass, 'font-bold break-words']">
-                            {{ scene.name }}
-                        </td>
-                        <td
-                            :class="[
-                                cellClass,
-                                'break-words whitespace-pre-line',
-                            ]"
-                        >
-                            {{ scene.light }}
-                        </td>
-                        <td :class="[cellClass, 'break-words']">
-                            <!-- Each cue gets its own line, in the order it is
-                                 played, so they all stay clickable. -->
-                            <span
-                                v-for="(sound, position) in scene.sounds"
-                                :key="position"
-                                class="block"
+                    <template
+                        v-for="(scene, row) in doc.scenes"
+                        :key="`${row}-${scene.num}`"
+                    >
+                        <!-- The interval runs the width of the table: it is
+                             what separates one half of the show from the next,
+                             and none of the columns say anything about it. -->
+                        <tr v-if="scene.intermission">
+                            <td
+                                :colspan="5"
+                                :class="[
+                                    cellClass,
+                                    'bg-r10-grey-100 text-center font-r10-display text-xs font-semibold tracking-[0.16em] text-r10-navy uppercase',
+                                ]"
                             >
-                                <template v-if="sound.file">
+                                {{ scene.name }}
+                            </td>
+                        </tr>
+                        <tr v-else>
+                            <td
+                                :class="[
+                                    cellClass,
+                                    'text-center font-bold text-r10-navy',
+                                ]"
+                            >
+                                {{ scene.num }}
+                            </td>
+                            <td :class="[cellClass, 'font-bold break-words']">
+                                {{ scene.name }}
+                            </td>
+                            <td
+                                :class="[
+                                    cellClass,
+                                    'break-words whitespace-pre-line',
+                                ]"
+                            >
+                                {{ scene.light }}
+                            </td>
+                            <td :class="[cellClass, 'break-words']">
+                                <!-- Each cue gets its own line, in the order it is
+                                 played, so they all stay clickable. -->
+                                <span
+                                    v-for="(sound, position) in scene.sounds"
+                                    :key="position"
+                                    class="block"
+                                >
+                                    <template v-if="sound.file">
+                                        <a
+                                            :href="sound.file.url ?? undefined"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            :class="linkClass"
+                                        >
+                                            {{ sound.file.name }}
+                                        </a>
+                                        ({{ sound.file.sizeLabel }})
+                                    </template>
                                     <a
-                                        :href="sound.file.url ?? undefined"
+                                        v-else
+                                        :href="sound.url"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        :class="linkClass"
+                                        :class="[linkClass, 'break-all']"
                                     >
-                                        {{ sound.file.name }}
+                                        {{ sound.url }}
                                     </a>
-                                    ({{ sound.file.sizeLabel }})
-                                </template>
-                                <a
-                                    v-else
-                                    :href="sound.url"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    :class="[linkClass, 'break-all']"
+                                </span>
+                                <span
+                                    v-if="scene.soundText"
+                                    class="block break-words whitespace-pre-line"
                                 >
-                                    {{ sound.url }}
-                                </a>
-                            </span>
-                            <span
-                                v-if="scene.soundText"
-                                class="block break-words whitespace-pre-line"
+                                    {{ scene.soundText }}
+                                </span>
+                            </td>
+                            <td
+                                :class="[
+                                    cellClass,
+                                    'break-words whitespace-pre-line',
+                                ]"
                             >
-                                {{ scene.soundText }}
-                            </span>
-                        </td>
-                        <td
-                            :class="[
-                                cellClass,
-                                'break-words whitespace-pre-line',
-                            ]"
-                        >
-                            {{ scene.notes }}
-                        </td>
-                    </tr>
+                                {{ scene.notes }}
+                            </td>
+                        </tr>
+                    </template>
                 </tbody>
             </table>
         </div>

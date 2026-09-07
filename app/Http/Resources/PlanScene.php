@@ -71,6 +71,9 @@ class PlanScene extends JsonResource
             'sound' => TechnicalPlan::text($scene['sound'] ?? null),
             'notes' => TechnicalPlan::text($scene['notes'] ?? null),
             'sounds' => $this->sounds($request),
+            // Null rather than zero on an ordinary scene: the wizard's `Scene`
+            // shape reads a number here as "this entry is the interval".
+            'intermission' => TechnicalPlan::intermission($scene['intermission'] ?? null) ?: null,
         ]);
     }
 

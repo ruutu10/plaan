@@ -1913,6 +1913,104 @@ class TechnicalPlanTest extends TestCase
 
         $this->assertSame(StoreTechnicalPlanRequest::MAX_SOUNDS_PER_SCENE, $config['maxSoundsPerScene']);
         $this->assertSame(StoreTechnicalPlanRequest::MAX_SOUND_URL_LENGTH, $config['maxSoundUrlLength']);
+        $this->assertSame(StoreTechnicalPlanRequest::MAX_INTERMISSION_MINUTES, $config['maxIntermissionMinutes']);
+    }
+
+    /**
+     * The break between two halves of the show is stored as a scene entry
+     * carrying its length, so it keeps its place in the running order.
+     */
+    public function test_a_plan_can_carry_an_interval_between_its_scenes(): void
+    {
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'scenes' => [
+                ['id' => 'stseen-1', 'name' => 'Esimene pool', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => ''],
+                ['id' => 'vaheaeg-1', 'name' => '', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => '', 'intermission' => 15],
+                ['id' => 'stseen-2', 'name' => 'Teine pool', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => ''],
+            ],
+        ]));
+
+        $response->assertOk();
+
+        $scenes = TechnicalPlan::first()->scenes;
+
+        $this->assertCount(3, $scenes);
+        $this->assertSame(15, $scenes[1]['intermission']);
+
+        // Read back for the wizard, an ordinary scene reports no interval at
+        // all rather than a length of nothing.
+        $this->assertSame(15, $response->json('scenes.1.intermission'));
+        $this->assertNull($response->json('scenes.0.intermission'));
+    }
+
+    /**
+     * A plan stored before intervals existed carries no such key, and must
+     * still read back as a plan made entirely of scenes.
+     */
+    public function test_a_scene_stored_without_an_interval_key_reports_none(): void
+    {
+        $plan = TechnicalPlan::factory()->create([
+            'scenes' => [['id' => 'stseen-1', 'name' => 'Avastseen']],
+        ]);
+
+        $scene = (new TechnicalPlanResource($plan))->toArray(request())['scenes'][0];
+
+        $this->assertNull($scene['intermission']);
+    }
+
+    public function test_an_interval_is_held_to_a_length_the_house_could_play(): void
+    {
+        foreach ([0, -5, StoreTechnicalPlanRequest::MAX_INTERMISSION_MINUTES + 1, 'pikk'] as $minutes) {
+            $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+                'scenes' => [
+                    ['id' => 'stseen-1', 'name' => 'Stseen', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => ''],
+                    ['id' => 'vaheaeg-1', 'name' => '', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => '', 'intermission' => $minutes],
+                ],
+            ]));
+
+            $response->assertUnprocessable();
+            $this->assertArrayHasKey('scenes.1.intermission', $response->json('errors'), 'for '.var_export($minutes, true));
+        }
+    }
+
+    /**
+     * The technician reads the plan out of the mail, so the break between the
+     * halves has to reach it as its own line across the scenes table.
+     */
+    public function test_the_submission_mail_shows_the_interval_between_the_halves(): void
+    {
+        $performance = Performance::factory()->create();
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'meta' => ['performanceId' => $performance->id],
+            'scenes' => [
+                ['id' => 'stseen-1', 'name' => 'Esimene pool', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => ''],
+                ['id' => 'vaheaeg-1', 'name' => '', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => '', 'intermission' => 15],
+                ['id' => 'stseen-2', 'name' => 'Teine pool', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => ''],
+            ],
+        ]))->assertOk();
+
+        $html = (new TechnicalPlanSubmitted(TechnicalPlan::first()))->toMail($this->user)->render();
+
+        $this->assertStringContainsString('Vaheaeg — 15 min', $html);
+        $this->assertStringContainsString('colspan="5"', $html);
+    }
+
+    /**
+     * `scenes.min:1` counts entries, and an interval is one of them — a plan
+     * made only of breaks describes no show at all.
+     */
+    public function test_a_plan_of_nothing_but_intervals_is_refused(): void
+    {
+        $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'scenes' => [
+                ['id' => 'vaheaeg-1', 'name' => '', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => '', 'intermission' => 15],
+            ],
+        ]));
+
+        $response->assertUnprocessable();
+        $this->assertArrayHasKey('scenes', $response->json('errors'));
     }
 
     /**

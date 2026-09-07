@@ -4,7 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { formatVenueClockTime } from '@/lib/date';
 import { hideFeedbackWidget, showFeedbackWidget } from '@/lib/sentry';
 import Diamond from './Diamond.vue';
-import { formatFileSize, soundAudioUrl } from './plan';
+import { formatFileSize, intermissionLabel, soundAudioUrl } from './plan';
 import { usePlan } from './planKey';
 import { normaliseScenes } from './presentPlan';
 import SceneAudio from './SceneAudio.vue';
@@ -33,9 +33,31 @@ const scenes = computed(() =>
     })),
 );
 
+/**
+ * How many of the steps are scenes. The interval is stepped through like the
+ * rest — the tech stands at it while the house is out — but it is not one of
+ * the numbered scenes, so it is not counted in "stseen 4 / 12" either.
+ */
+const sceneCount = computed(
+    () => scenes.value.filter((scene) => scene.intermission === 0).length,
+);
+
 const active = ref(0);
 
 const activeScene = computed(() => scenes.value[active.value] ?? null);
+
+/** What the header and the footer call the step the tech is standing on. */
+const stepLabel = computed(() => {
+    const scene = activeScene.value;
+
+    if (!scene) {
+        return '';
+    }
+
+    return scene.intermission > 0
+        ? intermissionLabel(scene.intermission)
+        : `Stseen ${scene.num} / ${sceneCount.value}`;
+});
 
 const hasPrevious = computed(() => active.value > 0);
 const hasNext = computed(() => active.value < scenes.value.length - 1);
@@ -190,17 +212,19 @@ const cueLinkClass =
                 <span
                     class="shrink-0 font-r10-body text-[11px] font-bold tracking-[0.18em] text-r10-orange uppercase"
                 >
-                    Stseen {{ activeScene.num }} / {{ scenes.length }}
+                    {{ stepLabel }}
                 </span>
-                <span
-                    class="h-4 w-px shrink-0 bg-white/25"
-                    aria-hidden="true"
-                ></span>
-                <h2
-                    class="min-w-0 truncate font-r10-display text-lg leading-tight font-bold tracking-[0.02em] text-white uppercase sm:text-xl"
-                >
-                    {{ sceneLabel(activeScene.name) }}
-                </h2>
+                <template v-if="!activeScene.intermission">
+                    <span
+                        class="h-4 w-px shrink-0 bg-white/25"
+                        aria-hidden="true"
+                    ></span>
+                    <h2
+                        class="min-w-0 truncate font-r10-display text-lg leading-tight font-bold tracking-[0.02em] text-white uppercase sm:text-xl"
+                    >
+                        {{ sceneLabel(activeScene.name) }}
+                    </h2>
+                </template>
             </div>
             <button
                 type="button"
@@ -219,12 +243,12 @@ const cueLinkClass =
                 <div
                     class="shrink-0 px-5 pt-4 pb-2 font-r10-body text-[11px] font-bold tracking-[0.16em] text-r10-navy-300 uppercase"
                 >
-                    Stseenid · {{ scenes.length }}
+                    Stseenid · {{ sceneCount }}
                 </div>
                 <div ref="navRef" class="min-h-0 flex-1 overflow-y-auto pb-4">
                     <button
                         v-for="(scene, index) in scenes"
-                        :key="scene.num"
+                        :key="index"
                         type="button"
                         :aria-current="index === active ? 'true' : undefined"
                         :class="[
@@ -235,9 +259,15 @@ const cueLinkClass =
                         ]"
                         @click="go(index)"
                     >
+                        <!-- The interval keeps its place in the list, marked
+                             rather than numbered: it is a step the tech stands
+                             on, not one of the scenes they count. -->
                         <span
                             :class="[
                                 'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 font-r10-display text-[13px] font-extrabold',
+                                scene.intermission
+                                    ? 'border-dashed'
+                                    : 'border-solid',
                                 index === active
                                     ? 'border-r10-orange bg-r10-orange text-r10-navy'
                                     : index < active
@@ -245,7 +275,8 @@ const cueLinkClass =
                                       : 'border-white/20 bg-transparent text-r10-navy-300',
                             ]"
                         >
-                            {{ scene.num }}
+                            <Diamond v-if="scene.intermission" :size="9" />
+                            <template v-else>{{ scene.num }}</template>
                         </span>
                         <span
                             :class="[
@@ -255,7 +286,11 @@ const cueLinkClass =
                                     : 'text-r10-navy-200',
                             ]"
                         >
-                            {{ sceneLabel(scene.name) }}
+                            {{
+                                scene.intermission
+                                    ? intermissionLabel(scene.intermission)
+                                    : sceneLabel(scene.name)
+                            }}
                         </span>
                     </button>
                 </div>
@@ -332,10 +367,24 @@ const cueLinkClass =
                 class="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-5 sm:px-10 sm:py-6"
             >
                 <div
-                    :key="activeScene.num"
+                    :key="active"
                     class="mx-auto max-w-[820px] animate-[r10fade_0.28s_ease]"
                 >
-                    <div class="flex flex-col gap-6">
+                    <!-- Nothing is played through the interval, so the step
+                         says how long the house is out and no more. -->
+                    <section
+                        v-if="activeScene.intermission"
+                        class="rounded-[14px] border-2 border-dashed border-r10-orange/60 bg-r10-navy px-4 py-10 text-center sm:px-5"
+                    >
+                        <div :class="cueLabelClass">Vaheaeg</div>
+                        <div
+                            class="mt-3 font-r10-display text-4xl leading-none font-bold tracking-[0.02em] text-white uppercase"
+                        >
+                            {{ activeScene.intermission }} min
+                        </div>
+                    </section>
+
+                    <div v-else class="flex flex-col gap-6">
                         <section
                             class="rounded-[14px] border border-white/15 bg-r10-navy px-4 py-4 sm:px-5"
                         >
@@ -440,7 +489,7 @@ const cueLinkClass =
             <span
                 class="mx-auto text-center font-r10-body text-[11px] font-bold tracking-[0.1em] text-r10-navy-300 uppercase sm:text-xs"
             >
-                Stseen {{ active + 1 }} / {{ scenes.length }}
+                {{ stepLabel }}
             </span>
             <button
                 type="button"

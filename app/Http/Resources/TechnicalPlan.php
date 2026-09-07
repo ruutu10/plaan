@@ -107,6 +107,29 @@ class TechnicalPlan extends JsonResource
     }
 
     /**
+     * How long a scene entry's interval lasts, in whole minutes, or zero when
+     * the entry is an ordinary scene. The one place the stored value is judged,
+     * so the wizard's document and the mail draw the line in the same place;
+     * `intermissionMinutes()` in
+     * `resources/js/components/technical-plan/plan.ts` mirrors it client-side.
+     */
+    public static function intermission(mixed $value): int
+    {
+        $minutes = is_numeric($value) ? (int) $value : 0;
+
+        return max($minutes, 0);
+    }
+
+    /**
+     * The interval as every reader is shown it, minutes included. Mirrored by
+     * `intermissionLabel()` in the wizard's own `plan.ts`.
+     */
+    public static function intermissionLabel(int $minutes): string
+    {
+        return 'Vaheaeg — '.$minutes.' min';
+    }
+
+    /**
      * The plan's sound block, filled out to the shape the wizard expects.
      *
      * @return array<string, string>

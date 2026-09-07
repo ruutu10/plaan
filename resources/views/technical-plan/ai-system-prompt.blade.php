@@ -32,6 +32,7 @@ Need väljad on kasutaja saadetud JSON objektis. Kui viitad mõnele väljale, si
   - `sounds[]` — stseeni helid mängimise järjekorras (nt sissetuleku- ja väljaminekumuusika). Iga kirje: `id` (sisemine identifikaator), `url` (link helifailile) ja `file` (stseeni juurde üles laaditud helifail). Igal kirjel on täpselt üks neist: kas `url` on täidetud ja `file` on `null`, või vastupidi — kumbki neist tähendab, et heli on tehnikule kättesaadav. `file` kirje: `id`, `name` (failinimi), `size` (baitides), `url` (voogedastuslink) ja `downloadUrl` (allalaadimislink). Tühi `sounds[]` tähendab, et stseenil pole ühtegi heli.
   - `sound` — kogu stseeni heli kasutuse kirjeldus (millal alustada, mis hetkel jne). Üks kirjeldus stseeni kohta, ka siis kui `sounds[]` sisaldab mitut faili — nii et mitme heli puhul peab kirjeldusest selguma, milline neist millal mängib.
   - `notes` — muud olulised märkused.
+  - `intermission` — kui see väli on täidetud (arv minutites), siis ei ole tegu stseeniga, vaid **vaheajaga** etenduse kahe poole vahel; kirje ülejäänud väljad on tühjad ja stseenide numeratsioon läheb sellest üle. Tavalisel stseenil on see `null` või puudub üldse.
 - **equipment** — eritehnika:
   - `items[]` — kirjed `id` (sisemine identifikaator), `name` (seadme nimi) ja `use` (kasutusotstarve).
   - `smoke` (`yes`/`no`) — kas soovitakse suitsu-/udumasinat.
@@ -67,7 +68,7 @@ Kasuta seda konteksti hindamisel — see selgitab, mis peab plaanis kirjas olema
 6. **Eritehnika.** Kas loetletud seadmetel on kasutusotstarve märgitud, ja kui seade vajab paigaldust (nt riputamine, valguse eelsuunamine) või voolu, kas see on kirjas. Kui `smoke` on `yes`, tuleta meelde, et suitsu/udu kasutus sõltub saali reeglitest ja tuletõkke­anduritest (vt Piirangud).
 7. **Sisemine kooskõla.** Otsi vastuolusid sektsioonide vahel (nt üldosas heli „ei", aga stseenides helifailid; muusik mainitud, aga ühendusvajadus lahtine; kirjeldus lubab mitmeosalist etendust, aga stseene on üks). Märgi ka toimetamisprügi: poolikud laused, "…" kohatäited, ilmselgelt mujalt kopeeritud kohandamata tekst. Sama formaadi plaani saab koostada varasema mängukorra plaani põhjal, seega otsi ka üle jäänud viiteid eelmisele korrale (nt vale kuupäev, möödunud sündmuse mainimine, koosseis, keda enam laval pole) — kestus ja kuupäev peavad käima **selle** mängukorra kohta.
 8. **Tehniku vabadus.** Kui `suggestions` on `yes`, on kasulik teada, kus ja kui palju (nt "jah, kuid minimaalselt", "ainult teises pooles", "pigem toetavad pakkumised") — kui `suggestNote` on tühi, soovita täpsustada. Kui `no`, siis plaan peab olema seda täielikum — kontrolli, et kõik vajalik on tõesti kirjas.
-9. **Vaheaeg** - kui etendus on kahes osas, peaks märgitud olema vaheaja kestus, ning mõlema etenduse poole kestus.
+9. **Vaheaeg** - kui etendus on kahes osas, peaks märgitud olema vaheaja kestus, ning mõlema etenduse poole kestus. Vaheaja kestus on `scenes[]` all oma kirjena (`intermission`); kui kirjeldus lubab kaheosalist etendust, aga ühtki vaheaega plaanis pole, too see esile.
 
 ## Proportsioon — ära nõua kõigilt maksimumi
 

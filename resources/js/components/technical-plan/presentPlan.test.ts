@@ -1,7 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { Plan, PlanDocument } from '@/types/technicalPlan';
-import { formatFileSize, presentPlan, statusLabel } from './presentPlan';
+import {
+    formatFileSize,
+    normaliseScenes,
+    presentPlan,
+    statusLabel,
+} from './presentPlan';
 
 /**
  * The other half of `tests/Feature/PlanDocumentTest.php`. Both suites read this
@@ -71,5 +76,35 @@ describe('presentPlan', () => {
                 downloadUrl: null,
             },
         ]);
+    });
+});
+
+describe('normaliseScenes', () => {
+    /**
+     * The technician's playback view is stepped through by this, and a cue
+     * called out as "stseen 4" has to be the fourth row of the printout too —
+     * so the interval takes a step of its own without taking a number.
+     */
+    it('numbers only the scenes, stepping over the interval', () => {
+        const plan = structuredClone(fixture.cases[0].plan);
+
+        expect(normaliseScenes(plan).map((scene) => scene.num)).toEqual([
+            1, 2, 3, 0, 4, 5,
+        ]);
+    });
+
+    it('leaves the interval blank but for its length', () => {
+        const plan = structuredClone(fixture.cases[0].plan);
+        const interval = normaliseScenes(plan)[3];
+
+        expect(interval).toEqual({
+            num: 0,
+            name: '',
+            light: '',
+            sounds: [],
+            sound: '',
+            notes: '',
+            intermission: 15,
+        });
     });
 });

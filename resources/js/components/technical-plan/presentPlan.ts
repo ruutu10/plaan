@@ -7,7 +7,13 @@ import type {
     PlanFile,
     SceneSound,
 } from '@/types/technicalPlan';
-import { formatFileSize, isReady, soundHasSource } from './plan';
+import {
+    formatFileSize,
+    intermissionLabel,
+    intermissionMinutes,
+    isReady,
+    soundHasSource,
+} from './plan';
 
 export { formatFileSize };
 
@@ -148,14 +154,38 @@ export function statusTone(
  * standing it in — a dash read out over headset means nothing.
  */
 export function normaliseScenes(plan: Plan): NormalisedScene[] {
-    return plan.scenes.map((scene, index) => ({
-        num: index + 1,
-        name: scene.name.trim(),
-        light: scene.light.trim(),
-        sounds: normaliseSounds(scene.sounds),
-        sound: scene.sound.trim(),
-        notes: scene.notes.trim(),
-    }));
+    let num = 0;
+
+    return plan.scenes.map((scene) => {
+        const intermission = intermissionMinutes(scene);
+
+        // An interval is not one of the numbered scenes, and it carries no
+        // cues: it is a break in the running order, so it is left blank and
+        // the scene numbering steps over it.
+        if (intermission > 0) {
+            return {
+                num: 0,
+                name: '',
+                light: '',
+                sounds: [],
+                sound: '',
+                notes: '',
+                intermission,
+            };
+        }
+
+        num += 1;
+
+        return {
+            num,
+            name: scene.name.trim(),
+            light: scene.light.trim(),
+            sounds: normaliseSounds(scene.sounds),
+            sound: scene.sound.trim(),
+            notes: scene.notes.trim(),
+            intermission: 0,
+        };
+    });
 }
 
 /**
@@ -172,12 +202,15 @@ function normaliseSounds(sounds: SceneSound[]): NormalisedSound[] {
 }
 
 export interface NormalisedScene {
+    /** Zero on an interval, which is not one of the numbered scenes. */
     num: number;
     name: string;
     light: string;
     sounds: NormalisedSound[];
     sound: string;
     notes: string;
+    /** Minutes the interval lasts, or zero on an ordinary scene. */
+    intermission: number;
 }
 
 export interface NormalisedSound {
@@ -187,6 +220,20 @@ export interface NormalisedSound {
 }
 
 function presentScene(scene: NormalisedScene): PlanDocumentScene {
+    // The interval is one line across the table rather than a row of fields,
+    // so the whole of it is said in the name and the rest is left empty.
+    if (scene.intermission > 0) {
+        return {
+            num: 0,
+            name: intermissionLabel(scene.intermission),
+            light: '',
+            sounds: [],
+            soundText: '',
+            notes: '',
+            intermission: scene.intermission,
+        };
+    }
+
     return {
         num: scene.num,
         name: dash(scene.name),
@@ -201,6 +248,7 @@ function presentScene(scene: NormalisedScene): PlanDocumentScene {
                   ? ''
                   : '—',
         notes: dash(scene.notes),
+        intermission: 0,
     };
 }
 

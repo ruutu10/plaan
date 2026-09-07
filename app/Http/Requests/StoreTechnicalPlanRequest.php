@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -20,6 +21,11 @@ class StoreTechnicalPlanRequest extends FormRequest
      * performer at the same place the rules below would.
      */
     public const MAX_SOUND_URL_LENGTH = 2000;
+
+    /**
+     * The longest interval a plan may name, in minutes.
+     */
+    public const MAX_INTERMISSION_MINUTES = 60;
 
     /**
      * Always return validation errors as JSON — these endpoints are consumed
@@ -93,6 +99,9 @@ class StoreTechnicalPlanRequest extends FormRequest
             'scenes.*.sounds.*.file.size' => ['nullable', 'integer', 'min:0'],
             'scenes.*.sound' => ['nullable', 'string', 'max:2000'],
             'scenes.*.notes' => ['nullable', 'string', 'max:2000'],
+            // A scene entry carrying minutes is the interval between two halves
+            // of the show rather than a scene; every other entry leaves it null.
+            'scenes.*.intermission' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_INTERMISSION_MINUTES],
 
             'equipment' => ['required', 'array'],
             'equipment.items' => ['array'],
@@ -125,6 +134,8 @@ class StoreTechnicalPlanRequest extends FormRequest
             'sound.micsDetail.required_if' => 'Kirjelda mikrofonide kogust ja paigutust laval.',
             'sound.musicianDetail.required_if' => 'Kirjelda instrumenti ja muusiku paigutust laval.',
             'scenes.*.sounds.*.url.url' => 'Heli link peab olema täielik http:// või https:// aadress.',
+            'scenes.*.intermission.min' => 'Vaheaeg peab kestma vähemalt ühe minuti.',
+            'scenes.*.intermission.max' => 'Vaheaeg saab kesta kuni '.self::MAX_INTERMISSION_MINUTES.' minutit.',
         ];
     }
 
@@ -140,7 +151,21 @@ class StoreTechnicalPlanRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                foreach ((array) $this->input('scenes', []) as $index => $scene) {
+                $scenes = (array) $this->input('scenes', []);
+
+                // `scenes.min:1` counts entries, and an interval is one of
+                // them: a plan made only of breaks describes no show at all.
+                $intervals = array_filter(
+                    $scenes,
+                    fn ($scene): bool => is_array($scene)
+                        && TechnicalPlanResource::intermission($scene['intermission'] ?? null) > 0,
+                );
+
+                if ($scenes !== [] && count($intervals) === count($scenes)) {
+                    $validator->errors()->add('scenes', 'Plaanis peab olema vähemalt üks stseen.');
+                }
+
+                foreach ($scenes as $index => $scene) {
                     foreach ((array) ($scene['sounds'] ?? []) as $position => $sound) {
                         $hasUrl = filled($sound['url'] ?? null);
                         $hasFile = filled($sound['file']['id'] ?? null);

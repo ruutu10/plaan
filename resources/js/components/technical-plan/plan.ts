@@ -78,8 +78,43 @@ export function blankScene(id: string = `${SCENE_ID_PREFIX}1`): Scene {
         sounds: [],
         sound: '',
         notes: '',
+        intermission: null,
         collapsed: false,
     };
+}
+
+/**
+ * The break between two halves of the show. It is an entry in the scenes array
+ * like any other — that is what keeps it in its place in the running order —
+ * carrying nothing but how long it lasts.
+ */
+export function blankIntermission(id: string, minutes: number): Scene {
+    return { ...blankScene(id), intermission: minutes, collapsed: true };
+}
+
+/**
+ * How long an entry's interval lasts, in whole minutes, or zero when the entry
+ * is an ordinary scene. The one place the stored value is judged, so the
+ * wizard, the document and the technician's view all draw the line in the same
+ * place; `App\Http\Resources\TechnicalPlan::intermission()` mirrors it
+ * server-side.
+ */
+export function intermissionMinutes(
+    scene: Pick<Scene, 'intermission'>,
+): number {
+    const minutes = Math.floor(Number(scene.intermission ?? 0));
+
+    return Number.isFinite(minutes) && minutes > 0 ? minutes : 0;
+}
+
+/** Whether this entry is an interval rather than a scene. */
+export function isIntermission(scene: Pick<Scene, 'intermission'>): boolean {
+    return intermissionMinutes(scene) > 0;
+}
+
+/** The interval as every reader is shown it, minutes included. */
+export function intermissionLabel(minutes: number): string {
+    return `Vaheaeg — ${minutes} min`;
 }
 
 /**

@@ -557,6 +557,7 @@ class TechnicalPlanController extends Controller
             // server will refuse.
             'maxSoundsPerScene' => StoreTechnicalPlanRequest::MAX_SOUNDS_PER_SCENE,
             'maxSoundUrlLength' => StoreTechnicalPlanRequest::MAX_SOUND_URL_LENGTH,
+            'maxIntermissionMinutes' => StoreTechnicalPlanRequest::MAX_INTERMISSION_MINUTES,
             // The halls where smoke is off the table, so the wizard can leave
             // the question out rather than offering a choice the venue refuses.
             'smokeNotPossible' => array_values((array) config('technical_plan.smoke_not_possible', [])),

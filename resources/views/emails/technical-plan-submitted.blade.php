@@ -105,6 +105,17 @@
             <th style="{{ $headCell }}">Märkmed</th>
         </tr>
         @foreach ($doc['scenes'] as $scene)
+            @if ($scene['intermission'])
+                {{-- The interval runs the width of the table: it separates one
+                     half of the show from the next, and none of the columns say
+                     anything about it. --}}
+                <tr>
+                    <td colspan="5" style="{{ $cell }} background-color:#eef0f4; text-align:center; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:#11234f;">
+                        {{ $scene['name'] }}
+                    </td>
+                </tr>
+                @continue
+            @endif
             <tr>
                 <td style="{{ $cell }} text-align:center; font-weight:700; color:#11234f;">{{ $scene['num'] }}</td>
                 <td style="{{ $cell }} font-weight:700; word-break:break-word;">{{ $scene['name'] }}</td>

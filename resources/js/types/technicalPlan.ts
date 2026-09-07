@@ -10,6 +10,14 @@ export interface Scene {
      */
     sound: string;
     notes: string;
+    /**
+     * How many minutes the interval lasts, when this entry is the break
+     * between two halves of the show rather than a scene. Null on an ordinary
+     * scene — see {@link isIntermission}. An interval is stored as a scene
+     * because that is what keeps it in its place in the running order; it
+     * carries no cues of its own, and it is not one of the numbered scenes.
+     */
+    intermission: number | null;
     collapsed?: boolean;
 }
 
@@ -160,6 +168,7 @@ export interface Plan {
  * `tests/fixtures/plan-document.json`.
  */
 export interface PlanDocumentScene {
+    /** Zero on an interval, which is not one of the numbered scenes. */
     num: number;
     name: string;
     light: string;
@@ -167,6 +176,13 @@ export interface PlanDocumentScene {
     /** Empty when the cues already say it; an em dash when there is no sound at all. */
     soundText: string;
     notes: string;
+    /**
+     * Minutes the interval lasts, or zero on an ordinary scene. A row with
+     * minutes on it is the break between two halves of the show: its `name`
+     * carries the whole label and its other fields are empty, so a reader
+     * renders it as one line across the table.
+     */
+    intermission: number;
 }
 
 /** One cue as the reader sees it: a named file, or a bare link. */
@@ -216,6 +232,8 @@ export interface WizardConfig {
     maxSoundsPerScene: number;
     /** How long a cue's link may be, per the server's own rules. */
     maxSoundUrlLength: number;
+    /** The longest interval the server will store, in minutes. */
+    maxIntermissionMinutes: number;
     /**
      * Venue names whose halls cannot take smoke, from
      * `config/technical_plan.php` — see {@link isSmokeAllowedAt}.

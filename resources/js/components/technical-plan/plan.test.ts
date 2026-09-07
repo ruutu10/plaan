@@ -3,18 +3,23 @@ import type {
     Plan,
     PlanFile,
     PlanSound,
+    Scene,
     SceneSound,
     WizardConfig,
 } from '@/types/technicalPlan';
 import {
+    blankIntermission,
     blankPlan,
     blankScene,
     canSaveDraft,
     collapseScenes,
     hasSoundErrors,
     hydratePlan,
+    intermissionLabel,
+    intermissionMinutes,
     isDelivered,
     isDraft,
+    isIntermission,
     isReady,
     isSmokeAllowedAt,
     nextSequentialId,
@@ -34,6 +39,7 @@ const config = {
     maxFileSize: 20971520,
     maxSoundsPerScene: 10,
     maxSoundUrlLength: 2000,
+    maxIntermissionMinutes: 240,
     smokeNotPossible: ['improkeskus'],
 } satisfies WizardConfig;
 
@@ -87,6 +93,18 @@ describe('hydratePlan', () => {
         });
 
         expect(hydrated.authorEmail).toBe('esineja@naide.ee');
+    });
+
+    it('keeps an interval a saved plan holds between its scenes', () => {
+        const hydrated = hydratePlan({
+            scenes: [
+                blankScene('stseen-1'),
+                blankIntermission('vaheaeg-1', 15),
+                blankScene('stseen-2'),
+            ],
+        });
+
+        expect(hydrated.scenes.map(intermissionMinutes)).toEqual([0, 15, 0]);
     });
 
     it('leaves a plan nobody has handed in yet without an author', () => {
@@ -313,6 +331,35 @@ describe('collapseScenes', () => {
 
     it('has nothing to do to an empty list', () => {
         expect(() => collapseScenes([])).not.toThrow();
+    });
+});
+
+describe('intermissionMinutes', () => {
+    it('reads the length off an entry that is the interval', () => {
+        expect(intermissionMinutes(blankIntermission('vaheaeg-1', 15))).toBe(
+            15,
+        );
+        expect(isIntermission(blankIntermission('vaheaeg-1', 15))).toBe(true);
+    });
+
+    it('counts an ordinary scene as no interval at all', () => {
+        expect(intermissionMinutes(blankScene())).toBe(0);
+        expect(isIntermission(blankScene())).toBe(false);
+    });
+
+    it('reads a plan stored before intervals existed as all scenes', () => {
+        // The key is simply absent on every scene of such a plan.
+        expect(intermissionMinutes({} as Scene)).toBe(0);
+    });
+
+    it('takes a length that is not a real one for no interval', () => {
+        expect(intermissionMinutes({ intermission: 0 })).toBe(0);
+        expect(intermissionMinutes({ intermission: -15 })).toBe(0);
+        expect(intermissionMinutes({ intermission: Number.NaN })).toBe(0);
+    });
+
+    it('names the interval the same way every reader shows it', () => {
+        expect(intermissionLabel(15)).toBe('Vaheaeg — 15 min');
     });
 });
 

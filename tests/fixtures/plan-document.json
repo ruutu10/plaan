@@ -101,6 +101,15 @@
                         "notes": ""
                     },
                     {
+                        "id": "vaheaeg-1",
+                        "name": "",
+                        "light": "",
+                        "sounds": [],
+                        "sound": "",
+                        "notes": "",
+                        "intermission": 15
+                    },
+                    {
                         "id": "stseen-4",
                         "name": "",
                         "light": "",
@@ -222,7 +231,8 @@
                             }
                         ],
                         "soundText": "Alusta kohe pärast pimendust",
-                        "notes": "Eesriie jääb lahti"
+                        "notes": "Eesriie jääb lahti",
+                        "intermission": 0
                     },
                     {
                         "num": 2,
@@ -235,7 +245,8 @@
                             }
                         ],
                         "soundText": "",
-                        "notes": "—"
+                        "notes": "—",
+                        "intermission": 0
                     },
                     {
                         "num": 3,
@@ -253,7 +264,17 @@
                             }
                         ],
                         "soundText": "",
-                        "notes": "—"
+                        "notes": "—",
+                        "intermission": 0
+                    },
+                    {
+                        "num": 0,
+                        "name": "Vaheaeg — 15 min",
+                        "light": "",
+                        "sounds": [],
+                        "soundText": "",
+                        "notes": "",
+                        "intermission": 15
                     },
                     {
                         "num": 4,
@@ -261,7 +282,8 @@
                         "light": "—",
                         "sounds": [],
                         "soundText": "—",
-                        "notes": "—"
+                        "notes": "—",
+                        "intermission": 0
                     },
                     {
                         "num": 5,
@@ -292,7 +314,8 @@
                             }
                         ],
                         "soundText": "Sissetulek, vahemuusika, väljaminek",
-                        "notes": "—"
+                        "notes": "—",
+                        "intermission": 0
                     }
                 ],
                 "equipmentItems": [

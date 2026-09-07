@@ -178,11 +178,34 @@ class PlanDocument extends JsonResource
      */
     private static function scenes(array $scenes): array
     {
-        return array_map(function (array $scene, int $index): array {
-            $sounds = self::sounds($scene['sounds'] ?? null);
+        $num = 0;
+        $rows = [];
 
-            return [
-                'num' => $index + 1,
+        foreach ($scenes as $scene) {
+            $intermission = TechnicalPlan::intermission($scene['intermission'] ?? null);
+
+            // The interval is a break in the running order rather than a scene:
+            // it is one line across the table, so the whole of it is said in the
+            // name, and the scene numbering steps over it.
+            if ($intermission > 0) {
+                $rows[] = [
+                    'num' => 0,
+                    'name' => TechnicalPlan::intermissionLabel($intermission),
+                    'light' => '',
+                    'sounds' => [],
+                    'soundText' => '',
+                    'notes' => '',
+                    'intermission' => $intermission,
+                ];
+
+                continue;
+            }
+
+            $sounds = self::sounds($scene['sounds'] ?? null);
+            $num++;
+
+            $rows[] = [
+                'num' => $num,
                 'name' => self::dash($scene['name'] ?? null),
                 'light' => self::dash($scene['light'] ?? null),
                 'sounds' => $sounds,
@@ -190,8 +213,11 @@ class PlanDocument extends JsonResource
                 // stood in for by a dash when the scene has no sound at all.
                 'soundText' => self::soundText($scene, $sounds),
                 'notes' => self::dash($scene['notes'] ?? null),
+                'intermission' => 0,
             ];
-        }, $scenes, array_keys($scenes));
+        }
+
+        return $rows;
     }
 
     /**

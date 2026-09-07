@@ -228,6 +228,18 @@ esimene, kummarduse ajal teine“).
 Stseene saab lohistades ümber järjestada, dubleerida, kokku voltida ja kustutada.
 Dubleeritud stseen võtab algse stseeni helid kaasa.
 
+**Vaheaeg.** Kui etendus on mitmes osas, vajuta **„Lisa vaheaeg“** ja sisesta
+vaheaja pikkus minutites (1-60). Vaheaeg lisatakse nimekirja lõppu ja sealt
+saad selle lohistada õigesse kohta. Vaheaeg ei ole stseen: sellel pole valgust,
+heli ega märkusi ja stseenide numeratsioon läheb sellest üle. Vaheaegu võib olla
+mitu; iga vaheaeg jagab plaani nähtavalt vaatusteks - iga vaatuse stseenid on
+koos ühe pealkirja ja äärejoone all. Vaheaja pikkust saab muuta sellele klõpsates
+ja vaheaja saab kustutada nagu stseenigi. Vähemalt üks päris stseen peab alles
+jääma.
+
+Vaheaeg on nähtav ka valmis dokumendis, kirjas ja tehniku mängimisvaates - seal
+on see omaette rida (või samm) üle kogu tabeli laiuse.
+
 **5. Erivahendid.**
 Valikuline nimekiri esemetest (nimi + kuidas seda kasutatakse või millised on
 piirangud) ning kaks maja küsimust: kas tehnik tohib kasutada suitsuefekte
@@ -324,7 +336,7 @@ dokument, mis on koostatud samade reeglite järgi.
 - **Stseeni helifailid:** ainult mp3, wav, ogg. Kuni 10 heli ühe stseeni kohta.
 - Väljade pikkused: formaadi kirjeldus 5000 märki; stseeni valgus/heli/märkused
   ja heli täpsustusväljad 2000 igaüks; helilink 2000; erivahendi kasutus 1000;
-  vaba tekst 10 000; kestus 1–240 minutit.
+  vaba tekst 10 000; kestus 1–240 minutit; vaheaja pikkus 60 minutit.
 
 ---
 
