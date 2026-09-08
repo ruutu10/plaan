@@ -28,6 +28,13 @@ class StoreTechnicalPlanRequest extends FormRequest
     public const MAX_INTERMISSION_MINUTES = 60;
 
     /**
+     * The longest one part of a show may run, in minutes. The house's own cap
+     * on a performance's running time, so no part can outlast the evening it
+     * belongs to.
+     */
+    public const MAX_ACT_MINUTES = 240;
+
+    /**
      * Always return validation errors as JSON — these endpoints are consumed
      * by the wizard's XHR client, not by an Inertia form.
      */
@@ -102,6 +109,10 @@ class StoreTechnicalPlanRequest extends FormRequest
             // A scene entry carrying minutes is the interval between two halves
             // of the show rather than a scene; every other entry leaves it null.
             'scenes.*.intermission' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_INTERMISSION_MINUTES],
+            // How long the part of the show that interval ends runs. Only an
+            // interval carries it; the part closing the show is worked out from
+            // the running time rather than named.
+            'scenes.*.actMinutes' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_ACT_MINUTES],
 
             'equipment' => ['required', 'array'],
             'equipment.items' => ['array'],
@@ -136,6 +147,8 @@ class StoreTechnicalPlanRequest extends FormRequest
             'scenes.*.sounds.*.url.url' => 'Heli link peab olema täielik http:// või https:// aadress.',
             'scenes.*.intermission.min' => 'Vaheaeg peab kestma vähemalt ühe minuti.',
             'scenes.*.intermission.max' => 'Vaheaeg saab kesta kuni '.self::MAX_INTERMISSION_MINUTES.' minutit.',
+            'scenes.*.actMinutes.min' => 'Etenduse osa peab kestma vähemalt ühe minuti.',
+            'scenes.*.actMinutes.max' => 'Etenduse osa saab kesta kuni '.self::MAX_ACT_MINUTES.' minutit.',
         ];
     }
 

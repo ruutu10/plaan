@@ -71,7 +71,7 @@ class PlanDocument extends JsonResource
             'micsSummary' => self::answer($sound['micsMode'] ?? null, $sound['micsDetail'] ?? null),
             'musicianSummary' => self::answer($sound['musicianMode'] ?? null, $sound['musicianDetail'] ?? null),
 
-            'scenes' => self::scenes($plan['scenes'] ?? []),
+            'scenes' => self::scenes($plan['scenes'] ?? [], $meta['duration'] ?? null),
 
             'equipmentItems' => self::equipmentItems($equipment['items'] ?? []),
             'smokeSummary' => self::smoke($equipment['smoke'] ?? null),
@@ -176,12 +176,20 @@ class PlanDocument extends JsonResource
      * @param  array<int, array<string, mixed>>  $scenes
      * @return array<int, array<string, mixed>>
      */
-    private static function scenes(array $scenes): array
+    private static function scenes(array $scenes, mixed $totalMinutes): array
     {
         $num = 0;
         $rows = [];
 
-        foreach ($scenes as $scene) {
+        // The evening's shape: which scene opens each part of the show, and how
+        // long that part runs. Empty for a show not played in parts.
+        $parts = [];
+
+        foreach (TechnicalPlan::showParts($scenes, is_numeric($totalMinutes) ? (int) $totalMinutes : null) as $part) {
+            $parts[$part['start']] = TechnicalPlan::actLabel($part['num'], $part['minutes']);
+        }
+
+        foreach (array_values($scenes) as $index => $scene) {
             $intermission = TechnicalPlan::intermission($scene['intermission'] ?? null);
 
             // The interval is a break in the running order rather than a scene:
@@ -196,6 +204,7 @@ class PlanDocument extends JsonResource
                     'soundText' => '',
                     'notes' => '',
                     'intermission' => $intermission,
+                    'actLabel' => '',
                 ];
 
                 continue;
@@ -214,6 +223,7 @@ class PlanDocument extends JsonResource
                 'soundText' => self::soundText($scene, $sounds),
                 'notes' => self::dash($scene['notes'] ?? null),
                 'intermission' => 0,
+                'actLabel' => $parts[$index] ?? '',
             ];
         }
 

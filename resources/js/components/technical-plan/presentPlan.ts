@@ -8,10 +8,12 @@ import type {
     SceneSound,
 } from '@/types/technicalPlan';
 import {
+    actLabel,
     formatFileSize,
     intermissionLabel,
     intermissionMinutes,
     isReady,
+    showParts,
     soundHasSource,
 } from './plan';
 
@@ -156,7 +158,16 @@ export function statusTone(
 export function normaliseScenes(plan: Plan): NormalisedScene[] {
     let num = 0;
 
-    return plan.scenes.map((scene) => {
+    // The evening's shape: which scene opens each part of the show, and how
+    // long that part runs. Empty for a show that is not played in parts.
+    const parts = new Map(
+        showParts(plan.scenes, plan.meta.duration).map((part) => [
+            part.start,
+            actLabel(part.num, part.minutes),
+        ]),
+    );
+
+    return plan.scenes.map((scene, index) => {
         const intermission = intermissionMinutes(scene);
 
         // An interval is not one of the numbered scenes, and it carries no
@@ -171,6 +182,7 @@ export function normaliseScenes(plan: Plan): NormalisedScene[] {
                 sound: '',
                 notes: '',
                 intermission,
+                actLabel: '',
             };
         }
 
@@ -184,6 +196,7 @@ export function normaliseScenes(plan: Plan): NormalisedScene[] {
             sound: scene.sound.trim(),
             notes: scene.notes.trim(),
             intermission: 0,
+            actLabel: parts.get(index) ?? '',
         };
     });
 }
@@ -211,6 +224,8 @@ export interface NormalisedScene {
     notes: string;
     /** Minutes the interval lasts, or zero on an ordinary scene. */
     intermission: number;
+    /** The part of the show this row opens, its length included; else empty. */
+    actLabel: string;
 }
 
 export interface NormalisedSound {
@@ -231,6 +246,7 @@ function presentScene(scene: NormalisedScene): PlanDocumentScene {
             soundText: '',
             notes: '',
             intermission: scene.intermission,
+            actLabel: '',
         };
     }
 
@@ -249,6 +265,7 @@ function presentScene(scene: NormalisedScene): PlanDocumentScene {
                   : '—',
         notes: dash(scene.notes),
         intermission: 0,
+        actLabel: scene.actLabel,
     };
 }
 

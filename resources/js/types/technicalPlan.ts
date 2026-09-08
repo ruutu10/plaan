@@ -18,6 +18,14 @@ export interface Scene {
      * carries no cues of its own, and it is not one of the numbered scenes.
      */
     intermission: number | null;
+    /**
+     * How long the part of the show this interval *ends* runs, in minutes.
+     * Only an interval carries it, and only when its author said — the part
+     * that closes the show is never asked, because it is what is left of the
+     * evening once every other part and interval is taken off. Null everywhere
+     * else. See `showParts()` in the wizard's own `plan.ts`.
+     */
+    actMinutes: number | null;
     collapsed?: boolean;
 }
 
@@ -183,6 +191,12 @@ export interface PlanDocumentScene {
      * renders it as one line across the table.
      */
     intermission: number;
+    /**
+     * The part of the show this row opens, its length included ("1. vaatus —
+     * 25 min"). Empty on every other row, and on every row of a show that is
+     * not played in parts, so a reader draws one heading per part.
+     */
+    actLabel: string;
 }
 
 /** One cue as the reader sees it: a named file, or a bare link. */
@@ -234,6 +248,8 @@ export interface WizardConfig {
     maxSoundUrlLength: number;
     /** The longest interval the server will store, in minutes. */
     maxIntermissionMinutes: number;
+    /** The longest one part of a show may run, in minutes. */
+    maxActMinutes: number;
     /**
      * Venue names whose halls cannot take smoke, from
      * `config/technical_plan.php` — see {@link isSmokeAllowedAt}.

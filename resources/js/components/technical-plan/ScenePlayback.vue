@@ -87,10 +87,14 @@ watch(
 const navRef = ref<HTMLElement | null>(null);
 const mainRef = ref<HTMLElement | null>(null);
 
-// Advancing by keyboard must bring the new scene into view on both sides.
+// Advancing by keyboard must bring the new scene into view on both sides. The
+// steps are picked out of the list rather than counted through its children:
+// a show played in parts has a heading between them.
 watch(active, (index) => {
     mainRef.value?.scrollTo({ top: 0 });
-    navRef.value?.children[index]?.scrollIntoView({ block: 'nearest' });
+    navRef.value
+        ?.querySelectorAll('button')
+        [index]?.scrollIntoView({ block: 'nearest' });
 });
 
 /** The tech drives this view one-handed, so cues advance on the arrow keys. */
@@ -246,53 +250,65 @@ const cueLinkClass =
                     Stseenid · {{ sceneCount }}
                 </div>
                 <div ref="navRef" class="min-h-0 flex-1 overflow-y-auto pb-4">
-                    <button
-                        v-for="(scene, index) in scenes"
-                        :key="index"
-                        type="button"
-                        :aria-current="index === active ? 'true' : undefined"
-                        :class="[
-                            'flex w-full cursor-pointer items-center gap-3 border-none px-5 py-2.5 text-left transition-colors',
-                            index === active
-                                ? 'bg-r10-orange/15'
-                                : 'bg-transparent hover:bg-white/5',
-                        ]"
-                        @click="go(index)"
-                    >
-                        <!-- The interval keeps its place in the list, marked
+                    <template v-for="(scene, index) in scenes" :key="index">
+                        <!-- Each part of the show is headed by its own line, its
+                         length included: the tech calls the evening against the
+                         clock, so how long each half runs is worth having in
+                         front of them. -->
+                        <div
+                            v-if="scene.actLabel"
+                            class="px-5 pt-4 pb-1.5 font-r10-body text-[11px] font-bold tracking-[0.16em] text-r10-orange uppercase"
+                        >
+                            {{ scene.actLabel }}
+                        </div>
+                        <button
+                            type="button"
+                            :aria-current="
+                                index === active ? 'true' : undefined
+                            "
+                            :class="[
+                                'flex w-full cursor-pointer items-center gap-3 border-none px-5 py-2.5 text-left transition-colors',
+                                index === active
+                                    ? 'bg-r10-orange/15'
+                                    : 'bg-transparent hover:bg-white/5',
+                            ]"
+                            @click="go(index)"
+                        >
+                            <!-- The interval keeps its place in the list, marked
                              rather than numbered: it is a step the tech stands
                              on, not one of the scenes they count. -->
-                        <span
-                            :class="[
-                                'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 font-r10-display text-[13px] font-extrabold',
-                                scene.intermission
-                                    ? 'border-dashed'
-                                    : 'border-solid',
-                                index === active
-                                    ? 'border-r10-orange bg-r10-orange text-r10-navy'
-                                    : index < active
-                                      ? 'border-r10-navy-300 bg-transparent text-r10-navy-200'
-                                      : 'border-white/20 bg-transparent text-r10-navy-300',
-                            ]"
-                        >
-                            <Diamond v-if="scene.intermission" :size="9" />
-                            <template v-else>{{ scene.num }}</template>
-                        </span>
-                        <span
-                            :class="[
-                                'min-w-0 font-r10-body text-sm font-bold tracking-[0.02em]',
-                                index === active
-                                    ? 'text-white'
-                                    : 'text-r10-navy-200',
-                            ]"
-                        >
-                            {{
-                                scene.intermission
-                                    ? intermissionLabel(scene.intermission)
-                                    : sceneLabel(scene.name)
-                            }}
-                        </span>
-                    </button>
+                            <span
+                                :class="[
+                                    'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 font-r10-display text-[13px] font-extrabold',
+                                    scene.intermission
+                                        ? 'border-dashed'
+                                        : 'border-solid',
+                                    index === active
+                                        ? 'border-r10-orange bg-r10-orange text-r10-navy'
+                                        : index < active
+                                          ? 'border-r10-navy-300 bg-transparent text-r10-navy-200'
+                                          : 'border-white/20 bg-transparent text-r10-navy-300',
+                                ]"
+                            >
+                                <Diamond v-if="scene.intermission" :size="9" />
+                                <template v-else>{{ scene.num }}</template>
+                            </span>
+                            <span
+                                :class="[
+                                    'min-w-0 font-r10-body text-sm font-bold tracking-[0.02em]',
+                                    index === active
+                                        ? 'text-white'
+                                        : 'text-r10-navy-200',
+                                ]"
+                            >
+                                {{
+                                    scene.intermission
+                                        ? intermissionLabel(scene.intermission)
+                                        : sceneLabel(scene.name)
+                                }}
+                            </span>
+                        </button>
+                    </template>
                 </div>
 
                 <!-- Wall clock: the tech calls cues against the running time. -->

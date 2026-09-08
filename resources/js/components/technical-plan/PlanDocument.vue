@@ -152,6 +152,21 @@ const linkClass =
                         v-for="(scene, row) in doc.scenes"
                         :key="`${row}-${scene.num}`"
                     >
+                        <!-- Each part of the show is headed by its own line,
+                             its length included, so the technician reads the
+                             evening's shape off the table rather than counting
+                             scenes. Only a show played in parts has these. -->
+                        <tr v-if="scene.actLabel">
+                            <td
+                                :colspan="5"
+                                :class="[
+                                    cellClass,
+                                    'bg-r10-navy text-center font-r10-display text-xs font-semibold tracking-[0.16em] text-white uppercase',
+                                ]"
+                            >
+                                {{ scene.actLabel }}
+                            </td>
+                        </tr>
                         <!-- The interval runs the width of the table: it is
                              what separates one half of the show from the next,
                              and none of the columns say anything about it. -->

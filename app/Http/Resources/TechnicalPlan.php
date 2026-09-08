@@ -130,6 +130,103 @@ class TechnicalPlan extends JsonResource
     }
 
     /**
+     * How long the part of the show an interval *ends* runs, as its author
+     * wrote it, or null when nobody has said. Only an interval carries this;
+     * see {@see showParts()}, which is where it becomes the split the reader
+     * sees. `actMinutes()` in the wizard's own `plan.ts` mirrors it.
+     */
+    public static function actMinutes(mixed $value): ?int
+    {
+        $minutes = is_numeric($value) ? (int) $value : 0;
+
+        return $minutes > 0 ? $minutes : null;
+    }
+
+    /**
+     * How long each part of a show played in parts runs, so the technician can
+     * see the evening's shape at a glance rather than working it out at the
+     * desk.
+     *
+     * A part is a run of scenes with an interval beside it. Each interval says
+     * how long the part it ends runs; the closing part is not asked, because it
+     * is what is left of the evening — the show's own running time, less every
+     * interval and every part already named. That subtraction only holds when
+     * nothing is missing, so a part whose length cannot be worked out is
+     * reported as null rather than guessed at.
+     *
+     * A show with nothing to split — no interval, or one standing before the
+     * first scene or after the last — has no parts at all, and no reader shows
+     * a split for it. Mirrored by `showParts()` in the wizard's own `plan.ts`.
+     *
+     * @param  array<int, mixed>  $scenes
+     * @return array<int, array{num: int, start: int, minutes: int|null}>
+     */
+    public static function showParts(array $scenes, ?int $totalMinutes): array
+    {
+        $parts = [];
+        $breaks = 0;
+        $open = null;
+
+        foreach (array_values($scenes) as $index => $scene) {
+            $scene = is_array($scene) ? $scene : [];
+            $interval = self::intermission($scene['intermission'] ?? null);
+
+            if ($interval > 0) {
+                $breaks += $interval;
+
+                // An interval with no scenes behind it closes nothing: it
+                // stands at the top of the running order, or straight after
+                // another.
+                if ($open !== null) {
+                    $parts[] = ['start' => $open, 'minutes' => self::actMinutes($scene['actMinutes'] ?? null)];
+                    $open = null;
+                }
+
+                continue;
+            }
+
+            $open ??= $index;
+        }
+
+        // Whatever the last interval left open closes the show.
+        if ($open !== null) {
+            $parts[] = ['start' => $open, 'minutes' => null];
+        }
+
+        if (count($parts) < 2) {
+            return [];
+        }
+
+        $named = array_filter($parts, fn (array $part): bool => $part['minutes'] !== null);
+        $last = count($parts) - 1;
+
+        // The closing part is the only one worth working out, and only while it
+        // is the only one left unsaid.
+        if ($parts[$last]['minutes'] === null && $totalMinutes > 0 && count($named) === $last) {
+            $rest = $totalMinutes - $breaks - array_sum(array_column($named, 'minutes'));
+
+            $parts[$last]['minutes'] = $rest > 0 ? $rest : null;
+        }
+
+        return array_map(
+            fn (array $part, int $index): array => ['num' => $index + 1] + $part,
+            $parts,
+            array_keys($parts),
+        );
+    }
+
+    /**
+     * One part of the show as every reader is shown it, its length included.
+     * Mirrored by `actLabel()` in the wizard's own `plan.ts`.
+     */
+    public static function actLabel(int $num, ?int $minutes): string
+    {
+        return $minutes === null
+            ? $num.'. vaatus'
+            : $num.'. vaatus — '.$minutes.' min';
+    }
+
+    /**
      * The plan's sound block, filled out to the shape the wizard expects.
      *
      * @return array<string, string>

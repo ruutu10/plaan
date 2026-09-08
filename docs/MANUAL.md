@@ -229,7 +229,9 @@ Stseene saab lohistades ümber järjestada, dubleerida, kokku voltida ja kustuta
 Dubleeritud stseen võtab algse stseeni helid kaasa.
 
 **Vaheaeg.** Kui etendus on mitmes osas, vajuta **„Lisa vaheaeg“** ja sisesta
-vaheaja pikkus minutites (1-60). Vaheaeg lisatakse nimekirja lõppu ja sealt
+vaheaja pikkus minutites (1-60) ning **eelneva osa pikkus** minutites - see on
+see etenduse osa, mis selle vaheajaga lõpeb. Eelneva osa pikkus on valikuline,
+aga sellest sünnib kogu jaotus. Vaheaeg lisatakse nimekirja lõppu ja sealt
 saad selle lohistada õigesse kohta. Vaheaeg ei ole stseen: sellel pole valgust,
 heli ega märkusi ja stseenide numeratsioon läheb sellest üle. Vaheaegu võib olla
 mitu; iga vaheaeg jagab plaani nähtavalt vaatusteks - iga vaatuse stseenid on
@@ -237,8 +239,16 @@ koos ühe pealkirja ja äärejoone all. Vaheaja pikkust saab muuta sellele klõp
 ja vaheaja saab kustutada nagu stseenigi. Vähemalt üks päris stseen peab alles
 jääma.
 
-Vaheaeg on nähtav ka valmis dokumendis, kirjas ja tehniku mängimisvaates - seal
-on see omaette rida (või samm) üle kogu tabeli laiuse.
+**Osade pikkused.** Iga vaatuse pealkirjal on ka selle pikkus (nt „1. vaatus -
+40 min“). Viimase osa pikkust ei küsita: see arvutatakse etenduse kogupikkusest,
+millest lahutatakse vaheajad ja juba nimetatud osad. Kui mõni osa on nimetamata
+või etenduse kogupikkust ei tea, jääb pikkus lihtsalt näitamata - midagi ei
+oletata. Kui nimetatud osad ja vaheajad täidavad juba kogu etenduse aja, ütleb
+vorm seda eraldi ja pikkused tuleb üle vaadata.
+
+Vaheaeg ja osade pikkused on nähtavad ka valmis dokumendis, kirjas ja tehniku
+mängimisvaates - vaheaeg on omaette rida (või samm) üle kogu tabeli laiuse ja
+iga osa algab oma pealkirjarealt. Nii teab tehnik, kui pikk iga etenduse osa on.
 
 **5. Erivahendid.**
 Valikuline nimekiri esemetest (nimi + kuidas seda kasutatakse või millised on
@@ -336,7 +346,8 @@ dokument, mis on koostatud samade reeglite järgi.
 - **Stseeni helifailid:** ainult mp3, wav, ogg. Kuni 10 heli ühe stseeni kohta.
 - Väljade pikkused: formaadi kirjeldus 5000 märki; stseeni valgus/heli/märkused
   ja heli täpsustusväljad 2000 igaüks; helilink 2000; erivahendi kasutus 1000;
-  vaba tekst 10 000; kestus 1–240 minutit; vaheaja pikkus 60 minutit.
+  vaba tekst 10 000; kestus 1–240 minutit; vaheaja pikkus 60 minutit; etenduse
+  osa pikkus 1–240 minutit.
 
 ---
 
