@@ -5,12 +5,15 @@ import type { Scene } from '@/types/technicalPlan';
 import { discardAttachment } from '../attachments';
 import Diamond from '../Diamond.vue';
 import {
+    actLabel,
+    actMinutes,
     blankIntermission,
     blankScene,
     collapseScenes,
     intermissionMinutes,
     isIntermission,
     nextSceneId,
+    showParts,
     soundFileStillUsed,
     SOUND_PRESETS,
 } from '../plan';
@@ -18,6 +21,7 @@ import { usePlan, useWizardConfig } from '../planKey';
 import R10FileChip from '../R10FileChip.vue';
 import R10FormDialog from '../R10FormDialog.vue';
 import R10Input from '../R10Input.vue';
+import R10Notice from '../R10Notice.vue';
 import R10Textarea from '../R10Textarea.vue';
 import SceneSoundDialog from '../SceneSoundDialog.vue';
 import StepHeader from '../StepHeader.vue';
@@ -195,6 +199,8 @@ function onDrop(targetId: string): void {
 interface Act {
     /** Which half of the show this is, counted from one. */
     num: number;
+    /** How long it runs, as it was named or worked out; null when neither. */
+    minutes: number | null;
     scenes: { scene: Scene; num: number }[];
 }
 
@@ -202,9 +208,25 @@ type Block =
     | { kind: 'act'; key: string; act: Act }
     | { kind: 'intermission'; key: string; scene: Scene; minutes: number };
 
+/**
+ * The evening's shape: how long each part of the show runs, keyed by the scene
+ * that opens it. Worked out once, by the same rules the document and the mail
+ * use, so the split the performer sees here is the one the technician gets.
+ */
+const parts = computed(
+    () =>
+        new Map(
+            showParts(plan.scenes, plan.meta.duration).map((part) => [
+                part.start,
+                part,
+            ]),
+        ),
+);
+
 const blocks = computed<Block[]>(() => {
     const built: Block[] = [];
     let scenes: Act['scenes'] = [];
+    let opensAt = 0;
     let num = 0;
 
     // An interval at the very top or bottom leaves a half with nothing in it;
@@ -215,15 +237,17 @@ const blocks = computed<Block[]>(() => {
             return;
         }
 
+        const part = parts.value.get(opensAt);
+
         built.push({
             kind: 'act',
             key: `vaatus-${built.length}`,
-            act: { num: 0, scenes },
+            act: { num: 0, minutes: part?.minutes ?? null, scenes },
         });
         scenes = [];
     };
 
-    plan.scenes.forEach((scene) => {
+    plan.scenes.forEach((scene, index) => {
         const minutes = intermissionMinutes(scene);
 
         if (minutes > 0) {
@@ -231,6 +255,10 @@ const blocks = computed<Block[]>(() => {
             built.push({ kind: 'intermission', key: scene.id, scene, minutes });
 
             return;
+        }
+
+        if (scenes.length === 0) {
+            opensAt = index;
         }
 
         num += 1;
@@ -259,6 +287,9 @@ const editing = ref<Scene | null>(null);
 
 const minutesInput = ref('15');
 
+/** How long the part of the show this interval ends runs, as typed. */
+const actInput = ref('');
+
 const intermissionDialogOpen = computed({
     get: () => editing.value !== null,
     set: (open: boolean) => {
@@ -269,6 +300,7 @@ const intermissionDialogOpen = computed({
 });
 
 const minutesError = ref('');
+const actError = ref('');
 
 /**
  * Open the dialog on a fresh interval — held aside rather than pushed onto the
@@ -277,19 +309,34 @@ const minutesError = ref('');
 function addIntermission(): void {
     editing.value = blankIntermission(nextSceneId(plan.scenes), 15);
     minutesInput.value = '15';
+    actInput.value = '';
     minutesError.value = '';
+    actError.value = '';
 }
 
 function editIntermission(scene: Scene): void {
+    const act = actMinutes(scene);
+
     editing.value = scene;
     minutesInput.value = String(intermissionMinutes(scene));
+    actInput.value = act === null ? '' : String(act);
     minutesError.value = '';
+    actError.value = '';
 }
 
 /**
- * Take the length down, holding it to the same range the server does so the
- * performer is stopped here rather than at the save.
+ * Read a length the performer typed, holding it to the same range the server
+ * does so they are stopped here rather than at the save. Returns undefined when
+ * what they wrote is not a length at all.
  */
+function readMinutes(typed: string, max: number): number | undefined {
+    const minutes = Math.floor(Number(typed.trim()));
+
+    return Number.isFinite(minutes) && minutes >= 1 && minutes <= max
+        ? minutes
+        : undefined;
+}
+
 function saveIntermission(): void {
     const scene = editing.value;
 
@@ -297,19 +344,32 @@ function saveIntermission(): void {
         return;
     }
 
-    const minutes = Math.floor(Number(minutesInput.value.trim()));
+    const minutes = readMinutes(
+        minutesInput.value,
+        config.maxIntermissionMinutes,
+    );
 
-    if (
-        !Number.isFinite(minutes) ||
-        minutes < 1 ||
-        minutes > config.maxIntermissionMinutes
-    ) {
-        minutesError.value = `Vaheaeg peab kestma 1–${config.maxIntermissionMinutes} minutit.`;
+    // The part this interval ends may be left unsaid — the performer may not
+    // have settled it yet — but a length typed has to be a real one.
+    const typedAct = actInput.value.trim();
+    const act =
+        typedAct === '' ? null : readMinutes(typedAct, config.maxActMinutes);
 
+    minutesError.value =
+        minutes === undefined
+            ? `Vaheaeg peab kestma 1–${config.maxIntermissionMinutes} minutit.`
+            : '';
+    actError.value =
+        act === undefined
+            ? `Etenduse osa peab kestma 1–${config.maxActMinutes} minutit.`
+            : '';
+
+    if (minutes === undefined || act === undefined) {
         return;
     }
 
     scene.intermission = minutes;
+    scene.actMinutes = act;
 
     // A new interval joins the running order at the end, where "lisa stseen"
     // puts a scene too; from there it is dragged into place.
@@ -319,6 +379,31 @@ function saveIntermission(): void {
 
     editing.value = null;
 }
+
+/**
+ * The show's own running time, which the closing part is worked out from. Read
+ * off the performance rather than the plan, so it is only missing on a night
+ * nobody has timed.
+ */
+const showMinutes = computed(() => plan.meta.duration ?? 0);
+
+/**
+ * Whether the parts named so far already fill the evening, leaving the closing
+ * part nothing. Said out loud rather than shown as a missing length, because
+ * the performer is the only one who can put it right.
+ */
+const partsOverrun = computed(() => {
+    const drawn = blocks.value.filter((block) => block.kind === 'act');
+
+    return (
+        showMinutes.value > 0 &&
+        drawn.length > 1 &&
+        drawn[drawn.length - 1].act.minutes === null &&
+        // Only when every other part was named: a part left unsaid is not an
+        // overrun, it is simply unknown.
+        drawn.slice(0, -1).every((block) => block.act.minutes !== null)
+    );
+});
 </script>
 
 <template>
@@ -347,7 +432,7 @@ function saveIntermission(): void {
                         <span
                             class="shrink-0 font-r10-display text-xs font-semibold tracking-[0.16em] text-r10-navy uppercase"
                         >
-                            {{ block.act.num }}. vaatus
+                            {{ actLabel(block.act.num, block.act.minutes) }}
                         </span>
                         <span
                             class="h-px flex-1 bg-r10-grey-200"
@@ -762,6 +847,16 @@ function saveIntermission(): void {
             </button>
         </div>
 
+        <!-- The parts are read off the show's own running time, so naming them
+             longer than the evening leaves the closing part with nothing. Only
+             the performer can settle which number is wrong. -->
+        <R10Notice v-if="partsOverrun" class="mt-[18px]">
+            Etenduse osade ja vaheaegade pikkused täidavad kogu etenduse aja ({{
+                showMinutes
+            }}
+            min), nii et viimasele osale ei jää midagi. Kontrolli osade pikkusi.
+        </R10Notice>
+
         <!-- One dialog for the whole step, pointed at whichever scene asked
              for it, so a scene card carries no modal of its own. -->
         <SceneSoundDialog
@@ -783,10 +878,25 @@ function saveIntermission(): void {
                 type="number"
                 min="1"
                 :max="config.maxIntermissionMinutes"
-                label="Pikkus minutites"
+                label="Vaheaja pikkus minutites"
                 placeholder="15"
                 :error="minutesError"
                 error-test-id="intermission-minutes-error"
+            />
+            <R10Input
+                v-model="actInput"
+                type="number"
+                min="1"
+                :max="config.maxActMinutes"
+                label="Eelneva osa pikkus minutites"
+                :hint="
+                    showMinutes > 0
+                        ? `Kui pikk on etenduse osa, mis selle vaheajaga lõpeb? Kogu etendus kestab ${showMinutes} min; viimase osa pikkuse arvutame ise.`
+                        : 'Kui pikk on etenduse osa, mis selle vaheajaga lõpeb?'
+                "
+                placeholder="nt 25"
+                :error="actError"
+                error-test-id="intermission-act-error"
             />
         </R10FormDialog>
     </section>

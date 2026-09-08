@@ -1916,6 +1916,7 @@ class TechnicalPlanTest extends TestCase
         $this->assertSame(StoreTechnicalPlanRequest::MAX_SOUNDS_PER_SCENE, $config['maxSoundsPerScene']);
         $this->assertSame(StoreTechnicalPlanRequest::MAX_SOUND_URL_LENGTH, $config['maxSoundUrlLength']);
         $this->assertSame(StoreTechnicalPlanRequest::MAX_INTERMISSION_MINUTES, $config['maxIntermissionMinutes']);
+        $this->assertSame(StoreTechnicalPlanRequest::MAX_ACT_MINUTES, $config['maxActMinutes']);
     }
 
     /**
@@ -1927,7 +1928,7 @@ class TechnicalPlanTest extends TestCase
         $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
             'scenes' => [
                 ['id' => 'stseen-1', 'name' => 'Esimene pool', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => ''],
-                ['id' => 'vaheaeg-1', 'name' => '', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => '', 'intermission' => 15],
+                ['id' => 'vaheaeg-1', 'name' => '', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => '', 'intermission' => 15, 'actMinutes' => 25],
                 ['id' => 'stseen-2', 'name' => 'Teine pool', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => ''],
             ],
         ]));
@@ -1938,11 +1939,56 @@ class TechnicalPlanTest extends TestCase
 
         $this->assertCount(3, $scenes);
         $this->assertSame(15, $scenes[1]['intermission']);
+        $this->assertSame(25, $scenes[1]['actMinutes']);
 
         // Read back for the wizard, an ordinary scene reports no interval at
         // all rather than a length of nothing.
         $this->assertSame(15, $response->json('scenes.1.intermission'));
+        $this->assertSame(25, $response->json('scenes.1.actMinutes'));
         $this->assertNull($response->json('scenes.0.intermission'));
+        $this->assertNull($response->json('scenes.0.actMinutes'));
+    }
+
+    /**
+     * The whole point of naming the parts: the technician is handed the
+     * evening's shape rather than counting it out at the desk.
+     */
+    public function test_the_submission_mail_shows_how_long_each_part_of_the_show_runs(): void
+    {
+        $performance = Performance::factory()->create(['duration' => 90]);
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'meta' => ['performanceId' => $performance->id],
+            'scenes' => [
+                ['id' => 'stseen-1', 'name' => 'Esimene pool', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => ''],
+                ['id' => 'vaheaeg-1', 'name' => '', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => '', 'intermission' => 15, 'actMinutes' => 40],
+                ['id' => 'stseen-2', 'name' => 'Teine pool', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => ''],
+            ],
+        ]))->assertOk();
+
+        $html = (new TechnicalPlanSubmitted(TechnicalPlan::first()))->toMail($this->user)->render();
+
+        $this->assertStringContainsString('1. vaatus — 40 min', $html);
+        $this->assertStringContainsString('Vaheaeg — 15 min', $html);
+        // What is left of the ninety minutes once the break and the first part
+        // are taken off — the closing part is never named, only worked out.
+        $this->assertStringContainsString('2. vaatus — 35 min', $html);
+    }
+
+    public function test_a_part_of_the_show_is_held_to_a_length_the_house_could_play(): void
+    {
+        foreach ([0, -5, StoreTechnicalPlanRequest::MAX_ACT_MINUTES + 1, 'pikk'] as $minutes) {
+            $response = $this->postJson(route('technical-plan.store'), $this->validPayload([
+                'scenes' => [
+                    ['id' => 'stseen-1', 'name' => 'Stseen', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => ''],
+                    ['id' => 'vaheaeg-1', 'name' => '', 'light' => '', 'sounds' => [], 'sound' => '', 'notes' => '', 'intermission' => 15, 'actMinutes' => $minutes],
+                ],
+            ]));
+
+            $response->assertUnprocessable();
+            $this->assertArrayHasKey('scenes.1.actMinutes', $response->json('errors'), 'for '.var_export($minutes, true));
+        }
     }
 
     /**
@@ -1958,6 +2004,7 @@ class TechnicalPlanTest extends TestCase
         $scene = (new TechnicalPlanResource($plan))->toArray(request())['scenes'][0];
 
         $this->assertNull($scene['intermission']);
+        $this->assertNull($scene['actMinutes']);
     }
 
     public function test_an_interval_is_held_to_a_length_the_house_could_play(): void

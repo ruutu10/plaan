@@ -105,6 +105,34 @@ describe('normaliseScenes', () => {
             sound: '',
             notes: '',
             intermission: 15,
+            actLabel: '',
         });
+    });
+
+    /**
+     * The technician reads the evening's shape off the part headings, so each
+     * one has to sit on the scene that opens its part.
+     */
+    it('heads each part of the show at the scene that opens it', () => {
+        const plan = structuredClone(fixture.cases[0].plan);
+
+        expect(normaliseScenes(plan).map((scene) => scene.actLabel)).toEqual([
+            '1. vaatus — 40 min',
+            '',
+            '',
+            '',
+            '2. vaatus — 35 min',
+            '',
+        ]);
+    });
+
+    it('heads nothing on a show that is not played in parts', () => {
+        const plan = structuredClone(fixture.cases[0].plan);
+
+        plan.scenes = plan.scenes.filter((scene) => !scene.intermission);
+
+        expect(
+            normaliseScenes(plan).every((scene) => scene.actLabel === ''),
+        ).toBe(true);
     });
 });

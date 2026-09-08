@@ -356,6 +356,7 @@ function buildPayload(submit: boolean): Record<string, unknown> {
             sound: s.sound,
             notes: s.notes,
             intermission: s.intermission,
+            actMinutes: s.actMinutes,
         })),
         equipment: {
             items: plan.equipment.items.map((i) => ({ ...i })),

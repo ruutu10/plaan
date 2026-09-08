@@ -74,6 +74,7 @@ class PlanScene extends JsonResource
             // Null rather than zero on an ordinary scene: the wizard's `Scene`
             // shape reads a number here as "this entry is the interval".
             'intermission' => TechnicalPlan::intermission($scene['intermission'] ?? null) ?: null,
+            'actMinutes' => TechnicalPlan::actMinutes($scene['actMinutes'] ?? null),
         ]);
     }
 

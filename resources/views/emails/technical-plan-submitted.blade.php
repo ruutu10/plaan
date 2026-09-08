@@ -105,6 +105,16 @@
             <th style="{{ $headCell }}">Märkmed</th>
         </tr>
         @foreach ($doc['scenes'] as $scene)
+            @if ($scene['actLabel'])
+                {{-- Each part of the show is headed by its own line, its length
+                     included, so the technician reads the evening's shape off
+                     the table. Only a show played in parts has these. --}}
+                <tr>
+                    <td colspan="5" style="{{ $cell }} background-color:#11234f; text-align:center; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:#ffffff;">
+                        {{ $scene['actLabel'] }}
+                    </td>
+                </tr>
+            @endif
             @if ($scene['intermission'])
                 {{-- The interval runs the width of the table: it separates one
                      half of the show from the next, and none of the columns say

@@ -107,7 +107,8 @@
                         "sounds": [],
                         "sound": "",
                         "notes": "",
-                        "intermission": 15
+                        "intermission": 15,
+                        "actMinutes": 40
                     },
                     {
                         "id": "stseen-4",
@@ -232,7 +233,8 @@
                         ],
                         "soundText": "Alusta kohe pärast pimendust",
                         "notes": "Eesriie jääb lahti",
-                        "intermission": 0
+                        "intermission": 0,
+                        "actLabel": "1. vaatus — 40 min"
                     },
                     {
                         "num": 2,
@@ -246,7 +248,8 @@
                         ],
                         "soundText": "",
                         "notes": "—",
-                        "intermission": 0
+                        "intermission": 0,
+                        "actLabel": ""
                     },
                     {
                         "num": 3,
@@ -265,7 +268,8 @@
                         ],
                         "soundText": "",
                         "notes": "—",
-                        "intermission": 0
+                        "intermission": 0,
+                        "actLabel": ""
                     },
                     {
                         "num": 0,
@@ -274,7 +278,8 @@
                         "sounds": [],
                         "soundText": "",
                         "notes": "",
-                        "intermission": 15
+                        "intermission": 15,
+                        "actLabel": ""
                     },
                     {
                         "num": 4,
@@ -283,7 +288,8 @@
                         "sounds": [],
                         "soundText": "—",
                         "notes": "—",
-                        "intermission": 0
+                        "intermission": 0,
+                        "actLabel": "2. vaatus — 35 min"
                     },
                     {
                         "num": 5,
@@ -315,7 +321,8 @@
                         ],
                         "soundText": "Sissetulek, vahemuusika, väljaminek",
                         "notes": "—",
-                        "intermission": 0
+                        "intermission": 0,
+                        "actLabel": ""
                     }
                 ],
                 "equipmentItems": [
