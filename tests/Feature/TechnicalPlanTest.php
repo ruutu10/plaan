@@ -809,7 +809,7 @@ class TechnicalPlanTest extends TestCase
         $priorPlans = $response->json('results.0.priorPlans');
         $this->assertCount(1, $priorPlans);
         $this->assertSame($ownPlan->token, $priorPlans[0]['token']);
-        $this->assertSame($past->date->format('d.m.Y'), $priorPlans[0]['label']);
+        $this->assertSame($past->startsAt()->format('d.m.Y'), $priorPlans[0]['label']);
         // A plan of the user's own does not need to say who wrote it.
         $this->assertNull($priorPlans[0]['author']);
     }
@@ -841,11 +841,11 @@ class TechnicalPlanTest extends TestCase
         $labels = collect($response->json('results.0.priorPlans'))->pluck('label', 'token');
 
         $this->assertSame(
-            $titled->date->format('d.m.Y').' — Improgrupp Kolm',
+            $titled->startsAt()->format('d.m.Y').' — Improgrupp Kolm',
             $labels[$titledPlan->token],
         );
         // A performance without a title is still labelled by its date alone.
-        $this->assertSame($untitled->date->format('d.m.Y'), $labels[$untitledPlan->token]);
+        $this->assertSame($untitled->startsAt()->format('d.m.Y'), $labels[$untitledPlan->token]);
     }
 
     public function test_a_busy_format_does_not_starve_the_other_formats_of_prior_plans(): void
@@ -1012,7 +1012,9 @@ class TechnicalPlanTest extends TestCase
         $row = $response->json('results.0');
         $this->assertSame('Esitatud plaan — '.$performance->format->team->name, $row['title']);
         $this->assertSame(
-            $performance->date->format('d.m.Y').' · esitatud '.$plan->submitted_at->format('d.m.Y'),
+            $performance->startsAt()->format('d.m.Y')
+                .' · esitatud '
+                .$plan->submitted_at->setTimezone(Performance::venueTimezone())->format('d.m.Y'),
             $row['sub'],
         );
     }
