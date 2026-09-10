@@ -291,7 +291,7 @@ async function refreshFromPlanka(): Promise<void> {
                         @click="reminderModalOpen = true"
                     >
                         <Mail class="h-3.5 w-3.5" />
-                        Saada meeldetuletus
+                        Meeldetuletus
                     </R10Button>
 
                     <!--
@@ -311,7 +311,7 @@ async function refreshFromPlanka(): Promise<void> {
                             class="h-3.5 w-3.5"
                             :class="{ 'animate-spin': reimport.processing }"
                         />
-                        Värskenda Plankast
+                        Impordi
                     </R10Button>
 
                     <R10Button
@@ -325,7 +325,7 @@ async function refreshFromPlanka(): Promise<void> {
                     </R10Button>
 
                     <R10Button
-                        variant="outline"
+                        variant="danger"
                         size="sm"
                         data-test="delete-performance-button"
                         @click="deleteModalOpen = true"

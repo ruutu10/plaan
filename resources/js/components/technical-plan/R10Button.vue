@@ -47,7 +47,7 @@ const classes = computed(() => {
         primary: 'bg-r10-orange text-r10-navy hover:bg-r10-orange-600',
         outline:
             'bg-white text-r10-navy border-2 border-r10-navy hover:bg-r10-navy hover:text-white',
-        danger: 'bg-r10-error text-white hover:opacity-90',
+        danger: 'bg-r10-error text-white border-2 hover:opacity-90',
     }[props.variant];
 
     const size = {
