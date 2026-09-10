@@ -80,17 +80,12 @@ class TechnicalPlanReceived extends Notification implements ShouldQueue
     }
 
     /**
-     * The format's name, with the performance's own title appended when it has
-     * one — e.g. a guest act's name on a night shared with others.
+     * How the night is named in the letter — see
+     * {@see Performance::displayName()} — or the plan's own key for a plan
+     * whose performance has since been put aside.
      */
     private function formatName(?Performance $performance): string
     {
-        if ($performance === null) {
-            return $this->plan->token;
-        }
-
-        return $performance->title === null
-            ? $performance->format->name
-            : $performance->format->name.' — '.$performance->title;
+        return $performance?->displayName() ?? $this->plan->token;
     }
 }

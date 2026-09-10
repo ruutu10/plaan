@@ -87,6 +87,12 @@ Route::patch('admin/technical-plans/{plan:token}', [TechnicalPlanController::cla
     ->middleware(['auth', 'can:'.TechnicalPlan::EDIT_ALL_PERMISSION])
     ->name('technical-plans.update-status');
 
+// Moving a plan to a different night — a plan written before its evening was on
+// the books, once it is. The crew's own right, the same as the status above.
+Route::patch('admin/technical-plans/{plan:token}/performance', [TechnicalPlanController::class, 'updatePerformance'])
+    ->middleware(['auth', 'can:'.TechnicalPlan::EDIT_ALL_PERMISSION])
+    ->name('technical-plans.update-performance');
+
 // JSON API consumed by the technical-plan wizard frontend.
 Route::prefix('api/tehnikaplaan')
     ->name('technical-plan.')

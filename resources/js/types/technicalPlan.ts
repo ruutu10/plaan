@@ -270,6 +270,10 @@ export interface AdminPlanRow {
     /** The format's own screen, or null when the reader may not open it. */
     formatUrl: string | null;
     teamName: string | null;
+    /** The night the plan is filed under. Null once it has been put aside. */
+    performanceId: number | null;
+    /** What is played that night, e.g. "Festival 2026 — Märtu10". */
+    performanceName: string | null;
     /** Null for a plan with no night of its own. */
     performanceLocation: string | null;
     /** ISO 8601 UTC instant the performance starts at, if the plan names one. */
@@ -287,5 +291,11 @@ export interface AdminPlanRow {
 /** One status a plan may be moved to, offered to a picker. */
 export interface StatusOption {
     value: string;
+    label: string;
+}
+
+/** One night a plan may be filed under, offered to a picker. */
+export interface PerformanceOption {
+    value: number;
     label: string;
 }

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\TechnicalPlanStatus;
+use App\Events\TechnicalPlanPerformanceChanged;
 use App\Events\TechnicalPlanStatusChanged;
 use App\Models\Format;
 use App\Models\Performance;
@@ -14,6 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -346,6 +348,185 @@ class TechnicalPlanAdminTest extends TestCase
                 ->has('statuses', count(TechnicalPlanStatus::cases())));
     }
 
+    public function test_a_plans_details_name_the_night_it_is_filed_under(): void
+    {
+        $format = Format::factory()->create(['name' => 'Festival 2026']);
+        $performance = Performance::factory()->create([
+            'format_id' => $format->id,
+            // A guest act on an evening several groups share, where the format's
+            // name alone would not say which act the plan is for.
+            'title' => 'Märtu10',
+        ]);
+
+        $plan = TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => $performance->id,
+        ]);
+
+        $this->actingAs($this->technician())
+            ->get(route('technical-plans.show', $plan))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('plan.performanceId', $performance->id)
+                ->where('plan.performanceName', 'Festival 2026 — Märtu10'));
+    }
+
+    public function test_the_details_page_offers_a_technician_the_nights_a_plan_may_be_moved_to(): void
+    {
+        $upcoming = Performance::factory()->create(['date' => now()->addDays(10)]);
+
+        // Imported and not reviewed yet: its date may be wrong or the evening
+        // may not be happening, so it is no night to file a plan under.
+        $unreviewed = Performance::factory()->draft()->create(['date' => now()->addDays(11)]);
+
+        // Long played, and nobody is re-filing a plan under it.
+        $longPast = Performance::factory()->create(['date' => now()->subMonths(6)]);
+
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        $offered = $this->offeredNights(
+            $this->actingAs($this->technician())->get(route('technical-plans.show', $plan))->assertOk(),
+        );
+
+        $this->assertContains($upcoming->id, $offered);
+        // The drawer a plan goes back to when the night it was moved to turns
+        // out to be the wrong one.
+        $this->assertContains(Performance::placeholder()->id, $offered);
+        $this->assertNotContains($unreviewed->id, $offered);
+        $this->assertNotContains($longPast->id, $offered);
+    }
+
+    public function test_the_details_page_offers_the_night_the_plan_is_already_filed_under_however_old(): void
+    {
+        $longPast = Performance::factory()->create(['date' => now()->subMonths(6)]);
+
+        $plan = TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => $longPast->id,
+        ]);
+
+        // The picker has to be able to show what the plan says now, whatever
+        // the reach of the rest of the listing.
+        $this->assertContains($longPast->id, $this->offeredNights(
+            $this->actingAs($this->technician())->get(route('technical-plans.show', $plan))->assertOk(),
+        ));
+    }
+
+    public function test_the_details_page_offers_a_plain_user_no_nights_at_all(): void
+    {
+        $user = User::factory()->create();
+        $plan = TechnicalPlan::factory()->submitted()->create(['user_id' => $user->id]);
+
+        Performance::factory()->create(['date' => now()->addDays(10)]);
+
+        // They may read their own plan, but not move it, so the picker is never
+        // shown and the listing behind it is a query answered for nothing.
+        $this->assertSame([], $this->offeredNights(
+            $this->actingAs($user)->get(route('technical-plans.show', $plan))->assertOk(),
+        ));
+    }
+
+    public function test_guests_cannot_move_a_plan_to_another_performance(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+        $performance = Performance::factory()->create();
+
+        $this->patch(route('technical-plans.update-performance', $plan), ['performance_id' => $performance->id])
+            ->assertRedirect(route('login'));
+    }
+
+    public function test_a_plans_own_author_cannot_move_it_to_another_performance(): void
+    {
+        $author = User::factory()->create();
+        $plan = TechnicalPlan::factory()->submitted()->create(['user_id' => $author->id]);
+        $performance = Performance::factory()->create();
+
+        // Reading the plan and saying which night it belongs to are separate
+        // rights: the second is the crew's alone.
+        $this->actingAs($author)
+            ->patch(route('technical-plans.update-performance', $plan), ['performance_id' => $performance->id])
+            ->assertForbidden();
+
+        $this->assertNotSame($performance->id, $plan->fresh()->performance_id);
+    }
+
+    public function test_technicians_can_move_a_plan_to_another_performance(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => Performance::placeholder()->id,
+        ]);
+
+        $performance = Performance::factory()->create(['date' => now()->addDays(10)]);
+
+        $this->actingAs($this->technician())
+            ->patch(route('technical-plans.update-performance', $plan), ['performance_id' => $performance->id])
+            ->assertRedirect(route('technical-plans.show', $plan));
+
+        $this->assertSame($performance->id, $plan->fresh()->performance_id);
+    }
+
+    public function test_moving_a_plan_to_another_performance_dispatches_an_event(): void
+    {
+        Event::fake([TechnicalPlanPerformanceChanged::class]);
+
+        $wasFiledUnder = Performance::factory()->create();
+        $plan = TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => $wasFiledUnder->id,
+        ]);
+
+        $performance = Performance::factory()->create(['date' => now()->addDays(10)]);
+        $technician = $this->technician();
+
+        $this->actingAs($technician)
+            ->patch(route('technical-plans.update-performance', $plan), ['performance_id' => $performance->id]);
+
+        Event::assertDispatched(
+            TechnicalPlanPerformanceChanged::class,
+            fn (TechnicalPlanPerformanceChanged $event): bool => $event->plan->is($plan)
+                && $event->previousPerformance?->is($wasFiledUnder) === true
+                && $event->newPerformance->is($performance)
+                && $event->changedBy->is($technician),
+        );
+    }
+
+    public function test_filing_a_plan_under_the_night_it_already_names_changes_nothing(): void
+    {
+        Event::fake([TechnicalPlanPerformanceChanged::class]);
+
+        $performance = Performance::factory()->create();
+        $plan = TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => $performance->id,
+        ]);
+
+        $this->actingAs($this->technician())
+            ->patch(route('technical-plans.update-performance', $plan), ['performance_id' => $performance->id])
+            ->assertRedirect(route('technical-plans.show', $plan));
+
+        Event::assertNotDispatched(TechnicalPlanPerformanceChanged::class);
+    }
+
+    public function test_a_plan_cannot_be_moved_to_a_performance_nobody_has_vouched_for(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+        $unreviewed = Performance::factory()->draft()->create();
+
+        $this->actingAs($this->technician())
+            ->patch(route('technical-plans.update-performance', $plan), ['performance_id' => $unreviewed->id])
+            ->assertSessionHasErrors('performance_id');
+
+        $this->assertNotSame($unreviewed->id, $plan->fresh()->performance_id);
+    }
+
+    public function test_a_plan_cannot_be_moved_to_a_performance_that_does_not_exist(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+        $performanceId = $plan->performance_id;
+
+        $this->actingAs($this->technician())
+            ->patch(route('technical-plans.update-performance', $plan), ['performance_id' => 404_404])
+            ->assertSessionHasErrors('performance_id');
+
+        $this->assertSame($performanceId, $plan->fresh()->performance_id);
+    }
+
     public function test_guests_cannot_change_a_plans_status(): void
     {
         $plan = TechnicalPlan::factory()->submitted()->create();
@@ -525,5 +706,15 @@ class TechnicalPlanAdminTest extends TestCase
             ->assertSessionHasErrors('status');
 
         $this->assertSame(TechnicalPlanStatus::Submitted, $plan->fresh()->status);
+    }
+
+    /**
+     * The ids of the nights a plan's details page offers to move it to.
+     *
+     * @return array<int, int>
+     */
+    private function offeredNights(TestResponse $response): array
+    {
+        return array_column($response->viewData('page')['props']['performances'], 'value');
     }
 }

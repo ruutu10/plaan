@@ -7,14 +7,17 @@ use App\Actions\Sso\AttemptSilentAuthentikLogin;
 use App\Actions\StagePlanCopy;
 use App\Data\PlanContent;
 use App\Enums\TechnicalPlanStatus;
+use App\Events\TechnicalPlanPerformanceChanged;
 use App\Events\TechnicalPlanStatusChanged;
 use App\Events\TechnicalPlanSubmitted;
 use App\Http\Requests\StoreTechnicalPlanRequest;
+use App\Http\Requests\UpdateTechnicalPlanPerformanceRequest;
 use App\Http\Requests\UpdateTechnicalPlanStatusRequest;
 use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
 use App\Http\Resources\Attachment as AttachmentResource;
 use App\Http\Resources\ReusableSound as ReusableSoundResource;
 use App\Http\Resources\SavedTechnicalPlan as SavedTechnicalPlanResource;
+use App\Http\Resources\SelectablePerformance as SelectablePerformanceResource;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Http\Resources\TechnicalPlanSummary as TechnicalPlanSummaryResource;
 use App\Http\Resources\UpcomingPerformance as UpcomingPerformanceResource;
@@ -24,6 +27,7 @@ use App\Models\TechnicalPlan;
 use App\Models\User;
 use App\Rules\AllowedAttachment;
 use App\Services\TechnicalPlanReviewer;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -58,6 +62,13 @@ class TechnicalPlanController extends Controller
      * and only used to hold a linked step to a page that exists.
      */
     private const LAST_STEP = 6;
+
+    /**
+     * How far back the "move this plan to another night" picker reaches. A plan
+     * is usually re-filed before the evening it is for, but a misfiled one is
+     * as often noticed just after it, so the nights just played stay on offer.
+     */
+    private const REASSIGNABLE_SINCE_DAYS = 30;
 
     /**
      * Show the landing page (gate) of the technical-plan wizard. A guest
@@ -134,9 +145,17 @@ class TechnicalPlanController extends Controller
 
         $plan->load(['user', 'performance.team', 'performance.format.team']);
 
+        // Only the crew may move a plan to another night, so only they are
+        // handed the nights to move it to — for everybody else the listing
+        // would be a query answered for a picker that is never shown.
+        $mayMoveIt = $request->user()->can(TechnicalPlan::EDIT_ALL_PERMISSION);
+
         return Inertia::render('technical-plans/Show', [
             'plan' => AdminTechnicalPlanResource::make($plan)->resolve($request),
             'statuses' => TechnicalPlanStatus::options(),
+            'performances' => $mayMoveIt
+                ? SelectablePerformanceResource::collection($this->reassignablePerformances($plan))->resolve($request)
+                : [],
         ]);
     }
 
@@ -160,6 +179,38 @@ class TechnicalPlanController extends Controller
             'plan_id' => $plan->id,
             'from_status' => $previousStatus->value,
             'to_status' => $newStatus->value,
+            'changed_by' => $request->user()->id,
+        ]);
+
+        return to_route('technical-plans.show', $plan);
+    }
+
+    /**
+     * File a plan under a different performance. The usual reason is a plan
+     * written under the stand-in performance — because the evening was not on
+     * the books when it was handed in — being moved to the real night now that
+     * it is. The route is closed to anyone without
+     * {@see TechnicalPlan::EDIT_ALL_PERMISSION}.
+     */
+    public function updatePerformance(UpdateTechnicalPlanPerformanceRequest $request, TechnicalPlan $plan): RedirectResponse
+    {
+        $previousPerformance = $plan->performance;
+        $performance = Performance::findOrFail($request->integer('performance_id'));
+
+        // Picking the night the plan is already filed under is not a move, so
+        // nothing is written and nothing is logged.
+        if ($performance->is($previousPerformance)) {
+            return to_route('technical-plans.show', $plan);
+        }
+
+        $plan->update(['performance_id' => $performance->getKey()]);
+
+        TechnicalPlanPerformanceChanged::dispatch($plan, $previousPerformance, $performance, $request->user());
+
+        Log::notice('Technical plan moved to a different performance', [
+            'plan_id' => $plan->id,
+            'from_performance_id' => $previousPerformance?->getKey(),
+            'to_performance_id' => $performance->getKey(),
             'changed_by' => $request->user()->id,
         ]);
 
@@ -477,6 +528,40 @@ class TechnicalPlanController extends Controller
         return response()->json([
             'review' => $review ?: 'Tagasisidet ei saadud. Proovi uuesti.',
         ]);
+    }
+
+    /**
+     * The nights a plan may be moved to: everything the house has vouched for
+     * from the recent past onwards, plus the plan's own night whenever that
+     * falls, so the picker can always show what it is filed under now.
+     *
+     * The stand-in performance is deliberately among them, since a plan filed
+     * under the wrong night has to be able to go back to the drawer it came
+     * from. Its date sits years out, which puts it last.
+     *
+     * Left without a limit, unlike the wizard's own picker: this one has to
+     * offer every night the house has booked, and the window above is what
+     * keeps the list to the evenings anybody is re-filing plans under.
+     *
+     * @return SupportCollection<int, Performance>
+     */
+    private function reassignablePerformances(TechnicalPlan $plan): SupportCollection
+    {
+        // Registers the stand-in night if the house has not needed one yet, so
+        // the listing below finds it rather than coming back without it.
+        Performance::placeholder();
+
+        return Performance::query()
+            // Only the format is read from each row — see SelectablePerformance
+            // — and the placeholder is recognised by it too.
+            ->with('format')
+            ->vouchedFor()
+            ->where(fn (Builder $query) => $query
+                ->where('date', '>=', now()->subDays(self::REASSIGNABLE_SINCE_DAYS))
+                ->orWhere('performances.id', $plan->performance_id))
+            ->orderBy('date')
+            ->get()
+            ->toBase();
     }
 
     /**

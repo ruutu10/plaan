@@ -309,6 +309,19 @@ class Performance extends Model
     }
 
     /**
+     * How this night reads on a screen or in a mail: the format's name, with
+     * the act's own title appended when it has one — e.g. a guest act's name on
+     * an evening shared with others, where the format alone would leave three
+     * identical names to choose between.
+     */
+    public function displayName(): string
+    {
+        return $this->title === null
+            ? $this->format->name
+            : $this->format->name.' — '.$this->title;
+    }
+
+    /**
      * The text a Planka import is narrowed to when this one performance is read
      * off the board again: the act's own name, or the format's when the card
      * announces a whole evening under it.

@@ -44,6 +44,8 @@ class AdminTechnicalPlan extends JsonResource
      *     formatName: string|null,
      *     formatUrl: string|null,
      *     teamName: string|null,
+     *     performanceId: int|null,
+     *     performanceName: string|null,
      *     performanceLocation: string|null,
      *     performanceStartsAt: string|null,
      *     submittedBy: string|null,
@@ -66,6 +68,11 @@ class AdminTechnicalPlan extends JsonResource
             // names what was staged as well as the plan written for it.
             'formatUrl' => ($this->links ?? RecordLinks::none())->formatUrl($plan->performance),
             'teamName' => $plan->performance?->performerName(),
+            // The night itself, as something to name and as something to move
+            // the plan away from: the details page offers the crew a different
+            // one to file it under.
+            'performanceId' => $plan->performance?->getKey(),
+            'performanceName' => $plan->performance?->displayName(),
             'performanceLocation' => $plan->performance?->location,
             'performanceStartsAt' => $plan->performance?->date->toIso8601String(),
             'submittedBy' => $plan->user?->name,

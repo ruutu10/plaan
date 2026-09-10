@@ -2,6 +2,7 @@
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { ExternalLink } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import ChangePlanPerformanceModal from '@/components/ChangePlanPerformanceModal.vue';
 import { statusTone } from '@/components/technical-plan/presentPlan';
 import R10BackLink from '@/components/technical-plan/R10BackLink.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
@@ -11,9 +12,18 @@ import R10Select from '@/components/technical-plan/R10Select.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { formatLocalDate } from '@/lib/date';
 import { index, show, updateStatus } from '@/routes/technical-plans';
-import type { AdminPlanRow, StatusOption } from '@/types/technicalPlan';
+import type {
+    AdminPlanRow,
+    PerformanceOption,
+    StatusOption,
+} from '@/types/technicalPlan';
 
-const props = defineProps<{ plan: AdminPlanRow; statuses: StatusOption[] }>();
+const props = defineProps<{
+    plan: AdminPlanRow;
+    statuses: StatusOption[];
+    /** The nights the plan may be moved to; empty for a reader who may not. */
+    performances: PerformanceOption[];
+}>();
 
 defineOptions({
     layout: (props: { plan: AdminPlanRow }) => ({
@@ -31,9 +41,17 @@ defineOptions({
 });
 
 const page = usePage();
-const canEditStatus = computed(
+
+/**
+ * Whether this reader is one of the crew, who may both move the plan through
+ * its statuses and file it under a different night. Everybody else is shown
+ * what the plan says and nothing to change it with.
+ */
+const canEditPlan = computed(
     () => page.props.auth?.can?.editAllTechnicalPlans === true,
 );
+
+const changingPerformance = ref(false);
 
 const selectedStatus = ref<string | number>(props.plan.status);
 
@@ -81,6 +99,33 @@ function confirmStatus(): void {
         </R10Button>
 
         <dl class="grid max-w-2xl grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+            <div>
+                <dt
+                    class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-grey-500 uppercase"
+                >
+                    Etendus
+                </dt>
+                <dd
+                    class="mt-1 flex flex-wrap items-baseline gap-x-3 text-r10-ink"
+                >
+                    <span data-test="technical-plan-performance">
+                        {{ plan.performanceName ?? '—' }}
+                    </span>
+
+                    <!-- A plain link rather than a button: changing the night is
+                         a correction, not one of the page's own actions. -->
+                    <button
+                        v-if="canEditPlan"
+                        type="button"
+                        class="cursor-pointer text-xs text-r10-grey-500 underline transition hover:text-r10-orange-700"
+                        data-test="technical-plan-performance-edit"
+                        @click="changingPerformance = true"
+                    >
+                        Muuda
+                    </button>
+                </dd>
+            </div>
+
             <div>
                 <dt
                     class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-grey-500 uppercase"
@@ -143,7 +188,7 @@ function confirmStatus(): void {
                 </dd>
             </div>
 
-            <div :class="{ 'sm:col-span-2': canEditStatus }">
+            <div :class="{ 'sm:col-span-2': canEditPlan }">
                 <dt
                     class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-grey-500 uppercase"
                 >
@@ -151,7 +196,7 @@ function confirmStatus(): void {
                 </dt>
                 <dd class="mt-1">
                     <div
-                        v-if="canEditStatus"
+                        v-if="canEditPlan"
                         class="flex flex-wrap items-center gap-3"
                     >
                         <R10Select
@@ -177,5 +222,13 @@ function confirmStatus(): void {
         </dl>
 
         <R10BackLink :href="index()" class="mt-9" />
+
+        <ChangePlanPerformanceModal
+            v-if="canEditPlan"
+            v-model:open="changingPerformance"
+            :plan-token="plan.token"
+            :performance-id="plan.performanceId"
+            :performances="performances"
+        />
     </R10Page>
 </template>

@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\TechnicalPlanStatus;
+use App\Events\TechnicalPlanPerformanceChanged;
 use App\Events\TechnicalPlanStatusChanged;
 use App\Events\TechnicalPlanSubmitted;
 use App\Models\Format;
+use App\Models\Performance;
 use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -94,6 +96,29 @@ class ActivityLogTest extends TestCase
         $this->assertTrue($technician->is($activity->causer));
         $this->assertSame('submitted', $activity->getProperty('from'));
         $this->assertSame('received', $activity->getProperty('to'));
+    }
+
+    public function test_moving_a_technical_plan_to_another_night_is_logged_with_both_nights(): void
+    {
+        $technician = $this->technician();
+        $wasFiledUnder = Performance::factory()->create();
+        $performance = Performance::factory()->create([
+            'format_id' => Format::factory()->create(['name' => 'Festival 2026']),
+            'date' => Performance::momentFrom('2026-08-01'),
+        ]);
+
+        $plan = TechnicalPlan::factory()->create(['performance_id' => $wasFiledUnder->id]);
+
+        $this->actingAs($technician);
+        event(new TechnicalPlanPerformanceChanged($plan, $wasFiledUnder, $performance, $technician));
+
+        $activity = Activity::query()->forSubject($plan)->forEvent('performance_changed')->sole();
+
+        $this->assertTrue($technician->is($activity->causer));
+        $this->assertSame($wasFiledUnder->id, $activity->getProperty('from'));
+        $this->assertSame($performance->id, $activity->getProperty('to'));
+        // Readable a year from now, when neither night is on the books any more.
+        $this->assertStringContainsString('Festival 2026 (01.08.2026)', $activity->description);
     }
 
     public function test_self_registration_logs_the_new_account_as_a_system_action(): void

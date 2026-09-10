@@ -390,6 +390,21 @@ autorile saadetakse kiri, et tehnikatiim on selle üles võtnud. Plaanil, mille
 autor on vahepeal eemaldatud, pole lihtsalt kellelegi teatada. Iga staatuse
 muutus logitakse koos muutjaga.
 
+### 5.3 Plaani etenduse muutmine
+
+Detailivaates on väli **Etendus** ja selle kõrval link **Muuda**, mis avab akna
+etenduse valimiseks. Õigus on sama, mis staatuse muutmisel (§5.2) - ilma selleta
+näidatakse etendust lihtsalt tekstina.
+
+Peamine kasutus on plaan, mis esitati asendusetenduse **„Etendust pole
+nimekirjas“** alla, sest õhtut polnud veel kirjas (§4.2): kui etendus on
+registreeritud, tõstab tehnik plaani selle alla.
+
+Valikus on kõik kinnitatud etendused viimasest kuust alates, asendusetendus ning
+alati ka see etendus, mille all plaan praegu on - ka siis, kui see on ammu
+mängitud. Ülevaatamata mustandietendusi (§7.3) ei pakuta ega võeta vastu. Iga
+tõstmine logitakse koos muutjaga.
+
 ---
 
 ## 6. Meeldetuletused
@@ -677,7 +692,7 @@ sama moodi ka siin.
 
 ## 12. Kes mida näeb - kokkuvõte
 
-| | Oma plaanid | Oma tiimi plaanid | Kõik plaanid | Plaani staatuse muutmine | Oma tiimi formaadid | Kõik etendused | Kõik formaadid ja tiimid | Kasutajakontod ja rollid |
+| | Oma plaanid | Oma tiimi plaanid | Kõik plaanid | Plaani staatus ja etendus | Oma tiimi formaadid | Kõik etendused | Kõik formaadid ja tiimid | Kasutajakontod ja rollid |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Esineja (rollita) | ✅ | ✅ | - | - | ✅ | - | - | - |
 | Majarahvas | ✅ | ✅ | ✅ lugeda | - | ✅ | ✅ lugeda | - | - |
@@ -688,8 +703,8 @@ lugeda ja sisse logides ka muuta.
 
 Veel kolm märkust piiride kohta:
 
-- Kõigi plaanide lugemine ja nende staatuse muutmine on eraldi õigused:
-  majarahvas saab lugeda, aga mitte kinnitada.
+- Kõigi plaanide lugemine ja nende muutmine on eraldi õigused: majarahvas saab
+  lugeda, aga mitte kinnitada ega teise etenduse alla tõsta (§5.2, §5.3).
 - Sama kehtib etenduste kohta: majarahvas näeb kogu maja kava (§7.4), kuid muuta
   saab ainult oma tiimi etendusi, formaadi enda alt.
 - Kolleegi *lõpetamata mustandit* saab tema tiim muuta (selleks mustand ongi),
