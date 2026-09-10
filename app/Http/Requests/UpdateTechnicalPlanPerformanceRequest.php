@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,7 +26,12 @@ class UpdateTechnicalPlanPerformanceRequest extends FormRequest
                 'required',
                 'integer',
                 Rule::exists('performances', 'id')
-                    ->where('is_draft', false)
+                    // The draft flag is compared inside a callback so the
+                    // boolean reaches the database as a boolean. Handing it to
+                    // where() instead folds the rule into its string form,
+                    // where false becomes an empty string that only MySQL is
+                    // lenient enough to read back as a zero.
+                    ->where(fn (Builder $query) => $query->where('is_draft', false))
                     ->whereNull('deleted_at'),
             ],
         ];
