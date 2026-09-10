@@ -88,6 +88,7 @@ function selectPerformance(performance: UpcomingPerformance): void {
     plan.meta.location = performance.location ?? '';
     plan.meta.duration = performance.duration;
     plan.meta.description = performance.description;
+    plan.meta.technicians = performance.technicians;
     freshStart();
 }
 

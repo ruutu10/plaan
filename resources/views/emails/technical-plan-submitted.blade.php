@@ -66,6 +66,10 @@
             <td style="{{ $cell }}">{{ $doc['contact'] }}</td>
         </tr>
         <tr>
+            <td style="{{ $labelCell }}">Tehnik</td>
+            <td style="{{ $cell }}">{{ $doc['techniciansLine'] }}</td>
+        </tr>
+        <tr>
             <td style="{{ $labelCell }}">Etenduse aeg</td>
             <td style="{{ $cell }}">{{ $doc['performanceDate'] }} {{ $doc['startTime'] }}</td>
         </tr>

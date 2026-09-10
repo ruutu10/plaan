@@ -68,6 +68,10 @@ class TechnicalPlan extends JsonResource
                 'location' => $plan->performance->location ?? '',
                 'duration' => $plan->performance?->duration,
                 'description' => $plan->performance?->format->description ?? '',
+                // Read off the night rather than stored with the plan: who is
+                // at the desk is the Planka card's to say, and a re-import
+                // after the plan was handed in has to change the answer.
+                'technicians' => $plan->performance?->technicianNames() ?? [],
             ],
             'sound' => $this->sound(),
             'scenes' => PlanScene::forPlan($plan, $request, $this->stagedCopy['sceneSoundFiles'] ?? null),

@@ -12,6 +12,7 @@ function meta(overrides: Partial<PlanMeta> = {}): PlanMeta {
         location: '',
         duration: 75,
         description: '',
+        technicians: [],
         ...overrides,
     };
 }

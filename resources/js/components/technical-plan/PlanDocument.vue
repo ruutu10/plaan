@@ -96,6 +96,10 @@ const linkClass =
                     <td :class="labelCellClass">Kontakt</td>
                     <td :class="cellClass">{{ doc.contact }}</td>
                 </tr>
+                <tr data-test="plan-technicians">
+                    <td :class="labelCellClass">Tehnik</td>
+                    <td :class="cellClass">{{ doc.techniciansLine }}</td>
+                </tr>
                 <tr>
                     <td :class="labelCellClass">Lühikirjeldus</td>
                     <td :class="[cellClass, 'whitespace-pre-line']">

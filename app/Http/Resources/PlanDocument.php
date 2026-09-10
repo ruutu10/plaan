@@ -30,6 +30,13 @@ class PlanDocument extends JsonResource
     public static $wrap = null;
 
     /**
+     * What the plan says about a night nobody has signed on to run yet. The
+     * performer is told the answer is still coming rather than left to read an
+     * absence — mirrored by `NO_TECHNICIAN` in the wizard's own `presentPlan.ts`.
+     */
+    public const NO_TECHNICIAN = 'Tehnikut pole veel kinnitatud';
+
+    /**
      * Who to name as the plan's contact: the person who handed the plan in.
      * Not rendered from the plan's own values, so it is handed in separately —
      * the mail reads it off the plan's author, and the wizard off the
@@ -67,6 +74,7 @@ class PlanDocument extends JsonResource
             'location' => self::dash($meta['location'] ?? null),
             'durationLabel' => self::duration($meta['duration'] ?? null),
             'description' => self::dash($meta['description'] ?? null),
+            'techniciansLine' => self::techniciansLine($meta['technicians'] ?? null),
 
             'micsSummary' => self::answer($sound['micsMode'] ?? null, $sound['micsDetail'] ?? null),
             'musicianSummary' => self::answer($sound['musicianMode'] ?? null, $sound['musicianDetail'] ?? null),
@@ -90,6 +98,38 @@ class PlanDocument extends JsonResource
         $text = trim((string) $value);
 
         return $text !== '' ? $text : '—';
+    }
+
+    /**
+     * Who is running the night, on one line. An em dash would read as a field
+     * the plan forgot to ask; a night nobody has signed on to yet is not that,
+     * so it is said in words instead — the answer is still to come.
+     */
+    public static function techniciansLine(mixed $names): string
+    {
+        $named = self::names($names);
+
+        return $named === [] ? self::NO_TECHNICIAN : implode(', ', $named);
+    }
+
+    /**
+     * A list of people, tidied to the ones actually named.
+     *
+     * @return array<int, string>
+     */
+    private static function names(mixed $names): array
+    {
+        $rows = [];
+
+        foreach (is_array($names) ? $names : [] as $name) {
+            $text = is_scalar($name) ? trim((string) $name) : '';
+
+            if ($text !== '') {
+                $rows[] = $text;
+            }
+        }
+
+        return $rows;
     }
 
     /**

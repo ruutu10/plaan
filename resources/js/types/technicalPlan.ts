@@ -95,6 +95,12 @@ export interface PlanMeta {
     location: string;
     duration: number | null;
     description: string;
+    /**
+     * Who runs sound and light that night, by name, as the Planka import last
+     * read it off the card. Empty until somebody has signed on — see
+     * `App\Models\Performance::technicians()`.
+     */
+    technicians: string[];
 }
 
 export interface PriorPlan {
@@ -128,6 +134,8 @@ export interface UpcomingPerformance {
      * is taken just the same.
      */
     technicalPlanMandatory: boolean;
+    /** Who runs sound and light that night, by name; empty when nobody has signed on. */
+    technicians: string[];
     /** Plans handed in for other performances of the same format, by the user or their teams. */
     priorPlans: PriorPlan[];
 }
@@ -223,6 +231,11 @@ export interface PlanDocument {
     location: string;
     durationLabel: string;
     description: string;
+    /**
+     * The night's technicians by name, on one line — or, when nobody has
+     * signed on yet, the sentence saying so rather than an em dash.
+     */
+    techniciansLine: string;
     micsSummary: string;
     musicianSummary: string;
     scenes: PlanDocumentScene[];
@@ -278,6 +291,8 @@ export interface AdminPlanRow {
     performanceLocation: string | null;
     /** ISO 8601 UTC instant the performance starts at, if the plan names one. */
     performanceStartsAt: string | null;
+    /** Who runs sound and light that night, by name; empty when nobody has signed on. */
+    technicians: string[];
     submittedBy: string | null;
     submittedByEmail: string | null;
     status: string;

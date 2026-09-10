@@ -436,6 +436,7 @@ export function blankPlan(): Plan {
             location: '',
             duration: null,
             description: '',
+            technicians: [],
         },
         sound: {
             micsMode: 'no',

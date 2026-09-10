@@ -49,6 +49,9 @@ class UpcomingPerformance extends JsonResource
             'startTime' => $performance->startTime(),
             'duration' => $performance->duration,
             'description' => $performance->format->description ?? '',
+            // Carried on the row so the plan being written names them from the
+            // moment its night is picked, without asking the server again.
+            'technicians' => $performance->technicianNames(),
             // Whether a plan is expected for this night at all. The wizard says
             // so under the row rather than hiding it: a plan handed in for a
             // night that runs itself is still welcome, it is just not owed.

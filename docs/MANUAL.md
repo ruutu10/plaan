@@ -262,7 +262,11 @@ pakkumisi - koos valikulise selgitusega, mis säilitatakse ka siis, kui vastus o
 Vaba tekst ja failimanused.
 
 **7. Ülevaade - vaata üle ja saada.**
-Valmis plaan dokumendina. Siit saad:
+Valmis plaan dokumendina. Real **Tehnik** on selle õhtu **heli- ja
+valgusmeister**, kui Planka kaardilt on ta juba imporditud (§11.2) - nii tead,
+kellele kirjutad. Kui kaardil pole veel kedagi kirjas, ütleb rida
+**„Tehnikut pole veel kinnitatud“**. Sama rida on ka väljatrükil ja esitamise
+järel saadetud kirjas. Siit saad:
 
 - **Laadi alla PDF** - dokumendi printida või salvestada.
 - **Avalik link** - plaani salvestada ja saada selle jagamislink, mis
@@ -374,8 +378,8 @@ pole nimekirjas“) alla esitatud plaanid on dateeritud aastaid ette ja koguneva
 seetõttu tippu, mis on täpselt õige koht - just neile on vaja päris õhtut leida.
 
 Iga rida avab detailivaate, kus on plaan ise, selle kirjutaja, etendus, mille
-kohta see käib, ja esitamise aeg. Detailivaade ulatub täpselt sama kaugele kui
-nimekiri: iga rida, mida pakutakse, ka avaneb.
+kohta see käib, selle õhtu tehnik ja esitamise aeg. Detailivaade ulatub täpselt
+sama kaugele kui nimekiri: iga rida, mida pakutakse, ka avaneb.
 
 ### 5.2 Plaani staatuse muutmine
 
@@ -683,10 +687,17 @@ domeenidest** (vt §2.4) - nii ei aeta näiteks kahte eri "Märti" segamini. Kui
 nime järgi ei leidu ühtki sobivat kontot, või kui sobivaid on mitu, jäetakse
 see inimene lisamata.
 
-Meeskond on nähtav ainult etenduse enda lehel (§7.2) ja on **puhtalt loetav** -
-seda ei saa käsitsi muuta ega täiendada. Iga uus import kirjutab eelmise
-meeskonna üle, nii et kui kaardil roll muutub, lisandub või kaob, kajastub see
-sama moodi ka siin.
+Terve meeskond on nähtav etenduse enda lehel (§7.2). Neist ühte - **heli- ja
+valgusmeistrit** - nimetab lisaks ka selle õhtu tehnikaplaan ise: plaani
+ülevaates, väljatrükil, esitamise järel saadetud kirjas ja plaani detailivaates
+(§5.1). Nii teab esineja, kelle jaoks ta kirjutab. Kuni kaart kedagi ei nimeta,
+seisab seal **„Tehnikut pole veel kinnitatud“**.
+
+Meeskond on **puhtalt loetav** - seda ei saa käsitsi muuta ega täiendada. Iga
+uus import kirjutab eelmise meeskonna üle, nii et kui kaardil roll muutub,
+lisandub või kaob, kajastub see sama moodi ka siin. Ka juba esitatud plaan loeb
+tehniku iga kord etenduse pealt, nii et hilisem import parandab vastust ka
+vanas plaanis.
 
 ---
 

@@ -111,7 +111,7 @@ class TechnicalPlanController extends Controller
         // performance are dated years out and so gather at the top, which is
         // where the crew wants them — those are the ones needing a real night.
         $plans = TechnicalPlan::query()
-            ->with(['user', 'performance.team', 'performance.format.team'])
+            ->with(['user', 'performance.team', 'performance.format.team', 'performance.technicians'])
             ->listableBy($request->user())
             ->leftJoin('performances', 'performances.id', '=', 'technical_plans.performance_id')
             ->orderByDesc('performances.date')
@@ -143,7 +143,7 @@ class TechnicalPlanController extends Controller
             abort(403);
         }
 
-        $plan->load(['user', 'performance.team', 'performance.format.team']);
+        $plan->load(['user', 'performance.team', 'performance.format.team', 'performance.technicians']);
 
         // Only the crew may move a plan to another night, so only they are
         // handed the nights to move it to — for everybody else the listing
@@ -452,7 +452,7 @@ class TechnicalPlanController extends Controller
     public function performances(Request $request): JsonResponse
     {
         $upcoming = Performance::query()
-            ->with(['team', 'format.team'])
+            ->with(['team', 'format.team', 'technicians'])
             ->vouchedFor()
             ->excludingPlaceholder()
             // Still to come. A performance carries its curtain-up now, so
@@ -466,7 +466,7 @@ class TechnicalPlanController extends Controller
         // is playing, and it has to stay on offer whatever else is coming up,
         // since a plan can be written no other way when the real performance is
         // not on the books.
-        $placeholder = Performance::placeholder()->load(['team', 'format.team']);
+        $placeholder = Performance::placeholder()->load(['team', 'format.team', 'technicians']);
 
         // Kept per format rather than as one global list: a single busy format would
         // otherwise fill a shared limit and leave every other row offering no
@@ -586,7 +586,7 @@ class TechnicalPlanController extends Controller
         }
 
         $performance = Performance::query()
-            ->with(['team', 'format.team'])
+            ->with(['team', 'format.team', 'technicians'])
             ->vouchedFor()
             ->where('date', '>', now())
             ->find($id);
@@ -611,6 +611,7 @@ class TechnicalPlanController extends Controller
             'startTime' => $performance->startTime(),
             'duration' => $performance->duration,
             'description' => $performance->format->description ?? '',
+            'technicians' => $performance->technicianNames(),
         ];
     }
 

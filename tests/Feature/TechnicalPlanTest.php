@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PerformanceStaffRole;
 use App\Enums\TeamRole;
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Requests\StoreTechnicalPlanRequest;
+use App\Http\Resources\PlanDocument;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Models\Format;
 use App\Models\PendingUpload;
@@ -1096,6 +1098,154 @@ class TechnicalPlanTest extends TestCase
         $this->assertArrayHasKey('extra', $data);
         // …including the uploaded file handles the wizard rehydrates from.
         $this->assertArrayHasKey('files', $data['extra']);
+    }
+
+    /**
+     * A performer writing a plan is writing it to somebody, so the night's
+     * technicians travel with it — read off the performance rather than stored,
+     * which is what keeps a re-import after the hand-in from leaving the plan
+     * naming last week's answer.
+     */
+    public function test_a_plan_names_the_technicians_signed_on_for_its_night(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        $plan->performance->staff()->attach(
+            User::factory()->create(['name' => 'Tiit Tehnik']),
+            ['role' => PerformanceStaffRole::Technician->value],
+        );
+
+        $data = (new TechnicalPlanResource($plan))->toArray(request());
+
+        $this->assertSame(['Tiit Tehnik'], $data['meta']['technicians']);
+    }
+
+    public function test_a_plan_names_every_technician_of_a_night_run_by_two(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        // Attached out of order: every reader lists them the same way round.
+        $plan->performance->staff()->attach(
+            User::factory()->create(['name' => 'Tiit Tehnik']),
+            ['role' => PerformanceStaffRole::Technician->value],
+        );
+        $plan->performance->staff()->attach(
+            User::factory()->create(['name' => 'Anu Abi']),
+            ['role' => PerformanceStaffRole::Technician->value],
+        );
+
+        $data = (new TechnicalPlanResource($plan))->toArray(request());
+
+        $this->assertSame(['Anu Abi', 'Tiit Tehnik'], $data['meta']['technicians']);
+    }
+
+    public function test_a_plan_names_nobody_when_the_nights_other_staff_are_not_technicians(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        $plan->performance->staff()->attach(
+            User::factory()->create(['name' => 'Arne Õhtujuht']),
+            ['role' => PerformanceStaffRole::Host->value],
+        );
+
+        $data = (new TechnicalPlanResource($plan))->toArray(request());
+
+        $this->assertSame([], $data['meta']['technicians']);
+    }
+
+    /**
+     * The wizard fills its meta from the picker, so a night's technicians have
+     * to be on the row — otherwise the plan would only name them once it had
+     * been saved and read back.
+     */
+    public function test_the_performances_endpoint_names_each_nights_technicians(): void
+    {
+        $performance = Performance::factory()->create();
+
+        $performance->staff()->attach(
+            User::factory()->create(['name' => 'Tiit Tehnik']),
+            ['role' => PerformanceStaffRole::Technician->value],
+        );
+        $performance->staff()->attach(
+            User::factory()->create(['name' => 'Arne Õhtujuht']),
+            ['role' => PerformanceStaffRole::Host->value],
+        );
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+        $response->assertJsonPath('results.0.id', $performance->id);
+        $response->assertJsonPath('results.0.technicians', ['Tiit Tehnik']);
+    }
+
+    public function test_the_performances_endpoint_names_nobody_for_an_unstaffed_night(): void
+    {
+        $performance = Performance::factory()->create();
+
+        $response = $this->getJson(route('technical-plan.performances'));
+
+        $response->assertOk();
+        $response->assertJsonPath('results.0.id', $performance->id);
+        $response->assertJsonPath('results.0.technicians', []);
+        $response->assertJsonPath('placeholder.technicians', []);
+    }
+
+    /**
+     * A reminder's link picks the night for the performer, so the wizard it
+     * opens has to name that night's technicians as the picker would have.
+     */
+    public function test_a_reminder_link_names_the_nights_technicians(): void
+    {
+        $performance = Performance::factory()->create();
+
+        $performance->staff()->attach(
+            User::factory()->create(['name' => 'Tiit Tehnik']),
+            ['role' => PerformanceStaffRole::Technician->value],
+        );
+
+        $this->get(route('technical-plan.index', ['performance' => $performance->id]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('initialPerformance.technicians', ['Tiit Tehnik']));
+    }
+
+    /**
+     * The technician is who the performer is writing to, so the copy that lands
+     * in both inboxes has to say who that is.
+     */
+    public function test_the_submission_mail_names_the_nights_technicians(): void
+    {
+        $performance = Performance::factory()->create();
+
+        $performance->staff()->attach(
+            User::factory()->create(['name' => 'Tiit Tehnik']),
+            ['role' => PerformanceStaffRole::Technician->value],
+        );
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+            'meta' => ['performanceId' => $performance->id],
+        ]))->assertOk();
+
+        $html = (new TechnicalPlanSubmitted(TechnicalPlan::first()))->toMail($this->user)->render();
+
+        $this->assertStringContainsString('Tehnik', $html);
+        $this->assertStringContainsString('Tiit Tehnik', $html);
+    }
+
+    /**
+     * A night nobody has signed on to yet is told in words rather than stood in
+     * with an em dash, which would read as a field the plan forgot to ask.
+     */
+    public function test_the_submission_mail_says_when_no_technician_is_confirmed_yet(): void
+    {
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'submit' => true,
+        ]))->assertOk();
+
+        $html = (new TechnicalPlanSubmitted(TechnicalPlan::first()))->toMail($this->user)->render();
+
+        $this->assertStringContainsString(PlanDocument::NO_TECHNICIAN, $html);
     }
 
     public function test_an_attachment_can_be_uploaded_and_returns_a_handle(): void

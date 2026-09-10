@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PerformanceStaffRole;
 use App\Enums\TechnicalPlanStatus;
 use App\Events\TechnicalPlanPerformanceChanged;
 use App\Events\TechnicalPlanStatusChanged;
@@ -368,6 +369,41 @@ class TechnicalPlanAdminTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('plan.performanceId', $performance->id)
                 ->where('plan.performanceName', 'Festival 2026 — Märtu10'));
+    }
+
+    /**
+     * The crew reading a submitted plan needs to know whose night it is, so the
+     * details page names whoever the import has signed on to run it.
+     */
+    public function test_a_plans_details_name_the_nights_technicians(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        $plan->performance->staff()->attach(
+            User::factory()->create(['name' => 'Tiit Tehnik']),
+            ['role' => PerformanceStaffRole::Technician->value],
+        );
+        $plan->performance->staff()->attach(
+            User::factory()->create(['name' => 'Arne Õhtujuht']),
+            ['role' => PerformanceStaffRole::Host->value],
+        );
+
+        $this->actingAs($this->technician())
+            ->get(route('technical-plans.show', $plan))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('plan.technicians', ['Tiit Tehnik']));
+    }
+
+    public function test_a_plans_details_name_nobody_when_the_night_is_unstaffed(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        $this->actingAs($this->technician())
+            ->get(route('technical-plans.show', $plan))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('plan.technicians', []));
     }
 
     public function test_the_details_page_offers_a_technician_the_nights_a_plan_may_be_moved_to(): void

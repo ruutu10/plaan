@@ -3,7 +3,10 @@ import { Head, router, usePage } from '@inertiajs/vue3';
 import { ExternalLink } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import ChangePlanPerformanceModal from '@/components/ChangePlanPerformanceModal.vue';
-import { statusTone } from '@/components/technical-plan/presentPlan';
+import {
+    statusTone,
+    techniciansLine,
+} from '@/components/technical-plan/presentPlan';
 import R10BackLink from '@/components/technical-plan/R10BackLink.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
@@ -50,6 +53,13 @@ const page = usePage();
 const canEditPlan = computed(
     () => page.props.auth?.can?.editAllTechnicalPlans === true,
 );
+
+/**
+ * Who is at the desk that night, as the Planka import last read it off the
+ * card. Worded by the same rule the plan document uses, so the crew reads here
+ * exactly what the performer was shown.
+ */
+const technicians = computed(() => techniciansLine(props.plan.technicians));
 
 const changingPerformance = ref(false);
 
@@ -157,6 +167,20 @@ function confirmStatus(): void {
                     data-test="technical-plan-location"
                 >
                     {{ plan.performanceLocation ?? '—' }}
+                </dd>
+            </div>
+
+            <div>
+                <dt
+                    class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-grey-500 uppercase"
+                >
+                    Tehnik
+                </dt>
+                <dd
+                    class="mt-1 text-r10-ink"
+                    data-test="technical-plan-technicians"
+                >
+                    {{ technicians }}
                 </dd>
             </div>
 

@@ -42,6 +42,7 @@ export function presentPlan(plan: Plan, contact: string | null): PlanDocument {
         location: dash(plan.meta.location),
         durationLabel: duration(plan.meta.duration),
         description: dash(plan.meta.description),
+        techniciansLine: techniciansLine(plan.meta.technicians),
 
         micsSummary: answer(plan.sound.micsMode, plan.sound.micsDetail),
         musicianSummary: answer(
@@ -72,6 +73,35 @@ export function dash(value: unknown): string {
     const text = value == null ? '' : String(value).trim();
 
     return text !== '' ? text : '—';
+}
+
+/**
+ * What the plan says about a night nobody has signed on to run yet. Mirrors
+ * `PlanDocument::NO_TECHNICIAN`.
+ */
+export const NO_TECHNICIAN = 'Tehnikut pole veel kinnitatud';
+
+/**
+ * Who is running the night, on one line. An em dash would read as a field the
+ * plan forgot to ask; a night nobody has signed on to yet is not that, so it is
+ * said in words instead — the answer is still to come.
+ *
+ * Exported because the crew's plan details page renders the same line from its
+ * own row rather than from a document.
+ */
+export function techniciansLine(values: unknown): string {
+    return names(values).join(', ') || NO_TECHNICIAN;
+}
+
+/** A list of people, tidied to the ones actually named. */
+function names(values: unknown): string[] {
+    if (!Array.isArray(values)) {
+        return [];
+    }
+
+    return values
+        .map((value) => (value == null ? '' : String(value).trim()))
+        .filter((value) => value !== '');
 }
 
 /**

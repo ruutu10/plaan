@@ -48,6 +48,7 @@ class AdminTechnicalPlan extends JsonResource
      *     performanceName: string|null,
      *     performanceLocation: string|null,
      *     performanceStartsAt: string|null,
+     *     technicians: array<int, string>,
      *     submittedBy: string|null,
      *     submittedByEmail: string|null,
      *     status: string,
@@ -75,6 +76,9 @@ class AdminTechnicalPlan extends JsonResource
             'performanceName' => $plan->performance?->displayName(),
             'performanceLocation' => $plan->performance?->location,
             'performanceStartsAt' => $plan->performance?->date->toIso8601String(),
+            // Who is at the desk that night, when the import has read it off
+            // the night's card. Empty until somebody has signed on.
+            'technicians' => $plan->performance?->technicianNames() ?? [],
             'submittedBy' => $plan->user?->name,
             'submittedByEmail' => $plan->user?->email,
             'status' => $plan->status->value,

@@ -21,8 +21,9 @@
     </h1>
 
     <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6;">
-        Tehnik kinnitas Sinu tehnikaplaani kätte saamist ja valmistab selle järgi etenduse ette.
+        Tehnik kinnitas Sinu tehnikaplaani kätte saamist ja valmistab selle järgi etenduse ette. Kui soovid enne etendust veel tehnikaplaani muuta, siis see on võimalik - ava siin meilis oleva lingi kaudu esitatud tehnikaplaan, vii muudatused sisse, ning vajuta nuppu "Uuenda tehnikaplaani".
     </p>
+
 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2f4f7; border-radius:14px;">
         <tr>

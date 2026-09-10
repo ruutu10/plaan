@@ -34,7 +34,8 @@
                     "startTime": "19:00",
                     "location": "  Improkeskus  ",
                     "duration": 90,
-                    "description": "Kahevaatuseline  "
+                    "description": "Kahevaatuseline  ",
+                    "technicians": ["  Mari Tamm  ", "", "Peeter Kask"]
                 },
                 "sound": {
                     "micsMode": "yes",
@@ -209,6 +210,7 @@
                 "location": "Improkeskus",
                 "durationLabel": "90 min",
                 "description": "Kahevaatuseline",
+                "techniciansLine": "Mari Tamm, Peeter Kask",
                 "micsSummary": "Jah — Kaks peamikrofoni",
                 "musicianSummary": "Ei",
                 "scenes": [
@@ -394,6 +396,7 @@
                 "location": "—",
                 "durationLabel": "—",
                 "description": "—",
+                "techniciansLine": "Tehnikut pole veel kinnitatud",
                 "micsSummary": "Ei",
                 "musicianSummary": "Jah",
                 "scenes": [],
@@ -419,7 +422,8 @@
                     "startTime": "20:30",
                     "location": "Vaba Lava, Telliskivi",
                     "duration": 0,
-                    "description": ""
+                    "description": "",
+                    "technicians": []
                 },
                 "sound": {
                     "micsMode": "yes",
@@ -450,6 +454,7 @@
                 "location": "Vaba Lava, Telliskivi",
                 "durationLabel": "—",
                 "description": "—",
+                "techniciansLine": "Tehnikut pole veel kinnitatud",
                 "micsSummary": "Jah",
                 "musicianSummary": "Ei",
                 "scenes": [],

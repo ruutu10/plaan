@@ -6,6 +6,7 @@ use App\Concerns\HasClaudeReasoningLog;
 use App\Concerns\LogsModelActivity;
 use App\Concerns\ScopedByTeamAccess;
 use App\Enums\CreatedBy;
+use App\Enums\PerformanceStaffRole;
 use App\Services\PerformanceStaffSync;
 use Carbon\CarbonInterface;
 use Database\Factories\PerformanceFactory;
@@ -65,6 +66,7 @@ use Illuminate\Support\Facades\Date;
  * @property-read int|null $technical_plans_count
  * @property-read Collection<int, ClaudeReasoningLog> $reasoningLogs
  * @property-read Collection<int, User> $staff
+ * @property-read Collection<int, User> $technicians
  */
 #[Fillable([
     'format_id',
@@ -378,6 +380,34 @@ class Performance extends Model
             ->using(PerformanceStaff::class)
             ->withPivot(['role'])
             ->withTimestamps();
+    }
+
+    /**
+     * Whoever is running sound and light this night, of everybody {@see staff()}
+     * names. Asked for on its own because it is the one role the *performer*
+     * needs a name for — the technical plan is written to somebody, and until
+     * the card names them it is written to nobody in particular. Empty for a
+     * night nobody has signed on to yet.
+     *
+     * @return BelongsToMany<User, $this, PerformanceStaff, 'pivot'>
+     */
+    public function technicians(): BelongsToMany
+    {
+        return $this->staff()
+            ->wherePivot('role', PerformanceStaffRole::Technician->value)
+            // Every reader lists them in the same order, and the import gives
+            // no order of its own worth keeping.
+            ->orderBy('users.name');
+    }
+
+    /**
+     * This night's technicians by name, as every plan reader is shown them.
+     *
+     * @return array<int, string>
+     */
+    public function technicianNames(): array
+    {
+        return $this->technicians->pluck('name')->all();
     }
 
     /**
