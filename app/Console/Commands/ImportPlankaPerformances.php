@@ -19,6 +19,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 
 /**
@@ -37,7 +38,8 @@ use Throwable;
  */
 #[Signature('planka:import
     {--dry-run : Report what would be imported without writing anything}
-    {--filter-title= : Read only the cards whose title contains this text}')]
+    {--filter-title= : Read only the cards whose title contains this text}
+    {--json : Write nothing to stdout but the answers the AI gave, as one JSON array}')]
 #[Description('Import new formats and performances from the cards of the configured Planka list.')]
 class ImportPlankaPerformances extends Command
 {
@@ -79,6 +81,21 @@ class ImportPlankaPerformances extends Command
      */
     protected ?ClaudeReasoningLog $cardLog = null;
 
+    /**
+     * Whether the run was asked for the AI's answers rather than an account of
+     * what it did. See {@see reportAnswers()}.
+     */
+    protected bool $jsonOnly = false;
+
+    /**
+     * What the AI made of each card it was given, kept for a `--json` run and
+     * for nothing else — a normal run says what it did and throws the answers
+     * away once the records are written.
+     *
+     * @var list<array{card_id: string|null, card_name: string|null, response: array<string, mixed>|null}>
+     */
+    protected array $answers = [];
+
     public function __construct(
         protected PlankaClient $planka,
         protected PlankaPerformanceExtractor $extractor,
@@ -89,8 +106,17 @@ class ImportPlankaPerformances extends Command
 
     public function handle(): int
     {
+        $this->jsonOnly = (bool) $this->option('json');
+        $this->answers = [];
+
+        if ($this->jsonOnly) {
+            // Everything the run would normally say is commentary, and stdout
+            // now belongs to the answers alone.
+            $this->output->setVerbosity(OutputInterface::VERBOSITY_QUIET);
+        }
+
         if (! PlankaClient::isConfigured()) {
-            $this->error('Planka is not configured. Set PLANKA_URL, PLANKA_LIST_IDS and PLANKA_ACCESS_TOKEN.');
+            $this->reportProblem('Planka is not configured. Set PLANKA_URL, PLANKA_LIST_IDS and PLANKA_ACCESS_TOKEN.');
 
             // A scheduled run that silently does nothing is worse than one that
             // fails loudly, so a missing configuration is logged, not just told
@@ -113,7 +139,7 @@ class ImportPlankaPerformances extends Command
         try {
             $cards = $this->planka->cardsInLists($listIds);
         } catch (Throwable $e) {
-            $this->error("Could not read the Planka lists: {$e->getMessage()}");
+            $this->reportProblem("Could not read the Planka lists: {$e->getMessage()}");
 
             Log::error('Planka import aborted: the lists could not be read', [
                 'lists' => count($listIds),
@@ -158,7 +184,59 @@ class ImportPlankaPerformances extends Command
             ...$summary->context(),
         ]);
 
+        $this->reportAnswers();
+
         return self::SUCCESS;
+    }
+
+    /**
+     * Hand over what the AI made of the cards, for a run that asked for the
+     * answers themselves rather than an account of what was done with them:
+     * one entry per card the model was given, in the order they were read.
+     *
+     * A card the run never asked about — one without a description, or one the
+     * board has labelled out — is not in here, and neither is one whose reading
+     * failed. A card the model answered with something other than the JSON the
+     * schema requires is, with a null response: the card was read and nothing
+     * came of it, which is worth telling apart from a card never read.
+     */
+    protected function reportAnswers(): void
+    {
+        if (! $this->jsonOnly) {
+            return;
+        }
+
+        $this->output->writeln(
+            (string) json_encode($this->answers, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            OutputInterface::VERBOSITY_QUIET,
+        );
+    }
+
+    /**
+     * Say that something went wrong, wherever the run's commentary goes.
+     *
+     * A `--json` run has been quietened down to the answers alone, so its
+     * troubles are written to stderr instead: stdout stays parseable, and a
+     * failure is still not a silence.
+     */
+    protected function reportProblem(string $message, bool $isWarning = false): void
+    {
+        if ($this->jsonOnly) {
+            $this->output->getErrorStyle()->writeln(
+                "<error>{$message}</error>",
+                OutputInterface::VERBOSITY_QUIET,
+            );
+
+            return;
+        }
+
+        if ($isWarning) {
+            $this->warn($message);
+
+            return;
+        }
+
+        $this->error($message);
     }
 
     /**
@@ -217,7 +295,7 @@ class ImportPlankaPerformances extends Command
             );
         } catch (Throwable $e) {
             // One unreadable card must not cost us the rest of the season.
-            $this->warn("Could not read the card \"{$card['name']}\": {$e->getMessage()}");
+            $this->reportProblem("Could not read the card \"{$card['name']}\": {$e->getMessage()}", isWarning: true);
             Log::warning('Planka card extraction failed', [
                 'card' => $card['id'],
                 'exception' => $e->getMessage(),
@@ -231,6 +309,14 @@ class ImportPlankaPerformances extends Command
         $this->cardId = $card['id'];
         $this->cardName = $card['name'];
         $this->cardLog = null;
+
+        if ($this->jsonOnly) {
+            $this->answers[] = [
+                'card_id' => $card['id'],
+                'card_name' => $card['name'],
+                'response' => $this->extractor->rawResponse(),
+            ];
+        }
 
         $this->reportReasoning($card['name']);
 

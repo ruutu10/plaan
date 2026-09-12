@@ -36,6 +36,7 @@ class TechnicalPlanReviewer
 
         $aiResponse = $this->askClaude($this->client, [
             'maxTokens' => config('services.anthropic.max_tokens'),
+            'temperature' => config('services.anthropic.temperature'),
             'messages' => [
                 [
                     'role' => 'user',

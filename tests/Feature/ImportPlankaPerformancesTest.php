@@ -17,11 +17,13 @@ use App\Models\User;
 use App\Services\PlankaPerformanceExtractor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Mockery\MockInterface;
 use ReflectionMethod;
 use RuntimeException;
+use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\Concerns\AnswersAsTheExtractionModel;
 use Tests\TestCase;
 
@@ -1688,5 +1690,185 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame(1, Performance::query()->count());
         $staffing = $existing->staff()->sole();
         $this->assertSame($tom->id, $staffing->id);
+    }
+
+    /**
+     * One night as the AI would have answered for it, in the JSON the schema
+     * asks for rather than the objects the extractor reads out of it.
+     *
+     * @return array<string, mixed>
+     */
+    private function answerFor(string $formatName, string $date = '2025-10-09'): array
+    {
+        return [
+            'formats' => [[
+                'format_name' => $formatName,
+                'date' => $date,
+                'team_id' => null,
+                'location' => 'improkeskus',
+                'performances' => [[
+                    'title' => 'Märtu10',
+                    'start_time' => '20:00',
+                    'duration_minutes' => 20,
+                    'team_id' => null,
+                    'staff' => [],
+                ]],
+            ]],
+            'reasoningNotes' => ['Kuupäev real "Toimumise kuupäev: 9.10.2025".'],
+        ];
+    }
+
+    /**
+     * Run the import with `--json` and hand back everything it wrote, so a test
+     * can hold the whole of stdout to the promise the flag makes.
+     *
+     * @param  array<string, mixed>  $parameters
+     */
+    private function jsonRun(array $parameters = []): string
+    {
+        $output = new BufferedOutput;
+
+        $this->assertSame(0, Artisan::call('planka:import', [...$parameters, '--json' => true], $output));
+
+        return $output->fetch();
+    }
+
+    public function test_a_json_run_writes_the_ais_answers_and_nothing_else(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $answer = $this->answerFor('Õppelava');
+        $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode($answer)));
+
+        $written = $this->jsonRun();
+
+        // Decoding the whole of stdout is the point: a single line of the run's
+        // usual commentary would leave this unparseable.
+        $this->assertSame(
+            [['card_id' => 'card-1', 'card_name' => 'Õppelava 9.10', 'response' => $answer]],
+            json_decode($written, true, 512, JSON_THROW_ON_ERROR),
+        );
+
+        // The flag changes what the run says, not what it does.
+        $this->assertSame(1, Performance::query()->count());
+        $this->assertSame('Õppelava', Format::sole()->name);
+    }
+
+    public function test_a_json_run_answers_for_every_card_in_the_order_they_were_read(): void
+    {
+        $this->fakeBoard([
+            $this->card('card-1', 'Õppelava 9.10'),
+            $this->card('card-2', 'TLN õppelava 15.11'),
+        ]);
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')->andReturn([], []);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+            $mock->shouldReceive('rawResponse')->andReturn(
+                $this->answerFor('Õppelava'),
+                $this->answerFor('Õppelava', '2025-11-15'),
+            );
+        });
+
+        /** @var list<array<string, mixed>> $answers */
+        $answers = json_decode($this->jsonRun(), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame(['card-1', 'card-2'], array_column($answers, 'card_id'));
+        $this->assertSame(['Õppelava 9.10', 'TLN õppelava 15.11'], array_column($answers, 'card_name'));
+    }
+
+    public function test_a_json_run_says_nothing_about_a_card_the_ai_was_never_given(): void
+    {
+        $this->fakeBoard([
+            $this->card('card-1', 'Töötuba', labelIds: ['label-tootuba']),
+            $this->card('card-2', 'Õppelava 9.10', labelIds: ['label-etendus']),
+        ]);
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')->once()->andReturn([]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+            $mock->shouldReceive('rawResponse')->andReturn($this->answerFor('Õppelava'));
+        });
+
+        $written = $this->jsonRun();
+
+        /** @var list<array<string, mixed>> $answers */
+        $answers = json_decode($written, true, 512, JSON_THROW_ON_ERROR);
+
+        // The labelled card was never read, so there is no answer to give for
+        // it — and the line that would normally say so is commentary.
+        $this->assertSame(['card-2'], array_column($answers, 'card_id'));
+        $this->assertStringNotContainsString('Passing over', $written);
+    }
+
+    public function test_a_json_dry_run_answers_without_writing_anything(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $answer = $this->answerFor('Õppelava');
+        $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode($answer)));
+
+        /** @var list<array<string, mixed>> $answers */
+        $answers = json_decode($this->jsonRun(['--dry-run' => true]), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame([$answer], array_column($answers, 'response'));
+        $this->assertSame(0, Performance::query()->count());
+        $this->assertSame(0, Format::query()->count());
+    }
+
+    public function test_a_json_run_answers_with_null_for_a_card_the_ai_answered_unusably(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering('Ei oska vastata.'));
+
+        /** @var list<array<string, mixed>> $answers */
+        $answers = json_decode($this->jsonRun(), true, 512, JSON_THROW_ON_ERROR);
+
+        // The card was read and nothing came of it, which is worth telling
+        // apart from a card that was never read at all.
+        $this->assertSame([['card_id' => 'card-1', 'card_name' => 'Õppelava 9.10', 'response' => null]], $answers);
+    }
+
+    public function test_a_json_run_still_reports_the_trouble_it_runs_into(): void
+    {
+        config()->set('services.planka.token', null);
+
+        $this->artisan('planka:import', ['--json' => true])
+            ->expectsOutputToContain('Planka is not configured')
+            ->assertFailed();
+    }
+
+    public function test_a_json_run_still_reports_a_card_the_ai_could_not_read(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')->once()->andThrow(new RuntimeException('AI is down'));
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
+
+        $this->artisan('planka:import', ['--json' => true])
+            ->expectsOutputToContain('AI is down')
+            ->assertSuccessful();
+    }
+
+    public function test_a_run_without_the_flag_keeps_its_answers_to_itself(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $this->app->instance(
+            PlankaPerformanceExtractor::class,
+            $this->extractorAnswering((string) json_encode($this->answerFor('Õppelava'))),
+        );
+
+        $output = new BufferedOutput;
+
+        $this->assertSame(0, Artisan::call('planka:import', [], $output));
+
+        $written = $output->fetch();
+
+        $this->assertStringContainsString('Imported 1 format(s) and 1 performance(s)', $written);
+        $this->assertStringNotContainsString('card_id', $written);
     }
 }

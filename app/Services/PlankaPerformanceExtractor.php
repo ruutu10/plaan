@@ -95,6 +95,7 @@ class PlankaPerformanceExtractor
 
         $aiResponse = $this->askClaude($this->client(), [
             'maxTokens' => config('services.anthropic.max_tokens'),
+            'temperature' => config('services.anthropic.temperature'),
             'messages' => [
                 [
                     'role' => 'user',
@@ -128,7 +129,7 @@ class PlankaPerformanceExtractor
             'card' => $cardName,
             'nights' => count($nights),
             'performances' => array_sum(array_map(
-                fn (ImportedNight $night): int => count($night->performances),
+                fn(ImportedNight $night): int => count($night->performances),
                 $nights,
             )),
             'reasoningNotes' => $this->reasoningNotes,
@@ -320,8 +321,8 @@ class PlankaPerformanceExtractor
         }
 
         return array_values(array_filter(
-            array_map(fn (mixed $note): string => trim((string) (is_scalar($note) ? $note : '')), $notes),
-            fn (string $note): bool => $note !== '',
+            array_map(fn(mixed $note): string => trim((string) (is_scalar($note) ? $note : '')), $notes),
+            fn(string $note): bool => $note !== '',
         ));
     }
 
@@ -552,24 +553,24 @@ class PlankaPerformanceExtractor
         $teams = $this->teams() === []
             ? 'Tiime pole registreeritud — jäta `team_id` alati tühjaks.'
             : collect($this->teams())
-                ->map(fn (string $name, int $id): string => "- {$id} — {$name}")
-                ->implode("\n");
+            ->map(fn(string $name, int $id): string => "- {$id} — {$name}")
+            ->implode("\n");
 
         $formats = $this->formats() === []
             ? 'Ühtki formaati pole veel registreeritud — kõik selle kaardi formaadid on uued.'
             : collect($this->formats())
-                ->values()
-                ->map(fn (string $name): string => "- {$name}")
-                ->implode("\n");
+            ->values()
+            ->map(fn(string $name): string => "- {$name}")
+            ->implode("\n");
 
         $cardLabels = $labels === []
             ? 'Sildid puuduvad.'
-            : collect($labels)->map(fn (string $label): string => "- {$label}")->implode("\n");
+            : collect($labels)->map(fn(string $label): string => "- {$label}")->implode("\n");
 
         return "# Registreeritud tiimid\n\n{$teams}\n\n# Registreeritud formaadid\n\n{$formats}"
-            ."\n\n# Kaardi pealkiri\n\n{$cardName}"
-            ."\n\n# Planka tähtaeg\n\n{$due}\n\n# Kaardi sildid\n\n{$cardLabels}"
-            ."\n\n# Kaardi kirjeldus\n\n{$cardDescription}";
+            . "\n\n# Kaardi pealkiri\n\n{$cardName}"
+            . "\n\n# Planka tähtaeg\n\n{$due}\n\n# Kaardi sildid\n\n{$cardLabels}"
+            . "\n\n# Kaardi kirjeldus\n\n{$cardDescription}";
     }
 
     /**
