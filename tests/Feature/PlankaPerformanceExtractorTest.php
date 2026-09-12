@@ -367,6 +367,46 @@ class PlankaPerformanceExtractorTest extends TestCase
         $this->assertStringContainsString('Sildid', $this->sentBodies[0]['system']);
     }
 
+    /**
+     * The three readings two different models got wrong on the same board, each
+     * now spelled out in the prompt rather than left to be inferred from an
+     * example: the evening's length is not an act's, a card whose crew is still
+     * unfilled is still a show, and the bar line is a role like any other.
+     */
+    public function test_the_readings_models_get_wrong_are_spelled_out_for_them(): void
+    {
+        $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Kaardi tekst');
+
+        $system = $this->sentBodies[0]['system'];
+
+        // An evening's total is not an act's, however neatly it divides.
+        $this->assertStringContainsString('Ära kunagi jaga õhtu kogukestust etteastete arvuga', $system);
+        // A card filled in as far as the date and the hour announces a show,
+        // whatever the crew lines still say.
+        $this->assertStringContainsString('Täitmata kaart on ikka etendus', $system);
+        // The board writes the bar rota longhand, and the roles are read off
+        // the line rather than guessed at.
+        $this->assertStringContainsString('Tallinna Improkeskuse Improbaaris on:', $system);
+        // One person, two jobs, two entries.
+        $this->assertStringContainsString('Üks inimene, mitu rolli', $system);
+    }
+
+    /**
+     * The same three, said again where the value itself is written: a schema
+     * description sits closer to the answer than any section of the prompt.
+     */
+    public function test_the_schema_repeats_them_beside_the_fields_they_govern(): void
+    {
+        $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Kaardi tekst');
+
+        $act = $this->sentBodies[0]['output_config']['format']['schema']['properties']['formats']['items']['properties']['performances']['items']['properties'];
+
+        $this->assertStringContainsString('Never divide the evening', $act['duration_minutes']['description']);
+        $this->assertStringContainsString('null duration_minutes has a null start_time', $act['start_time']['description']);
+        $this->assertStringContainsString('one entry per job', $act['staff']['description']);
+        $this->assertStringContainsString('empty array, not a dropped act', $act['staff']['description']);
+    }
+
     public function test_a_card_carrying_no_labels_says_so(): void
     {
         $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Kaardi tekst');

@@ -16,6 +16,36 @@ Sildid (`ETENDUS`, `TÖÖTUBA`, `FESTIVAL`) on korraldajate märksõnad sündmus
 - Mitu moodulit korraga ("Rauno I ja II moodul") on kaks eraldi etteastet.
 - Kui esineja väli on mainitud, kuid tühi ("Esinejad: ???"), ja kaart viitab selgelt etendusele, loo etteaste ikkagi ja kasuta esinejana kaardi pealkirja.
 
+### Täitmata kaart on ikka etendus
+
+Enamik kaarte on korraldaja mall, mis täidetakse osade kaupa: kuupäev ja koht pannakse paika kohe, esinejad ja meeskond alles hiljem. **Täitmata meeskonnaväljad ei tähenda, et etendust pole.**
+
+Otsusta selle kontrollnimekirja järgi. Kui kaardil on **kõik kolm**, on tegu etendusega ja `formats` **ei tohi** tühjaks jääda:
+
+1. kirjelduses on täidetud `Toimumise kuupäev:`;
+2. kirjelduses on täidetud `Etteaste algus:` või `Etteaste kestus:`;
+3. kaardil on silt `ETENDUS` **või** pealkiri sobitub mõne registreeritud formaadiga.
+
+Sel juhul loo üks etteaste, `title` on `null` ja `staff` on tühi massiiv. Kohatäited jäävad `staff`-ist välja, aga **kohatäide ei kustuta etteastet ennast** — see reegel on ülimuslik nii jaotise "Mida mitte kaasata" kui ka juhise "ära leiuta midagi juurde" suhtes. Tühja `staff`-i põhjus kirjuta `reasoningNotes` sisse.
+
+Näide — kogu meeskond on veel märkimata, aga etendus on olemas:
+
+```
+- **Toimumise kuupäev:** 14.11.2026
+- **Asukoht:** IMPEERIUM teatrisaal
+- **Etteaste algus:** 19:00
+- **Etteaste kestus:** 120 min
+
+**Meeskond:**
+
+- Õhtujuht: ???
+- Esinejad: ???
+- Heli- ja valgus: ???
+- Piletimüüja: ???
+```
+
+→ üks õhtu, selle sees üks etteaste (`title: null`, `staff: []`). Sama kehtib siis, kui `Esinejad:` real on ainult juhis või tingimus (`(trupid ja/või nimed)`, `min 2 Ruutu10 improviseerijat`) — ka see on täitmata väli, mitte etenduse puudumine.
+
 ## Formaadi nimi (`format_name`)
 
 1. **Üks etteaste** → nimi on selle etteaste või trupi nimi: `Trupp 1`, `JadaJada Special`, `KOMÖÖDIASPORT`, `SPEKTER`, `Tšikid reas`, `Bitseption`. Kui nime järel on mõttekriipsu või kooloniga loetletud liikmed (`Trupp 2 - Märt, Arne, Grete`), võta ainult kriipsu ees olev osa.
@@ -57,10 +87,18 @@ Kirjelduse ees on nimekiri **juba registreeritud formaatidest** kujul `- nimi`. 
 - **Aastaarv** — kui kuupäeval aasta puudub, on **Planka tähtaja aastaarv ainus lubatud allikas**; kui ka tähtaeg puudub, kasuta praegust aastat. Päev ja kuu võta alati kirjeldusest, kui need seal on.
   - **Ära tuleta ega arvuta aastaarvu ise.** Ära otsusta kirjelduses mainitud muude kuupäevade (töötoa- või mooduliperiood) põhjal, et tähtajast varasem või hilisem aasta oleks "loogilisem" — selline arutlus on ise viga, isegi kui see tundub veenev. Sama kaart peab sama kuupäeva puhul andma sama aastaarvu iga kord.
   - Kahtluse korral kirjuta kahtlus ühe lausega `reasoningNotes` sisse ("aastaarv X tähtajast, kuna kuupäeval aastaarv puudus") ja kasuta **ikkagi** tähtaja aastaarvu — ära jäta kaarti sel põhjusel välja ega vaheta aastaarvu.
-- **`duration_minutes`** — iga etteaste enda pikkus minutites. Võta otse tekstist (`Märtu10 (20min)` → 20, `Etteaste kestus: 90 min` → 90) või arvuta kellaaegade vahest (`Show 18:00-19:30` = 90 minutit). Mitut truppi katev kellaajaplokk kehtib nende kõigi kohta. Kui tuletada ei saa, `null`.
+- **`duration_minutes`** — iga etteaste **enda** pikkus minutites. Lubatud allikaid on täpselt kolm:
+  1. etteaste enda juures olev märge: `Märtu10 (20min)` → 20;
+  2. etteaste enda kellaaegade vahe: `Show 18:00-19:30` → 90;
+  3. rida `Etteaste kestus:` **ainult siis, kui sellel õhtul on täpselt üks etteaste** — siis on õhtu pikkus ka selle ainsa etteaste pikkus.
+
+  Muul juhul `null`. **`Etteaste kestus:` on kogu õhtu pikkus, mitte ühe etteaste oma.** Mitut truppi katev kellaajaplokk kehtib nende kõigi kohta.
+
+  **Ära kunagi jaga õhtu kogukestust etteastete arvuga.** Neli etteastet ja `Etteaste kestus: 120 min` **ei tähenda** 30 minutit igaühele; kaks etteastet ja `90 min` **ei tähenda** 45 + 45. Selline jaotus on väljamõeldis, isegi kui see tundub loogiline: õhtus on vaheajad, sissejuhatused ja ebavõrdse pikkusega etteasted. Kui kaart ei anna iga etteaste enda pikkust, on **kõigi** selle õhtu etteastete `duration_minutes` väärtus `null`.
 - **`start_time`** — kellaaeg, mil etteaste **laval algab**, kujul `HH:MM` (24 tundi).
   - Oma kellaaeg kirjas → võta see: `Show 18:00-19:30` → `18:00`, `20:15 Bitseption` → `20:15`.
   - **Kirjas on õhtu algus ja etteastete kestused → arvuta iga etteaste algus ise:** esimene algab õhtu alguses, järgmine eelmise algus pluss eelmise kestus, ja nii edasi. Kaardil mainitud vaheaeg või paus lisa kahe etteaste vahele.
+  - **Arvutada saab ainult päris kestustega.** Kui eelmise etteaste `duration_minutes` on `null`, siis pole järgmise algust millestki tuletada ja see on samuti `null` — õhtu algus jääb ainult esimese etteaste küljes. Ära too kestust selleks tagaukse kaudu sisse, jagades õhtu kogupikkust.
   - Ukseavamise, kogunemise, prooviaja ja koristuse kellaaeg **ei ole** etenduse algus.
   - **Kui arvutada pole millestki, kasuta `null`.** Ära paku tavapärast õhtust aega — puuduva aja täidab rakendus ise.
 
@@ -102,9 +140,34 @@ Iga etteaste küljes on massiiv `staff`, kus iga element on üks inimene: `{ nam
 - Terve õhtu, mitte ühe etteaste kohta käiv roll — õhtujuht, tehnik, operaator, piletimüüja ja baarirahvas käivad tavaliselt kogu õhtu — lisa **iga selle õhtu etteaste** `staff` massiivi.
 - Esinejad kuuluvad ainult oma etteaste `staff` alla, mitte kogu õhtu igale etteastele.
 
+### Millise rea taga milline roll seisab
+
+Kaardid on korraldaja mall ja rollid seisavad alati nende ridade taga. Loe rida rea kaupa; sõnastus kõigub, sisu mitte:
+
+| Rida kaardil | `role` |
+| --- | --- |
+| `Esinejad:` | `performer` |
+| `Õhtujuht:` | `host` |
+| `Heli- ja valgus:`, `Heli ja valgus:`, `Tehnik:` | `technician` |
+| `Operaator:`, `Video:` | `video-operator` |
+| `Piletimüüja:` | `ticket-seller` |
+| `Baar:`, `Baaris on:`, `Tallinna Improkeskuse Improbaaris on:`, `Improbaaris on:` | `bar` |
+| `Projekti juht:`, `Projektijuht:`, `Riietus stiil:` | *(mitte ükski — jäta välja)* |
+
+Loend ei ole ammendav: sama sisuga rida loeb ka teistmoodi sõnastatuna. Baaririda on kõige kõikuvama sõnastusega — **iga rida, mis nimetab baaris töötava inimese, annab rolli `bar`**.
+
+### Üks inimene, mitu rolli
+
+Sama inimene võib ühel õhtul teha mitut tööd. **Iga roll on eraldi kirje `staff` massiivis, ka siis, kui nimi kordub.** Ära kustuta kordust ega vali "peamist" rolli.
+
+- `Õhtujuht: Rauno` + `Tallinna Improkeskuse Improbaaris on: Rauno` → **kaks** kirjet: `{Rauno, host}` ja `{Rauno, bar}`.
+- `Õhtujuht: Rauno ja Toivo` + `Esinejad: Rauno ja Toivo` → **neli** kirjet: mõlemad `host` ja mõlemad `performer`.
+
+Ainus kordus, mida ei tehta, on täpselt sama nimi sama rolliga sama etteaste all.
+
 ## Mida mitte kaasata
 
-- **Kohatäited:** `???`, `nimi`, `ei ole vaja`, `min 4`, `-`. Need tähendavad, et esinejat pole veel paika pandud.
+- **Kohatäited:** `???`, `nimi`, `ei ole vaja`, `min 4`, `-`, `(trupid ja/või nimed)`, `hh:mm`. Need tähendavad, et esinejat pole veel paika pandud. Kohatäide jätab **inimese** `staff`-ist välja; **etteastet ennast see ei kustuta** — vt "Täitmata kaart on ikka etendus", mis on selle reegli suhtes ülimuslik.
 - **Koolitus, mitte etendus:** töötoad, moodulid, näidistunnid ja kursused ei ole etendused. Kui aga sellisel kaardil on eraldi välja toodud lõpuetendus või etendus, siis **see** on etendus ja tuleb kaasata.
 
 ## Näide
@@ -147,3 +210,5 @@ Kirjuta põhjendused ka siis, kui lugemine oli lihtne ja üheselt mõistetav. Ka
 ## Väljund
 
 Vasta ainult JSON-objektiga, mis vastab etteantud skeemile. Kui kaardilt ei õnnestu ühtki etendust tuvastada, tagasta tühi massiiv `formats` — koos põhjendusega `reasoningNotes` sees. Ära arva ega leiuta midagi juurde: kui midagi pole kirjas, siis seda pole.
+
+See käib **väljade** kohta: kirjutamata kestus on `null`, kirjutamata inimene jääb välja. Etteaste enda kohta see ei käi — kaart, mis läbib jaotise "Täitmata kaart on ikka etendus" kontrollnimekirja, annab etteaste ka siis, kui iga meeskonnaväli on veel `???`. Tühi `formats` tähendab ainult üht: kaardil ei ole etendust.

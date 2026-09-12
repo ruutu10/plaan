@@ -129,7 +129,7 @@ class PlankaPerformanceExtractor
             'card' => $cardName,
             'nights' => count($nights),
             'performances' => array_sum(array_map(
-                fn(ImportedNight $night): int => count($night->performances),
+                fn (ImportedNight $night): int => count($night->performances),
                 $nights,
             )),
             'reasoningNotes' => $this->reasoningNotes,
@@ -321,8 +321,8 @@ class PlankaPerformanceExtractor
         }
 
         return array_values(array_filter(
-            array_map(fn(mixed $note): string => trim((string) (is_scalar($note) ? $note : '')), $notes),
-            fn(string $note): bool => $note !== '',
+            array_map(fn (mixed $note): string => trim((string) (is_scalar($note) ? $note : '')), $notes),
+            fn (string $note): bool => $note !== '',
         ));
     }
 
@@ -460,14 +460,14 @@ class PlankaPerformanceExtractor
                                                 ['type' => 'string'],
                                                 ['type' => 'null'],
                                             ],
-                                            'description' => 'The time this act starts, as 24-hour HH:MM, worked out from the evening\'s start and the acts before it, or null when the card gives nothing to work it out from. Do not guess a usual hour.',
+                                            'description' => 'The time this act starts, as 24-hour HH:MM, worked out from the evening\'s start and the real durations of the acts before it, or null when the card gives nothing to work it out from. An act whose predecessor has a null duration_minutes has a null start_time too. Do not guess a usual hour.',
                                         ],
                                         'duration_minutes' => [
                                             'anyOf' => [
                                                 ['type' => 'integer'],
                                                 ['type' => 'null'],
                                             ],
-                                            'description' => 'Length of the act in minutes, or null when the card does not say.',
+                                            'description' => 'Length of this one act in minutes: its own note ("Märtu10 (20min)"), its own clock times ("18:00-19:30"), or the night\'s "Etteaste kestus:" when the night has exactly one act. Null otherwise. Never divide the evening\'s total by the number of acts — four acts and a 120-minute evening is not 30 minutes each.',
                                         ],
                                         'team_id' => [
                                             'anyOf' => [
@@ -478,7 +478,7 @@ class PlankaPerformanceExtractor
                                         ],
                                         'staff' => [
                                             'type' => 'array',
-                                            'description' => 'Every named person staffing this act, on stage or behind it, whose job is one of the given roles. Anyone whose role does not clearly match one of them is left out entirely.',
+                                            'description' => 'Every named person staffing this act, on stage or behind it, whose job is one of the given roles. Anyone whose role does not clearly match one of them is left out entirely. Someone doing two jobs that night gets one entry per job, even though the name repeats. An act whose crew is all placeholders is an empty array, not a dropped act.',
                                             'items' => [
                                                 'type' => 'object',
                                                 'properties' => [
@@ -553,24 +553,24 @@ class PlankaPerformanceExtractor
         $teams = $this->teams() === []
             ? 'Tiime pole registreeritud — jäta `team_id` alati tühjaks.'
             : collect($this->teams())
-            ->map(fn(string $name, int $id): string => "- {$id} — {$name}")
-            ->implode("\n");
+                ->map(fn (string $name, int $id): string => "- {$id} — {$name}")
+                ->implode("\n");
 
         $formats = $this->formats() === []
             ? 'Ühtki formaati pole veel registreeritud — kõik selle kaardi formaadid on uued.'
             : collect($this->formats())
-            ->values()
-            ->map(fn(string $name): string => "- {$name}")
-            ->implode("\n");
+                ->values()
+                ->map(fn (string $name): string => "- {$name}")
+                ->implode("\n");
 
         $cardLabels = $labels === []
             ? 'Sildid puuduvad.'
-            : collect($labels)->map(fn(string $label): string => "- {$label}")->implode("\n");
+            : collect($labels)->map(fn (string $label): string => "- {$label}")->implode("\n");
 
         return "# Registreeritud tiimid\n\n{$teams}\n\n# Registreeritud formaadid\n\n{$formats}"
-            . "\n\n# Kaardi pealkiri\n\n{$cardName}"
-            . "\n\n# Planka tähtaeg\n\n{$due}\n\n# Kaardi sildid\n\n{$cardLabels}"
-            . "\n\n# Kaardi kirjeldus\n\n{$cardDescription}";
+            ."\n\n# Kaardi pealkiri\n\n{$cardName}"
+            ."\n\n# Planka tähtaeg\n\n{$due}\n\n# Kaardi sildid\n\n{$cardLabels}"
+            ."\n\n# Kaardi kirjeldus\n\n{$cardDescription}";
     }
 
     /**
