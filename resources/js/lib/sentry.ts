@@ -24,9 +24,12 @@ let feedbackActor: ReturnType<
 /**
  * Boots the browser SDK. Called before the Inertia app is created so that
  * errors thrown while resolving the initial page are still reported.
+ *
+ * Never boots in a local dev server (`import.meta.env.DEV`), even if a DSN is
+ * configured: dev traffic and errors have no business in Sentry.
  */
 export function initializeSentry(): void {
-    if (!dsn || typeof window === 'undefined') {
+    if (!dsn || typeof window === 'undefined' || import.meta.env.DEV) {
         return;
     }
 
@@ -81,7 +84,7 @@ export function initializeSentry(): void {
  * Attaches Sentry's error handler to the Vue app that Inertia creates for us.
  */
 export function attachSentryToVueApp(app: App): void {
-    if (!dsn) {
+    if (!dsn || import.meta.env.DEV) {
         return;
     }
 
