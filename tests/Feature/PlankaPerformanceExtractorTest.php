@@ -663,6 +663,30 @@ class PlankaPerformanceExtractorTest extends TestCase
         $this->assertCount(2, $this->sentBodies);
     }
 
+    public function test_an_extractor_told_to_ignore_the_cache_reads_every_card_itself(): void
+    {
+        $extractor = $this->extractorAnswering('{"formats": []}')->withoutClaudeCache();
+
+        $extractor->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
+        $extractor->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
+
+        $this->assertCount(2, $this->sentBodies, 'Both readings should have gone to the model.');
+    }
+
+    public function test_what_such_a_reading_hears_replaces_what_was_cached(): void
+    {
+        // The point of ignoring the cache is a fresh reading, not a run whose
+        // answers are thrown away: the next run that does use the cache finds
+        // the reading this one paid for.
+        $this->extractorAnswering('{"formats": []}')
+            ->withoutClaudeCache()
+            ->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
+
+        $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Toimumise kuupäev: 13.09.2025');
+
+        $this->assertCount(1, $this->sentBodies);
+    }
+
     public function test_an_empty_answer_is_not_remembered(): void
     {
         $extractor = $this->extractorAnswering('');

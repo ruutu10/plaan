@@ -1871,4 +1871,42 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertStringContainsString('Imported 1 format(s) and 1 performance(s)', $written);
         $this->assertStringNotContainsString('card_id', $written);
     }
+
+    public function test_a_card_read_last_week_is_not_read_again(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $this->app->instance(
+            PlankaPerformanceExtractor::class,
+            $this->extractorAnswering((string) json_encode($this->answerFor('Õppelava'))),
+        );
+
+        $this->artisan('planka:import')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertCount(1, $this->sentBodies, 'The second run should have read the card from the cache.');
+    }
+
+    public function test_a_run_told_not_to_cache_asks_the_ai_about_every_card_again(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $this->app->instance(
+            PlankaPerformanceExtractor::class,
+            $this->extractorAnswering((string) json_encode($this->answerFor('Õppelava'))),
+        );
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->artisan('planka:import', ['--no-cache' => true])
+            ->expectsOutputToContain('Reading every card with the AI again')
+            ->assertSuccessful();
+
+        $this->assertCount(2, $this->sentBodies, 'The second run should have gone to the AI itself.');
+
+        // The flag changes what the run pays for, not what it writes: the card
+        // says what it said before, so nothing is imported a second time.
+        $this->assertSame(1, Performance::query()->count());
+        $this->assertSame(1, Format::query()->count());
+    }
 }

@@ -39,6 +39,7 @@ use Throwable;
 #[Signature('planka:import
     {--dry-run : Report what would be imported without writing anything}
     {--filter-title= : Read only the cards whose title contains this text}
+    {--no-cache : Ask the AI about every card again, ignoring the answers it gave before}
     {--json : Write nothing to stdout but the answers the AI gave, as one JSON array}')]
 #[Description('Import new formats and performances from the cards of the configured Planka list.')]
 class ImportPlankaPerformances extends Command
@@ -130,9 +131,21 @@ class ImportPlankaPerformances extends Command
         $titleFilter = (string) $this->option('filter-title');
         $listIds = PlankaClient::listIds();
 
+        // Every card goes to the model again, at the run's own expense: what a
+        // prompt now makes of the board is only visible if last week's readings
+        // are not handed back in its place.
+        $ignoreCache = (bool) $this->option('no-cache');
+
+        if ($ignoreCache) {
+            $this->extractor->withoutClaudeCache();
+
+            $this->info('Reading every card with the AI again, ignoring the answers it gave before.');
+        }
+
         Log::info('Planka import started', [
             'dry_run' => $dryRun,
             'filter_title' => blank($titleFilter) ? null : $titleFilter,
+            'ignore_cache' => $ignoreCache,
             'lists' => count($listIds),
         ]);
 
