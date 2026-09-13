@@ -45,7 +45,6 @@ class TechnicalPlanReviewer
             ],
             'model' => config('services.anthropic.model'),
             'system' => $this->buildSystemPrompt(),
-            'temperature' => 1,
             'thinking' => ['type' => 'disabled'],
         ]);
 
