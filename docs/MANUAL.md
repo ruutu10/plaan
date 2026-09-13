@@ -272,7 +272,7 @@ järel saadetud kirjas. Siit saad:
 - **Avalik link** - plaani salvestada ja saada selle jagamislink, mis
   kopeeritakse lõikelauale.
 - **AI ülevaatus** - küsida AI-tehnikult ülevaatust (§4.6).
-- **Esita tehnikutiimile** - plaan salvestada ja esitada.
+- **Esita tehnikatiimile** - plaan salvestada ja esitada.
 - Avada **tehniku mängimisvaate** - plaani keskendunud, stseenihaaval lugemise,
   mis on mõeldud puldi taha. Iga stseeni juures on kõik selle helid järjekorras,
   igaüks oma mängijaga; heli, mida brauser lahti ei saa, jääb lingiks.
@@ -332,7 +332,7 @@ AI tehnik on mõeldud lihtsate ja levinud puuduste kiireks tuvastamiseks.
 
 ### 4.7 Esitamine
 
-Nupp **Esita tehnikutiimile** salvestab plaani, seab selle staatuseks
+Nupp **Esita tehnikatiimile** salvestab plaani, seab selle staatuseks
 **Esitatud** ja märgib esitamise aja. Kohe seejärel:
 
 - plaani autor saab e-postiga terve plaani kirjeldusena sellest, mida ta saatis,
@@ -343,7 +343,26 @@ Nupp **Esita tehnikutiimile** salvestab plaani, seab selle staatuseks
 E-postiga saadetud dokument, väljatrükk ja ekraanil olev ülevaade on üks ja sama
 dokument, mis on koostatud samade reeglite järgi.
 
-### 4.8 Täitmise piirid
+### 4.8 Kommentaarid
+
+Salvestatud plaani ülevaatelehel - nii vormi viimasel sammul kui ka
+jagamislingiga avatud plaanil - on **kommentaaride** jaotis. Seal saavad esineja
+ja tehnikatiim plaani üle täpsustada, ilma et kumbki peaks teise aadressi otsima.
+
+- Kommentaare **näeb igaüks, kes plaani avab** - ka ilma kontota jagamislingiga.
+- **Kommenteerida saab sisse logides**. Sisse logimata lugejale ütleb leht, et kommenteerimiseks tuleb sisse logida.
+- Tehnikatiimi kirjutatud kommentaar kannab märget **„Tehnikatiim“**.
+- **Igast uuest kommentaarist saab teine pool e-kirja:** tehnikatiimi kommentaar
+  läheb plaani autorile, esineja poole kommentaar tehnikatiimi aadressile. Kiri
+  sisaldab kommentaari teksti ja linki plaani juurde. Oma kommentaari kohta kirja
+  ei saadeta.
+- **Kustutada saab oma kommentaare**; tehnik saab
+  kustutada kõiki. Juba saadetud teavituskirja
+  see tagasi ei võta.
+- Kommentaarid on plaani omad: nad tekivad alles siis, kui plaan on esimest korda
+  salvestatud, ja kustuvad koos plaaniga.
+
+### 4.9 Täitmise piirid
 
 - **Manused:** kuni 20 MB faili kohta. Lubatud tüübid: doc, docx, pdf, jpg, jpeg,
   png, gif, mp4, mov, avi, mkv, mp3, wav, ogg, qlc, txt, webp.
@@ -351,7 +370,7 @@ dokument, mis on koostatud samade reeglite järgi.
 - Väljade pikkused: formaadi kirjeldus 5000 märki; stseeni valgus/heli/märkused
   ja heli täpsustusväljad 2000 igaüks; helilink 2000; erivahendi kasutus 1000;
   vaba tekst 10 000; kestus 1–240 minutit; vaheaja pikkus 60 minutit; etenduse
-  osa pikkus 1–240 minutit.
+  osa pikkus 1–240 minutit; üks kommentaar 2000 märki.
 
 ---
 
@@ -380,6 +399,9 @@ seetõttu tippu, mis on täpselt õige koht - just neile on vaja päris õhtut l
 Iga rida avab detailivaate, kus on plaan ise, selle kirjutaja, etendus, mille
 kohta see käib, selle õhtu tehnik ja esitamise aeg. Detailivaade ulatub täpselt
 sama kaugele kui nimekiri: iga rida, mida pakutakse, ka avaneb.
+
+Nupp **Vaata plaani** avab plaani enda ülevaatelehe - seal saab tehnik plaani
+ka **kommenteerida** (§4.8), mille peale läheb plaani autorile kiri.
 
 ### 5.2 Plaani staatuse muutmine
 

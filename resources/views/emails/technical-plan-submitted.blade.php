@@ -26,7 +26,7 @@
 
     @if ($isAuthor)
         <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6;">
-            Sinu tehnikaplaan on tehnikutiimile esitatud. Allpool on plaan tervikuna —
+            Sinu tehnikaplaan on tehnikatiimile esitatud. Allpool on plaan tervikuna —
             hoia see kiri alles. Kui midagi vajab muutmist, ava plaan lingi kaudu, tee
             parandused ja esita uuesti.
         </p>
