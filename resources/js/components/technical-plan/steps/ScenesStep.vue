@@ -13,6 +13,7 @@ import {
     intermissionMinutes,
     isIntermission,
     nextSceneId,
+    readIntermissionForm,
     showParts,
     soundFileStillUsed,
     SOUND_PRESETS,
@@ -324,19 +325,6 @@ function editIntermission(scene: Scene): void {
     actError.value = '';
 }
 
-/**
- * Read a length the performer typed, holding it to the same range the server
- * does so they are stopped here rather than at the save. Returns undefined when
- * what they wrote is not a length at all.
- */
-function readMinutes(typed: string, max: number): number | undefined {
-    const minutes = Math.floor(Number(typed.trim()));
-
-    return Number.isFinite(minutes) && minutes >= 1 && minutes <= max
-        ? minutes
-        : undefined;
-}
-
 function saveIntermission(): void {
     const scene = editing.value;
 
@@ -344,27 +332,16 @@ function saveIntermission(): void {
         return;
     }
 
-    const minutes = readMinutes(
+    const { minutes, act, errors } = readIntermissionForm(
         minutesInput.value,
-        config.maxIntermissionMinutes,
+        actInput.value,
+        config,
     );
 
-    // The part this interval ends may be left unsaid — the performer may not
-    // have settled it yet — but a length typed has to be a real one.
-    const typedAct = actInput.value.trim();
-    const act =
-        typedAct === '' ? null : readMinutes(typedAct, config.maxActMinutes);
+    minutesError.value = errors.minutes;
+    actError.value = errors.act;
 
-    minutesError.value =
-        minutes === undefined
-            ? `Vaheaeg peab kestma 1–${config.maxIntermissionMinutes} minutit.`
-            : '';
-    actError.value =
-        act === undefined
-            ? `Etenduse osa peab kestma 1–${config.maxActMinutes} minutit.`
-            : '';
-
-    if (minutes === undefined || act === undefined) {
+    if (minutes === null || act === null) {
         return;
     }
 
@@ -878,16 +855,21 @@ const partsOverrun = computed(() => {
                 type="number"
                 min="1"
                 :max="config.maxIntermissionMinutes"
+                required
                 label="Vaheaja pikkus minutites"
                 placeholder="15"
                 :error="minutesError"
                 error-test-id="intermission-minutes-error"
             />
+            <!-- Required: the length of the part an interval ends is the one
+                 the reader cannot work out afterwards, so the performer is
+                 asked for it here rather than chased for it later. -->
             <R10Input
                 v-model="actInput"
                 type="number"
                 min="1"
                 :max="config.maxActMinutes"
+                required
                 label="Eelneva osa pikkus minutites"
                 :hint="
                     showMinutes > 0

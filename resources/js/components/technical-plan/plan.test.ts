@@ -24,6 +24,7 @@ import {
     isReady,
     isSmokeAllowedAt,
     nextSequentialId,
+    readIntermissionForm,
     showParts,
     soundAudioUrl,
     soundErrors,
@@ -437,6 +438,50 @@ describe('showParts', () => {
     it('names each part the way every reader shows it', () => {
         expect(actLabel(1, 40)).toBe('1. vaatus — 40 min');
         expect(actLabel(2, null)).toBe('2. vaatus');
+    });
+});
+
+describe('readIntermissionForm', () => {
+    it('reads both lengths when both are given', () => {
+        const form = readIntermissionForm('15', '25', config);
+
+        expect(form).toEqual({
+            minutes: 15,
+            act: 25,
+            errors: { minutes: '', act: '' },
+        });
+    });
+
+    it('insists on the length of the part the interval ends', () => {
+        const form = readIntermissionForm('15', '', config);
+
+        expect(form.act).toBeNull();
+        expect(form.errors.act).toContain('1–240');
+        // The interval's own length was fine, so it is not complained about.
+        expect(form.minutes).toBe(15);
+        expect(form.errors.minutes).toBe('');
+    });
+
+    it('treats a blank of only whitespace as no answer at all', () => {
+        expect(readIntermissionForm('15', '   ', config).act).toBeNull();
+    });
+
+    it('refuses lengths outside the range the server takes', () => {
+        expect(readIntermissionForm('0', '25', config).minutes).toBeNull();
+        expect(readIntermissionForm('61', '25', config).minutes).toBeNull();
+        expect(readIntermissionForm('15', '0', config).act).toBeNull();
+        expect(readIntermissionForm('15', '241', config).act).toBeNull();
+        expect(readIntermissionForm('kaks', 'kolm', config)).toMatchObject({
+            minutes: null,
+            act: null,
+        });
+    });
+
+    it('rounds a fractional length down, as the server stores whole minutes', () => {
+        expect(readIntermissionForm('15.7', '25.2', config)).toMatchObject({
+            minutes: 15,
+            act: 25,
+        });
     });
 });
 

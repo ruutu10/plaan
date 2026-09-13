@@ -139,6 +139,60 @@ export function actMinutes(scene: Pick<Scene, 'actMinutes'>): number | null {
     return Number.isFinite(minutes) && minutes > 0 ? minutes : null;
 }
 
+/**
+ * Read a length the performer typed, holding it to the same range the server
+ * does. Null when what they wrote is not a length at all — blank included.
+ */
+function readMinutes(typed: string, max: number): number | null {
+    const minutes = Math.floor(Number(typed.trim()));
+
+    return Number.isFinite(minutes) && minutes >= 1 && minutes <= max
+        ? minutes
+        : null;
+}
+
+/** The interval dialog's two lengths, read off what was typed. */
+export interface IntermissionForm {
+    /** How long the interval lasts, or null when it was not given as a length. */
+    minutes: number | null;
+    /** How long the part it ends runs, or null on the same terms. */
+    act: number | null;
+    errors: { minutes: string; act: string };
+}
+
+/**
+ * Read the interval dialog's answers, so the performer is stopped where they
+ * typed rather than at the save.
+ *
+ * Both lengths are required. The length of the part an interval ends is the one
+ * thing no reader can work out afterwards — see {@link showParts}, where the
+ * closing part is whatever is left of the evening — so an interval that does not
+ * carry it leaves the technician with no idea how long either half runs.
+ */
+export function readIntermissionForm(
+    minutesTyped: string,
+    actTyped: string,
+    config: Pick<WizardConfig, 'maxIntermissionMinutes' | 'maxActMinutes'>,
+): IntermissionForm {
+    const minutes = readMinutes(minutesTyped, config.maxIntermissionMinutes);
+    const act = readMinutes(actTyped, config.maxActMinutes);
+
+    return {
+        minutes,
+        act,
+        errors: {
+            minutes:
+                minutes === null
+                    ? `Vaheaeg peab kestma 1–${config.maxIntermissionMinutes} minutit.`
+                    : '',
+            act:
+                act === null
+                    ? `Märgi eelneva osa pikkus: 1–${config.maxActMinutes} minutit.`
+                    : '',
+        },
+    };
+}
+
 /** One part of a show played in parts — see {@link showParts}. */
 export interface ShowPart {
     /** Which part this is, counted from one over the parts a reader sees. */
