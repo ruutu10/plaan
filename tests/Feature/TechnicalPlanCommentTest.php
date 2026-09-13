@@ -107,6 +107,160 @@ class TechnicalPlanCommentTest extends TestCase
             ->assertJsonPath('canComment', true);
     }
 
+    public function test_the_thread_says_which_comments_the_reader_may_delete(): void
+    {
+        $own = TechnicalPlanComment::factory()->create([
+            'technical_plan_id' => $this->plan->id,
+            'user_id' => $this->author->id,
+            'created_at' => now(),
+        ]);
+
+        $theirs = TechnicalPlanComment::factory()->fromTechnicalTeam()->create([
+            'technical_plan_id' => $this->plan->id,
+            'user_id' => $this->technician()->id,
+            'created_at' => now()->addMinute(),
+        ]);
+
+        // The author: their own and no more.
+        $this->actingAs($this->author)
+            ->getJson(route('technical-plan.comments.index', $this->plan))
+            ->assertOk()
+            ->assertJsonPath('results.0.id', $own->id)
+            ->assertJsonPath('results.0.canDelete', true)
+            ->assertJsonPath('results.1.id', $theirs->id)
+            ->assertJsonPath('results.1.canDelete', false);
+
+        // The crew: every comment on the plan.
+        $this->actingAs($this->technician())
+            ->getJson(route('technical-plan.comments.index', $this->plan))
+            ->assertOk()
+            ->assertJsonPath('results.0.canDelete', true)
+            ->assertJsonPath('results.1.canDelete', true);
+    }
+
+    public function test_a_guest_is_offered_no_deletions(): void
+    {
+        TechnicalPlanComment::factory()->create([
+            'technical_plan_id' => $this->plan->id,
+            'user_id' => $this->author->id,
+        ]);
+
+        $this->getJson(route('technical-plan.comments.index', $this->plan))
+            ->assertOk()
+            ->assertJsonPath('results.0.canDelete', false);
+    }
+
+    public function test_a_writer_may_take_their_own_comment_back(): void
+    {
+        $comment = TechnicalPlanComment::factory()->create([
+            'technical_plan_id' => $this->plan->id,
+            'user_id' => $this->author->id,
+        ]);
+
+        $this->actingAs($this->author)
+            ->deleteJson(route('technical-plan.comments.destroy', [$this->plan, $comment]))
+            ->assertNoContent();
+
+        $this->assertModelMissing($comment);
+    }
+
+    public function test_the_crew_may_delete_anybody_s_comment(): void
+    {
+        $comment = TechnicalPlanComment::factory()->create([
+            'technical_plan_id' => $this->plan->id,
+            'user_id' => $this->author->id,
+        ]);
+
+        $this->actingAs($this->technician())
+            ->deleteJson(route('technical-plan.comments.destroy', [$this->plan, $comment]))
+            ->assertNoContent();
+
+        $this->assertModelMissing($comment);
+    }
+
+    public function test_a_reader_may_not_delete_somebody_else_s_comment(): void
+    {
+        $comment = TechnicalPlanComment::factory()->create([
+            'technical_plan_id' => $this->plan->id,
+            'user_id' => $this->author->id,
+        ]);
+
+        // Holding the plan's link is what lets this one join the conversation;
+        // it is not what lets them edit what others have said in it.
+        $this->actingAs(User::factory()->create())
+            ->deleteJson(route('technical-plan.comments.destroy', [$this->plan, $comment]))
+            ->assertForbidden();
+
+        $this->assertModelExists($comment);
+    }
+
+    public function test_a_team_mate_may_not_delete_their_group_s_other_comments(): void
+    {
+        $mate = User::factory()->create();
+        $team = $this->teamOf($mate);
+        $format = Format::factory()->create(['team_id' => $team->id]);
+        $plan = TechnicalPlan::factory()->submitted()->create([
+            'user_id' => $this->author->id,
+            'performance_id' => Performance::factory()->create(['format_id' => $format->id]),
+        ]);
+
+        $comment = TechnicalPlanComment::factory()->create([
+            'technical_plan_id' => $plan->id,
+            'user_id' => $this->author->id,
+        ]);
+
+        $this->actingAs($mate)
+            ->deleteJson(route('technical-plan.comments.destroy', [$plan, $comment]))
+            ->assertForbidden();
+
+        $this->assertModelExists($comment);
+    }
+
+    public function test_a_guest_may_not_delete_a_comment(): void
+    {
+        $comment = TechnicalPlanComment::factory()->create([
+            'technical_plan_id' => $this->plan->id,
+            'user_id' => $this->author->id,
+        ]);
+
+        $this->deleteJson(route('technical-plan.comments.destroy', [$this->plan, $comment]))
+            ->assertUnauthorized();
+
+        $this->assertModelExists($comment);
+    }
+
+    public function test_a_comment_cannot_be_deleted_through_another_plan(): void
+    {
+        $comment = TechnicalPlanComment::factory()->create([
+            'technical_plan_id' => $this->plan->id,
+            'user_id' => $this->author->id,
+        ]);
+
+        $elsewhere = TechnicalPlan::factory()->submitted()->create();
+
+        $this->actingAs($this->technician())
+            ->deleteJson(route('technical-plan.comments.destroy', [$elsewhere, $comment]))
+            ->assertNotFound();
+
+        $this->assertModelExists($comment);
+    }
+
+    public function test_deleting_a_comment_mails_nobody(): void
+    {
+        Notification::fake();
+
+        $comment = TechnicalPlanComment::factory()->create([
+            'technical_plan_id' => $this->plan->id,
+            'user_id' => $this->author->id,
+        ]);
+
+        $this->actingAs($this->author)
+            ->deleteJson(route('technical-plan.comments.destroy', [$this->plan, $comment]))
+            ->assertNoContent();
+
+        Notification::assertNothingSent();
+    }
+
     public function test_a_guest_may_not_comment(): void
     {
         Notification::fake();
@@ -130,7 +284,9 @@ class TechnicalPlanCommentTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('body', 'Lisasime ühe stseeni juurde.')
             ->assertJsonPath('authorName', 'Mari Esineja')
-            ->assertJsonPath('fromTechnicalTeam', false);
+            ->assertJsonPath('fromTechnicalTeam', false)
+            // Offered back to its writer straight away, without a reload.
+            ->assertJsonPath('canDelete', true);
 
         $comment = TechnicalPlanComment::sole();
 

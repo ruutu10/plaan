@@ -28,11 +28,12 @@ class PlanComment extends JsonResource
     /**
      * Transform the comment into the shape the overview page renders.
      *
-     * @return array{id: int, body: string, authorName: string, fromTechnicalTeam: bool, createdAt: string|null}
+     * @return array{id: int, body: string, authorName: string, fromTechnicalTeam: bool, createdAt: string|null, canDelete: bool}
      */
     public function toArray(Request $request): array
     {
         $comment = $this->resource;
+        $user = $request->user();
 
         return [
             'id' => $comment->id,
@@ -42,6 +43,10 @@ class PlanComment extends JsonResource
             'authorName' => $comment->user->name,
             'fromTechnicalTeam' => $comment->from_technical_team,
             'createdAt' => $comment->created_at?->toIso8601String(),
+            // Said here rather than worked out in the browser, and by the same
+            // rule that guards the endpoint — see
+            // {@see TechnicalPlanComment::isDeletableBy()}.
+            'canDelete' => $user !== null && $comment->isDeletableBy($user),
         ];
     }
 }

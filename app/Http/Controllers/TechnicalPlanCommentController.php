@@ -6,6 +6,7 @@ use App\Events\TechnicalPlanCommented;
 use App\Http\Requests\StoreTechnicalPlanCommentRequest;
 use App\Http\Resources\PlanComment as PlanCommentResource;
 use App\Models\TechnicalPlan;
+use App\Models\TechnicalPlanComment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -88,6 +89,47 @@ class TechnicalPlanCommentController extends Controller
             PlanCommentResource::make($comment)->resolve($request),
             201,
         );
+    }
+
+    /**
+     * Take a comment back off a plan. Its writer may withdraw their own, and
+     * the crew may remove any — see {@see TechnicalPlanComment::isDeletableBy()}.
+     *
+     * Scoped to the plan in the URL, so a comment can only ever be deleted
+     * through the plan it is actually on.
+     */
+    public function destroy(Request $request, TechnicalPlan $plan, TechnicalPlanComment $comment): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $comment->plan->is($plan)) {
+            abort(404);
+        }
+
+        if (! $comment->isDeletableBy($user)) {
+            Log::warning('Refused to delete a comment the user does not own', [
+                'plan_id' => $plan->id,
+                'comment_id' => $comment->id,
+                'user_id' => $user->id,
+                'author_id' => $comment->user_id,
+                'ip' => $request->ip(),
+            ]);
+
+            abort(403);
+        }
+
+        $comment->delete();
+
+        // A remark disappearing from a plan is a thing the other side may have
+        // already been mailed about, so who took it off is worth recording.
+        Log::notice('A technical plan comment was deleted', [
+            'plan_id' => $plan->id,
+            'comment_id' => $comment->id,
+            'deleted_by' => $user->id,
+            'author_id' => $comment->user_id,
+        ]);
+
+        return response()->json(status: 204);
     }
 
     /**

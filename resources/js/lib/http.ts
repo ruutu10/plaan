@@ -41,7 +41,7 @@ export type JsonResponse = {
  */
 export async function requestJson(
     url: string,
-    method: 'GET' | 'POST' = 'GET',
+    method: 'GET' | 'POST' | 'DELETE' = 'GET',
     body?: unknown,
 ): Promise<JsonResponse> {
     let response: globalThis.Response;

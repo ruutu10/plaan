@@ -356,6 +356,9 @@ ja tehnikatiim plaani üle täpsustada, ilma et kumbki peaks teise aadressi otsi
   läheb plaani autorile, esineja poole kommentaar tehnikatiimi aadressile. Kiri
   sisaldab kommentaari teksti ja linki plaani juurde. Oma kommentaari kohta kirja
   ei saadeta.
+- **Kustutada saab oma kommentaare**; tehnik saab
+  kustutada kõiki. Juba saadetud teavituskirja
+  see tagasi ei võta.
 - Kommentaarid on plaani omad: nad tekivad alles siis, kui plaan on esimest korda
   salvestatud, ja kustuvad koos plaaniga.
 

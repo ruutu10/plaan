@@ -38,6 +38,23 @@ class TechnicalPlanComment extends Model
     public const MAX_LENGTH = 2000;
 
     /**
+     * Determine whether the user may take this comment back off the plan.
+     *
+     * Two ways: it is theirs, or they hold
+     * {@see TechnicalPlan::EDIT_ALL_PERMISSION} — the crew keep the plans in
+     * front of them tidy, and a remark that should never have been on a plan
+     * is theirs to remove whoever wrote it.
+     *
+     * Deliberately narrower than who may *write* on a plan: holding the share
+     * link lets somebody join the conversation, not edit what others have said
+     * in it.
+     */
+    public function isDeletableBy(User $user): bool
+    {
+        return $this->user_id === $user->id || $user->can(TechnicalPlan::EDIT_ALL_PERMISSION);
+    }
+
+    /**
      * The plan this comment is about.
      *
      * @return BelongsTo<TechnicalPlan, $this>

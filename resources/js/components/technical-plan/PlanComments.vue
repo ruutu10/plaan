@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { Send } from '@lucide/vue';
+import { Send, Trash2 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { formatLocalTimestamp } from '@/lib/date';
 import { failureMessage, requestJson } from '@/lib/http';
 import comments from '@/routes/technical-plan/comments';
 import type { PlanComment } from '@/types/technicalPlan';
 import R10Button from './R10Button.vue';
+import R10Dialog from './R10Dialog.vue';
 import R10Notice from './R10Notice.vue';
 import R10SectionHeader from './R10SectionHeader.vue';
 import R10Textarea from './R10Textarea.vue';
@@ -98,6 +99,54 @@ async function send(): Promise<void> {
     body.value = '';
 }
 
+/**
+ * The comment the reader has asked to take off the plan, while they are being
+ * asked whether they meant it. Null when the dialog is shut.
+ */
+const pendingDelete = ref<PlanComment | null>(null);
+const deleting = ref(false);
+
+/** Whether the confirmation is open, as the dialog's own two-way flag. */
+const confirmingDelete = computed({
+    get: () => pendingDelete.value !== null,
+    set: (open: boolean) => {
+        if (!open) {
+            pendingDelete.value = null;
+        }
+    },
+});
+
+async function remove(): Promise<void> {
+    const comment = pendingDelete.value;
+
+    if (!comment || deleting.value) {
+        return;
+    }
+
+    deleting.value = true;
+    postError.value = '';
+
+    const response = await requestJson(
+        comments.destroy.url({ plan: props.token, comment: comment.id }),
+        'DELETE',
+    );
+
+    deleting.value = false;
+    pendingDelete.value = null;
+
+    if (!response.ok) {
+        postError.value = failureMessage(
+            response.status,
+            response.data,
+            'Kommentaari ei õnnestunud kustutada.',
+        );
+
+        return;
+    }
+
+    thread.value = thread.value.filter((entry) => entry.id !== comment.id);
+}
+
 watch(() => props.token, load, { immediate: true });
 </script>
 
@@ -146,6 +195,20 @@ watch(() => props.token, load, { immediate: true });
                         <span class="ml-auto text-xs text-r10-grey-500">
                             {{ formatLocalTimestamp(comment.createdAt) }}
                         </span>
+                        <!-- A quiet icon rather than a button: taking a remark
+                             back is a correction, not one of the page's own
+                             actions. -->
+                        <button
+                            v-if="comment.canDelete"
+                            type="button"
+                            title="Kustuta kommentaar"
+                            aria-label="Kustuta kommentaar"
+                            class="shrink-0 cursor-pointer text-r10-grey-500 transition hover:text-r10-orange-700"
+                            data-test="plan-comment-delete"
+                            @click="pendingDelete = comment"
+                        >
+                            <Trash2 class="h-4 w-4" />
+                        </button>
                     </div>
                     <p
                         class="mt-1.5 mb-0 text-[15px] leading-relaxed break-words whitespace-pre-wrap text-r10-ink"
@@ -194,5 +257,39 @@ watch(() => props.token, load, { immediate: true });
                 {{ postError }}
             </R10Notice>
         </template>
+
+        <!-- The other side may already have been mailed about this remark, so
+             it is worth one question before it goes. -->
+        <R10Dialog
+            v-model:open="confirmingDelete"
+            title="Kustuta kommentaar?"
+            description="Kommentaar kaob plaani lehelt jäädavalt. Juba saadetud teavitust see tagasi ei võta."
+        >
+            <p
+                v-if="pendingDelete"
+                class="rounded-[14px] border border-r10-grey-200 bg-white px-4 py-3.5 text-[15px] leading-relaxed break-words whitespace-pre-wrap text-r10-ink"
+            >
+                {{ pendingDelete.body }}
+            </p>
+
+            <template #actions>
+                <R10Button
+                    variant="outline"
+                    :disabled="deleting"
+                    data-test="plan-comment-delete-cancel"
+                    @click="confirmingDelete = false"
+                >
+                    Loobu
+                </R10Button>
+                <R10Button
+                    variant="danger"
+                    :disabled="deleting"
+                    data-test="plan-comment-delete-confirm"
+                    @click="remove"
+                >
+                    {{ deleting ? 'Kustutan…' : 'Kustuta' }}
+                </R10Button>
+            </template>
+        </R10Dialog>
     </section>
 </template>

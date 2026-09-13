@@ -129,6 +129,10 @@ Route::prefix('api/tehnikaplaan')
                 Route::post('plans/{plan:token}/comments', [TechnicalPlanCommentController::class, 'store'])
                     ->name('comments.store')
                     ->middleware('throttle:20,10');
+                // Taking a remark back off a plan: its writer's own right, and
+                // the crew's over any of them.
+                Route::delete('plans/{plan:token}/comments/{comment}', [TechnicalPlanCommentController::class, 'destroy'])
+                    ->name('comments.destroy');
             });
     });
 
