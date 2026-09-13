@@ -426,7 +426,11 @@ class ImportPlankaPerformances extends Command
 
         // Asked once for the whole night rather than once per act: a busy
         // evening is still one query, and the acts are told apart in PHP.
-        $known = $this->actsAlreadyOn($format, $night);
+        [$known, $unnamed] = $this->actsAlreadyOn($format, $night);
+
+        // An act the card names is found again by that name; one it leaves
+        // unnamed has to be paired off against the night's unnamed rows.
+        $paired = $this->pairedWithUnnamedActs($night, $unnamed);
 
         $seen = [];
 
@@ -442,7 +446,9 @@ class ImportPlankaPerformances extends Command
 
             $seen[$key] = true;
 
-            if (isset($known[$key])) {
+            $already = $act->title === null ? ($paired[$index] ?? null) : ($known[$key] ?? null);
+
+            if ($already !== null) {
                 $summary->skipped++;
 
                 // Everything else about an act already on the books is left
@@ -450,14 +456,92 @@ class ImportPlankaPerformances extends Command
                 // crew and the venue are not the app's to edit, so a card that
                 // moved the night or changed its people still overwrites both,
                 // even on a night that adds nothing new.
-                $this->syncStaff($known[$key], $act, $dryRun);
-                $this->syncLocation($known[$key], $night, $dryRun);
+                $this->syncStaff($already, $act, $dryRun);
+                $this->syncLocation($already, $night, $dryRun);
 
                 continue;
             }
 
             $this->importPerformance($format, $night, $act, $summary, $dryRun);
         }
+    }
+
+    /**
+     * Which act already on the books each of the night's unnamed acts is a
+     * fresh reading of, by the act's place in the running order.
+     *
+     * An unnamed act has no name to be found again by, so the hour is asked
+     * first: a night that plays one format twice — a Duubel at 18:00 and again
+     * at 20:00 — is two performances that differ in nothing else, and the model
+     * is free to list them in either order from one run to the next. Pairing
+     * them by their place in the list alone would hand the second house's crew
+     * to the first the moment that order changed.
+     *
+     * The hour cannot be the whole answer, though: a card often names none at
+     * first and gains one later, and the act it named is the same act, now at a
+     * stated hour rather than the house's usual one. So whatever the hour did
+     * not account for is paired off in order afterwards, which is what this has
+     * always done and is right for the one unnamed act most nights have.
+     *
+     * @param  list<Performance>  $unnamed  the night's unnamed acts, in stage order
+     * @return array<int, Performance>
+     */
+    protected function pairedWithUnnamedActs(ImportedNight $night, array $unnamed): array
+    {
+        $acts = [];
+
+        foreach ($night->performances as $index => $act) {
+            if ($act->title === null) {
+                $acts[$index] = $this->stageTime($night, $act);
+            }
+        }
+
+        $paired = [];
+        $claimed = [];
+
+        foreach ($acts as $index => $startsAt) {
+            foreach ($unnamed as $row => $performance) {
+                if (isset($claimed[$row]) || $performance->startsAt()->format('H:i') !== $startsAt) {
+                    continue;
+                }
+
+                $paired[$index] = $performance;
+                $claimed[$row] = true;
+
+                break;
+            }
+        }
+
+        $free = array_values(array_diff_key($unnamed, $claimed));
+
+        foreach (array_keys($acts) as $index) {
+            if (isset($paired[$index])) {
+                continue;
+            }
+
+            if ($free === []) {
+                break;
+            }
+
+            $paired[$index] = array_shift($free);
+        }
+
+        return $paired;
+    }
+
+    /**
+     * The hour this act takes the stage on the venue's clock, as `HH:MM`.
+     *
+     * Read through {@see Performance::momentFrom()} rather than off the card,
+     * so an act the card gives no hour for is asked about under the curtain-up
+     * it would actually be written with — which is the hour the row already on
+     * the books is carrying.
+     */
+    protected function stageTime(ImportedNight $night, ImportedPerformance $act): string
+    {
+        return Performance::momentFrom($night->date->toDateString(), $act->startTime)
+            ->setTimezone(Performance::venueTimezone())
+            ->format('H:i');
     }
 
     /**
@@ -747,23 +831,22 @@ class ImportPlankaPerformances extends Command
      * starts. The day is the venue's — bracketing the stored UTC by the local
      * midnights, so a late-night format does not read as the day before.
      *
-     * Within the night the acts are told apart by their names, folded in PHP
-     * for the reason {@see Format::nameKey()} gives: SQLite's `LOWER()` leaves
-     * "Ä" alone. An act the card left unnamed is matched by its place in
-     * the running order, which is how a performance registered before the acts
-     * were told apart at all — and every one already on the books is — keeps
-     * being recognised.
+     * Within the night the named acts are told apart by their names, folded in
+     * PHP for the reason {@see Format::nameKey()} gives: SQLite's `LOWER()`
+     * leaves "Ä" alone. The unnamed ones have no name to be told apart by, so
+     * they are handed back as a list in stage order and paired off against the
+     * card by {@see pairedWithUnnamedActs()}.
      *
-     * The performance itself rides along with its key rather than a bare
-     * marker: an act the card still describes has its staff re-synced even
-     * when nothing else about it is touched — see {@see importNight()}.
+     * The performance itself rides along rather than a bare marker: an act the
+     * card still describes has its staff re-synced even when nothing else about
+     * it is touched — see {@see importNight()}.
      *
-     * @return array<string, Performance>
+     * @return array{0: array<string, Performance>, 1: list<Performance>}
      */
     protected function actsAlreadyOn(?Format $format, ImportedNight $night): array
     {
         if ($format === null) {
-            return [];
+            return [[], []];
         }
 
         [$dayBegins, $dayEnds] = $this->venueDayBounds($night->date);
@@ -777,15 +860,19 @@ class ImportPlankaPerformances extends Command
             ->get();
 
         $keys = [];
-        $unnamed = 0;
+        $unnamed = [];
 
         foreach ($performances as $performance) {
-            $keys[$performance->title === null
-                ? '#'.$unnamed++
-                : mb_strtolower(trim($performance->title))] = $performance;
+            if ($performance->title === null) {
+                $unnamed[] = $performance;
+
+                continue;
+            }
+
+            $keys[mb_strtolower(trim($performance->title))] = $performance;
         }
 
-        return $keys;
+        return [$keys, $unnamed];
     }
 
     /**

@@ -140,7 +140,8 @@ class PlankaPerformanceExtractor
     }
 
     /**
-     * Map the model's JSON onto {@see ImportedNight} objects.
+     * Map the model's JSON onto {@see ImportedNight} objects, one per format
+     * and date however many entries the model wrote for it.
      *
      * @return list<ImportedNight>
      */
@@ -156,6 +157,13 @@ class PlankaPerformanceExtractor
             return [];
         }
 
+        /**
+         * The nights read so far, by format and date, held as the model's own
+         * fields rather than as {@see ImportedNight} objects until every entry
+         * has been folded in — see the return below for why.
+         *
+         * @var array<string, array{name: string, date: string, team_id: int|null, location: string|null, acts: array<int, mixed>}> $nights
+         */
         $nights = [];
 
         foreach ($decoded['formats'] as $entry) {
@@ -170,18 +178,56 @@ class PlankaPerformanceExtractor
                 continue;
             }
 
-            $teamId = $this->readTeamId($entry['team_id'] ?? null);
+            $fingerprint = mb_strtolower($name).'|'.$date;
+            $acts = is_array($entry['performances'] ?? null) ? $entry['performances'] : [];
 
-            $nights[] = new ImportedNight(
-                formatName: $name,
-                date: Carbon::createFromFormat('Y-m-d', $date)->startOfDay(),
-                teamId: $teamId,
-                location: $this->readLocation($entry['location'] ?? null),
-                performances: $this->readPerformances($entry['performances'] ?? null, $name, $teamId),
-            );
+            if (isset($nights[$fingerprint])) {
+                // One format on one date is one night — {@see ImportedNight}
+                // says so, and the importer relies on it: an act the card
+                // leaves unnamed is told apart from its siblings by its place
+                // in the running order, and a second entry for the same night
+                // starts that order again at the top, so its acts read as the
+                // first entry's over again and are lost.
+                //
+                // The model does produce that shape: a card announcing two
+                // houses of the same show on one day ("kell 18 ja 20") comes
+                // back as two entries rather than as one night with two acts.
+                // So the acts are strung together in the order they were given,
+                // and the night itself is the first entry's, filled in from the
+                // later one wherever the first said nothing: a venue named on
+                // the second entry alone is still a venue the card names.
+                $nights[$fingerprint]['acts'] = [...$nights[$fingerprint]['acts'], ...$acts];
+                $nights[$fingerprint]['team_id'] ??= $this->readTeamId($entry['team_id'] ?? null);
+                $nights[$fingerprint]['location'] ??= $this->readLocation($entry['location'] ?? null);
+
+                Log::info('Folded a night the model listed twice into one', [
+                    'format' => $name,
+                    'date' => $date,
+                    'performances' => count($nights[$fingerprint]['acts']),
+                ]);
+
+                continue;
+            }
+
+            $nights[$fingerprint] = [
+                'name' => $name,
+                'date' => $date,
+                'team_id' => $this->readTeamId($entry['team_id'] ?? null),
+                'location' => $this->readLocation($entry['location'] ?? null),
+                'acts' => $acts,
+            ];
         }
 
-        return $nights;
+        // Built only once every entry has been folded in, so a night the model
+        // listed twice is given the one act a night without any gets, rather
+        // than one per entry.
+        return array_values(array_map(fn (array $night): ImportedNight => new ImportedNight(
+            formatName: $night['name'],
+            date: Carbon::createFromFormat('Y-m-d', $night['date'])->startOfDay(),
+            teamId: $night['team_id'],
+            location: $night['location'],
+            performances: $this->readPerformances($night['acts'], $night['name'], $night['team_id']),
+        ), $nights));
     }
 
     /**

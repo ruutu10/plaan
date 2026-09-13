@@ -2,6 +2,7 @@
 
 namespace App\Data;
 
+use App\Console\Commands\ImportPlankaPerformances;
 use App\Models\Performance;
 
 /**
@@ -32,9 +33,15 @@ readonly class ImportedPerformance
     }
 
     /**
-     * The key two readings of the same act share. An act named on the card is
-     * told apart by that name; one the card leaves unnamed has only its place
-     * in the running order to go by.
+     * What makes this act the same act as another under one night, so a card
+     * naming one twice registers it once. An act named on the card is told
+     * apart by that name; one the card leaves unnamed by its place in the
+     * running order, which is to say never as another's repeat.
+     *
+     * This is about the reading in hand and nothing else. Which act already on
+     * the books it is a fresh reading of is a different question, asked of the
+     * hour as well as the order — see
+     * {@see ImportPlankaPerformances::pairedWithUnnamedActs()}.
      */
     public function key(int $index): string
     {

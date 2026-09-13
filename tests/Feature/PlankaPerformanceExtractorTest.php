@@ -92,6 +92,76 @@ class PlankaPerformanceExtractorTest extends TestCase
         $this->assertSame([$marturu->id, null, $matu->id, null], array_map(fn ($act): ?int => $act->teamId, $acts));
     }
 
+    public function test_two_houses_of_one_show_on_one_day_are_one_night(): void
+    {
+        // The card behind this: "Improkomöödia koomilised sketšid 13.11 kell 18
+        // ja 20" — one format, one date, two houses. The model answers with two
+        // entries rather than one night with two acts, and the importer tells
+        // unnamed acts apart by their place in the running order, so the second
+        // entry's act reads as the first's over again and the 20:00 house is
+        // never written.
+        $nights = $this->extractorAnswering((string) json_encode([
+            'formats' => [
+                [
+                    'format_name' => 'Improkomöödia koomilised sketšid',
+                    'date' => '2025-11-13',
+                    'location' => 'Tartu improkeskus',
+                    'performances' => [['title' => null, 'start_time' => '18:00', 'duration_minutes' => 90]],
+                ],
+                [
+                    'format_name' => 'Improkomöödia koomilised sketšid',
+                    'date' => '2025-11-13',
+                    'location' => 'Tartu improkeskus',
+                    'performances' => [['title' => null, 'start_time' => '20:00', 'duration_minutes' => 90]],
+                ],
+            ],
+        ]))->extract('Improkomöödia 13.11 kell 18 ja 20', 'Kaardi tekst');
+
+        $this->assertCount(1, $nights);
+        $this->assertSame('Tartu improkeskus', $nights[0]->location);
+        // Both houses survive, in the order the model gave them.
+        $this->assertSame(
+            ['18:00', '20:00'],
+            array_map(fn ($act): ?string => $act->startTime, $nights[0]->performances),
+        );
+    }
+
+    public function test_a_night_the_model_listed_twice_is_still_played_once_when_neither_entry_names_an_act(): void
+    {
+        // A night with no acts of its own is given the one performance such a
+        // card has always yielded. Folding has to happen before that stand-in
+        // is made, or a night the model merely repeated comes back as two.
+        $nights = $this->extractorAnswering((string) json_encode([
+            'formats' => [
+                ['format_name' => 'Trupp 1', 'date' => '2025-09-13', 'location' => null, 'performances' => []],
+                ['format_name' => 'Trupp 1', 'date' => '2025-09-13', 'location' => 'improkeskus', 'performances' => []],
+            ],
+        ]))->extract('13.09 õhtu', 'Kaardi tekst');
+
+        $this->assertCount(1, $nights);
+        $this->assertCount(1, $nights[0]->performances);
+        // What the second entry knew and the first did not is not thrown away.
+        $this->assertSame('improkeskus', $nights[0]->location);
+    }
+
+    public function test_the_same_format_on_two_dates_stays_two_nights(): void
+    {
+        // The fold is by format and date together: a format played on Friday
+        // and again on Saturday is two nights, not one with two acts.
+        $nights = $this->extractorAnswering((string) json_encode([
+            'formats' => [
+                ['format_name' => 'Trupp 1', 'date' => '2025-09-13', 'performances' => [['title' => null]]],
+                ['format_name' => 'Trupp 1', 'date' => '2025-09-14', 'performances' => [['title' => null]]],
+            ],
+        ]))->extract('13.09 ja 14.09', 'Kaardi tekst');
+
+        $this->assertCount(2, $nights);
+        $this->assertSame(
+            ['2025-09-13', '2025-09-14'],
+            array_map(fn ($night): string => $night->date->toDateString(), $nights),
+        );
+    }
+
     public function test_a_lone_act_named_after_its_format_carries_no_title_of_its_own(): void
     {
         // The format's own name already says who is playing, so repeating it on

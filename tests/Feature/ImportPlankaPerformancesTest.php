@@ -366,6 +366,92 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame('19:00', Performance::sole()->startTime());
     }
 
+    public function test_both_houses_of_a_show_played_twice_in_one_day_reach_the_books(): void
+    {
+        // The other end of the fold PlankaPerformanceExtractorTest covers: two
+        // model entries for one night used to leave one performance on the
+        // books, because the second entry's unnamed act took the first's place
+        // in the running order and was skipped as already known.
+        $this->fakeBoard([[
+            'id' => 'card-1',
+            'name' => 'Improkomöödia koomilised sketšid 13.11 kell 18 ja 20',
+            'description' => "- **Toimumise kuupäev:** 13.11.2025\n- **Asukoht:** Tartu improkeskus\n"
+                ."- **Etteaste algus:** 18 ja 20\n- **Etteaste kestus:** 90 min",
+            'dueDate' => '2025-11-13T16:00:00.000Z',
+            'labelIds' => [],
+        ]]);
+
+        $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
+            'formats' => [
+                [
+                    'format_name' => 'Improkomöödia koomilised sketšid',
+                    'date' => '2025-11-13',
+                    'location' => 'Tartu improkeskus',
+                    'performances' => [['title' => null, 'start_time' => '18:00', 'duration_minutes' => 90]],
+                ],
+                [
+                    'format_name' => 'Improkomöödia koomilised sketšid',
+                    'date' => '2025-11-13',
+                    'location' => 'Tartu improkeskus',
+                    'performances' => [['title' => null, 'start_time' => '20:00', 'duration_minutes' => 90]],
+                ],
+            ],
+        ])));
+
+        $this->artisan('planka:import')
+            ->expectsOutputToContain('Imported 1 format(s) and 2 performance(s)')
+            ->assertSuccessful();
+
+        $performances = Format::query()->sole()->performances()->orderBy('date')->get();
+
+        $this->assertSame(['18:00', '20:00'], $performances->map(
+            fn (Performance $p): string => $p->startTime(),
+        )->all());
+
+        // And the run is still repeatable: neither house is written twice.
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame(2, Performance::query()->count());
+    }
+
+    public function test_a_format_played_twice_in_one_night_keeps_each_houses_crew_on_its_own_house(): void
+    {
+        // A Duubel at 18:00 and again at 20:00 is two performances of one
+        // format on one date, alike in everything but the hour and the crew.
+        // Neither is named, so neither can be found again by name, and the
+        // model is free to list them in either order from one run to the next.
+        // Paired by their place in the list alone, the second run would hand
+        // the late house's crew to the early one.
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        User::factory()->create(['name' => 'Maarja Kask', 'email' => 'maarja@ruutu10.ee']);
+        User::factory()->create(['name' => 'Rauno Tamm', 'email' => 'rauno@ruutu10.ee']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtractionRuns(
+            [$this->sharedNight('Duubel', [
+                new ImportedPerformance(startTime: '18:00', staff: [$this->staffMember('Maarja', PerformanceStaffRole::Host)]),
+                new ImportedPerformance(startTime: '20:00', staff: [$this->staffMember('Rauno', PerformanceStaffRole::Host)]),
+            ], date: '2025-09-13')],
+            // The same night, read again with the houses the other way round.
+            [$this->sharedNight('Duubel', [
+                new ImportedPerformance(startTime: '20:00', staff: [$this->staffMember('Rauno', PerformanceStaffRole::Host)]),
+                new ImportedPerformance(startTime: '18:00', staff: [$this->staffMember('Maarja', PerformanceStaffRole::Host)]),
+            ], date: '2025-09-13')],
+        );
+
+        $this->artisan('planka:import')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $houses = Performance::query()->orderBy('date')->get();
+
+        // Still two houses, not four, and each still has its own people.
+        $this->assertSame(2, $houses->count());
+        $this->assertSame(
+            ['18:00 Maarja Kask', '20:00 Rauno Tamm'],
+            $houses->map(fn (Performance $p): string => $p->startTime().' '.$p->staff->pluck('name')->implode(', '))->all(),
+        );
+    }
+
     public function test_a_real_card_travels_from_the_model_answer_to_the_books(): void
     {
         // The one test that runs the extractor and the importer together, so
