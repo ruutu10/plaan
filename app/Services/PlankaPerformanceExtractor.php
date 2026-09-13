@@ -193,10 +193,13 @@ class PlankaPerformanceExtractor
                 // houses of the same show on one day ("kell 18 ja 20") comes
                 // back as two entries rather than as one night with two acts.
                 // So the acts are strung together in the order they were given,
-                // and the night itself is the first entry's, filled in from the
-                // later one wherever the first said nothing: a venue named on
-                // the second entry alone is still a venue the card names.
-                $nights[$fingerprint]['acts'] = [...$nights[$fingerprint]['acts'], ...$acts];
+                // less any the night already has — see actsNotYetOn() — and the
+                // night itself is the first entry's, filled in from the later
+                // one wherever the first said nothing: a venue named on the
+                // second entry alone is still a venue the card names.
+                $fresh = $this->actsNotYetOn($nights[$fingerprint]['acts'], $acts);
+
+                $nights[$fingerprint]['acts'] = [...$nights[$fingerprint]['acts'], ...$fresh];
                 $nights[$fingerprint]['team_id'] ??= $this->readTeamId($entry['team_id'] ?? null);
                 $nights[$fingerprint]['location'] ??= $this->readLocation($entry['location'] ?? null);
 
@@ -204,6 +207,7 @@ class PlankaPerformanceExtractor
                     'format' => $name,
                     'date' => $date,
                     'performances' => count($nights[$fingerprint]['acts']),
+                    'repeated_acts_dropped' => count($acts) - count($fresh),
                 ]);
 
                 continue;
@@ -228,6 +232,65 @@ class PlankaPerformanceExtractor
             location: $night['location'],
             performances: $this->readPerformances($night['acts'], $night['name'], $night['team_id']),
         ), $nights));
+    }
+
+    /**
+     * The acts a repeated entry for a night brings that the night does not
+     * already have, in the order the entry gave them.
+     *
+     * The model sometimes lists a night twice and puts every act in both — a
+     * "kell 18 ja 20" card comes back as the night with both houses, twice.
+     * An unnamed act has nothing to tell it apart but its hour, so one at an
+     * hour the night already holds an unnamed act at is that act said again,
+     * and is dropped. Each act already on the night answers for one repeat
+     * only: a second entry never loses more acts than the first one had.
+     *
+     * A named act is passed along whatever it repeats. The importer already
+     * reads the same name twice under one night as one performance, and a
+     * name, unlike an hour, is the card's own word for which act it is.
+     *
+     * @param  array<int, mixed>  $night  the acts the night has so far
+     * @param  array<int, mixed>  $repeat  the acts the later entry lists
+     * @return list<mixed>
+     */
+    protected function actsNotYetOn(array $night, array $repeat): array
+    {
+        $hoursTaken = [];
+
+        foreach ($night as $act) {
+            if ($this->isUnnamedAct($act)) {
+                $hoursTaken[] = $this->readStartTime($act['start_time'] ?? null);
+            }
+        }
+
+        $fresh = [];
+
+        foreach ($repeat as $act) {
+            if ($this->isUnnamedAct($act)) {
+                $taken = array_search($this->readStartTime($act['start_time'] ?? null), $hoursTaken, true);
+
+                if ($taken !== false) {
+                    unset($hoursTaken[$taken]);
+
+                    continue;
+                }
+            }
+
+            $fresh[] = $act;
+        }
+
+        return $fresh;
+    }
+
+    /**
+     * Whether an act the model listed carries no name of its own, read the way
+     * {@see readPerformances()} reads a title.
+     *
+     * @phpstan-assert-if-true array<string, mixed> $act
+     */
+    protected function isUnnamedAct(mixed $act): bool
+    {
+        return is_array($act) && trim((string) ($act['title'] ?? '')) === '';
     }
 
     /**

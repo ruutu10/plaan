@@ -126,6 +126,76 @@ class PlankaPerformanceExtractorTest extends TestCase
         );
     }
 
+    public function test_a_night_the_model_listed_twice_in_full_keeps_each_house_once(): void
+    {
+        // Both models have answered a "kell 18 ja 20" card this way: two entries
+        // for the one night, each already holding both houses. Strung together
+        // they would be four unnamed acts, and four performances on the books.
+        // An unnamed act at an hour the night already has is the same house
+        // said again.
+        $houses = [
+            ['title' => null, 'start_time' => '18:00', 'duration_minutes' => 90],
+            ['title' => null, 'start_time' => '20:00', 'duration_minutes' => 90],
+        ];
+
+        $nights = $this->extractorAnswering((string) json_encode([
+            'formats' => [
+                ['format_name' => 'Improkomöödia koomilised sketšid', 'date' => '2025-10-30', 'performances' => $houses],
+                ['format_name' => 'Improkomöödia koomilised sketšid', 'date' => '2025-10-30', 'performances' => $houses],
+            ],
+        ]))->extract('Improkomöödia 30.10 kell 18 ja 20', 'Kaardi tekst');
+
+        $this->assertCount(1, $nights);
+        $this->assertSame(
+            ['18:00', '20:00'],
+            array_map(fn ($act): ?string => $act->startTime, $nights[0]->performances),
+        );
+    }
+
+    public function test_a_repeated_night_still_adds_a_house_the_first_entry_did_not_have(): void
+    {
+        // Only the repeat is dropped. A later entry that names the 18:00 house
+        // again and the 20:00 house for the first time still brings the 20:00
+        // house along.
+        $nights = $this->extractorAnswering((string) json_encode([
+            'formats' => [
+                [
+                    'format_name' => 'Duubel',
+                    'date' => '2025-10-20',
+                    'performances' => [['title' => null, 'start_time' => '18:00']],
+                ],
+                [
+                    'format_name' => 'Duubel',
+                    'date' => '2025-10-20',
+                    'performances' => [
+                        ['title' => null, 'start_time' => '18:00'],
+                        ['title' => null, 'start_time' => '20:00'],
+                    ],
+                ],
+            ],
+        ]))->extract('Duubel 20.10', 'Kaardi tekst');
+
+        $this->assertSame(
+            ['18:00', '20:00'],
+            array_map(fn ($act): ?string => $act->startTime, $nights[0]->performances),
+        );
+    }
+
+    public function test_a_repeated_night_that_names_no_hour_is_played_once(): void
+    {
+        // Two unnamed acts neither of which says when it starts would both be
+        // written at the house's usual curtain-up, and nothing could tell them
+        // apart: said twice, it is one act.
+        $nights = $this->extractorAnswering((string) json_encode([
+            'formats' => [
+                ['format_name' => 'Trupp 1', 'date' => '2025-09-13', 'performances' => [['title' => null, 'start_time' => null]]],
+                ['format_name' => 'Trupp 1', 'date' => '2025-09-13', 'performances' => [['title' => null, 'start_time' => null]]],
+            ],
+        ]))->extract('13.09 õhtu', 'Kaardi tekst');
+
+        $this->assertCount(1, $nights[0]->performances);
+    }
+
     public function test_a_night_the_model_listed_twice_is_still_played_once_when_neither_entry_names_an_act(): void
     {
         // A night with no acts of its own is given the one performance such a

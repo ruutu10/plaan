@@ -39,7 +39,7 @@ return [
 
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
-        'model' => Model::CLAUDE_HAIKU_4_5,
+        'model' => Model::CLAUDE_SONNET_5,
         'max_tokens' => 20000,
         'temperature' => 0.6, // Lower value as our main task is structured data extraction
 

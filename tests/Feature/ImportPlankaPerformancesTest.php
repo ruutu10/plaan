@@ -414,6 +414,43 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame(2, Performance::query()->count());
     }
 
+    public function test_a_night_the_model_listed_twice_in_full_writes_each_house_once(): void
+    {
+        // The answer Haiku gave for "Improkomöödia koomilised sketšid 30.10 kell
+        // 18 ja 20", word for word in shape: the night twice, both houses in
+        // each. Two performances belong on the books, not four.
+        $this->fakeBoard([[
+            'id' => 'card-1',
+            'name' => 'Improkomöödia koomilised sketšid 30.10 kell 18 ja 20',
+            'description' => "- **Toimumise kuupäev:** 30.10.2025\n- **Asukoht:** Tartu improkeskus\n"
+                ."- **Etteaste algus:** 18 ja 20\n- **Etteaste kestus:** 90 min",
+            'dueDate' => '2025-10-30T16:00:00.000Z',
+            'labelIds' => [],
+        ]]);
+
+        $night = [
+            'format_name' => 'Improkomöödia koomilised sketšid',
+            'date' => '2025-10-30',
+            'location' => 'Tartu improkeskus',
+            'performances' => [
+                ['title' => null, 'start_time' => '18:00', 'duration_minutes' => 90],
+                ['title' => null, 'start_time' => '20:00', 'duration_minutes' => 90],
+            ],
+        ];
+
+        $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorAnswering((string) json_encode([
+            'formats' => [$night, $night],
+        ])));
+
+        $this->artisan('planka:import')
+            ->expectsOutputToContain('Imported 1 format(s) and 2 performance(s)')
+            ->assertSuccessful();
+
+        $this->assertSame(['18:00', '20:00'], Performance::query()->orderBy('date')->get()->map(
+            fn (Performance $p): string => $p->startTime(),
+        )->all());
+    }
+
     public function test_a_format_played_twice_in_one_night_keeps_each_houses_crew_on_its_own_house(): void
     {
         // A Duubel at 18:00 and again at 20:00 is two performances of one
