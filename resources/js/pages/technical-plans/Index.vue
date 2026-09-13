@@ -38,8 +38,8 @@ const rows = computed(() =>
 // rather than promising the whole house to somebody shown one corner of it.
 const lead = computed(() =>
     page.props.auth?.can?.viewAllTechnicalPlans
-        ? 'Kõik tehnikutiimile esitatud plaanid. Mustandid on vaikimisi peidus.'
-        : 'Sinu ja sinu tiimide tehnikutiimile esitatud plaanid. Mustandid on vaikimisi peidus.',
+        ? 'Kõik tehnikatiimile esitatud plaanid. Mustandid on vaikimisi peidus.'
+        : 'Sinu ja sinu tiimide tehnikatiimile esitatud plaanid. Mustandid on vaikimisi peidus.',
 );
 
 const emptyText = computed(() => {
