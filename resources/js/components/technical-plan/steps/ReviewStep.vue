@@ -13,6 +13,7 @@ import { computed, ref } from 'vue';
 import type { User } from '@/types';
 import Diamond from '../Diamond.vue';
 import { canSaveDraft, isDelivered } from '../plan';
+import PlanComments from '../PlanComments.vue';
 import PlanDocument from '../PlanDocument.vue';
 import { usePlan } from '../planKey';
 import { presentPlan } from '../presentPlan';
@@ -92,7 +93,7 @@ const submitLabel = computed(() => {
         return props.submitting ? 'Uuendan…' : 'Uuenda esitatud plaani';
     }
 
-    return props.submitting ? 'Esitan…' : 'Esita tehnikutiimile';
+    return props.submitting ? 'Esitan…' : 'Esita tehnikatiimile';
 });
 
 /** The icon says what the label says: a hand-in sends, an update refreshes. */
@@ -141,7 +142,7 @@ const savedAsDraft = computed(
                 v-else
                 eyebrow="Samm 7 / 7 · Ülevaade"
                 title="Vaata üle & saada"
-                lead="Kontrolli plaan üle. Salvesta see mustandina, et hiljem edasi teha, või esita tehnikutiimile. Plaani saab ka PDF-ina alla laadida või jagatava lingina välja saata."
+                lead="Kontrolli plaan üle. Salvesta see mustandina, et hiljem edasi teha, või esita tehnikatiimile. Plaani saab ka PDF-ina alla laadida või jagatava lingina välja saata."
             />
 
             <R10Notice v-if="readOnly" class="mb-6">
@@ -175,16 +176,16 @@ const savedAsDraft = computed(
         >
             <div class="mb-0.5 font-r10-body text-sm font-bold">
                 <template v-if="justSavedDraft">
-                    Mustand on salvestatud, aga tehnikutiimile ei ole seda veel
+                    Mustand on salvestatud, aga tehnikatiimile ei ole seda veel
                     esitatud.
                 </template>
                 <template v-else>
-                    See plaan on mustand — tehnikutiim ei ole seda veel saanud.
+                    See plaan on mustand — tehnikatiim ei ole seda veel saanud.
                 </template>
             </div>
             <div>
-                Kui plaan on valmis, vajuta „Esita tehnikutiimile“ — alles siis
-                saab tehnikutiim sellest teate.
+                Kui plaan on valmis, vajuta „Esita tehnikatiimile“ — alles siis
+                saab tehnikatiim sellest teate.
             </div>
         </R10Notice>
 
@@ -300,16 +301,16 @@ const savedAsDraft = computed(
                     Esitatud plaan on uuendatud.
                 </div>
                 <div class="text-[13px] leading-normal text-r10-navy-200">
-                    Tehnikutiimile uut teadet ei saadetud — nad näevad plaani
+                    Tehnikatiimile uut teadet ei saadetud — nad näevad plaani
                     lingilt alati kõige värskemat versiooni.
                 </div>
             </div>
             <div v-else>
                 <div class="mb-0.5 font-r10-body text-sm font-bold text-white">
-                    Plaan on esitatud tehnikutiimile.
+                    Plaan on esitatud tehnikatiimile.
                 </div>
                 <div class="text-[13px] leading-normal text-r10-navy-200">
-                    Tehnikutiim saab plaanist teate ja võtab vajadusel ühendust.
+                    Tehnikatiim saab plaanist teate ja võtab vajadusel ühendust.
                     Staatus:
                     <strong class="text-white">Esitatud</strong>.
                 </div>
@@ -353,6 +354,11 @@ const savedAsDraft = computed(
                 >
             </div>
         </div>
+
+        <!-- The conversation about the plan. A plan that has never been saved
+             has no key to hang a thread on, and nobody to talk to about it
+             yet either — the section appears with the plan's first save. -->
+        <PlanComments v-if="plan.token" :token="plan.token" />
 
         <ScenePlayback v-if="playbackOpen" @close="playbackOpen = false" />
     </section>

@@ -314,3 +314,18 @@ export interface PerformanceOption {
     value: number;
     label: string;
 }
+
+/**
+ * One remark in a plan's conversation, as the overview page shows it. No
+ * address travels with it — the thread opens to anyone holding the plan's
+ * share link, and a link is not what hands out an e-mail address.
+ */
+export interface PlanComment {
+    id: number;
+    body: string;
+    authorName: string;
+    /** Whether the crew running the formats wrote it, rather than the performer's side. */
+    fromTechnicalTeam: boolean;
+    /** ISO 8601 UTC instant. */
+    createdAt: string | null;
+}

@@ -16,6 +16,7 @@ use App\Http\Controllers\Teams\TeamAdminController;
 use App\Http\Controllers\Teams\TeamAdminMemberController;
 use App\Http\Controllers\Teams\TeamAdminPageController;
 use App\Http\Controllers\Teams\TeamInvitationController;
+use App\Http\Controllers\TechnicalPlanCommentController;
 use App\Http\Controllers\TechnicalPlanController;
 use App\Http\Controllers\Users\UserAdminController;
 use App\Http\Controllers\Users\UserRoleController;
@@ -101,6 +102,14 @@ Route::prefix('api/tehnikaplaan')
         // magic link is the only action available before authentication.
         Route::post('login', [MagicLoginController::class, 'send'])->name('login')->middleware('throttle:6,1');
 
+        // Reading a plan's conversation stays open, like the plan itself: a
+        // share link opens the whole overview page without an account, and what
+        // has been said about the plan is part of what that page shows. Only
+        // the writers' names travel with it, never their addresses.
+        Route::get('plans/{plan:token}/comments', [TechnicalPlanCommentController::class, 'index'])
+            ->name('comments.index')
+            ->middleware('throttle:60,1');
+
         // Every plan action requires an authenticated user.
         Route::middleware(['auth', 'throttle:200,1'])
             ->group(function () {
@@ -114,6 +123,12 @@ Route::prefix('api/tehnikaplaan')
                 Route::post('ai-review', [TechnicalPlanController::class, 'aiReview'])->name('ai')->middleware('throttle:15,10');
                 Route::get('plans/{plan:token}', [TechnicalPlanController::class, 'show'])->name('show');
                 Route::post('plans/{plan:token}/copy', [TechnicalPlanController::class, 'copy'])->name('copy');
+                // Saying something about a plan. Throttled well under the group's
+                // own allowance: a comment is typed by hand, and a burst of them
+                // is a mailbox filling up on the far side.
+                Route::post('plans/{plan:token}/comments', [TechnicalPlanCommentController::class, 'store'])
+                    ->name('comments.store')
+                    ->middleware('throttle:20,10');
             });
     });
 

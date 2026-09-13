@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -37,6 +38,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property Carbon|null $updated_at
  * @property-read User|null $user
  * @property-read Performance|null $performance
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, TechnicalPlanComment> $comments
  */
 #[Fillable([
     'status',
@@ -391,6 +393,17 @@ class TechnicalPlan extends Model implements HasMedia
     public function performance(): BelongsTo
     {
         return $this->belongsTo(Performance::class);
+    }
+
+    /**
+     * The conversation about this plan, oldest first — the order a thread is
+     * read in. See {@see TechnicalPlanComment}.
+     *
+     * @return HasMany<TechnicalPlanComment, $this>
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(TechnicalPlanComment::class)->oldest();
     }
 
     /**
