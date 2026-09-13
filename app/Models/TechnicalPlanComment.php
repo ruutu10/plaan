@@ -16,15 +16,16 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property int $technical_plan_id
- * @property int $user_id
+ * @property int|null $user_id
+ * @property string|null $author_name
  * @property string $body
  * @property bool $from_technical_team
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read TechnicalPlan $plan
- * @property-read User $user
+ * @property-read User|null $user
  */
-#[Fillable(['technical_plan_id', 'user_id', 'body', 'from_technical_team'])]
+#[Fillable(['technical_plan_id', 'user_id', 'author_name', 'body', 'from_technical_team'])]
 class TechnicalPlanComment extends Model
 {
     /** @use HasFactory<TechnicalPlanCommentFactory> */
@@ -38,6 +39,27 @@ class TechnicalPlanComment extends Model
     public const MAX_LENGTH = 2000;
 
     /**
+     * How the technician AI signs what it writes on a plan. Kept plainly
+     * readable as an agent rather than dressed up as one of the crew: the
+     * performer should know at a glance that what they are being asked to fix
+     * was found by a machine, and that the crew have not read it yet.
+     */
+    public const AGENT_AUTHOR_NAME = 'AI tehnik (agent)';
+
+    /**
+     * Who to show as the author. A person signs with their account, so their
+     * current name is used and follows them when they change it; anything
+     * without an account — the technician AI — signs with the name written
+     * down beside the comment when it was made.
+     */
+    public function authorName(): string
+    {
+        return $this->user === null
+            ? (string) $this->author_name
+            : $this->user->name;
+    }
+
+    /**
      * Determine whether the user may take this comment back off the plan.
      *
      * Two ways: it is theirs, or they hold
@@ -48,6 +70,10 @@ class TechnicalPlanComment extends Model
      * Deliberately narrower than who may *write* on a plan: holding the share
      * link lets somebody join the conversation, not edit what others have said
      * in it.
+     *
+     * A comment with no account behind it — the technician AI's — is nobody's
+     * own, so it falls to the crew alone. A performer who disagrees with what
+     * the agent found answers it rather than deleting it.
      */
     public function isDeletableBy(User $user): bool
     {

@@ -36,4 +36,17 @@ class TechnicalPlanCommentFactory extends Factory
             'from_technical_team' => true,
         ]);
     }
+
+    /**
+     * Indicate that the technician AI wrote this one: no account behind it, and
+     * signed with the name it writes under.
+     */
+    public function fromAgent(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_id' => null,
+            'author_name' => TechnicalPlanComment::AGENT_AUTHOR_NAME,
+            'from_technical_team' => true,
+        ]);
+    }
 }

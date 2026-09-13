@@ -48,7 +48,7 @@ class TechnicalPlanCommented extends Notification implements ShouldQueue
                 'formatName' => $performance?->displayName() ?? $plan->token,
                 'performer' => $performance?->performerName(),
                 'startsAt' => $performance?->startsAt(),
-                'authorName' => $this->comment->user->name,
+                'authorName' => $this->comment->authorName(),
                 'fromTechnicalTeam' => $this->comment->from_technical_team,
                 'body' => $this->comment->body,
                 'publicUrl' => route('technical-plan.public', $plan),

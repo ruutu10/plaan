@@ -322,7 +322,11 @@ export interface PerformanceOption {
  */
 export interface PlanComment {
     id: number;
+    /** The remark as it was written — markdown, shown raw where the rendering would be noise. */
     body: string;
+    /** The same remark rendered to HTML on the server, safe to hand to `v-html`. */
+    bodyHtml: string;
+    /** Who signed it: an account's current name, or the name the technician AI writes under. */
     authorName: string;
     /** Whether the crew running the formats wrote it, rather than the performer's side. */
     fromTechnicalTeam: boolean;

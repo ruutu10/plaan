@@ -21,9 +21,23 @@ class TechnicalPlanReviewer
     }
 
     /**
-     * Ask the technician AI to review a plan and return its feedback.
+     * Ask the technician AI to review a plan and return its feedback, ready to
+     * put on a page.
      */
     public function review(TechnicalPlan $plan): string
+    {
+        return app(MarkdownRenderer::class)->toHtml($this->reviewMarkdown($plan));
+    }
+
+    /**
+     * The same review in the model's own words, before anything is made of it.
+     *
+     * What a reader wants is {@see review()}; this is for whatever reads the
+     * review itself rather than showing it — the second pass that picks the
+     * show-stoppers out of a submitted plan's review, see
+     * {@see TechnicalPlanCriticalFindings}.
+     */
+    public function reviewMarkdown(TechnicalPlan $plan): string
     {
         $userPrompt = $this->buildUserPrompt($plan);
 
@@ -36,7 +50,6 @@ class TechnicalPlanReviewer
 
         $aiResponse = $this->askClaude($this->client, [
             'maxTokens' => config('services.anthropic.max_tokens'),
-            'temperature' => config('services.anthropic.temperature'),
             'messages' => [
                 [
                     'role' => 'user',
@@ -66,7 +79,7 @@ class TechnicalPlanReviewer
             Log::warning('AI review came back empty', ['plan_id' => $plan->id]);
         }
 
-        return app(MarkdownRenderer::class)->toHtml($aiResponse);
+        return $aiResponse;
     }
 
     /**

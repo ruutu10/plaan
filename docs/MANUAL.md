@@ -330,6 +330,9 @@ kes mängib kogenud majatehniku rolli, ja tagastab kirjalikud soovitused.
 
 AI tehnik on mõeldud lihtsate ja levinud puuduste kiireks tuvastamiseks.
 
+Lisaks nupule vaatab AI tehnik plaani ka **ise, kohe pärast esimest esitamist** -
+vt [4.7 Esitamine](#47-esitamine).
+
 ### 4.7 Esitamine
 
 Nupp **Esita tehnikatiimile** salvestab plaani, seab selle staatuseks
@@ -343,6 +346,30 @@ Nupp **Esita tehnikatiimile** salvestab plaani, seab selle staatuseks
 E-postiga saadetud dokument, väljatrükk ja ekraanil olev ülevaade on üks ja sama
 dokument, mis on koostatud samade reeglite järgi.
 
+**AI tehnik loeb esitatud plaani ise üle.** See juhtub taustal - esitamine ise
+ei jää seda ootama - ja ainult **esimesel** esitamisel. Juba esitatud plaani
+uuesti saatmine ülevaatust ei käivita, et plaani viimistlemine ei tooks kaasa
+kirjade jada.
+
+AI tehnik teatab ainult siis, kui leiab midagi, mis takistab etendust mängimast:
+
+- **vastuolu**, mille tõttu tehnik ei tea etenduse ajal, kumba varianti teha, või
+- **puuduv helifail** - stseen viitab helile, mida pole ei lingina, failina ega
+  manusena.
+
+Sõnastuse, täpsustusettepanekute ja soovituste pärast ta ei kirjuta. **Enamikul
+plaanidest ei juhtu seega mitte midagi** - vaikus tähendab, et plaan on
+mängitav.
+
+Kui midagi leitakse, ilmub plaani juurde
+[kommentaar](#48-kommentaarid) autoriga **„AI tehnik (agent)“**, märkega
+**„Tehnikatiim“**, ja plaani autor saab sellest e-kirja nagu iga teise
+tehnikatiimi kommentaari puhul. Kommentaar loetleb leiud ja palub need
+parandada. Sellele saab tavalises kommentaarikastis vastata.
+
+See on abivahend, mitte kontroll: AI tehnik võib eksida ja tehnikatiim loeb
+plaani nagunii ise üle.
+
 ### 4.8 Kommentaarid
 
 Salvestatud plaani ülevaatelehel - nii vormi viimasel sammul kui ka
@@ -351,7 +378,10 @@ ja tehnikatiim plaani üle täpsustada, ilma et kumbki peaks teise aadressi otsi
 
 - Kommentaare **näeb igaüks, kes plaani avab** - ka ilma kontota jagamislingiga.
 - **Kommenteerida saab sisse logides**. Sisse logimata lugejale ütleb leht, et kommenteerimiseks tuleb sisse logida.
-- Tehnikatiimi kirjutatud kommentaar kannab märget **„Tehnikatiim“**.
+- Tehnikatiimi kirjutatud kommentaar kannab märget **„Tehnikatiim“**. Sama märke
+  saab ka AI tehniku oma, mille autor on **„AI tehnik (agent)“** - vt
+  [4.7 Esitamine](#47-esitamine).
+- Kommentaarid toetavad lihtsat vormindust (loetelud, rasvane kiri, lingid).
 - **Igast uuest kommentaarist saab teine pool e-kirja:** tehnikatiimi kommentaar
   läheb plaani autorile, esineja poole kommentaar tehnikatiimi aadressile. Kiri
   sisaldab kommentaari teksti ja linki plaani juurde. Oma kommentaari kohta kirja
@@ -667,6 +697,7 @@ tekstiks.
 | Töö | Millal | Mida ta teeb |
 | --- | --- | --- |
 | **Planka import** | Iga päev | Loeb projektide kaarte ja registreerib formaadid ja etendused, mille kohta on kaart. Uued etendused saabuvad **mustanditena**, mis ootavad ülevaatamist. Formaate ja etendusi, mille admin on siin kõrvale pannud, ei äratata kunagi ellu; jäädavalt kustutatud kirje aga luuakse sama kaardi pealt uuesti. Kaarte saab sildi järgi välja jätta. |
+| **AI ülevaatus esitamisel** | Iga plaani esimesel esitamisel | Loeb plaani üle ja kirjutab plaanile kommentaari ainult siis, kui leiab midagi, mis takistab etendust mängimast - vastuolu või puuduva helifaili. Vaikus tähendab, et plaan on mängitav. Vt [4.7 Esitamine](#47-esitamine). |
 | **Arhiveerimine** | Iga päev | Viib esitatud ja kinnitatud plaanid staatusesse **Arhiveeritud**, kui nende etendus mängiti ära rohkem kui 24 tundi tagasi. Esineja enda mustandit ei arhiveerita kunagi - seda ei antud kunagi üle. |
 | **Tehnikuta etenduste koond** | Üle päeva kell 9 hommikul | Saadab tehnikatiimile ühe kirja kõigist lähinädala etendustest, millele ei ole ükski tehnik end kirja pannud. Etendus püsib koondis seni, kuni keegi end kirja paneb või õhtu on möödas. |
 | **Kutsete koristus** | Iga päev | Kustutab aegunud tiimikutsed. |

@@ -3,17 +3,23 @@
 namespace App\Events;
 
 use App\Enums\TechnicalPlanStatus;
+use App\Listeners\ReviewSubmittedPlanWithAi;
 use App\Models\TechnicalPlan;
 use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
 
 /**
  * A plan was submitted — freshly, or resubmitted after edits. Fired the
  * moment the save that marks it Submitted completes, so mailing it out is a
  * listener's concern rather than the controller's.
+ *
+ * The plan travels as a key rather than as itself, because one of the listeners
+ * is queued — see {@see ReviewSubmittedPlanWithAi} — and what it
+ * should read is the plan as it stands when it runs, attachments and all.
  */
 class TechnicalPlanSubmitted
 {
-    use Dispatchable;
+    use Dispatchable, SerializesModels;
 
     /**
      * @param  TechnicalPlanStatus|null  $previousStatus  The status the plan

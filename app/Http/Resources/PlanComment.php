@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Models\TechnicalPlanComment;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Spatie\LaravelMarkdown\MarkdownRenderer;
 
 /**
  * One remark in a plan's conversation, as the overview page shows it.
@@ -28,7 +29,7 @@ class PlanComment extends JsonResource
     /**
      * Transform the comment into the shape the overview page renders.
      *
-     * @return array{id: int, body: string, authorName: string, fromTechnicalTeam: bool, createdAt: string|null, canDelete: bool}
+     * @return array{id: int, body: string, bodyHtml: string, authorName: string, fromTechnicalTeam: bool, createdAt: string|null, canDelete: bool}
      */
     public function toArray(Request $request): array
     {
@@ -38,9 +39,14 @@ class PlanComment extends JsonResource
         return [
             'id' => $comment->id,
             'body' => $comment->body,
-            // Never nameless: a comment is only written by somebody signed in,
-            // and one whose writer is later removed goes with them.
-            'authorName' => $comment->user->name,
+            // Rendered here rather than in the browser: the same renderer the
+            // AI review already goes through, configured once, so a comment
+            // cannot smuggle markup onto the page — see config/markdown.php.
+            'bodyHtml' => app(MarkdownRenderer::class)->toHtml($comment->body),
+            // Never nameless: a comment is signed either by the account that
+            // wrote it, or — for the technician AI — by the name it was
+            // written under. See {@see TechnicalPlanComment::authorName()}.
+            'authorName' => $comment->authorName(),
             'fromTechnicalTeam' => $comment->from_technical_team,
             'createdAt' => $comment->created_at?->toIso8601String(),
             // Said here rather than worked out in the browser, and by the same

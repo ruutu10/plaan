@@ -210,11 +210,14 @@ watch(() => props.token, load, { immediate: true });
                             <Trash2 class="h-4 w-4" />
                         </button>
                     </div>
-                    <p
-                        class="mt-1.5 mb-0 text-[15px] leading-relaxed break-words whitespace-pre-wrap text-r10-ink"
-                    >
-                        {{ comment.body }}
-                    </p>
+                    <!-- Rendered on the server, where the one renderer the app
+                         trusts turns the remark into HTML and escapes anything
+                         in it that is not markdown — see App\Http\Resources\PlanComment. -->
+                    <div
+                        class="markdown mt-1.5 text-[15px] leading-relaxed break-words text-r10-ink"
+                        data-test="plan-comment-text"
+                        v-html="comment.bodyHtml"
+                    ></div>
                 </li>
             </ol>
 

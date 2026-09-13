@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Events\TechnicalPlanCommented as TechnicalPlanCommentedEvent;
 use App\Models\Format;
 use App\Models\Performance;
 use App\Models\TechnicalPlan;
@@ -448,6 +449,92 @@ class TechnicalPlanCommentTest extends TestCase
         $this->plan->delete();
 
         $this->assertDatabaseCount('technical_plan_comments', 0);
+    }
+
+    public function test_a_remark_is_rendered_from_markdown_for_the_page(): void
+    {
+        TechnicalPlanComment::factory()->create([
+            'technical_plan_id' => $this->plan->id,
+            'user_id' => $this->author->id,
+            'body' => "Kaks asja:\n\n- mikrofonid\n- **valgus**",
+        ]);
+
+        $body = $this->getJson(route('technical-plan.comments.index', $this->plan))
+            ->assertOk()
+            ->json('results.0');
+
+        $this->assertStringContainsString('<li>mikrofonid</li>', $body['bodyHtml']);
+        $this->assertStringContainsString('<strong>valgus</strong>', $body['bodyHtml']);
+
+        // The raw text travels too: the delete dialog shows what was typed.
+        $this->assertStringContainsString('- mikrofonid', $body['body']);
+    }
+
+    public function test_markup_written_into_a_remark_is_shown_rather_than_run(): void
+    {
+        TechnicalPlanComment::factory()->create([
+            'technical_plan_id' => $this->plan->id,
+            'user_id' => $this->author->id,
+            'body' => '<script>alert(1)</script>',
+        ]);
+
+        TechnicalPlanComment::factory()->create([
+            'technical_plan_id' => $this->plan->id,
+            'user_id' => $this->author->id,
+            'body' => 'Vaata [siia](javascript:alert(2)).',
+        ]);
+
+        $rendered = $this->getJson(route('technical-plan.comments.index', $this->plan))
+            ->assertOk()
+            ->json('results.*.bodyHtml');
+
+        // Markup is the text it is, not markup.
+        $this->assertStringNotContainsString('<script>', $rendered[0]);
+        $this->assertStringContainsString('&lt;script&gt;', $rendered[0]);
+
+        // A link a browser should not follow keeps its words and loses its href.
+        $this->assertStringNotContainsString('javascript:', $rendered[1]);
+        $this->assertStringContainsString('siia', $rendered[1]);
+    }
+
+    public function test_the_technician_ai_signs_its_own_remarks_and_only_the_crew_may_remove_them(): void
+    {
+        TechnicalPlanComment::factory()->fromAgent()->create([
+            'technical_plan_id' => $this->plan->id,
+            'body' => 'Stseenil „Finaal" puudub helifail.',
+        ]);
+
+        $this->actingAs($this->author)
+            ->getJson(route('technical-plan.comments.index', $this->plan))
+            ->assertOk()
+            ->assertJsonPath('results.0.authorName', TechnicalPlanComment::AGENT_AUTHOR_NAME)
+            ->assertJsonPath('results.0.fromTechnicalTeam', true)
+            // Not the performer's own remark, so not theirs to take back.
+            ->assertJsonPath('results.0.canDelete', false);
+
+        $this->actingAs($this->technician())
+            ->getJson(route('technical-plan.comments.index', $this->plan))
+            ->assertOk()
+            ->assertJsonPath('results.0.canDelete', true);
+    }
+
+    public function test_an_authorless_remark_still_mails_the_performer(): void
+    {
+        Notification::fake();
+
+        $comment = TechnicalPlanComment::factory()->fromAgent()->create([
+            'technical_plan_id' => $this->plan->id,
+            'body' => 'Stseenil „Finaal" puudub helifail.',
+        ]);
+
+        TechnicalPlanCommentedEvent::dispatch($comment);
+
+        Notification::assertSentTo($this->author, TechnicalPlanCommented::class);
+
+        $this->assertStringContainsString(
+            TechnicalPlanComment::AGENT_AUTHOR_NAME,
+            (new TechnicalPlanCommented($comment))->toMail($this->author)->render(),
+        );
     }
 
     public function test_the_mail_carries_the_remark_and_a_link_back_to_the_plan(): void

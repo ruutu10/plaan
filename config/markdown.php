@@ -35,7 +35,17 @@ return [
      *
      * More info: https://spatie.be/docs/laravel-markdown/v1/using-the-blade-component/passing-options-to-commonmark
      */
-    'commonmark_options' => [],
+    'commonmark_options' => [
+        /*
+         * Everything rendered through here is written by somebody else — a
+         * performer's comment on a plan, a model's answer — and lands on the
+         * page as HTML. Raw markup in it is shown as the text it is rather
+         * than run, and a link that is not one a browser should follow is
+         * dropped. CommonMark's own defaults are the other way round.
+         */
+        'html_input' => 'escape',
+        'allow_unsafe_links' => false,
+    ],
 
     /*
      * Rendering markdown to HTML can be resource intensive. By default

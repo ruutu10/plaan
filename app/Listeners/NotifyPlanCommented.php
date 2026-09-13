@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Notification;
  * goes to the technical team's address. Nobody is ever mailed about their own
  * comment — they are looking at it.
  *
+ * What the technician AI finds on a submitted plan arrives here as a comment
+ * from the crew's side, so it reaches the performer the same way a technician's
+ * own remark would: it is a question about the plan, whoever noticed it.
+ *
  * A plan with no author — filled in ahead of any account, or one whose author
  * has since been removed — has nobody on the far side to tell, and the crew's
  * remark stays on the page for whoever opens it next.
@@ -70,7 +74,7 @@ class NotifyPlanCommented
             return;
         }
 
-        if ($techEmail === $comment->user->email) {
+        if ($techEmail === $comment->user?->email) {
             Log::info('A comment was written from the technical contact\'s own address; no mail sent', [
                 'plan_id' => $plan->id,
                 'comment_id' => $comment->id,
