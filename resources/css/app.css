@@ -230,6 +230,11 @@
     }
 }
 
+@page {
+    size: A4 portrait;
+    margin: 14mm;
+}
+
 @media print {
     .r10-no-print {
         display: none !important;
@@ -238,6 +243,20 @@
         border: none !important;
         box-shadow: none !important;
         padding: 0 !important;
+    }
+    /* The page shell around the plan is screen chrome, not document: on paper
+       the plan gets the whole sheet, which A4 has none of to spare. */
+    .r10-print-sheet {
+        max-width: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        gap: 0 !important;
+    }
+    /* The scenes stand one under the other on paper; the five-column table they
+       stand in for is wider than A4 and carries `.r10-no-print`. */
+    .r10-print-scenes {
+        display: block !important;
     }
 }
 

@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { PlanDocument } from '@/types/technicalPlan';
 import Diamond from './Diamond.vue';
+import PlanCues from './PlanCues.vue';
+import { printBlocks } from './printPlan';
 
 /**
  * The plan as the performer and the technician read it: on screen at the end of
@@ -11,7 +14,13 @@ import Diamond from './Diamond.vue';
  * markup differs because a mail has to be an inline-styled table, but no
  * decision about *how a value reads* is taken here or there.
  */
-defineProps<{ doc: PlanDocument }>();
+const props = defineProps<{ doc: PlanDocument }>();
+
+/**
+ * The same scenes laid out down the page for paper — see {@link printBlocks}.
+ * Both layouts are in the markup at once, and the media query picks one.
+ */
+const printScenes = computed(() => printBlocks(props.doc.scenes));
 
 const cellClass = 'border border-r10-grey-200 px-3 py-2 align-top break-words';
 const labelCellClass = `${cellClass} bg-r10-grey-100 font-bold`;
@@ -139,8 +148,10 @@ const linkClass =
             <slot name="scenes-action" />
         </div>
         <!-- Five columns never fit a phone: the table scrolls sideways within
-             the document rather than squeezing every cue to one word a line. -->
-        <div class="mb-[26px] overflow-x-auto">
+             the document rather than squeezing every cue to one word a line.
+             They do not fit A4 either, so the printout takes the scene blocks
+             below instead and this table stays on screen. -->
+        <div class="r10-no-print mb-[26px] overflow-x-auto">
             <table class="w-full min-w-[560px] border-collapse text-[13px]">
                 <thead>
                     <tr>
@@ -206,40 +217,10 @@ const linkClass =
                                 {{ scene.light }}
                             </td>
                             <td :class="[cellClass, 'break-words']">
-                                <!-- Each cue gets its own line, in the order it is
-                                 played, so they all stay clickable. -->
-                                <span
-                                    v-for="(sound, position) in scene.sounds"
-                                    :key="position"
-                                    class="block"
-                                >
-                                    <template v-if="sound.file">
-                                        <a
-                                            :href="sound.file.url ?? undefined"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            :class="linkClass"
-                                        >
-                                            {{ sound.file.name }}
-                                        </a>
-                                        ({{ sound.file.sizeLabel }})
-                                    </template>
-                                    <a
-                                        v-else
-                                        :href="sound.url"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        :class="[linkClass, 'break-all']"
-                                    >
-                                        {{ sound.url }}
-                                    </a>
-                                </span>
-                                <span
-                                    v-if="scene.soundText"
-                                    class="block break-words whitespace-pre-line"
-                                >
-                                    {{ scene.soundText }}
-                                </span>
+                                <PlanCues
+                                    :sounds="scene.sounds"
+                                    :text="scene.soundText"
+                                />
                             </td>
                             <td
                                 :class="[
@@ -253,6 +234,51 @@ const linkClass =
                     </template>
                 </tbody>
             </table>
+        </div>
+
+        <!-- The printout's scenes: one under the other down the page, each a
+             heading over its own lines, so nothing has to fit five columns
+             across A4. Hidden on screen, where the table above reads faster. -->
+        <div class="r10-print-scenes mb-[26px] hidden">
+            <template v-for="(block, index) in printScenes" :key="index">
+                <div
+                    v-if="block.kind === 'act'"
+                    class="mt-4 break-inside-avoid bg-r10-navy px-2.5 py-1.5 text-center font-r10-display text-xs font-semibold tracking-[0.16em] text-white uppercase first:mt-0"
+                >
+                    {{ block.label }}
+                </div>
+                <div
+                    v-else-if="block.kind === 'intermission'"
+                    class="mt-4 break-inside-avoid border border-r10-grey-200 bg-r10-grey-100 px-2.5 py-1.5 text-center font-r10-display text-xs font-semibold tracking-[0.16em] text-r10-navy uppercase first:mt-0"
+                >
+                    {{ block.label }}
+                </div>
+                <div
+                    v-else
+                    class="mt-3.5 break-inside-avoid border-t border-r10-grey-200 pt-2.5 first:mt-0 first:border-t-0 first:pt-0"
+                >
+                    <div
+                        class="font-r10-display text-[15px] font-bold break-words text-r10-navy"
+                    >
+                        {{ block.title }}
+                    </div>
+                    <div
+                        v-for="detail in block.details"
+                        :key="detail.label"
+                        class="mt-1 text-[13px] leading-relaxed break-words whitespace-pre-line"
+                    >
+                        <span class="font-bold text-r10-navy"
+                            >{{ detail.label }}:
+                        </span>
+                        <PlanCues
+                            v-if="detail.sounds.length"
+                            :sounds="detail.sounds"
+                            :text="detail.text"
+                        />
+                        <template v-else>{{ detail.text }}</template>
+                    </div>
+                </div>
+            </template>
         </div>
 
         <div :class="sectionTitleClass">Erivahendid & load</div>

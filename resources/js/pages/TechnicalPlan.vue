@@ -681,7 +681,7 @@ watch(
 
     <R10Layout title="Etenduse tehnikaplaan" :no-print-header="true">
         <div
-            class="mx-auto flex max-w-[1160px] flex-wrap items-start gap-6 px-4 pt-6 pb-12 sm:px-6 sm:pt-9 sm:pb-16 lg:gap-[30px]"
+            class="r10-print-sheet mx-auto flex max-w-[1160px] flex-wrap items-start gap-6 px-4 pt-6 pb-12 sm:px-6 sm:pt-9 sm:pb-16 lg:gap-[30px]"
         >
             <Stepper
                 :step="step"
@@ -696,7 +696,7 @@ watch(
             />
 
             <main
-                class="min-w-0 flex-1 basis-[520px] rounded-[22px] border border-r10-grey-200 bg-white p-4 shadow-[0_6px_18px_rgba(10,14,23,0.1)] sm:p-6 lg:p-10"
+                class="r10-print-sheet min-w-0 flex-1 basis-[520px] rounded-[22px] border border-r10-grey-200 bg-white p-4 shadow-[0_6px_18px_rgba(10,14,23,0.1)] sm:p-6 lg:p-10"
             >
                 <LoginScreen
                     v-if="showLogin"
