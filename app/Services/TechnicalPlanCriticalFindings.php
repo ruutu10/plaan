@@ -175,6 +175,6 @@ class TechnicalPlanCriticalFindings
      */
     protected function client(): Client
     {
-        return $this->client ??= new Client(config('services.anthropic.key'));
+        return $this->client ??= $this->claudeClient();
     }
 }

@@ -17,7 +17,7 @@ class TechnicalPlanReviewer
 
     public function __construct()
     {
-        $this->client = new Client(config('services.anthropic.key'));
+        $this->client = $this->claudeClient();
     }
 
     /**
