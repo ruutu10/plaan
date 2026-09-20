@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Performances;
 
+use App\Enums\PerformanceStatus;
 use App\Models\Performance;
 use App\Rules\JellyfinItemUrl;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -88,10 +89,11 @@ class SavePerformanceRequest extends FormRequest
             // Minutes. A performance may be timed loosely or not at all, but a full
             // day of it is a typo rather than a plan.
             'duration' => ['nullable', 'integer', 'min:1', 'max:1440'],
-            // Whether the performance is still waiting to be reviewed. Sent only
-            // by the screens that offer the toggle; left out, the performance
-            // keeps the standing it had — a new one is vouched for by the adding.
-            'is_draft' => ['sometimes', 'boolean'],
+            // Where the performance stands: waiting to be reviewed, on the
+            // bill, or played. Sent only by the screens that offer the picker;
+            // left out, the performance keeps the standing it had — a new one
+            // is vouched for by the adding.
+            'status' => ['sometimes', 'string', Rule::in(PerformanceStatus::values())],
         ];
     }
 
@@ -100,7 +102,7 @@ class SavePerformanceRequest extends FormRequest
      * are two fields on the form but one stored moment, so they are folded
      * together here rather than in each controller action.
      *
-     * `is_draft` is left exactly as it arrived — present or absent — so a save
+     * `status` is left exactly as it arrived — present or absent — so a save
      * that says nothing about it goes on saying nothing.
      *
      * @return array<string, mixed>
@@ -174,6 +176,7 @@ class SavePerformanceRequest extends FormRequest
             'duration.max' => __('Etenduse kestus saab olla kuni 1440 minutit.'),
             'title.max' => __('Etteaste nimi saab olla kuni 255 tähemärki.'),
             'team_id.in' => __('Vali tiim, kuhu sa ise kuulud.'),
+            'status.in' => __('Vali etenduse olek.'),
             'recording_url.prohibited' => __('Salvestuse linki saab lisada ainult tehnik.'),
             'recording_url.max' => __('Jellyfini link saab olla kuni 2048 tähemärki.'),
         ];

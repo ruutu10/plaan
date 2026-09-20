@@ -214,6 +214,16 @@ class JellyfinEpisodeMetadata
             $tags[] = 'suits';
         }
 
+        // An interval is a scene entry carrying minutes rather than a scene —
+        // see StoreTechnicalPlanRequest. One is enough to say the night has one.
+        foreach ($plan->scenes as $scene) {
+            if (filled($scene['intermission'] ?? null)) {
+                $tags[] = 'vaheaeg';
+
+                break;
+            }
+        }
+
         return $tags;
     }
 

@@ -33,7 +33,7 @@ class Performance extends JsonResource
      *     teamName: string|null,
      *     startsAt: string,
      *     duration: int|null,
-     *     isDraft: bool,
+     *     status: string,
      *     technicalPlanCount: int|null,
      *     staffCount: int|null,
      *     reasoningLogCount: int,
@@ -66,9 +66,10 @@ class Performance extends JsonResource
             'teamName' => $performance->team?->name,
             'startsAt' => $performance->date->toIso8601String(),
             'duration' => $performance->duration,
-            // Imported and not reviewed yet, which keeps it out of the listing
-            // plans are written from until somebody clears it here.
-            'isDraft' => $performance->is_draft,
+            // Where the night stands: a draft waiting to be reviewed — which
+            // keeps it out of the listing plans are written from until
+            // somebody clears it here — one on the bill, or one already played.
+            'status' => $performance->status->value,
             // Deleting a performance leaves the plans written for it behind without
             // one, so the screen warns before that happens.
             'technicalPlanCount' => $performance->technical_plans_count,

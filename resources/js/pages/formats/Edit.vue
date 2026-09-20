@@ -27,6 +27,7 @@ import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { useResource } from '@/composables/useResource';
 import { useTrailingCrumb } from '@/composables/useTrailingCrumb';
 import { formatLocalDate, formatLocalTime } from '@/lib/date';
+import { performanceStatusLabel } from '@/lib/performanceStatus';
 import { show as formatApi, update } from '@/routes/api/formats';
 import {
     claudeLogs as reasoningLogsApi,
@@ -331,20 +332,21 @@ async function save(): Promise<void> {
                     </td>
                     <td class="px-5 py-4 whitespace-nowrap">
                         <R10Pill
-                            v-if="performance.isDraft"
+                            v-if="performance.status === 'draft'"
                             tone="accent"
                             data-test="performance-draft-badge"
                             title="Ülevaatamata etendust ei pakuta tehnikaplaani koostajale."
                             class="border-transparent"
                         >
                             <FileClock class="h-3.5 w-3.5" />
-                            Ülevaatamata
+                            {{ performanceStatusLabel(performance.status) }}
                         </R10Pill>
                         <span
                             v-else
                             class="font-r10-body text-[11px] font-bold tracking-[0.08em] text-r10-grey-500 uppercase"
+                            data-test="performance-status-label"
                         >
-                            Kinnitatud
+                            {{ performanceStatusLabel(performance.status) }}
                         </span>
                     </td>
                     <td

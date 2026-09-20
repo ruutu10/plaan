@@ -8,8 +8,14 @@ import R10FormDialog from '@/components/technical-plan/R10FormDialog.vue';
 import R10Input from '@/components/technical-plan/R10Input.vue';
 import R10Select from '@/components/technical-plan/R10Select.vue';
 import { formatLocalTime, toLocalDateInputValue } from '@/lib/date';
+import { performanceStatusOptions } from '@/lib/performanceStatus';
 import { store, update } from '@/routes/api/formats/performances';
-import type { FormatOption, FormatTeamOption, Performance } from '@/types';
+import type {
+    FormatOption,
+    FormatTeamOption,
+    Performance,
+    PerformanceStatus,
+} from '@/types';
 
 /**
  * Adds a performance to a format, or corrects one — the two differ only in where
@@ -61,7 +67,9 @@ const form = useHttp({
     date: '',
     start_time: '',
     duration: '',
-    is_draft: false,
+    // Typed loosely like `team_id` above: the select hands back whatever the
+    // DOM gives it, and the transform below narrows it on the way out.
+    status: 'upcoming' as string | number,
     planka_card_id: '',
     recording_url: '',
 }).transform((data) => ({
@@ -70,7 +78,7 @@ const form = useHttp({
     date: data.date,
     start_time: data.start_time,
     duration: data.duration === '' ? null : Number(data.duration),
-    is_draft: data.is_draft,
+    status: data.status as PerformanceStatus,
     planka_card_id: data.planka_card_id,
     // Left out entirely unless the server said this reader may set it — a form
     // that posted it blank would clear a link somebody else put there, and the
@@ -99,6 +107,9 @@ const formatOptions = computed(
             label: format.name,
         })) ?? [],
 );
+
+/** The standings a performance can be put in — see `@/lib/performanceStatus`. */
+const statusOptions = performanceStatusOptions();
 
 /**
  * The groups on offer, led by the option that hands the performance back to the
@@ -135,7 +146,7 @@ function fill(): void {
     form.duration = props.performance?.duration?.toString() ?? '';
     // A performance added here is vouched for by the adding; only an imported
     // one starts out waiting to be reviewed.
-    form.is_draft = props.performance?.isDraft ?? false;
+    form.status = props.performance?.status ?? 'upcoming';
     form.planka_card_id = props.performance?.plankaCardId ?? '';
     form.recording_url = props.performance?.recording?.url ?? '';
 }
@@ -250,36 +261,14 @@ async function save(): Promise<void> {
             :error="form.errors.recording_url"
         />
 
-        <div class="flex flex-col gap-1.5">
-            <label
-                class="flex cursor-pointer items-start gap-3 rounded-lg border-2 border-r10-grey-200 bg-white p-4"
-            >
-                <input
-                    v-model="form.is_draft"
-                    type="checkbox"
-                    data-test="performance-draft-toggle"
-                    class="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-r10-orange"
-                />
-                <span class="flex flex-col gap-0.5">
-                    <span
-                        class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-ink uppercase"
-                    >
-                        Ülevaatamata
-                    </span>
-                    <span class="text-xs text-r10-grey-500">
-                        Ülevaatamata etendus on mustand või mitte kinnitatud
-                        kuupäev. Seda ei pakuta tehnikaplaani koostajale
-                        valikuna. Imporditud etendused ootavad siin ülevaatamist
-                        — eemalda linnuke, kui kuupäev on õige.
-                    </span>
-                </span>
-            </label>
-            <span
-                v-if="form.errors.is_draft"
-                class="text-xs font-medium text-r10-orange-700"
-            >
-                {{ form.errors.is_draft }}
-            </span>
-        </div>
+        <R10Select
+            v-model="form.status"
+            label="Olek"
+            hint="Ülevaatamata etendust ei pakuta tehnikaplaani koostajale valikuna — imporditud etendused ootavad siin ülevaatamist. Arhiveeritud on ära mängitud õhtu; selle märgib süsteem ise iga nädal."
+            :options="statusOptions"
+            data-test="performance-status-select"
+            :error="form.errors.status"
+            error-test-id="performance-status-error"
+        />
     </R10FormDialog>
 </template>

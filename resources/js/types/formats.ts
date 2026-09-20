@@ -6,6 +6,15 @@
 export type CreatedBy = 'manual' | 'planka-import';
 
 /**
+ * Where a performance stands on the house's books. A draft is what the Planka
+ * import registers and nobody has reviewed yet; an upcoming performance is one
+ * the technical team has vouched for; an archived one has been played, which a
+ * weekly job takes care of. Mirrors `App\Enums\PerformanceStatus` — the labels
+ * for these live in `@/lib/performanceStatus`.
+ */
+export type PerformanceStatus = 'draft' | 'upcoming' | 'archived';
+
+/**
  * What a person is to one performance, as the Planka import reads a card's
  * cast and crew. Never set by hand — see {@link Performance.staff}.
  */
@@ -170,10 +179,11 @@ export interface Performance {
     /** Minutes, or null when the performance is not timed. */
     duration: number | null;
     /**
-     * Imported and not reviewed yet. A draft is kept out of the listing technical
-     * plans are written from until somebody clears it here.
+     * Where the night stands. A draft is imported and not reviewed yet, and is
+     * kept out of the listing technical plans are written from until somebody
+     * clears it here; an archived one has already been played.
      */
-    isDraft: boolean;
+    status: PerformanceStatus;
     /** Plans written for this performance; they outlive it, without a performance. */
     technicalPlanCount: number | null;
     /**
@@ -245,8 +255,8 @@ export interface AdminPerformanceRow {
     startsAt: string;
     /** Minutes, or null when the performance is not timed. */
     duration: number | null;
-    /** Imported and not reviewed yet. */
-    isDraft: boolean;
+    /** Where the night stands: unreviewed, on the bill, or played. */
+    status: PerformanceStatus;
     technicalPlanCount: number | null;
 }
 
@@ -260,7 +270,7 @@ export interface PerformanceFormData {
     /** "19:00" on the venue's clock; empty falls back to the house's usual hour. */
     start_time: string;
     duration: number | null;
-    is_draft: boolean;
+    status: PerformanceStatus;
     /** Empty for a performance that is not on the board at all. */
     planka_card_id: string;
     /**

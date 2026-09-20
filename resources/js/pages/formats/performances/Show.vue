@@ -25,6 +25,7 @@ import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { useResource } from '@/composables/useResource';
 import { formatLocalDate, formatLocalTime } from '@/lib/date';
+import { performanceStatusLabel } from '@/lib/performanceStatus';
 import {
     claudeLogs as reasoningLogsApi,
     plankaImport as plankaImportApi,
@@ -230,19 +231,20 @@ async function refreshFromPlanka(): Promise<void> {
                     </dt>
                     <dd>
                         <R10Pill
-                            v-if="performance.isDraft"
+                            v-if="performance.status === 'draft'"
                             tone="accent"
                             data-test="performance-draft-badge"
                             class="border-transparent"
                         >
                             <FileClock class="h-3.5 w-3.5" />
-                            Ülevaatamata
+                            {{ performanceStatusLabel(performance.status) }}
                         </R10Pill>
                         <span
                             v-else
                             class="font-r10-body text-[11px] font-bold tracking-[0.08em] text-r10-grey-500 uppercase"
+                            data-test="performance-status-label"
                         >
-                            Kinnitatud
+                            {{ performanceStatusLabel(performance.status) }}
                         </span>
                     </dd>
                 </div>

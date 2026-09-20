@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\PerformanceStatus;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -26,12 +27,10 @@ class UpdateTechnicalPlanPerformanceRequest extends FormRequest
                 'required',
                 'integer',
                 Rule::exists('performances', 'id')
-                    // The draft flag is compared inside a callback so the
-                    // boolean reaches the database as a boolean. Handing it to
-                    // where() instead folds the rule into its string form,
-                    // where false becomes an empty string that only MySQL is
-                    // lenient enough to read back as a zero.
-                    ->where(fn (Builder $query) => $query->where('is_draft', false))
+                    // Mirrors Performance::vouchedFor(): a night already played
+                    // is still a night, and a plan may be filed under it — only
+                    // the unreviewed drafts are refused.
+                    ->where(fn (Builder $query) => $query->whereIn('status', PerformanceStatus::vouchedFor()))
                     ->whereNull('deleted_at'),
             ],
         ];
