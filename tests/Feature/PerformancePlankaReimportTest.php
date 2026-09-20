@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Data\ImportedNight;
+use App\Data\ImportedPerformance;
 use App\Events\PlankaReimportRequested;
 use App\Http\Controllers\PerformancePlankaImportController;
 use App\Listeners\ImportPlankaCardsForPerformance;
 use App\Models\Format;
 use App\Models\Performance;
-use App\Data\ImportedNight;
-use App\Data\ImportedPerformance;
 use App\Models\User;
 use App\Services\PlankaPerformanceExtractor;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -232,7 +232,7 @@ class PerformancePlankaReimportTest extends TestCase
             'format_id' => $format->id,
             'planka_card_id' => 'card-1',
             'location' => 'Vaba Lava',
-            'is_draft' => true,
+            'status' => 'draft',
         ]);
 
         // Nothing was invented for the card the filter dropped.

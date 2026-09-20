@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\CreatedBy;
+use App\Enums\PerformanceStatus;
 use App\Models\Format;
 use App\Models\Performance;
 use App\Models\Team;
@@ -34,7 +35,7 @@ class PerformanceFactory extends Factory
                 fake()->randomElement(['18:00', '19:00', '20:00', '21:30']),
             ),
             'duration' => fake()->numberBetween(3, 90),
-            'is_draft' => false,
+            'status' => PerformanceStatus::Upcoming,
             'created_by' => CreatedBy::Manual,
         ];
     }
@@ -93,7 +94,19 @@ class PerformanceFactory extends Factory
     public function draft(): static
     {
         return $this->state(fn (array $attributes) => [
-            'is_draft' => true,
+            'status' => PerformanceStatus::Draft,
+        ]);
+    }
+
+    /**
+     * Indicate that the performance has been filed away as played. Says nothing
+     * about the date on its own — pair it with {@see past()} for a night that
+     * reads as history from both ends.
+     */
+    public function archived(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => PerformanceStatus::Archived,
         ]);
     }
 
@@ -105,7 +118,7 @@ class PerformanceFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'created_by' => CreatedBy::PlankaImport,
-            'is_draft' => true,
+            'status' => PerformanceStatus::Draft,
         ]);
     }
 

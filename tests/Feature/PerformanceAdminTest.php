@@ -133,7 +133,7 @@ class PerformanceAdminTest extends TestCase
                         ->setTimezone(Performance::venueTimezone())
                         ->format('Y-m-d H:i') === '2026-09-01 19:30')
                     ->where('0.duration', 75)
-                    ->where('0.isDraft', false)
+                    ->where('0.status', 'upcoming')
                     ->where('0.technicalPlanCount', 1)
                     ->where('0.title', null)
                     ->where('0.location', 'Vaba Lava, Telliskivi')
@@ -173,7 +173,7 @@ class PerformanceAdminTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->has('performances', 1)
-                ->where('performances.0.isDraft', true));
+                ->where('performances.0.status', 'draft'));
     }
 
     public function test_the_overview_sorts_the_soonest_performance_first(): void

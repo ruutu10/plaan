@@ -5,6 +5,7 @@ namespace App\Concerns;
 use Anthropic\Client;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 /**
  * Asks Claude a question it may already have been asked.
@@ -68,5 +69,32 @@ trait CachesClaudeMessages
         }
 
         return $answer;
+    }
+
+    /**
+     * The client this service talks to the API through, built from the house's
+     * own key.
+     *
+     * Refused outright in tests. The SDK carries its own HTTP stack, so
+     * `Http::preventStrayRequests()` — which `Tests\TestCase` arms for
+     * everything else — never sees a call made through it, and a test that
+     * built one here would be making a real, paid, differently-worded-every-time
+     * request. A test exercising a service for real hands it a client of its own
+     * with a canned transport instead, the way
+     * `Tests\Concerns\AnswersAsTheExtractionModel` does; a test that only needs
+     * the service to have been asked mocks the service.
+     */
+    protected function claudeClient(): Client
+    {
+        if (app()->runningUnitTests()) {
+            throw new RuntimeException(sprintf(
+                '%s tried to build a real Claude client in a test. Hand it a client with a '
+                .'canned transport (see Tests\Concerns\AnswersAsTheExtractionModel) or mock '
+                .'the service itself.',
+                static::class,
+            ));
+        }
+
+        return new Client(config('services.anthropic.key'));
     }
 }

@@ -40,3 +40,12 @@ Schedule::command('performances:remind-missing-technicians')
 Schedule::command('technical-plans:archive')
     ->daily()
     ->description('Archive technical plans whose performance has been played');
+
+// Weekly: a performance moving to archived changes nothing anybody is waiting
+// on — every listing that cares whether a night is still to come asks the date,
+// not the status — so the tidying can happen on the house's own quiet day. The
+// command's grace period keeps a show that ran late from being filed away while
+// it is still on.
+Schedule::command('performances:archive')
+    ->weekly()
+    ->description('Archive performances whose night has been played');

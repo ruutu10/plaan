@@ -9,6 +9,7 @@ import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import { formatLocalDate, formatLocalTime } from '@/lib/date';
+import { performanceStatusLabel } from '@/lib/performanceStatus';
 import { index } from '@/routes/admin/performances';
 import { show as showPerformance } from '@/routes/formats/performances';
 import type {
@@ -138,20 +139,21 @@ defineOptions({
                 </td>
                 <td class="px-5 py-4 align-top whitespace-nowrap">
                     <R10Pill
-                        v-if="performance.isDraft"
+                        v-if="performance.status === 'draft'"
                         tone="accent"
                         data-test="admin-performance-draft-badge"
                         title="Ülevaatamata etendust ei pakuta tehnikaplaani koostajale."
                         class="border-transparent"
                     >
                         <FileClock class="h-3.5 w-3.5" />
-                        Ülevaatamata
+                        {{ performanceStatusLabel(performance.status) }}
                     </R10Pill>
                     <span
                         v-else
                         class="font-r10-body text-[11px] font-bold tracking-[0.08em] text-r10-grey-500 uppercase"
+                        data-test="admin-performance-status-label"
                     >
-                        Kinnitatud
+                        {{ performanceStatusLabel(performance.status) }}
                     </span>
                 </td>
                 <td class="px-5 py-4 align-top tabular-nums">

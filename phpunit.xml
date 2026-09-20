@@ -20,6 +20,20 @@
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="AUTHENTIK_CLIENT_ID" value=""/>
         <env name="BCRYPT_ROUNDS" value="4"/>
+        <!--
+            Nothing here may talk to anybody. A developer's own .env is read by
+            the test run too, so every credential that would turn a test into a
+            real, billed request is blanked: without them each service takes the
+            same "not configured" path it takes on CI, which is what the tests
+            were written against. See Tests\TestCase, which turns a stray
+            request into a failure rather than a phone call.
+        -->
+        <env name="ANTHROPIC_API_KEY" value=""/>
+        <env name="PLANKA_URL" value=""/>
+        <env name="PLANKA_ACCESS_TOKEN" value=""/>
+        <env name="PLANKA_LIST_IDS" value=""/>
+        <env name="SENTRY_LARAVEL_DSN" value=""/>
+        <env name="SENTRY_DSN" value=""/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_DATABASE" value="testing"/>

@@ -7,6 +7,7 @@ use App\Concerns\LogsModelActivity;
 use App\Concerns\ScopedByTeamAccess;
 use App\Enums\CreatedBy;
 use App\Enums\PerformanceStaffRole;
+use App\Enums\PerformanceStatus;
 use App\Services\PerformanceStaffSync;
 use Carbon\CarbonInterface;
 use Database\Factories\PerformanceFactory;
@@ -55,7 +56,7 @@ use Illuminate\Support\Facades\Date;
  * @property string|null $planka_card_id
  * @property Carbon $date
  * @property int|null $duration
- * @property bool $is_draft
+ * @property PerformanceStatus $status
  * @property CreatedBy $created_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -76,7 +77,7 @@ use Illuminate\Support\Facades\Date;
     'planka_card_id',
     'date',
     'duration',
-    'is_draft',
+    'status',
     'created_by',
 ])]
 class Performance extends Model
@@ -109,7 +110,7 @@ class Performance extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'is_draft' => false,
+        'status' => PerformanceStatus::Upcoming->value,
         'created_by' => CreatedBy::Manual->value,
     ];
 
@@ -240,12 +241,32 @@ class Performance extends Model
      * be wrong or the night may not be happening at all, so it is kept out of
      * every listing a plan is written from until an admin clears it.
      *
+     * An archived performance is left in: it has been played, not disowned, and
+     * every caller that cares whether a night is still to come says so with a
+     * date of its own rather than leaning on the status for it.
+     *
      * @param  Builder<Performance>  $query
      */
     #[Scope]
     protected function vouchedFor(Builder $query): void
     {
-        $query->where('is_draft', false);
+        $query->whereIn('status', PerformanceStatus::vouchedFor());
+    }
+
+    /**
+     * Limit the query to the performances whose night has passed and which are
+     * still standing as upcoming — what the weekly archiving run works through.
+     * A draft is not among them however old: nobody ever vouched for it, so
+     * there is no night to have been played.
+     *
+     * @param  Builder<Performance>  $query
+     */
+    #[Scope]
+    protected function playedButNotArchived(Builder $query, CarbonInterface $before): void
+    {
+        $query
+            ->where('status', PerformanceStatus::Upcoming)
+            ->where('date', '<', $before);
     }
 
     /**
@@ -474,7 +495,7 @@ class Performance extends Model
         return [
             'date' => 'datetime',
             'duration' => 'integer',
-            'is_draft' => 'boolean',
+            'status' => PerformanceStatus::class,
             'created_by' => CreatedBy::class,
         ];
     }
@@ -501,6 +522,6 @@ class Performance extends Model
      */
     protected function activityLogAttributes(): array
     {
-        return ['format_id', 'team_id', 'title', 'location', 'date', 'duration', 'is_draft', 'created_by', 'planka_card_id'];
+        return ['format_id', 'team_id', 'title', 'location', 'date', 'duration', 'status', 'created_by', 'planka_card_id'];
     }
 }
