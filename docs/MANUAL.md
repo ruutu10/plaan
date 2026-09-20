@@ -104,9 +104,10 @@ etendus hoiab ainult seda, mis võib erineda.
   määratud, ja muidu formaadi oma.
 - Kellaajad näidatakse alati teatri kella järgi (Europe/Tallinn). Kellaajata
   etendus algab vaikimisi kell 19:00.
-- Etenduse võib märkida **mustandiks** (üle vaatamata). Mustandid on
-  tehnikaplaani vormile nähtamatud ja nende pärast ei tagata kunagi puuduvat
-  plaani - vt §7.3.
+- Igal etendusel on **olek**: `Ülevaatamata` (import registreeris, keegi pole
+  veel üle vaadanud), `Tulevane` (tehnik on kinnitanud) või `Arhiveeritud`
+  (õhtu on ära mängitud). Ülevaatamata etendused on tehnikaplaani vormile
+  nähtamatud ja nende pärast ei taga kunagi puuduvat plaani - vt §7.3.
 
 **Tehnikaplaan** - mida trupp ühe etenduse jaoks puldilt vajab. Igal plaanil on
 püsiv jagamistunnus kujul `R10-2026-XXXXXXXXXXXX`.
@@ -458,7 +459,7 @@ registreeritud, tõstab tehnik plaani selle alla.
 
 Valikus on kõik kinnitatud etendused viimasest kuust alates, asendusetendus ning
 alati ka see etendus, mille all plaan praegu on - ka siis, kui see on ammu
-mängitud. Ülevaatamata mustandietendusi (§7.3) ei pakuta ega võeta vastu. Iga
+mängitud. Ülevaatamata etendusi (§7.3) ei pakuta ega võeta vastu. Iga
 tõstmine logitakse koos muutjaga.
 
 ---
@@ -484,7 +485,7 @@ loe - seda ei antud kunagi üle.
 **Mille pärast ei nüksata:**
 - etendused, mille formaadil on **tehnikaplaani kohustus maha võetud** (§7.1) -
   näiteks õppelava või jämm,
-- mustandiks märgitud etendused,
+- ülevaatamata etendused,
 - etendused, millel pole tiimi (pole kellelegi kirjutada),
 - etendused, mille tiimil pole liikmeid - see logitakse hoiatusena ja vaadatakse
   hiljem uuesti üle juhuks, kui keegi õigeks ajaks liitub,
@@ -547,7 +548,7 @@ kustutamine - jääb formaadi tiimi kätte.
 
 Neid hallatakse formaadi muutmislehel. Etendusel on kuupäev ja algusaeg,
 valikuliselt kestus, valikuliselt oma pealkiri ja oma esinev tiim (jagatud
-õhtute jaoks) ning mustandi märge.
+õhtute jaoks) ning olek.
 
 **Asukoht** on vabatekstiline koht, kus etendus toimub - nii nagu Planka kaardil
 kirjas (nt `improkeskus`, `Vaba Lava, Telliskivi`). See on **puhtalt loetav**,
@@ -592,16 +593,26 @@ kirjutata üle ja kõrvale pandut ei äratata ellu.
 - Sama nime kohta korraga rohkem kui üht jooksu ei käivitata, nii et
   kannatamatust topeltvajutusest kahte importi ei teki.
 
-### 7.3 Mustandietendused
+### 7.3 Etenduse olek
 
-Mustandiks märgitud etendus on selline, mille automaatne import registreeris ja
-mida keegi pole veel üle vaadanud - kuupäev võib olla vale või õhtut ei pruugi
-üldse tulla. Kuni admin märke maha ei võta, on see:
+Etendusel on kolm olekut:
+
+| Olek | Mida tähendab |
+| --- | --- |
+| **Ülevaatamata** | Automaatne import registreeris selle ja keegi pole veel üle vaadanud - kuupäev võib olla vale või õhtut ei pruugi üldse tulla. |
+| **Tulevane** | Maja seisab etenduse taga. Käsitsi lisatud etendus algab siit: lisamine ongi ülevaatus. |
+| **Arhiveeritud** | Õhtu on ära mängitud. Selle märgib süsteem ise kord nädalas, vt §11. |
+
+Kuni etendus on **ülevaatamata**, on see:
 
 - tehnikaplaani vormi etenduste valikust välja jäetud,
-- märgistatud ülevaatamata etendusena
+- märgistatud ülevaatamata etendusena.
 
 Haldusekraanidel on see endiselt näha, üle vaatamata märkega.
+
+**Arhiveerimine ei peida midagi.** Arhiveeritud etendus jääb alles koos oma
+plaanide ja meeskonnaga; muutub ainult see, et maja loeb seda ajalooks, mitte
+tulevaseks kavaks. Vajadusel saab oleku käsitsi tagasi muuta.
 
 ### 7.4 Kogu maja etenduste ülevaade (`Etendused`)
 
@@ -698,7 +709,8 @@ tekstiks.
 | --- | --- | --- |
 | **Planka import** | Iga päev | Loeb projektide kaarte ja registreerib formaadid ja etendused, mille kohta on kaart. Uued etendused saabuvad **mustanditena**, mis ootavad ülevaatamist. Formaate ja etendusi, mille admin on siin kõrvale pannud, ei äratata kunagi ellu; jäädavalt kustutatud kirje aga luuakse sama kaardi pealt uuesti. Kaarte saab sildi järgi välja jätta. |
 | **AI ülevaatus esitamisel** | Iga plaani esimesel esitamisel | Loeb plaani üle ja kirjutab plaanile kommentaari ainult siis, kui leiab midagi, mis takistab etendust mängimast - vastuolu või puuduva helifaili. Vaikus tähendab, et plaan on mängitav. Vt [4.7 Esitamine](#47-esitamine). |
-| **Arhiveerimine** | Iga päev | Viib esitatud ja kinnitatud plaanid staatusesse **Arhiveeritud**, kui nende etendus mängiti ära rohkem kui 24 tundi tagasi. Esineja enda mustandit ei arhiveerita kunagi - seda ei antud kunagi üle. |
+| **Etenduste arhiveerimine** | Kord nädalas | Viib **tulevased** etendused olekusse **Arhiveeritud**, kui õhtu mängiti ära rohkem kui 24 tundi tagasi. Ülevaatamata etendust ei arhiveerita kunagi - selle taga ei seisnud keegi, seega pole ka õhtut, mis oleks möödas. |
+| **Plaanide arhiveerimine** | Iga päev | Viib esitatud ja kinnitatud plaanid staatusesse **Arhiveeritud**, kui nende etendus mängiti ära rohkem kui 24 tundi tagasi. Esineja enda mustandit ei arhiveerita kunagi - seda ei antud kunagi üle. |
 | **Tehnikuta etenduste koond** | Üle päeva kell 9 hommikul | Saadab tehnikatiimile ühe kirja kõigist lähinädala etendustest, millele ei ole ükski tehnik end kirja pannud. Etendus püsib koondis seni, kuni keegi end kirja paneb või õhtu on möödas. |
 | **Kutsete koristus** | Iga päev | Kustutab aegunud tiimikutsed. |
 | **Üleslaadimiste koristus** | Kord nädalas | Kustutab üle 72 tunni vanused ootel failid, mis ei jõudnud ühegi plaani külge. |

@@ -9,6 +9,7 @@ use App\Data\ImportedStaffMember;
 use App\Data\ImportSummary;
 use App\Enums\CreatedBy;
 use App\Enums\PerformanceStaffRole;
+use App\Enums\PerformanceStatus;
 use App\Models\ClaudeReasoningLog;
 use App\Models\Format;
 use App\Models\Performance;
@@ -1070,7 +1071,7 @@ class ImportPlankaPerformancesTest extends TestCase
         // A card is a claim about a night, so the performance it announces is a
         // draft until an admin has vouched for it — and until then it is not
         // among the performances a technical plan can be written for.
-        $this->assertTrue(Performance::sole()->is_draft);
+        $this->assertSame(PerformanceStatus::Draft, Performance::sole()->status);
         $this->assertSame(0, Performance::query()->vouchedFor()->count());
     }
 

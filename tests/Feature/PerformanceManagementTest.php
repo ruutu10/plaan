@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\CreatedBy;
 use App\Enums\PerformanceStaffRole;
+use App\Enums\PerformanceStatus;
 use App\Enums\TeamRole;
 use App\Models\Format;
 use App\Models\Performance;
@@ -413,7 +414,7 @@ class PerformanceManagementTest extends TestCase
         $this->actingAs($user)
             ->patchJson(route('api.formats.performances.update', [$format, $performance]), [
                 'date' => '2026-08-01',
-                'is_draft' => false,
+                'status' => 'upcoming',
                 'created_by' => 'manual',
             ])
             ->assertOk()
@@ -432,8 +433,8 @@ class PerformanceManagementTest extends TestCase
         $this->actingAs($user)
             ->getJson(route('api.formats.performances.index', $format))
             ->assertOk()
-            ->assertJsonPath('data.0.isDraft', true)
-            ->assertJsonPath('data.1.isDraft', false);
+            ->assertJsonPath('data.0.status', 'draft')
+            ->assertJsonPath('data.1.status', 'upcoming');
     }
 
     public function test_a_performance_added_by_hand_is_not_a_draft(): void
@@ -444,9 +445,9 @@ class PerformanceManagementTest extends TestCase
         $this->actingAs($user)
             ->postJson(route('api.formats.performances.store', $format), ['date' => '2026-08-14'])
             ->assertCreated()
-            ->assertJsonPath('data.isDraft', false);
+            ->assertJsonPath('data.status', 'upcoming');
 
-        $this->assertFalse(Performance::sole()->is_draft);
+        $this->assertSame(PerformanceStatus::Upcoming, Performance::sole()->status);
     }
 
     public function test_a_member_can_clear_a_performance_that_waited_to_be_reviewed(): void
@@ -457,12 +458,12 @@ class PerformanceManagementTest extends TestCase
         $this->actingAs($user)
             ->patchJson(route('api.formats.performances.update', [$format, $performance]), [
                 'date' => '2026-08-01',
-                'is_draft' => false,
+                'status' => 'upcoming',
             ])
             ->assertOk()
-            ->assertJsonPath('data.isDraft', false);
+            ->assertJsonPath('data.status', 'upcoming');
 
-        $this->assertFalse($performance->fresh()->is_draft);
+        $this->assertSame(PerformanceStatus::Upcoming, $performance->fresh()->status);
     }
 
     public function test_a_member_can_put_a_performance_back_to_waiting(): void
@@ -473,12 +474,12 @@ class PerformanceManagementTest extends TestCase
         $this->actingAs($user)
             ->patchJson(route('api.formats.performances.update', [$format, $performance]), [
                 'date' => '2026-08-01',
-                'is_draft' => true,
+                'status' => 'draft',
             ])
             ->assertOk()
-            ->assertJsonPath('data.isDraft', true);
+            ->assertJsonPath('data.status', 'draft');
 
-        $this->assertTrue($performance->fresh()->is_draft);
+        $this->assertSame(PerformanceStatus::Draft, $performance->fresh()->status);
     }
 
     public function test_a_saved_performance_keeps_its_standing_when_the_field_is_left_out(): void
@@ -486,29 +487,48 @@ class PerformanceManagementTest extends TestCase
         [$user, $format] = $this->formatOfOwnTeam();
         $performance = Performance::factory()->draft()->create(['format_id' => $format->id, 'date' => '2026-08-01']);
 
-        // A client that does not offer the toggle must not clear the flag by
+        // A client that does not offer the picker must not clear the standing by
         // saving the date alone.
         $this->actingAs($user)
             ->patchJson(route('api.formats.performances.update', [$format, $performance]), [
                 'date' => '2026-08-02',
             ])
             ->assertOk()
-            ->assertJsonPath('data.isDraft', true);
+            ->assertJsonPath('data.status', 'draft');
 
-        $this->assertTrue($performance->fresh()->is_draft);
+        $this->assertSame(PerformanceStatus::Draft, $performance->fresh()->status);
     }
 
-    public function test_the_draft_flag_must_be_a_boolean(): void
+    public function test_the_status_must_be_one_the_house_knows(): void
     {
         [$user, $format] = $this->formatOfOwnTeam();
 
         $this->actingAs($user)
             ->postJson(route('api.formats.performances.store', $format), [
                 'date' => '2026-08-14',
-                'is_draft' => 'vahest',
+                'status' => 'vahest',
             ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors('is_draft');
+            ->assertJsonValidationErrors('status');
+    }
+
+    public function test_a_performance_can_be_filed_away_as_played(): void
+    {
+        [$user, $format] = $this->formatOfOwnTeam();
+        $performance = Performance::factory()->past()->create(['format_id' => $format->id]);
+
+        $this->actingAs($user)
+            ->patchJson(route('api.formats.performances.update', [$format, $performance]), [
+                'date' => $performance->startDate(),
+                'status' => 'archived',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'archived');
+
+        // Archived is not disowned: a plan may still be filed under the night,
+        // the way it could the day before.
+        $this->assertSame(PerformanceStatus::Archived, $performance->fresh()->status);
+        $this->assertSame(1, Performance::query()->vouchedFor()->count());
     }
 
     public function test_updating_another_teams_performance_is_forbidden(): void

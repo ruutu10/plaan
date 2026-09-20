@@ -31,7 +31,7 @@ class AdminPerformance extends JsonResource
      *     teamName: string|null,
      *     startsAt: string,
      *     duration: int|null,
-     *     isDraft: bool,
+     *     status: string,
      *     technicalPlanCount: int|null,
      * }
      */
@@ -54,9 +54,10 @@ class AdminPerformance extends JsonResource
             'teamName' => $performance->performerName(),
             'startsAt' => $performance->date->toIso8601String(),
             'duration' => $performance->duration,
-            // Imported and not reviewed yet, which keeps it out of the listing
-            // technical plans are written from.
-            'isDraft' => $performance->is_draft,
+            // A draft is imported and not reviewed yet, which keeps it out of
+            // the listing technical plans are written from; an archived night
+            // has been played.
+            'status' => $performance->status->value,
             'technicalPlanCount' => $performance->technical_plans_count,
         ];
     }

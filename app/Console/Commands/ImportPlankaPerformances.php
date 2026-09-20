@@ -7,6 +7,7 @@ use App\Data\ImportedPerformance;
 use App\Data\ImportSummary;
 use App\Enums\CreatedBy;
 use App\Enums\ImportedFormatStatus;
+use App\Enums\PerformanceStatus;
 use App\Models\ClaudeReasoningLog;
 use App\Models\Format;
 use App\Models\Performance;
@@ -648,7 +649,7 @@ class ImportPlankaPerformances extends Command
             'planka_card_id' => $this->cardId,
             // What a card announces is a claim, not a booking: it waits as a
             // draft until an admin has looked it over.
-            'is_draft' => true,
+            'status' => PerformanceStatus::Draft,
             // Nobody chose this date; a card did. The screens say so, so a
             // performance that looks wrong is taken back to the board rather
             // than to whoever is assumed to have typed it.
@@ -677,7 +678,7 @@ class ImportPlankaPerformances extends Command
             'title' => $act->title,
             'location' => $night->location,
             'team_id' => $act->teamId,
-            'is_draft' => true,
+            'status' => PerformanceStatus::Draft->value,
             'created_by' => CreatedBy::PlankaImport->value,
         ]);
     }
