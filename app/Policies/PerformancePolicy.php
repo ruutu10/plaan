@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Format;
 use App\Models\Performance;
 use App\Models\User;
+use App\Services\JellyfinClient;
 use App\Services\PlankaClient;
 
 /**
@@ -78,5 +79,21 @@ class PerformancePolicy
     public function reimportFromPlanka(User $user, Performance $performance): bool
     {
         return PlankaClient::isConfigured() && $user->can(Performance::EDIT_ALL_PERMISSION);
+    }
+
+    /**
+     * Determine whether the user can say where this performance's recording is.
+     *
+     * Narrower than editing it, for the same reason as
+     * {@see reimportFromPlanka()}: saying so writes to the house's own media
+     * library, over metadata every group's recordings share a shelf with, so it
+     * stays with the crew holding {@see Performance::EDIT_ALL_PERMISSION}
+     * rather than with whichever group's night it happens to be. There is also
+     * nothing to write to when no library is configured, which is what keeps
+     * the field off a house without one.
+     */
+    public function linkRecording(User $user, Performance $performance): bool
+    {
+        return JellyfinClient::isConfigured() && $user->can(Performance::EDIT_ALL_PERMISSION);
     }
 }

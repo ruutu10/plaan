@@ -6,6 +6,7 @@ use App\Concerns\LogsModelActivity;
 use App\Data\RecordLinks;
 use App\Models\Format;
 use App\Models\Performance;
+use App\Models\PerformanceRecording;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
@@ -81,6 +82,11 @@ class AuditLogEntry extends JsonResource
             $subject instanceof TechnicalPlan => $subject->performance
                 ? $this->nightLabel($subject->performance)
                 : null,
+            // A recording has no name of its own either: it is the video of one
+            // night, and reads by that night exactly as a plan does.
+            $subject instanceof PerformanceRecording => $subject->performance
+                ? $this->nightLabel($subject->performance)
+                : null,
             default => null,
         };
     }
@@ -149,6 +155,16 @@ class AuditLogEntry extends JsonResource
             $subject instanceof TechnicalPlan => $viewer->can(TechnicalPlan::VIEW_ALL_PERMISSION)
                 ? route('technical-plans.show', $subject)
                 : null,
+            // A recording has no page of its own; it is opened on the night it
+            // belongs to, which is also the only screen that offers the link.
+            $subject instanceof PerformanceRecording => $viewer->can(Performance::EDIT_ALL_PERMISSION)
+                && $subject->performance !== null
+                && ! $subject->performance->isPlaceholder()
+                    ? route('formats.performances.show', [
+                        $subject->performance->format_id,
+                        $subject->performance->getKey(),
+                    ])
+                    : null,
             default => null,
         };
     }

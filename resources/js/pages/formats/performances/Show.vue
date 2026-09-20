@@ -2,6 +2,7 @@
 import type { UrlMethodPair } from '@inertiajs/core';
 import { Head, router, setLayoutProps, useHttp } from '@inertiajs/vue3';
 import {
+    ExternalLink,
     FileClock,
     Mail,
     Pencil,
@@ -251,6 +252,28 @@ async function refreshFromPlanka(): Promise<void> {
                     </dt>
                     <dd class="text-r10-ink">
                         {{ performance.technicalPlanCount ?? 0 }}
+                    </dd>
+                </div>
+                <!-- Shown to everybody who may open the night: watching a
+                     recording is not the crew's right alone, only saying where
+                     one is. -->
+                <div>
+                    <dt class="text-xs font-bold text-r10-grey-500 uppercase">
+                        Salvestus
+                    </dt>
+                    <dd class="text-r10-ink">
+                        <a
+                            v-if="performance.recording?.itemUrl"
+                            :href="performance.recording.itemUrl"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            data-test="performance-recording-link"
+                            class="inline-flex w-fit items-center gap-1.5 font-medium text-r10-navy underline underline-offset-2 hover:text-r10-orange-700"
+                        >
+                            <ExternalLink class="h-3.5 w-3.5" />
+                            Vaata Jellyfinis
+                        </a>
+                        <span v-else>—</span>
                     </dd>
                 </div>
             </dl>

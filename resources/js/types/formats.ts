@@ -115,6 +115,29 @@ export interface FormatFormData {
 
 export type FormatFieldErrors = Partial<Record<keyof FormatFormData, string>>;
 
+/** The video of a played night, as it sits in the house's Jellyfin library. */
+export interface PerformanceRecording {
+    /** The address somebody pasted, which is what the field holds for correcting. */
+    url: string;
+    /**
+     * The same episode as the library itself addresses it — what a link on a
+     * screen should point at, so an oddly shaped but readable paste still
+     * opens the right video. Null when no library is configured.
+     */
+    itemUrl: string | null;
+    /**
+     * When this night's details were last pushed to the library; ISO 8601 UTC
+     * instant. Null while the push is still queued, or after one that failed.
+     */
+    syncedAt: string | null;
+    /**
+     * What stopped the last push, for the crew alone — a group has nothing to
+     * do with the media server refusing a write. Null when the last one got
+     * through, and for everybody but the crew.
+     */
+    syncError: string | null;
+}
+
 /** One dated performance of a format. */
 export interface Performance {
     id: number;
@@ -175,6 +198,18 @@ export interface Performance {
      * what keeps the button off the page entirely.
      */
     canReimportFromPlanka: boolean;
+    /**
+     * The video of this night, once somebody has said where it is. Present only
+     * where the server eager-loaded it — the performance's own details page and
+     * the answer to saving it, not the list a format's edit page shows.
+     */
+    recording?: PerformanceRecording | null;
+    /**
+     * Whether this reader may say where that video is. False for everyone when
+     * no library is configured, which is what keeps the field off the form
+     * entirely.
+     */
+    canLinkRecording: boolean;
     /** Whether the performance was entered by hand or read off a Planka card. */
     createdBy: CreatedBy;
     /**
@@ -228,6 +263,11 @@ export interface PerformanceFormData {
     is_draft: boolean;
     /** Empty for a performance that is not on the board at all. */
     planka_card_id: string;
+    /**
+     * Where the video of this night lives. Empty for a night with no recording,
+     * and sent at all only by a reader the server says may set it.
+     */
+    recording_url: string;
 }
 
 export type PerformanceFieldErrors = Partial<

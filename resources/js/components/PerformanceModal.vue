@@ -2,6 +2,7 @@
 import { useHttp } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { toast } from 'vue-sonner';
+import JellyfinRecordingField from '@/components/JellyfinRecordingField.vue';
 import PlankaCardField from '@/components/PlankaCardField.vue';
 import R10FormDialog from '@/components/technical-plan/R10FormDialog.vue';
 import R10Input from '@/components/technical-plan/R10Input.vue';
@@ -62,6 +63,7 @@ const form = useHttp({
     duration: '',
     is_draft: false,
     planka_card_id: '',
+    recording_url: '',
 }).transform((data) => ({
     title: data.title,
     team_id: data.team_id === FORMAT_S_OWN_TEAM ? null : Number(data.team_id),
@@ -70,9 +72,22 @@ const form = useHttp({
     duration: data.duration === '' ? null : Number(data.duration),
     is_draft: data.is_draft,
     planka_card_id: data.planka_card_id,
+    // Left out entirely unless the server said this reader may set it — a form
+    // that posted it blank would clear a link somebody else put there, and the
+    // field is not on the screen to be cleared. The server holds the same line
+    // on its own; this only keeps the request honest.
+    ...(canLinkRecording.value ? { recording_url: data.recording_url } : {}),
 }));
 
 const isEditing = computed(() => props.performance !== null);
+
+/**
+ * Whether this reader may say where the night's recording is. Never on a new
+ * performance: a video of an evening nobody has played yet is not a thing.
+ */
+const canLinkRecording = computed(
+    () => props.performance?.canLinkRecording ?? false,
+);
 
 /** Whether the dialog itself offers the choice of format — see `formatId`. */
 const choosesFormat = computed(() => props.formatId === null);
@@ -122,6 +137,7 @@ function fill(): void {
     // one starts out waiting to be reviewed.
     form.is_draft = props.performance?.isDraft ?? false;
     form.planka_card_id = props.performance?.plankaCardId ?? '';
+    form.recording_url = props.performance?.recording?.url ?? '';
 }
 
 async function save(): Promise<void> {
@@ -223,6 +239,15 @@ async function save(): Promise<void> {
             v-model="form.planka_card_id"
             :card-url="performance?.plankaCardUrl"
             :error="form.errors.planka_card_id"
+        />
+
+        <JellyfinRecordingField
+            v-if="canLinkRecording"
+            v-model="form.recording_url"
+            :item-url="performance?.recording?.itemUrl"
+            :synced-at="performance?.recording?.syncedAt"
+            :sync-error="performance?.recording?.syncError"
+            :error="form.errors.recording_url"
         />
 
         <div class="flex flex-col gap-1.5">

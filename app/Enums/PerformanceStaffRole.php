@@ -36,4 +36,26 @@ enum PerformanceStaffRole: string
             self::Bar => 'Baar',
         };
     }
+
+    /**
+     * The kind of person Jellyfin files this role under on the recording of a
+     * night, or null for a role it has nobody for.
+     *
+     * Jellyfin's own list is fixed and short of a few things a theatre has: it
+     * knows no compère and nobody selling tickets. A role it cannot name and
+     * that is not on the recording anyway is left off the cast rather than
+     * filed under something that reads wrong — the role's own {@see label()}
+     * travels alongside as free text, so the ones that do go on are named the
+     * way the house names them.
+     */
+    public function jellyfinPersonKind(): ?string
+    {
+        return match ($this) {
+            self::Performer => 'Actor',
+            self::Host => 'GuestStar',
+            self::Technician => 'Engineer',
+            self::VideoOperator => 'Producer',
+            self::TicketSeller, self::Bar => null,
+        };
+    }
 }
