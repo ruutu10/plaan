@@ -301,6 +301,76 @@ class JellyfinSyncTest extends TestCase
         Http::assertNothingSent();
     }
 
+    /**
+     * `GET /Items/{id}` looks like the way to fetch one item and only exists
+     * from Jellyfin 12; a 10.x server answers it with a bare 400. The item
+     * query is what both lines speak, so that is what the read asks.
+     */
+    public function test_the_item_is_read_through_the_query_both_jellyfin_lines_speak(): void
+    {
+        $this->fakeLibrary();
+
+        $this->push($this->recordingFor($this->night()));
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'GET'
+            && str_starts_with($request->url(), 'https://jellyfin.test/Items?')
+            && str_contains($request->url(), 'ids='.self::ITEM_ID));
+
+        Http::assertNotSent(fn (Request $request): bool => $request->method() === 'GET'
+            && str_contains($request->url(), '/Items/'.self::ITEM_ID));
+    }
+
+    public function test_an_item_the_library_does_not_hold_is_not_written_to(): void
+    {
+        Http::fake([
+            'jellyfin.test/Items?*' => Http::response(['Items' => [], 'TotalRecordCount' => 0]),
+        ]);
+
+        $recording = $this->recordingFor($this->night());
+
+        $this->expectException(RuntimeException::class);
+
+        try {
+            $this->push($recording);
+        } finally {
+            Http::assertNotSent(fn (Request $request): bool => $request->method() === 'POST');
+        }
+    }
+
+    /**
+     * PHP spells an empty map and an empty list the same way and JSON does not,
+     * so an episode with no provider ids and no artwork — the ordinary state of
+     * a freshly scanned recording — would go out with `"ProviderIds": []` and
+     * have the whole write refused for not being a dictionary.
+     */
+    public function test_an_empty_map_is_written_as_a_map_rather_than_a_list(): void
+    {
+        $this->fakeLibrary([
+            'ProviderIds' => [],
+            'ImageTags' => [],
+            'ImageBlurHashes' => [],
+        ]);
+
+        // Nothing of ours to put in it, so what the library had is what goes
+        // back — empty, and still a map.
+        $performance = $this->night(['planka_card_id' => null]);
+        $recording = PerformanceRecording::factory()->for($performance)->forItem(self::ITEM_ID)->create();
+
+        $this->push($recording);
+
+        Http::assertSent(function (Request $request): bool {
+            if ($request->method() !== 'POST') {
+                return false;
+            }
+
+            $body = $request->body();
+
+            return str_contains($body, '"ImageTags":{}')
+                && str_contains($body, '"ImageBlurHashes":{}')
+                && ! str_contains($body, '"ImageTags":[]');
+        });
+    }
+
     public function test_the_push_is_queued_rather_than_done_in_the_request(): void
     {
         $this->assertInstanceOf(
@@ -343,17 +413,22 @@ class JellyfinSyncTest extends TestCase
     private function fakeLibrary(array $item = []): void
     {
         Http::fake([
-            'jellyfin.test/Items/'.self::ITEM_ID.'?*' => Http::response(array_replace([
-                'Id' => self::ITEM_ID,
-                'Type' => 'Episode',
-                'Name' => 'Episode 4',
-                'Overview' => 'Whatever the scan made of it.',
-                'People' => [],
-                'Studios' => [],
-                'Tags' => [],
-                'ProviderIds' => [],
-            ], $item)),
-            'jellyfin.test/Items/'.self::ITEM_ID => Http::response(null, 204),
+            // The read is a query for one id; the write is the item's own
+            // route. Ordered so the query is matched before the wildcard.
+            'jellyfin.test/Items?*' => Http::response([
+                'Items' => [array_replace([
+                    'Id' => self::ITEM_ID,
+                    'Type' => 'Episode',
+                    'Name' => 'Episode 4',
+                    'Overview' => 'Whatever the scan made of it.',
+                    'People' => [],
+                    'Studios' => [],
+                    'Tags' => [],
+                    'ProviderIds' => [],
+                ], $item)],
+                'TotalRecordCount' => 1,
+            ]),
+            'jellyfin.test/Items/*' => Http::response(null, 204),
         ]);
     }
 

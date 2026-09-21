@@ -7,6 +7,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use stdClass;
 
 /**
  * A thin client for the Jellyfin REST API — enough of it to read one library
@@ -19,10 +20,15 @@ use RuntimeException;
  * new values over it and posts the result back. That is not caution, it is the
  * only correct way to use the endpoint.
  *
- * It also means the read has to ask for what it intends to keep. A bare
- * `GET /Items/{id}` leaves several fields out of its answer, and a field left
- * out of the answer is a field the write would clear, so {@see FIELDS} names
- * them and {@see item()} always sends it.
+ * It also means the read has to ask for what it intends to keep. A bare read
+ * leaves several fields out of its answer — on a real library, the cast, the
+ * studios, the tags and the provider ids among them — and a field left out of
+ * the answer is a field the write would clear, so {@see FIELDS} names them and
+ * {@see item()} always sends it.
+ *
+ * Both lines of Jellyfin are spoken here: 10.x and 12.x differ over how a
+ * single item is fetched, so {@see item()} uses the query form that has not
+ * changed rather than the route that has.
  *
  * The key this authenticates with is an administrator's: writing an item needs
  * elevation, and a user's own token is refused.
@@ -34,6 +40,17 @@ class JellyfinClient
      * Asked for by name on every read — see the class docblock.
      */
     private const FIELDS = 'Overview,People,Studios,Genres,Tags,ProviderIds,Taglines,ProductionLocations,DateCreated';
+
+    /**
+     * The properties Jellyfin holds as maps rather than lists.
+     *
+     * PHP cannot tell an empty map from an empty list — both are `[]` — and
+     * JSON can, so an empty one of these goes out as `[]` and is refused with a
+     * binding error naming the field. An item with no provider ids and no
+     * artwork is the ordinary case for a freshly scanned recording, so this is
+     * not an edge: it is most of them. See {@see asJsonMaps()}.
+     */
+    private const MAPS = ['ProviderIds', 'ImageTags', 'ImageBlurHashes'];
 
     /**
      * The only kind of item this app ever writes to.
@@ -106,17 +123,34 @@ class JellyfinClient
      * One library item, whole — see the class docblock on why the fields are
      * asked for by name.
      *
+     * Read through the item *query* rather than `GET /Items/{id}`, which looks
+     * like the obvious way to fetch one item and is not: that route only exists
+     * from Jellyfin 12, and a 10.x server answers it with a bare 400 that says
+     * nothing about why. The query form is the one both lines have spoken all
+     * along, so this asks for a list of exactly one id and takes what comes
+     * back.
+     *
      * @return array<string, mixed>
      */
     public function item(string $itemId): array
     {
         $startedAt = microtime(true);
 
-        /** @var array<string, mixed> $item */
-        $item = $this->request()
-            ->get("/Items/{$itemId}", ['fields' => self::FIELDS])
+        $items = $this->request()
+            ->get('/Items', ['ids' => $itemId, 'fields' => self::FIELDS])
             ->throw()
-            ->json();
+            ->json('Items');
+
+        $item = is_array($items) ? ($items[0] ?? null) : null;
+
+        // A library that has never heard of the item answers with an empty list
+        // rather than a 404, so "no such episode" arrives here as a success.
+        if (! is_array($item)) {
+            throw new RuntimeException(sprintf(
+                'Jellyfin holds no item %s.',
+                $itemId,
+            ));
+        }
 
         Log::debug('Fetched a Jellyfin item', [
             'item_id' => $itemId,
@@ -135,7 +169,7 @@ class JellyfinClient
      */
     public function updateItem(string $itemId, array $item): void
     {
-        $this->request()->post("/Items/{$itemId}", $item)->throw();
+        $this->request()->post("/Items/{$itemId}", $this->asJsonMaps($item))->throw();
 
         Log::info('Updated a Jellyfin item', [
             'item_id' => $itemId,
@@ -171,6 +205,27 @@ class JellyfinClient
         $this->updateItem($itemId, $payload);
 
         return $payload;
+    }
+
+    /**
+     * Spell the empty maps as maps — see {@see MAPS} for why they would
+     * otherwise go out as lists and have the whole write refused.
+     *
+     * Only the empty ones need it: one with anything in it is an associative
+     * array already, and encodes as an object of its own accord.
+     *
+     * @param  array<string, mixed>  $item
+     * @return array<string, mixed>
+     */
+    private function asJsonMaps(array $item): array
+    {
+        foreach (self::MAPS as $key) {
+            if (($item[$key] ?? null) === []) {
+                $item[$key] = new stdClass;
+            }
+        }
+
+        return $item;
     }
 
     /**

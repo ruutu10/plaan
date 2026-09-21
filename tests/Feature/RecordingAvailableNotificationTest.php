@@ -40,7 +40,13 @@ class RecordingAvailableNotificationTest extends TestCase
         // The push is a listener of its own on the same event; this file is
         // about the letter, so the library is walled off rather than faked.
         Http::preventStrayRequests();
-        Http::fake(['jellyfin.test/*' => Http::response(['Type' => 'Episode'])]);
+        Http::fake([
+            'jellyfin.test/Items?*' => Http::response([
+                'Items' => [['Id' => self::ITEM_ID, 'Type' => 'Episode']],
+                'TotalRecordCount' => 1,
+            ]),
+            'jellyfin.test/*' => Http::response(null, 204),
+        ]);
     }
 
     public function test_the_plan_author_is_told_a_video_is_available(): void

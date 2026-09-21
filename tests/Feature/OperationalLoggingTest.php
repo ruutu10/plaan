@@ -293,7 +293,10 @@ class OperationalLoggingTest extends TestCase
 
         Http::preventStrayRequests();
         Http::fake([
-            'jellyfin.test/Items/*?*' => Http::response(['Id' => 'x', 'Type' => 'Episode']),
+            'jellyfin.test/Items?*' => Http::response([
+                'Items' => [['Id' => 'x', 'Type' => 'Episode']],
+                'TotalRecordCount' => 1,
+            ]),
             'jellyfin.test/Items/*' => Http::response(null, 204),
         ]);
 
@@ -364,7 +367,10 @@ class OperationalLoggingTest extends TestCase
 
         Http::preventStrayRequests();
         Http::fake([
-            'jellyfin.test/Items/*?*' => Http::response(['Id' => 'x', 'Type' => 'Episode']),
+            'jellyfin.test/Items?*' => Http::response([
+                'Items' => [['Id' => 'x', 'Type' => 'Episode']],
+                'TotalRecordCount' => 1,
+            ]),
             'jellyfin.test/Items/*' => Http::response(null, 204),
         ]);
 
@@ -387,7 +393,10 @@ class OperationalLoggingTest extends TestCase
 
         Http::preventStrayRequests();
         Http::fake([
-            'jellyfin.test/Items/*?*' => Http::response(['Id' => 'x', 'Type' => 'Episode']),
+            'jellyfin.test/Items?*' => Http::response([
+                'Items' => [['Id' => 'x', 'Type' => 'Episode']],
+                'TotalRecordCount' => 1,
+            ]),
             'jellyfin.test/Items/*' => Http::response(null, 204),
         ]);
 
