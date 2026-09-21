@@ -11,7 +11,7 @@
 @endphp
 @extends('emails.layout')
 
-@section('title', 'Etenduse salvestus on olemas')
+@section('title', 'Etenduse salvestus on saadaval')
 
 @section('preheader', $formatName.' · etenduse salvestus on nüüd vaadatav.')
 
@@ -21,7 +21,7 @@
     </h1>
 
     <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6;">
-        Etenduse salvestus on jõudnud Jellyfini ja on nüüd vaadatav. Salvestuse juurde on lisatud ka etenduse andmed — kes esines, millal ja kus.
+        Sinu etenduse salvestus on jõudnud Jellyfini ja on nüüd järelvaadatav.
     </p>
 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2f4f7; border-radius:14px;">

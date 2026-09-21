@@ -597,36 +597,22 @@ kirjutata üle ja kõrvale pandut ei äratata ellu.
 etenduse video aadress Jellyfinist. Kopeeri see Jellyfini veebiliidesest - nii
 täispikk aadress (`.../web/#/details?id=...`) kui ka paljas video ID kõlbavad.
 
-- Välja näevad ja täita saavad **ainult tehnikud**, ja ainult siis, kui
-  Jellyfin on üldse seadistatud. Link kirjutab maja ühisesse meediakogusse,
-  kus kõigi truppide salvestused ühel riiulil seisavad, nii et see ei ole
-  etendust mängiva tiimi asi. Salvestust **vaatab** aga igaüks, kes etenduse
-  lehe avab - link on seal kõigile nähtav.
 - Kui link salvestada, uuendab süsteem **taustal** Jellyfinis selle video
   andmeid: etenduse nimi, kuupäev, esinev trupp, meeskond (esinejad,
   õhtujuht, helimees - igaüks oma rollis), formaadi kirjeldus, sildid
   (trupp, formaat, koht, hooaeg, ja tehnikaplaanist elav muusika / suits /
   vaheaeg) ning lingid tagasi plaani ja Planka kaardi peale.
-- Uuendatakse **ainult seda üht videot** - sarja ega hooaega ei puututa.
 - Andmed liiguvad **ainult ühes suunas**, plaanist Jellyfini. Kui keegi
   Jellyfinis kirjelduse käsitsi üle kirjutab, kaob see järgmise uuendusega.
-- Välja all seisab, kuidas viimane uuendus läks - kas see on veel järjekorras,
-  millal see korda läks, või et see ebaõnnestus. Vale lingi parandamine paneb
-  uuenduse uuesti käima.
 - Kui link **esimest korda** lisatakse, saavad selle etenduse tehnikaplaani
   kirjutajad kirja, et salvestus on olemas. Hilisem lingi parandamine teist
   kirja ei saada.
 - Sedasama kirja saavad **pimekoopiana** ka kõik, kes sel õhtul laval olid -
-  esinejad ja õhtujuht, nii nagu Planka kaart nad nimetas. Pimekoopia, et
-  kiri ei annaks kõigi aadresse kõigile kätte. Kõrvalt õhtut vedanud
-  meeskond - tehnik, operaator, piletimüüja, baar - kirja ei saa: salvestus
-  pole neist.
+  esinejad ja õhtujuht, nii nagu Planka kaart nad nimetas. 
 - Kui plaani kirjutajat pole (nt formaadil, mille tehnikaplaan ei ole
   kohustuslik), ei saada kirja kellelegi - ka lavalolijatele mitte.
 - Kiri läheb **ainult teatri enda e-posti domeenide** aadressidele (vt §2.4).
-  Salvestus on maja meediakogus, mida külalisaadressilt niikuinii avada ei
-  saa, nii et külalistrupi liikmele kirja ei saadeta - ei adressaadina ega
-  pimekoopiana.
+  Salvestus on maja meediakogus, mida külalisaadressilt avada ei saa.
 
 ### 7.3 Etenduse olek
 
