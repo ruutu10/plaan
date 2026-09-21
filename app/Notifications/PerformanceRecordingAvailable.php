@@ -22,9 +22,19 @@ class PerformanceRecordingAvailable extends Notification implements ShouldQueue
 
     /**
      * Create a new notification instance.
+     *
+     * @param  array<int, string>  $blindCopies  The people who were on stage that
+     *                                           night, who are told a video of
+     *                                           them exists without being shown
+     *                                           each other's addresses. Empty
+     *                                           unless this is the one letter
+     *                                           carrying them — see
+     *                                           {@see NotifyRecordingAvailable}.
      */
-    public function __construct(public PerformanceRecording $recording)
-    {
+    public function __construct(
+        public PerformanceRecording $recording,
+        public array $blindCopies = [],
+    ) {
         //
     }
 
@@ -45,7 +55,7 @@ class PerformanceRecordingAvailable extends Notification implements ShouldQueue
     {
         $performance = $this->recording->performance;
 
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject('Etenduse salvestus on olemas · '.$this->label())
             ->view('emails.performance-recording-available', [
                 'formatName' => $performance?->displayName(),
@@ -59,6 +69,15 @@ class PerformanceRecordingAvailable extends Notification implements ShouldQueue
                     ?? $this->recording->url,
                 'techEmail' => (string) config('technical_plan.tech_email'),
             ]);
+
+        // Blind rather than copied openly: the people on stage are told a video
+        // of them exists without the letter handing every one of their
+        // addresses to everybody else on it.
+        if ($this->blindCopies !== []) {
+            $mail->bcc($this->blindCopies);
+        }
+
+        return $mail;
     }
 
     /**

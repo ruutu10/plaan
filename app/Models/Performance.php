@@ -8,6 +8,7 @@ use App\Concerns\ScopedByTeamAccess;
 use App\Enums\CreatedBy;
 use App\Enums\PerformanceStaffRole;
 use App\Enums\PerformanceStatus;
+use App\Listeners\NotifyRecordingAvailable;
 use App\Services\PerformanceStaffSync;
 use Carbon\CarbonInterface;
 use Database\Factories\PerformanceFactory;
@@ -415,6 +416,30 @@ class Performance extends Model
             ->using(PerformanceStaff::class)
             ->withPivot(['role'])
             ->withTimestamps();
+    }
+
+    /**
+     * Whoever was in front of the audience this night, of everybody
+     * {@see staff()} names: the players, and whoever compèred. Asked for on its
+     * own because they are the people a recording of the evening is *of* — see
+     * {@see NotifyRecordingAvailable}, which blind-copies them
+     * when a video turns up.
+     *
+     * Everybody else the card names kept the night running from the side of it
+     * and is left out: the desk, the camera, the door, the bar.
+     *
+     * @return BelongsToMany<User, $this, PerformanceStaff, 'pivot'>
+     */
+    public function onStage(): BelongsToMany
+    {
+        return $this->staff()
+            ->wherePivotIn('role', [
+                PerformanceStaffRole::Performer->value,
+                PerformanceStaffRole::Host->value,
+            ])
+            // Every reader lists them in the same order, and the import gives
+            // no order of its own worth keeping.
+            ->orderBy('users.name');
     }
 
     /**

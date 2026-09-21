@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PerformanceStaffRole;
 use App\Events\PerformanceRecordingLinked;
 use App\Listeners\NotifyRecordingAvailable;
 use App\Models\Performance;
@@ -68,6 +69,168 @@ class RecordingAvailableNotificationTest extends TestCase
         );
 
         $this->assertNotNull($recording->fresh()->announced_at);
+    }
+
+    public function test_the_people_on_stage_are_blind_copied(): void
+    {
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        $author = User::factory()->create();
+        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+
+        $player = $this->staff($performance, PerformanceStaffRole::Performer);
+        $host = $this->staff($performance, PerformanceStaffRole::Host);
+
+        $this->announce($this->recordingFor($performance));
+
+        Notification::assertSentTo(
+            $author,
+            PerformanceRecordingAvailable::class,
+            fn (PerformanceRecordingAvailable $notification): bool => $notification->blindCopies === [
+                $host->email,
+                $player->email,
+            ] || $notification->blindCopies === [
+                $player->email,
+                $host->email,
+            ],
+        );
+    }
+
+    /**
+     * The desk, the camera, the door and the bar kept the night running from
+     * the side of it. The recording is not of them.
+     */
+    public function test_the_crew_behind_the_night_are_not_copied(): void
+    {
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        $author = User::factory()->create();
+        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+
+        $player = $this->staff($performance, PerformanceStaffRole::Performer);
+        $this->staff($performance, PerformanceStaffRole::Technician);
+        $this->staff($performance, PerformanceStaffRole::VideoOperator);
+        $this->staff($performance, PerformanceStaffRole::TicketSeller);
+        $this->staff($performance, PerformanceStaffRole::Bar);
+
+        $this->announce($this->recordingFor($performance));
+
+        Notification::assertSentTo(
+            $author,
+            PerformanceRecordingAvailable::class,
+            fn (PerformanceRecordingAvailable $notification): bool => $notification->blindCopies === [$player->email],
+        );
+    }
+
+    /**
+     * Somebody who wrote the plan and then played in the show is written to
+     * once, addressed to them, rather than openly and blindly at the same time.
+     */
+    public function test_an_author_who_was_also_on_stage_is_not_copied_as_well(): void
+    {
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        $author = User::factory()->create();
+        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+
+        $performance->staff()->attach($author, ['role' => PerformanceStaffRole::Performer->value]);
+
+        $this->announce($this->recordingFor($performance));
+
+        Notification::assertSentTo(
+            $author,
+            PerformanceRecordingAvailable::class,
+            fn (PerformanceRecordingAvailable $notification): bool => $notification->blindCopies === [],
+        );
+    }
+
+    /**
+     * A shared evening has a plan per act, and the people on stage should not
+     * be sent the same news once per plan somebody else wrote.
+     */
+    public function test_the_blind_copy_rides_on_one_letter_only(): void
+    {
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        $first = User::factory()->create();
+        $second = User::factory()->create();
+        TechnicalPlan::factory()->for($performance)->for($first, 'user')->create();
+        TechnicalPlan::factory()->for($performance)->for($second, 'user')->create();
+
+        $player = $this->staff($performance, PerformanceStaffRole::Performer);
+
+        $this->announce($this->recordingFor($performance));
+
+        $carrying = 0;
+
+        foreach ([$first, $second] as $author) {
+            Notification::assertSentTo(
+                $author,
+                PerformanceRecordingAvailable::class,
+                function (PerformanceRecordingAvailable $notification) use (&$carrying, $player): bool {
+                    if ($notification->blindCopies === [$player->email]) {
+                        $carrying++;
+                    }
+
+                    return true;
+                },
+            );
+        }
+
+        $this->assertSame(1, $carrying, 'The people on stage should be blind-copied exactly once.');
+    }
+
+    public function test_the_letter_carries_the_blind_copies_as_bcc(): void
+    {
+        $performance = Performance::factory()->create();
+        $author = User::factory()->create();
+        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+
+        $player = $this->staff($performance, PerformanceStaffRole::Performer);
+
+        $mail = (new PerformanceRecordingAvailable(
+            $this->recordingFor($performance),
+            [$player->email],
+        ))->toMail($author);
+
+        $this->assertSame([[$player->email, null]], $mail->bcc);
+    }
+
+    public function test_a_night_with_nobody_on_stage_writes_to_its_author_alone(): void
+    {
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        $author = User::factory()->create();
+        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+
+        $this->announce($this->recordingFor($performance));
+
+        Notification::assertSentTo(
+            $author,
+            PerformanceRecordingAvailable::class,
+            fn (PerformanceRecordingAvailable $notification): bool => $notification->blindCopies === [],
+        );
+    }
+
+    /**
+     * The letter is a plan author's; a night nobody filed a plan for has nobody
+     * to address it to, and the people on stage are not written to on their own.
+     */
+    public function test_nobody_is_copied_when_there_is_no_plan_author(): void
+    {
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        $this->staff($performance, PerformanceStaffRole::Performer);
+
+        $this->announce($this->recordingFor($performance));
+
+        Notification::assertNothingSent();
     }
 
     public function test_two_plans_by_one_author_are_one_letter(): void
@@ -192,6 +355,19 @@ class RecordingAvailableNotificationTest extends TestCase
     private function announce(PerformanceRecording $recording, ?User $linkedBy = null): void
     {
         PerformanceRecordingLinked::dispatch($recording, $linkedBy ?? $this->technician());
+    }
+
+    /**
+     * Put somebody on the night's staff list in the given role, as the Planka
+     * import does.
+     */
+    private function staff(Performance $performance, PerformanceStaffRole $role): User
+    {
+        $member = User::factory()->create();
+
+        $performance->staff()->attach($member, ['role' => $role->value]);
+
+        return $member;
     }
 
     private function recordingFor(Performance $performance): PerformanceRecording

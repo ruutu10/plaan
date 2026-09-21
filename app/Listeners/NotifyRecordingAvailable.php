@@ -10,7 +10,6 @@ use App\Notifications\PerformanceRecordingAvailable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 
 /**
  * Tell whoever wrote a night's technical plan that there is now a video of it.
@@ -76,24 +75,64 @@ class NotifyRecordingAvailable implements ShouldQueue
             return;
         }
 
-        Notification::send($authors, new PerformanceRecordingAvailable($recording));
+        $blindCopies = $this->blindCopies($performance, $authors);
+
+        // The blind copies ride on one letter and one only: a shared evening
+        // has a plan per act, and the people on stage should not be sent the
+        // same news once per plan somebody else wrote.
+        foreach ($authors as $index => $author) {
+            $author->notify(new PerformanceRecordingAvailable(
+                $recording,
+                $index === 0 ? $blindCopies : [],
+            ));
+        }
 
         Log::info('Mailed out a linked recording', [
             'recording_id' => $recording->id,
             'performance_id' => $performance->getKey(),
             'recipients' => $authors->count(),
+            'blind_copies' => count($blindCopies),
         ]);
 
         activity()
             ->performedOn($recording)
             ->causedBy($event->linkedBy)
             ->event('recording_announced')
-            ->withProperties(['recipients' => $authors->count()])
+            ->withProperties([
+                'recipients' => $authors->count(),
+                'blind_copies' => count($blindCopies),
+            ])
             ->log(sprintf(
-                'Performance recording announced to %d plan %s',
+                'Performance recording announced to %d plan %s and %d on stage',
                 $authors->count(),
                 $authors->count() === 1 ? 'author' : 'authors',
+                count($blindCopies),
             ));
+    }
+
+    /**
+     * The addresses of whoever was on stage that night, for the blind copy.
+     *
+     * Anybody already being written to openly is left out: an author who also
+     * played should get the letter once, addressed to them, rather than twice.
+     * A night the import has read no cast for leaves this empty, and the letter
+     * goes to its author alone.
+     *
+     * @param  Collection<int, User>  $authors
+     * @return array<int, string>
+     */
+    private function blindCopies(Performance $performance, Collection $authors): array
+    {
+        $addressed = $authors->pluck('email')->all();
+
+        return $performance->onStage()
+            ->get()
+            ->pluck('email')
+            ->filter()
+            ->unique()
+            ->reject(fn (string $email): bool => in_array($email, $addressed, true))
+            ->values()
+            ->all();
     }
 
     /**

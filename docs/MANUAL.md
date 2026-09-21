@@ -616,6 +616,13 @@ täispikk aadress (`.../web/#/details?id=...`) kui ka paljas video ID kõlbavad.
 - Kui link **esimest korda** lisatakse, saavad selle etenduse tehnikaplaani
   kirjutajad kirja, et salvestus on olemas. Hilisem lingi parandamine teist
   kirja ei saada.
+- Sedasama kirja saavad **pimekoopiana** ka kõik, kes sel õhtul laval olid -
+  esinejad ja õhtujuht, nii nagu Planka kaart nad nimetas. Pimekoopia, et
+  kiri ei annaks kõigi aadresse kõigile kätte. Kõrvalt õhtut vedanud
+  meeskond - tehnik, operaator, piletimüüja, baar - kirja ei saa: salvestus
+  pole neist.
+- Kui plaani kirjutajat pole (nt formaadil, mille tehnikaplaan ei ole
+  kohustuslik), ei saada kirja kellelegi - ka lavalolijatele mitte.
 
 ### 7.3 Etenduse olek
 
