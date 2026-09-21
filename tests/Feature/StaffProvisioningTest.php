@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\URL;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use MagicLink\MagicLink;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -261,6 +262,41 @@ class StaffProvisioningTest extends TestCase
         $this->actingAs($user)
             ->get(route('formats.index'))
             ->assertRedirect(route('verification.notice'));
+    }
+
+    /**
+     * The question itself, asked of the address alone — the rule that decides
+     * who is provisioned here, which of a card's names the import may mean, and
+     * who a recording is announced to.
+     *
+     * @return array<string, array{string, bool}>
+     */
+    public static function addresses(): array
+    {
+        return [
+            'a house address' => ['mart@ruutu10.ee', true],
+            'the other house domain' => ['mart@r10.ee', true],
+            'spelt in capitals' => ['MART@Ruutu10.EE', true],
+            'a visiting performer' => ['mart@gmail.com', false],
+            'a lookalike domain' => ['mart@notruutu10.ee', false],
+            'a subdomain of ours' => ['mart@mail.ruutu10.ee', false],
+            'the domain as the local part' => ['ruutu10.ee@gmail.com', false],
+            'not an address at all' => ['ruutu10.ee', false],
+        ];
+    }
+
+    #[DataProvider('addresses')]
+    public function test_an_address_is_the_houses_own_or_it_is_not(string $email, bool $expected): void
+    {
+        $user = User::factory()->make(['email' => $email]);
+
+        $this->assertSame($expected, $user->isHouseStaff());
+        $this->assertSame($expected, User::isHouseAddress($email));
+    }
+
+    public function test_an_account_with_no_address_is_not_the_houses(): void
+    {
+        $this->assertFalse(User::isHouseAddress(null));
     }
 
     /**

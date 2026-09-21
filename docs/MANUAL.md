@@ -623,6 +623,10 @@ täispikk aadress (`.../web/#/details?id=...`) kui ka paljas video ID kõlbavad.
   pole neist.
 - Kui plaani kirjutajat pole (nt formaadil, mille tehnikaplaan ei ole
   kohustuslik), ei saada kirja kellelegi - ka lavalolijatele mitte.
+- Kiri läheb **ainult teatri enda e-posti domeenide** aadressidele (vt §2.4).
+  Salvestus on maja meediakogus, mida külalisaadressilt niikuinii avada ei
+  saa, nii et külalistrupi liikmele kirja ei saadeta - ei adressaadina ega
+  pimekoopiana.
 
 ### 7.3 Etenduse olek
 

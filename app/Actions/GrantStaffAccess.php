@@ -8,7 +8,6 @@ use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class GrantStaffAccess
 {
@@ -40,7 +39,7 @@ class GrantStaffAccess
             return false;
         }
 
-        if (! $this->isHouseAddress($user->email)) {
+        if (! $user->isHouseStaff()) {
             return false;
         }
 
@@ -69,23 +68,5 @@ class GrantStaffAccess
 
             return true;
         });
-    }
-
-    /**
-     * Determine whether the address belongs to one of the theatre's own
-     * domains.
-     */
-    private function isHouseAddress(string $email): bool
-    {
-        if (! str_contains($email, '@')) {
-            return false;
-        }
-
-        $domain = Str::of($email)->afterLast('@')->trim()->lower()->value();
-
-        /** @var array<int, string> $houseDomains */
-        $houseDomains = config('mail.verified_email_domains', []);
-
-        return in_array($domain, array_map(strtolower(...), $houseDomains), true);
     }
 }

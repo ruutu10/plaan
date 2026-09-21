@@ -19,6 +19,11 @@ use Illuminate\Support\Facades\Log;
  * this is queued, and a job that crashed between sending the letters and
  * recording that it had would otherwise send them all again on the retry.
  *
+ * Only the house's own addresses are written to, whether openly or blindly:
+ * the letter carries a link into a library only the house can open, so sending
+ * it to a visiting performer's private address would be telling somebody about
+ * a video they cannot watch — see {@see User::isHouseStaff()}.
+ *
  * Separate from {@see SyncPerformanceToJellyfin} on purpose — a media server
  * that is down should not hold back a letter about a video that is plainly up.
  * The audit entry is filed here for the same reason it is filed there: only
@@ -127,6 +132,7 @@ class NotifyRecordingAvailable implements ShouldQueue
 
         return $performance->onStage()
             ->get()
+            ->filter(fn (User $member): bool => $member->isHouseStaff())
             ->pluck('email')
             ->filter()
             ->unique()
@@ -151,6 +157,7 @@ class NotifyRecordingAvailable implements ShouldQueue
             ->get()
             ->pluck('user')
             ->filter()
+            ->filter(fn (User $author): bool => $author->isHouseStaff())
             ->unique('id')
             ->values();
     }

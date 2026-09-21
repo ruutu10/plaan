@@ -57,6 +57,29 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the account is one of the house's own: its address sits on
+     * a domain the theatre runs — see {@see User::isHouseStaff()}, which is
+     * what several letters are held to before they go out.
+     *
+     * Takes the first configured domain, so a test that has set its own list is
+     * still given an address that passes.
+     */
+    public function ofTheHouse(): static
+    {
+        return $this->state(function (array $attributes): array {
+            /** @var array<int, string> $domains */
+            $domains = config('mail.verified_email_domains', []);
+
+            return [
+                'email' => Str::of(fake()->unique()->userName())
+                    ->append('@', $domains[0] ?? 'example.com')
+                    ->lower()
+                    ->value(),
+            ];
+        });
+    }
+
+    /**
      * Indicate that the model's email address should be unverified.
      */
     public function unverified(): static

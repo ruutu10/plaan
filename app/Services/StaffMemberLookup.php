@@ -61,17 +61,9 @@ class StaffMemberLookup
             return $this->usersByFirstName;
         }
 
-        /** @var array<int, string> $domains */
-        $domains = config('mail.verified_email_domains', []);
-        $domains = array_map(strtolower(...), $domains);
-
         return $this->usersByFirstName = User::query()
             ->get(['id', 'name', 'email'])
-            ->filter(fn (User $user): bool => in_array(
-                Str::of($user->email)->afterLast('@')->trim()->lower()->value(),
-                $domains,
-                true,
-            ))
+            ->filter(fn (User $user): bool => $user->isHouseStaff())
             ->groupBy(fn (User $user): string => mb_strtolower(trim(Str::before($user->name, ' '))))
             ->all();
     }
