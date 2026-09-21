@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\LinkPerformanceRecording;
 use App\Console\Commands\ImportPlankaPerformances;
 use App\Enums\PerformanceStaffRole;
+use App\Events\PerformanceRecordingLinked;
 use App\Http\Requests\Performances\SavePerformanceRequest;
 use App\Http\Resources\AdminPerformance as AdminPerformanceResource;
 use App\Http\Resources\Performance as PerformanceResource;
@@ -129,7 +131,7 @@ class PerformanceController extends Controller
         Gate::authorize('view', $performance);
 
         return PerformanceResource::make(
-            $performance->load(['team', 'staff', 'reasoningLogs'])->loadCount(['technicalPlans', 'staff']),
+            $performance->load(['team', 'staff', 'reasoningLogs', 'recording'])->loadCount(['technicalPlans', 'staff']),
         )->additional([
             'teams' => Performance::assignableTeams($request->user())
                 ->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])
@@ -220,8 +222,12 @@ class PerformanceController extends Controller
     /**
      * Update one of the format's performances.
      */
-    public function update(SavePerformanceRequest $request, Format $format, Performance $performance): PerformanceResource
-    {
+    public function update(
+        SavePerformanceRequest $request,
+        Format $format,
+        Performance $performance,
+        LinkPerformanceRecording $linkRecording,
+    ): PerformanceResource {
         $performance->fill($request->performanceAttributes());
 
         $changed = array_keys($performance->getDirty());
@@ -236,8 +242,18 @@ class PerformanceController extends Controller
             'changed' => $changed,
         ]);
 
+        // What happens off the back of a night getting a video — the push to the
+        // library, the word to whoever wrote its plan — is between the event and
+        // its listeners. A link cleared, or one saved unchanged, says nothing.
+        if ($request->saysAnythingAboutRecording()
+            && $linkRecording->handle($performance, $request->recordingUrl())) {
+            PerformanceRecordingLinked::dispatch($performance->recording, $request->user());
+        }
+
         return PerformanceResource::make(
-            $performance->setRelation('format', $format)->load('team')->loadCount(['technicalPlans', 'staff']),
+            $performance->setRelation('format', $format)
+                ->load(['team', 'recording'])
+                ->loadCount(['technicalPlans', 'staff']),
         );
     }
 

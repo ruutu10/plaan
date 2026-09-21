@@ -63,6 +63,22 @@ return [
     ],
 
     /*
+    | The Jellyfin library the recordings of played nights live in. A crew
+    | member pastes an episode's address onto the performance it recorded, and
+    | what this app knows about the night — who played it, when, where — is
+    | pushed to that one episode. Nothing is ever read back.
+    |
+    | The key is an admin API key (Dashboard → API Keys), sent as
+    | `Authorization: MediaBrowser Token="..."`. A user's own token is refused:
+    | writing an item needs elevation. Leave the URL empty to switch the whole
+    | thing off — the field and the link both stay off the screens.
+    */
+    'jellyfin' => [
+        'url' => env('JELLYFIN_URL'),
+        'api_key' => env('JELLYFIN_API_KEY'),
+    ],
+
+    /*
     | Authentik SSO. base_url is the bare Authentik root (e.g.
     | https://sso.example.com — the provider appends /application/o/...
     | itself). Leave client_id empty to disable SSO entirely: the silent

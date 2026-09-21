@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Http\Controllers\AuditLogController;
 use App\Models\Format;
 use App\Models\Performance;
+use App\Models\PerformanceRecording;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
@@ -110,6 +111,31 @@ class AuditLogTest extends TestCase
                 ->where('entries.0.subjectId', $plan->id)
                 ->where('entries.0.subjectType', 'Technical Plan')
                 ->where('entries.0.subjectLabel', '01.09.2026 · Suveetendus')
+            );
+    }
+
+    public function test_a_recording_is_labelled_and_linked_by_the_night_it_belongs_to(): void
+    {
+        $technician = $this->technician();
+        $this->actingAs($technician);
+
+        $format = Format::factory()->create(['name' => 'Suveetendus']);
+        $performance = Performance::factory()->create([
+            'format_id' => $format->id,
+            'title' => null,
+            'date' => Performance::momentFrom('2026-09-01', '19:00'),
+        ]);
+        $recording = PerformanceRecording::factory()->for($performance)->create();
+
+        $this->get(route('admin.audit-log.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('entries.0.subjectId', $recording->id)
+                ->where('entries.0.subjectType', 'Performance Recording')
+                // A recording has no name of its own and no page of its own:
+                // both come from the night it is the video of.
+                ->where('entries.0.subjectLabel', '01.09.2026 · Suveetendus')
+                ->where('entries.0.subjectUrl', route('formats.performances.show', [$format, $performance]))
             );
     }
 

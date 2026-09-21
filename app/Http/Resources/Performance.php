@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\PerformanceRecording as PerformanceRecordingResource;
 use App\Models\ClaudeReasoningLog;
 use App\Models\Performance as PerformanceModel;
 use App\Services\PlankaClient;
@@ -39,6 +40,8 @@ class Performance extends JsonResource
      *     plankaCardId: string|null,
      *     plankaCardUrl: string|null,
      *     canReimportFromPlanka: bool,
+     *     recording: mixed,
+     *     canLinkRecording: bool,
      *     createdBy: string,
      *     createdAt: string|null,
      *     staff: mixed,
@@ -90,6 +93,14 @@ class Performance extends JsonResource
             // would honour it. False for the whole house when no board is
             // configured.
             'canReimportFromPlanka' => Gate::allows('reimportFromPlanka', $performance),
+            // The video of this night, once somebody has said where it is.
+            // Empty unless eager-loaded, so a listing that has no use for it
+            // never pays for the query.
+            'recording' => PerformanceRecordingResource::make($this->whenLoaded('recording')),
+            // Whether this reader may say where that video is, so the screen
+            // offers the field only where the API would honour it. False for
+            // the whole house when no library is configured.
+            'canLinkRecording' => Gate::allows('linkRecording', $performance),
             // Where the performance came from and when, both read-only: a date
             // nobody remembers choosing was read off a card, and the screens say
             // so rather than leaving it to be guessed.

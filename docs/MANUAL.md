@@ -593,6 +593,30 @@ kirjutata üle ja kõrvale pandut ei äratata ellu.
 - Sama nime kohta korraga rohkem kui üht jooksu ei käivitata, nii et
   kannatamatust topeltvajutusest kahte importi ei teki.
 
+**Jellyfini salvestuse link** on väli etenduse muutmise aknas, kuhu käib
+etenduse video aadress Jellyfinist. Kopeeri see Jellyfini veebiliidesest - nii
+täispikk aadress (`.../web/#/details?id=...`) kui ka paljas video ID kõlbavad.
+
+- Välja näevad ja täita saavad **ainult tehnikud**, ja ainult siis, kui
+  Jellyfin on üldse seadistatud. Link kirjutab maja ühisesse meediakogusse,
+  kus kõigi truppide salvestused ühel riiulil seisavad, nii et see ei ole
+  etendust mängiva tiimi asi. Salvestust **vaatab** aga igaüks, kes etenduse
+  lehe avab - link on seal kõigile nähtav.
+- Kui link salvestada, uuendab süsteem **taustal** Jellyfinis selle video
+  andmeid: etenduse nimi, kuupäev, esinev trupp, meeskond (esinejad,
+  õhtujuht, helimees - igaüks oma rollis), formaadi kirjeldus, sildid
+  (trupp, formaat, koht, hooaeg, ja tehnikaplaanist elav muusika / suits /
+  vaheaeg) ning lingid tagasi plaani ja Planka kaardi peale.
+- Uuendatakse **ainult seda üht videot** - sarja ega hooaega ei puututa.
+- Andmed liiguvad **ainult ühes suunas**, plaanist Jellyfini. Kui keegi
+  Jellyfinis kirjelduse käsitsi üle kirjutab, kaob see järgmise uuendusega.
+- Välja all seisab, kuidas viimane uuendus läks - kas see on veel järjekorras,
+  millal see korda läks, või et see ebaõnnestus. Vale lingi parandamine paneb
+  uuenduse uuesti käima.
+- Kui link **esimest korda** lisatakse, saavad selle etenduse tehnikaplaani
+  kirjutajad kirja, et salvestus on olemas. Hilisem lingi parandamine teist
+  kirja ei saada.
+
 ### 7.3 Etenduse olek
 
 Etendusel on kolm olekut:
@@ -783,6 +807,8 @@ Veel kolm märkust piiride kohta:
   lugeda, aga mitte kinnitada ega teise etenduse alla tõsta (§5.2, §5.3).
 - Sama kehtib etenduste kohta: majarahvas näeb kogu maja kava (§7.4), kuid muuta
   saab ainult oma tiimi etendusi, formaadi enda alt.
+- Jellyfini salvestuse **vaatamine** on kõigil, kes etenduse lehe avavad;
+  **lingi lisamine** on ainult tehnikutel (§7.2).
 - Kolleegi *lõpetamata mustandit* saab tema tiim muuta (selleks mustand ongi),
   kuid seda ei pakuta kunagi uue plaani lähtekohaks - selleks pakutakse ainult
   esitatud, kinnitatud ja arhiveeritud plaane.

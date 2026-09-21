@@ -4,14 +4,17 @@ namespace Tests\Feature;
 
 use App\Actions\Teams\DeleteTeam;
 use App\Enums\TeamRole;
+use App\Events\PerformanceRecordingLinked;
 use App\Models\Format;
 use App\Models\PendingUpload;
 use App\Models\Performance;
+use App\Models\PerformanceRecording;
 use App\Models\Team;
 use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -282,6 +285,142 @@ class OperationalLoggingTest extends TestCase
 
         $this->assertLogged('info', 'Pruned stale staged uploads', fn (array $context): bool => $context['pruned'] === 1
             && $context['older_than_hours'] === 72);
+    }
+
+    public function test_a_push_to_jellyfin_is_logged_with_what_it_wrote(): void
+    {
+        $recording = $this->linkedRecording();
+
+        Http::preventStrayRequests();
+        Http::fake([
+            'jellyfin.test/Items?*' => Http::response([
+                'Items' => [['Id' => 'x', 'Type' => 'Episode']],
+                'TotalRecordCount' => 1,
+            ]),
+            'jellyfin.test/Items/*' => Http::response(null, 204),
+        ]);
+
+        Log::spy();
+
+        PerformanceRecordingLinked::dispatch($recording, $this->technician());
+
+        $this->assertLogged(
+            'info',
+            'Pushed performance metadata to Jellyfin',
+            fn (array $context): bool => $context['recording_id'] === $recording->id
+                && $context['item_id'] === $recording->item_id
+                && in_array('People', $context['fields'], true),
+        );
+    }
+
+    public function test_a_jellyfin_that_refuses_a_push_is_logged_as_an_error(): void
+    {
+        $recording = $this->linkedRecording();
+
+        Http::preventStrayRequests();
+        Http::fake(['jellyfin.test/*' => Http::response(['error' => 'nope'], 500)]);
+
+        Log::spy();
+
+        try {
+            PerformanceRecordingLinked::dispatch($recording, $this->technician());
+        } catch (\Throwable) {
+            // Thrown on so the queue tries again — see SyncPerformanceToJellyfin.
+        }
+
+        $this->assertLogged(
+            'error',
+            'Could not push performance metadata to Jellyfin',
+            fn (array $context): bool => $context['recording_id'] === $recording->id
+                && array_key_exists('exception', $context),
+        );
+    }
+
+    public function test_a_house_with_no_jellyfin_says_so_rather_than_failing_quietly(): void
+    {
+        $recording = $this->linkedRecording();
+
+        config()->set('services.jellyfin.url', null);
+        config()->set('services.jellyfin.api_key', null);
+
+        Http::preventStrayRequests();
+        Http::fake();
+
+        Log::spy();
+
+        PerformanceRecordingLinked::dispatch($recording, $this->technician());
+
+        $this->assertLogged(
+            'info',
+            'No Jellyfin configured; a linked recording was not synced',
+            fn (array $context): bool => $context['recording_id'] === $recording->id,
+        );
+    }
+
+    public function test_announcing_a_recording_is_logged_with_who_was_reached(): void
+    {
+        $recording = $this->linkedRecording();
+        TechnicalPlan::factory()
+            ->for($recording->performance)
+            ->for(User::factory(), 'user')
+            ->create();
+
+        Http::preventStrayRequests();
+        Http::fake([
+            'jellyfin.test/Items?*' => Http::response([
+                'Items' => [['Id' => 'x', 'Type' => 'Episode']],
+                'TotalRecordCount' => 1,
+            ]),
+            'jellyfin.test/Items/*' => Http::response(null, 204),
+        ]);
+
+        Log::spy();
+
+        PerformanceRecordingLinked::dispatch($recording, $this->technician());
+
+        $this->assertLogged(
+            'info',
+            'Mailed out a linked recording',
+            fn (array $context): bool => $context['recording_id'] === $recording->id
+                && $context['recipients'] === 1,
+        );
+    }
+
+    public function test_a_recording_already_announced_says_why_no_mail_went_out(): void
+    {
+        $recording = $this->linkedRecording();
+        $recording->forceFill(['announced_at' => now()])->save();
+
+        Http::preventStrayRequests();
+        Http::fake([
+            'jellyfin.test/Items?*' => Http::response([
+                'Items' => [['Id' => 'x', 'Type' => 'Episode']],
+                'TotalRecordCount' => 1,
+            ]),
+            'jellyfin.test/Items/*' => Http::response(null, 204),
+        ]);
+
+        Log::spy();
+
+        PerformanceRecordingLinked::dispatch($recording, $this->technician());
+
+        $this->assertLogged(
+            'info',
+            'A linked recording was already announced; no mail sent',
+            fn (array $context): bool => $context['recording_id'] === $recording->id,
+        );
+    }
+
+    /**
+     * A night whose recording somebody has already said the whereabouts of, on
+     * a house with a library configured.
+     */
+    private function linkedRecording(): PerformanceRecording
+    {
+        config()->set('services.jellyfin.url', 'https://jellyfin.test');
+        config()->set('services.jellyfin.api_key', 'test-key');
+
+        return PerformanceRecording::factory()->create();
     }
 
     /**

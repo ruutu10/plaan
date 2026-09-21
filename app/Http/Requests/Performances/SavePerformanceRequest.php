@@ -4,6 +4,7 @@ namespace App\Http\Requests\Performances;
 
 use App\Enums\PerformanceStatus;
 use App\Models\Performance;
+use App\Rules\JellyfinItemUrl;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
@@ -33,7 +34,7 @@ class SavePerformanceRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        foreach (['duration', 'start_time', 'title', 'team_id', 'planka_card_id'] as $field) {
+        foreach (['duration', 'start_time', 'title', 'team_id', 'planka_card_id', 'recording_url'] as $field) {
             if ($this->input($field) === '') {
                 $this->merge([$field => null]);
             }
@@ -69,6 +70,17 @@ class SavePerformanceRequest extends FormRequest
             // The card on the Planka board this performance was announced on.
             // Filled by the import; typed in by hand for one that was not.
             'planka_card_id' => ['nullable', 'string', 'max:255'],
+            // Where the video of this night lives. The crew's to say — see
+            // PerformancePolicy::linkRecording() — and refused outright from
+            // anybody else, so a form that should not be offering the field at
+            // all is answered rather than quietly obeyed.
+            'recording_url' => [
+                'nullable',
+                Rule::prohibitedIf(fn (): bool => ! $this->maySetRecordingLink()),
+                'string',
+                'max:2048',
+                new JellyfinItemUrl,
+            ],
             'date' => ['required', 'date_format:Y-m-d'],
             // Curtain-up on the venue's clock, as a 24-hour "19:00". Left out,
             // the performance takes the house's usual hour — see
@@ -103,7 +115,51 @@ class SavePerformanceRequest extends FormRequest
 
         unset($data['start_time']);
 
+        // The recording is a record of its own, not a column here — see
+        // App\Models\PerformanceRecording and recordingUrl() below.
+        unset($data['recording_url']);
+
         return $data;
+    }
+
+    /**
+     * Whether this request both may and does say anything about the night's
+     * recording.
+     *
+     * Asked before the link is touched at all, because `prohibited` passes a
+     * value that is empty: a form that has no business offering the field, and
+     * so posts it blank, would otherwise clear a link the crew put there.
+     */
+    public function saysAnythingAboutRecording(): bool
+    {
+        return $this->maySetRecordingLink() && $this->has('recording_url');
+    }
+
+    /**
+     * The address of the night's recording, or null for a link being cleared.
+     * Empty strings are already an absence by here — see
+     * {@see prepareForValidation()}.
+     */
+    public function recordingUrl(): ?string
+    {
+        $url = $this->input('recording_url');
+
+        return is_string($url) ? $url : null;
+    }
+
+    /**
+     * Whether this reader may say where the recording is.
+     *
+     * False when the route names no performance: a link to the video of a night
+     * that has not happened is not a thing, and the field is not offered when
+     * one is being added.
+     */
+    private function maySetRecordingLink(): bool
+    {
+        $performance = $this->route('performance');
+
+        return $performance instanceof Performance
+            && Gate::allows('linkRecording', $performance);
     }
 
     /**
@@ -121,6 +177,8 @@ class SavePerformanceRequest extends FormRequest
             'title.max' => __('Etteaste nimi saab olla kuni 255 tähemärki.'),
             'team_id.in' => __('Vali tiim, kuhu sa ise kuulud.'),
             'status.in' => __('Vali etenduse olek.'),
+            'recording_url.prohibited' => __('Salvestuse linki saab lisada ainult tehnik.'),
+            'recording_url.max' => __('Jellyfini link saab olla kuni 2048 tähemärki.'),
         ];
     }
 }

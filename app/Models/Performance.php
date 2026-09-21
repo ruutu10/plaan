@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
@@ -68,6 +69,7 @@ use Illuminate\Support\Facades\Date;
  * @property-read Collection<int, ClaudeReasoningLog> $reasoningLogs
  * @property-read Collection<int, User> $staff
  * @property-read Collection<int, User> $technicians
+ * @property-read PerformanceRecording|null $recording
  */
 #[Fillable([
     'format_id',
@@ -385,6 +387,18 @@ class Performance extends Model
     public function technicalPlans(): HasMany
     {
         return $this->hasMany(TechnicalPlan::class);
+    }
+
+    /**
+     * The video of this night, once somebody has said where it is. A night has
+     * one or none — see {@see PerformanceRecording}, which also explains why a
+     * link cleared leaves the row behind.
+     *
+     * @return HasOne<PerformanceRecording, $this>
+     */
+    public function recording(): HasOne
+    {
+        return $this->hasOne(PerformanceRecording::class);
     }
 
     /**
