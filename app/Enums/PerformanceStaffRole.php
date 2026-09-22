@@ -38,6 +38,27 @@ enum PerformanceStaffRole: string
     }
 
     /**
+     * Where the role sits when one person's jobs on a night are listed: the
+     * stage first, then the side of it.
+     *
+     * Asked of the enum rather than sorted on the column, because `role` is a
+     * database enum: MySQL orders it by the declaration and SQLite orders it
+     * alphabetically, so the same two jobs would read one way in production and
+     * the other in the tests.
+     */
+    public function listingOrder(): int
+    {
+        return match ($this) {
+            self::Performer => 0,
+            self::Host => 1,
+            self::Technician => 2,
+            self::VideoOperator => 3,
+            self::TicketSeller => 4,
+            self::Bar => 5,
+        };
+    }
+
+    /**
      * The kind of person Jellyfin files this role under on the recording of a
      * night, or null for a role it has nobody for.
      *

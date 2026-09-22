@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Data\RecordLinks;
 use App\Enums\TechnicalPlanStatus;
 use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
+use App\Http\Resources\StaffedPerformance as StaffedPerformanceResource;
 use App\Http\Resources\TodaysPerformance as TodaysPerformanceResource;
 use App\Models\Performance;
 use App\Models\TeamInvitation;
 use App\Models\TechnicalPlan;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -23,6 +25,12 @@ class DashboardController extends Controller
      * How many of the most recently handed-in plans the timeline shows.
      */
     private const TIMELINE_LENGTH = 8;
+
+    /**
+     * How far the reader's own strip of the bill reaches in each direction —
+     * this many nights behind them, and this many ahead.
+     */
+    private const OWN_BILL_LENGTH = 3;
 
     public function __invoke(Request $request): Response
     {
@@ -51,22 +59,99 @@ class DashboardController extends Controller
         $todaysBill = $this->todaysPerformances();
         $next = $this->nextPerformance();
         $latestPlans = $canViewAllPlans ? $this->latestSubmittedPlans() : new Collection;
+        $ownPast = $this->ownPastPerformances($request->user());
+        $ownUpcoming = $this->ownUpcomingPerformances($request->user());
 
         // Every name the page shows leads back to the record behind it, so the
-        // reach for all three widgets is worked out in one go rather than
-        // widget by widget.
+        // reach for every widget is worked out in one go rather than widget by
+        // widget.
         $links = RecordLinks::for($request->user(), $todaysBill
             ->concat([$next])
+            ->concat($ownPast)
+            ->concat($ownUpcoming)
             ->concat($latestPlans->map(fn (TechnicalPlan $plan) => $plan->performance)));
 
         return Inertia::render('Dashboard', [
             'pendingInvitations' => $pendingInvitations,
             'upcoming' => $this->upcomingSummary($next, $links),
             'today' => $this->todaysBill($request, $todaysBill, $links),
+            'myPerformances' => [
+                'past' => $this->ownBill($request, $ownPast, $links),
+                'upcoming' => $this->ownBill($request, $ownUpcoming, $links),
+            ],
             'latestPlans' => $latestPlans
                 ->map(fn (TechnicalPlan $plan) => AdminTechnicalPlanResource::make($plan)->linkedBy($links)->resolve($request))
                 ->all(),
         ]);
+    }
+
+    /**
+     * The reader's own nights as the page lists them, each carrying the jobs
+     * they hold on it.
+     *
+     * @param  Collection<int, Performance>  $performances
+     * @return array<int, array<string, mixed>>
+     */
+    private function ownBill(Request $request, Collection $performances, RecordLinks $links): array
+    {
+        return $performances
+            ->map(fn (Performance $performance) => StaffedPerformanceResource::make($performance, $links)
+                ->resolve($request))
+            ->all();
+    }
+
+    /**
+     * The last few nights the reader had a job on, oldest first — the strip
+     * reads forward through time, so the most recent of them sits closest to
+     * the line dividing it from what is still to come.
+     *
+     * @return Collection<int, Performance>
+     */
+    private function ownPastPerformances(User $user): Collection
+    {
+        return $this->staffedBy($user)
+            ->where('date', '<', now())
+            ->orderByDesc('date')
+            ->limit(self::OWN_BILL_LENGTH)
+            ->get()
+            ->reverse()
+            ->values();
+    }
+
+    /**
+     * The next few nights the reader has a job on, soonest first.
+     *
+     * @return Collection<int, Performance>
+     */
+    private function ownUpcomingPerformances(User $user): Collection
+    {
+        return $this->staffedBy($user)
+            ->where('date', '>=', now())
+            ->orderBy('date')
+            ->limit(self::OWN_BILL_LENGTH)
+            ->get();
+    }
+
+    /**
+     * The performances the given person is named on the staff list of, whatever
+     * the job. The stand-in performance is left out for the same reason as
+     * everywhere else: it is a filing drawer, not an evening anybody plays.
+     *
+     * The staffing rows travel with each night, narrowed to this one person —
+     * the widget names what *they* are doing there, not who else is on.
+     *
+     * @return Builder<Performance>
+     */
+    private function staffedBy(User $user): Builder
+    {
+        return Performance::query()
+            ->excludingPlaceholder()
+            ->whereHas('staff', fn (Builder $staff) => $staff->whereKey($user->getKey()))
+            ->with([
+                'team',
+                'format.team',
+                'staffings' => fn (Relation $staffings) => $staffings->where('user_id', $user->getKey()),
+            ]);
     }
 
     /**

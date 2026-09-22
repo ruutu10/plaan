@@ -69,6 +69,7 @@ use Illuminate\Support\Facades\Date;
  * @property-read int|null $technical_plans_count
  * @property-read Collection<int, ClaudeReasoningLog> $reasoningLogs
  * @property-read Collection<int, User> $staff
+ * @property-read Collection<int, PerformanceStaff> $staffings
  * @property-read Collection<int, User> $technicians
  * @property-read PerformanceRecording|null $recording
  */
@@ -416,6 +417,20 @@ class Performance extends Model
             ->using(PerformanceStaff::class)
             ->withPivot(['role'])
             ->withTimestamps();
+    }
+
+    /**
+     * The staffing rows themselves, rather than the people {@see staff()} reads
+     * off them. Asked for when the *role* is the point and the person is
+     * already known — one reader's own place on the bill, say: a person can
+     * hold more than one job on a night, and each is a row of its own, so the
+     * rows constrained to that person answer "what am I doing here" in one go.
+     *
+     * @return HasMany<PerformanceStaff, $this>
+     */
+    public function staffings(): HasMany
+    {
+        return $this->hasMany(PerformanceStaff::class);
     }
 
     /**

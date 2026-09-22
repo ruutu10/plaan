@@ -712,10 +712,19 @@ viib sind ühelt töölaualt teisele -, kuid kokku loeb see kogu maja andmeid.
 Kõik näevad:
 - ootel kutseid tiimidesse koos ühe klikiga vastuvõtmisega,
 - mitu etendust on kogu majas veel ees, millal on järgmine ja mitmel tulemas
-  etendusel pole veel plaani.
+  etendusel pole veel plaani,
+- **minu järgmised etendused** - ajajoon õhtutest, kus sul on roll
 
 Tehnikud ja majarahvas näevad lisaks **8 viimati esitatud plaani** ajajoont, kust
 saab otse plaani sisse minna.
+
+### 10.1 Minu järgmised etendused
+
+Ajajoon näitab **3 viimast** õhtut, millel sa mängisid või tööd tegid, siis
+oranži joone **Praegu**, siis **3 järgmist** õhtut, millele sa oled kirja pandud.
+
+Rollid tulevad Planka kaardilt (vt [§11.2](#112-meeskonna-import)), mitte käsitsi
+sisestusest: kui sa end real ei näe, ei nimeta kaart sind.
 
 Formaatide ja etenduste nimed on töölaual lingid kirje enda juurde: formaadi nimi
 viib formaadi ekraanile, etenduse oma (kuupäev, kellaaeg või etteaste nimi)

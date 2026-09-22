@@ -29,6 +29,42 @@ export type UpcomingSummary = {
     next: UpcomingFormat | null;
 };
 
+/** One job the reader holds on a night they are staffed for. */
+export type StaffedRole = {
+    role: string;
+    /** How the role is named on the staff list. */
+    label: string;
+};
+
+/**
+ * A night the reader has a job on, as their own strip of the bill lists it.
+ * `roles` names every job they hold there — a person can hold more than one.
+ */
+export type StaffedPerformance = {
+    id: number;
+    formatName: string;
+    /** The format's own screen, or null when the reader may not open it. */
+    formatUrl: string | null;
+    /** The performance's own screen, or null when the reader may not open it. */
+    performanceUrl: string | null;
+    /** The act's own name, on an evening several groups share. */
+    title: string | null;
+    location: string | null;
+    teamName: string | null;
+    /** ISO 8601 UTC instant the performance starts at. */
+    startsAt: string;
+    roles: StaffedRole[];
+};
+
+/**
+ * The reader's own place on the bill: the last few nights they worked and the
+ * next few they are down for, each side oldest first.
+ */
+export type OwnBill = {
+    past: StaffedPerformance[];
+    upcoming: StaffedPerformance[];
+};
+
 /**
  * One technical plan handed in for a performance on today's bill. A plan the
  * reader may not open still appears, but carries nothing beyond the fact that

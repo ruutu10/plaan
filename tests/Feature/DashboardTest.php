@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PerformanceStaffRole;
 use App\Enums\TeamRole;
 use App\Enums\TechnicalPlanStatus;
 use App\Models\Format;
@@ -588,5 +589,200 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->has('latestPlans', 0));
+    }
+
+    public function test_my_performances_lists_the_nights_the_reader_is_staffed_on_oldest_first(): void
+    {
+        $user = User::factory()->create();
+
+        $played = $this->staffing($user, now()->subWeek(), PerformanceStaffRole::Performer);
+        $lastNight = $this->staffing($user, now()->subDay(), PerformanceStaffRole::Host);
+        $tomorrow = $this->staffing($user, now()->addDay(), PerformanceStaffRole::Technician);
+        $nextWeek = $this->staffing($user, now()->addWeek(), PerformanceStaffRole::Bar);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('myPerformances.past', 2)
+                ->where('myPerformances.past.0.id', $played->id)
+                ->where('myPerformances.past.1.id', $lastNight->id)
+                ->has('myPerformances.upcoming', 2)
+                ->where('myPerformances.upcoming.0.id', $tomorrow->id)
+                ->where('myPerformances.upcoming.1.id', $nextWeek->id));
+    }
+
+    public function test_my_performances_reaches_three_nights_in_each_direction(): void
+    {
+        $user = User::factory()->create();
+
+        // Five behind and five ahead: only the three nearest of each side are
+        // the reader's business on a dashboard.
+        $behind = [];
+        $ahead = [];
+
+        for ($nights = 1; $nights <= 5; $nights++) {
+            $behind[$nights] = $this->staffing($user, now()->subDays($nights), PerformanceStaffRole::Performer);
+            $ahead[$nights] = $this->staffing($user, now()->addDays($nights), PerformanceStaffRole::Performer);
+        }
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('myPerformances.past', 3)
+                // The nearest night behind the reader sits closest to the line,
+                // so the past side reads forward through time like the rest.
+                ->where('myPerformances.past.0.id', $behind[3]->id)
+                ->where('myPerformances.past.1.id', $behind[2]->id)
+                ->where('myPerformances.past.2.id', $behind[1]->id)
+                ->has('myPerformances.upcoming', 3)
+                ->where('myPerformances.upcoming.0.id', $ahead[1]->id)
+                ->where('myPerformances.upcoming.1.id', $ahead[2]->id)
+                ->where('myPerformances.upcoming.2.id', $ahead[3]->id));
+    }
+
+    public function test_my_performances_names_every_role_the_reader_holds_on_a_night(): void
+    {
+        $user = User::factory()->create();
+
+        // Attached compère first, player second, so the row cannot be passing
+        // by keeping the order the rows were written in. The pair is also the
+        // one where sorting on the enum column itself would read two ways —
+        // "performer" before "host" by the enum's own order, after it
+        // alphabetically — so the stage comes first whatever the database is.
+        $performance = $this->staffing($user, now()->addDay(), PerformanceStaffRole::Host);
+        $performance->staff()->attach($user, ['role' => PerformanceStaffRole::Performer->value]);
+
+        // Somebody else's job on the same night is not the reader's, so it is
+        // not on their row.
+        $performance->staff()->attach(
+            User::factory()->create(),
+            ['role' => PerformanceStaffRole::Bar->value],
+        );
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('myPerformances.upcoming.0.roles', 2)
+                ->where('myPerformances.upcoming.0.roles.0.role', PerformanceStaffRole::Performer->value)
+                ->where('myPerformances.upcoming.0.roles.0.label', PerformanceStaffRole::Performer->label())
+                ->where('myPerformances.upcoming.0.roles.1.role', PerformanceStaffRole::Host->value)
+                ->where('myPerformances.upcoming.0.roles.1.label', PerformanceStaffRole::Host->label()));
+    }
+
+    public function test_my_performances_leaves_out_a_night_the_reader_has_no_role_on(): void
+    {
+        $user = User::factory()->create();
+
+        // A night on the house's books that somebody else is staffing, and one
+        // nobody is staffing at all.
+        $this->staffing(User::factory()->create(), now()->addDay(), PerformanceStaffRole::Performer);
+        Performance::factory()->create(['date' => now()->addDays(2)]);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('myPerformances.past', 0)
+                ->has('myPerformances.upcoming', 0));
+    }
+
+    public function test_my_performances_leaves_out_the_stand_in_performance(): void
+    {
+        $user = User::factory()->create();
+
+        // The drawer the plans without a night of their own are filed in is not
+        // an evening anybody is billed for, however it got staffed.
+        Performance::placeholder()->staff()->attach(
+            $user,
+            ['role' => PerformanceStaffRole::Performer->value],
+        );
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('myPerformances.past', 0)
+                ->has('myPerformances.upcoming', 0));
+    }
+
+    public function test_my_performances_links_a_row_to_the_night_it_names(): void
+    {
+        $team = Team::factory()->create();
+        $member = User::factory()->create();
+        $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+
+        $format = Format::factory()->create(['team_id' => $team->id]);
+        $performance = Performance::factory()->create([
+            'format_id' => $format->id,
+            'date' => now()->addDay(),
+        ]);
+        $performance->staff()->attach($member, ['role' => PerformanceStaffRole::Performer->value]);
+
+        $this->actingAs($member)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where(
+                    'myPerformances.upcoming.0.performanceUrl',
+                    route('formats.performances.show', [$format, $performance]),
+                )
+                ->where('myPerformances.upcoming.0.formatUrl', route('formats.edit', $format)));
+    }
+
+    public function test_my_performances_leaves_a_name_unlinked_for_a_reader_who_may_not_open_it(): void
+    {
+        // A guest performer with a job on a night that belongs to a group they
+        // are no part of: the night is theirs to read, not to correct.
+        $guest = User::factory()->create();
+        $performance = $this->staffing($guest, now()->addDay(), PerformanceStaffRole::Performer);
+
+        $this->actingAs($guest)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('myPerformances.upcoming', 1)
+                ->where('myPerformances.upcoming.0.id', $performance->id)
+                ->where('myPerformances.upcoming.0.performanceUrl', null)
+                ->where('myPerformances.upcoming.0.formatUrl', null));
+    }
+
+    public function test_my_performances_carries_what_the_row_names_the_night_by(): void
+    {
+        $user = User::factory()->create();
+        $format = Format::factory()->create(['name' => 'Improkolmapäev']);
+        $performance = Performance::factory()->create([
+            'format_id' => $format->id,
+            'title' => 'Teine pool',
+            'location' => 'Kellerteater',
+            'date' => now()->addDay(),
+        ]);
+        $performance->staff()->attach($user, ['role' => PerformanceStaffRole::VideoOperator->value]);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('myPerformances.upcoming.0.formatName', 'Improkolmapäev')
+                ->where('myPerformances.upcoming.0.title', 'Teine pool')
+                ->where('myPerformances.upcoming.0.location', 'Kellerteater')
+                ->where('myPerformances.upcoming.0.teamName', $performance->performerName())
+                ->where(
+                    'myPerformances.upcoming.0.startsAt',
+                    $performance->refresh()->date->toIso8601String(),
+                ));
+    }
+
+    /**
+     * A night on the books with the given person holding the given job on it.
+     */
+    private function staffing(User $user, CarbonInterface $date, PerformanceStaffRole $role): Performance
+    {
+        $performance = Performance::factory()->create(['date' => $date]);
+        $performance->staff()->attach($user, ['role' => $role->value]);
+
+        return $performance;
     }
 }
