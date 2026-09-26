@@ -5,7 +5,7 @@ import { ExternalLink } from '@lucide/vue';
 import { ref, watch } from 'vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Dialog from '@/components/technical-plan/R10Dialog.vue';
-import { formatLocalDate } from '@/lib/date';
+import { formatLocalDate, formatLocalTime } from '@/lib/date';
 import type { ClaudeReasoningLog } from '@/types';
 
 /**
@@ -135,7 +135,7 @@ watch([open, () => props.source], async ([isOpen, source]) => {
                         <template v-else>„{{ log.cardName }}“</template>
                         <template v-if="log.readAt">
                             · loetud
-                            {{ formatLocalDate(log.readAt) }}
+                            {{ formatLocalDate(log.readAt) }} {{ formatLocalTime(log.readAt) }}
                         </template>
                     </p>
 

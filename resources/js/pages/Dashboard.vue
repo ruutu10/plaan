@@ -221,7 +221,7 @@ defineOptions({
                         >
                             <div>
                                 <R10RecordLink
-                                    :href="performance.formatUrl"
+                                    :href="performance.performanceUrl"
                                     class="font-r10-display text-base font-semibold text-r10-ink"
                                     data-test="todays-format-link"
                                 >
