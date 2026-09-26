@@ -228,6 +228,12 @@ export interface Performance {
      */
     createdAt: string | null;
     /**
+     * When the Planka import last read this performance's card, whether on
+     * its weekly run or on request; ISO 8601 UTC instant. Null for one never
+     * imported.
+     */
+    plankaImportedAt: string | null;
+    /**
      * Who staffs this performance — cast and crew alike — as imported from
      * Planka. Read-only: there is no form field that writes it. Present only
      * where the server eager-loaded it — the performance's own details page,

@@ -56,6 +56,7 @@ use Illuminate\Support\Facades\Date;
  * @property string|null $title
  * @property string|null $location
  * @property string|null $planka_card_id
+ * @property Carbon|null $planka_imported_at
  * @property Carbon $date
  * @property int|null $duration
  * @property PerformanceStatus $status
@@ -79,6 +80,7 @@ use Illuminate\Support\Facades\Date;
     'title',
     'location',
     'planka_card_id',
+    'planka_imported_at',
     'date',
     'duration',
     'status',
@@ -548,6 +550,7 @@ class Performance extends Model
     {
         return [
             'date' => 'datetime',
+            'planka_imported_at' => 'datetime',
             'duration' => 'integer',
             'status' => PerformanceStatus::class,
             'created_by' => CreatedBy::class,

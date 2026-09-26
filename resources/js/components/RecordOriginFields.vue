@@ -18,6 +18,11 @@ const props = defineProps<{
     createdBy: CreatedBy;
     /** ISO 8601, already on the venue's clock. */
     createdAt: string | null;
+    /**
+     * When the Planka card was last read for this record; ISO 8601. Shown only
+     * when given — a format does not carry one.
+     */
+    importedAt?: string | null;
 }>();
 
 const wasImported = computed(() => props.createdBy === 'planka-import');
@@ -61,6 +66,16 @@ const originLabel = computed(() =>
                     data-test="record-created-at"
                 >
                     {{ formatLocalTimestamp(createdAt) }}
+                </span>
+            </span>
+
+            <span v-if="importedAt" class="text-[13px] text-r10-grey-700">
+                Viimati imporditud
+                <span
+                    class="font-medium text-r10-ink tabular-nums"
+                    data-test="record-imported-at"
+                >
+                    {{ formatLocalTimestamp(importedAt) }}
                 </span>
             </span>
         </div>

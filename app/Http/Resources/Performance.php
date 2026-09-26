@@ -44,6 +44,7 @@ class Performance extends JsonResource
      *     canLinkRecording: bool,
      *     createdBy: string,
      *     createdAt: string|null,
+     *     plankaImportedAt: string|null,
      *     staff: mixed,
      * }
      */
@@ -106,6 +107,9 @@ class Performance extends JsonResource
             // so rather than leaving it to be guessed.
             'createdBy' => $performance->created_by->value,
             'createdAt' => $performance->created_at?->toIso8601String(),
+            // When the card was last read for this performance — the crew and
+            // venue are only as fresh as that. Empty for one never imported.
+            'plankaImportedAt' => $performance->planka_imported_at?->toIso8601String(),
             // Imported and read-only: see App\Services\PerformanceStaffSync.
             // Empty unless eager-loaded, so a listing that has no use for it
             // never pays for the query.

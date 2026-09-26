@@ -459,6 +459,7 @@ class ImportPlankaPerformances extends Command
                 // even on a night that adds nothing new.
                 $this->syncStaff($already, $act, $dryRun);
                 $this->syncLocation($already, $night, $dryRun);
+                $this->markImported($already, $dryRun);
 
                 continue;
             }
@@ -585,6 +586,21 @@ class ImportPlankaPerformances extends Command
     }
 
     /**
+     * Note that the card was just read for this act, so the screen can say how
+     * fresh its crew and venue are. Stamped whether or not the reading changed
+     * anything — a card that still says the same is news too. Put aside and dry
+     * runs are spared for the same reasons as {@see syncStaff()}.
+     */
+    protected function markImported(Performance $performance, bool $dryRun): void
+    {
+        if ($dryRun || $performance->trashed()) {
+            return;
+        }
+
+        $performance->update(['planka_imported_at' => now()]);
+    }
+
+    /**
      * Register one act of a night.
      */
     protected function importPerformance(
@@ -647,6 +663,7 @@ class ImportPlankaPerformances extends Command
             'location' => $night->location,
             'team_id' => $act->teamId,
             'planka_card_id' => $this->cardId,
+            'planka_imported_at' => now(),
             // What a card announces is a claim, not a booking: it waits as a
             // draft until an admin has looked it over.
             'status' => PerformanceStatus::Draft,

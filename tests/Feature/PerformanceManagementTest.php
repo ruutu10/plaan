@@ -371,6 +371,7 @@ class PerformanceManagementTest extends TestCase
             'format_id' => $format->id,
             'date' => '2026-08-02',
             'created_at' => '2026-07-16 06:30:00',
+            'planka_imported_at' => '2026-07-23 06:30:00',
         ]);
 
         $this->actingAs($user)
@@ -380,8 +381,10 @@ class PerformanceManagementTest extends TestCase
             // Raw UTC, like every other moment the API hands over — the
             // browser is where this becomes half past nine in Tallinn.
             ->assertJsonPath('data.0.createdAt', '2026-07-15T06:30:00+00:00')
+            ->assertJsonPath('data.0.plankaImportedAt', null)
             ->assertJsonPath('data.1.createdBy', 'planka-import')
-            ->assertJsonPath('data.1.createdAt', '2026-07-16T06:30:00+00:00');
+            ->assertJsonPath('data.1.createdAt', '2026-07-16T06:30:00+00:00')
+            ->assertJsonPath('data.1.plankaImportedAt', '2026-07-23T06:30:00+00:00');
     }
 
     public function test_a_performance_added_by_hand_says_so(): void

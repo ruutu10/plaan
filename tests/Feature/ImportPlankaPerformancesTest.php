@@ -348,6 +348,76 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame('improkeskus', $performance->fresh()?->location);
     }
 
+    public function test_an_imported_performance_remembers_when_its_card_was_read(): void
+    {
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([$this->night('Trupp 1')]);
+
+        $this->travelTo('2026-09-01 06:00:00');
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame('2026-09-01 06:00:00', Performance::sole()->planka_imported_at?->toDateTimeString());
+    }
+
+    public function test_reading_the_card_again_moves_the_import_time_even_when_nothing_changed(): void
+    {
+        // Created once, read again a week later saying exactly the same: the
+        // crew and venue are now a week fresher, and the screen should say so.
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtractionRuns(
+            [$this->night('Trupp 1', location: 'improkeskus')],
+            [$this->night('Trupp 1', location: 'improkeskus')],
+        );
+
+        $this->travelTo('2026-09-01 06:00:00');
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->travelTo('2026-09-08 06:00:00');
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $performance = Performance::sole();
+
+        $this->assertSame('2026-09-01 06:00:00', $performance->created_at?->toDateTimeString());
+        $this->assertSame('2026-09-08 06:00:00', $performance->planka_imported_at?->toDateTimeString());
+    }
+
+    public function test_a_dry_run_leaves_the_import_time_alone(): void
+    {
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtractionRuns(
+            [$this->night('Trupp 1')],
+            [$this->night('Trupp 1')],
+        );
+
+        $this->travelTo('2026-09-01 06:00:00');
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->travelTo('2026-09-08 06:00:00');
+        $this->artisan('planka:import', ['--dry-run' => true])->assertSuccessful();
+
+        $this->assertSame('2026-09-01 06:00:00', Performance::sole()->planka_imported_at?->toDateTimeString());
+    }
+
+    public function test_a_performance_put_aside_keeps_its_last_import_time(): void
+    {
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtractionRuns(
+            [$this->night('Trupp 1')],
+            [$this->night('Trupp 1')],
+        );
+
+        $this->travelTo('2026-09-01 06:00:00');
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $performance = Performance::sole();
+        $performance->delete();
+
+        $this->travelTo('2026-09-08 06:00:00');
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame('2026-09-01 06:00:00', $performance->fresh()?->planka_imported_at?->toDateTimeString());
+    }
+
     public function test_a_night_already_imported_is_not_imported_again_when_the_card_gains_an_hour(): void
     {
         $this->fakeBoard([$this->card()]);

@@ -283,6 +283,7 @@ async function refreshFromPlanka(): Promise<void> {
             <RecordOriginFields
                 :created-by="performance.createdBy"
                 :created-at="performance.createdAt"
+                :imported-at="performance.plankaImportedAt"
             />
 
             <PerformanceStaffList :staff="performance.staff ?? []" />
