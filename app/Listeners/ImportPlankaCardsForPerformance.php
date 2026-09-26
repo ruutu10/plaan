@@ -48,8 +48,12 @@ class ImportPlankaCardsForPerformance implements ShouldBeUnique, ShouldQueue
             'requested_by' => $event->requestedBy->id,
         ]);
 
+        // The card is read by the model afresh: whoever pressed the button did
+        // so because the card changed, or because last week's reading of it was
+        // wrong, and a cached answer would hand that same reading straight back.
+        //
         // The command says everything else about what it did, to the log the
         // nightly run writes to; its own output has nowhere to go from here.
-        Artisan::call('planka:import', ['--card-id' => $event->cardId]);
+        Artisan::call('planka:import', ['--card-id' => $event->cardId, '--no-cache' => true]);
     }
 }

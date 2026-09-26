@@ -43,7 +43,7 @@ Route::get('abi', ManualController::class)->name('manual');
 // owns: mail the address the visitor typed a one-time link that signs them in.
 // Shares its controller with the plan wizard's own login step further down.
 Route::post('login/magic-link', [MagicLoginController::class, 'send'])
-    ->middleware(['guest', 'throttle:6,1'])
+    ->middleware(['guest', 'throttle:6,1,magic-link'])
     ->name('login.magic-link');
 
 // Generic, model-agnostic file staging shared by any feature that needs
@@ -52,8 +52,8 @@ Route::prefix('api/attachments')->name('attachments.')->group(function () {
     // Putting a file on the server — and discarding one again — is only for
     // signed-in users; every feature that offers uploads sits behind a login.
     Route::middleware('auth')->group(function () {
-        Route::post('/', [AttachmentController::class, 'store'])->name('store')->middleware('throttle:20,1');
-        Route::delete('{uuid}', [AttachmentController::class, 'destroy'])->name('destroy')->middleware('throttle:20,1');
+        Route::post('/', [AttachmentController::class, 'store'])->name('store')->middleware('throttle:20,1,attachments-store');
+        Route::delete('{uuid}', [AttachmentController::class, 'destroy'])->name('destroy')->middleware('throttle:20,1,attachments-destroy');
     });
 
     // Reading a stored file stays open: a plan shared by its public link must
@@ -100,7 +100,7 @@ Route::prefix('api/tehnikaplaan')
     ->group(function () {
         // The first step of the flow is always to log the user in: e-mailing a
         // magic link is the only action available before authentication.
-        Route::post('login', [MagicLoginController::class, 'send'])->name('login')->middleware('throttle:6,1');
+        Route::post('login', [MagicLoginController::class, 'send'])->name('login')->middleware('throttle:6,1,magic-link');
 
         // Reading a plan's conversation stays open, like the plan itself: a
         // share link opens the whole overview page without an account, and what
@@ -108,7 +108,7 @@ Route::prefix('api/tehnikaplaan')
         // the writers' names travel with it, never their addresses.
         Route::get('plans/{plan:token}/comments', [TechnicalPlanCommentController::class, 'index'])
             ->name('comments.index')
-            ->middleware('throttle:60,1');
+            ->middleware('throttle:60,1,plan-comments-index');
 
         // Every plan action requires an authenticated user.
         Route::middleware(['auth', 'throttle:200,1'])
@@ -120,7 +120,7 @@ Route::prefix('api/tehnikaplaan')
                 // the listing, and the copy that stages one for this plan.
                 Route::get('sounds', [TechnicalPlanController::class, 'sounds'])->name('sounds');
                 Route::post('sounds/{uuid}/reuse', [TechnicalPlanController::class, 'reuseSound'])->name('sounds.reuse');
-                Route::post('ai-review', [TechnicalPlanController::class, 'aiReview'])->name('ai')->middleware('throttle:15,10');
+                Route::post('ai-review', [TechnicalPlanController::class, 'aiReview'])->name('ai')->middleware('throttle:15,10,plan-ai-review');
                 Route::get('plans/{plan:token}', [TechnicalPlanController::class, 'show'])->name('show');
                 Route::post('plans/{plan:token}/copy', [TechnicalPlanController::class, 'copy'])->name('copy');
                 // Saying something about a plan. Throttled well under the group's
@@ -128,7 +128,7 @@ Route::prefix('api/tehnikaplaan')
                 // is a mailbox filling up on the far side.
                 Route::post('plans/{plan:token}/comments', [TechnicalPlanCommentController::class, 'store'])
                     ->name('comments.store')
-                    ->middleware('throttle:20,10');
+                    ->middleware('throttle:20,10,plan-comments-store');
                 // Taking a remark back off a plan: its writer's own right, and
                 // the crew's over any of them.
                 Route::delete('plans/{plan:token}/comments/{comment}', [TechnicalPlanCommentController::class, 'destroy'])
@@ -190,11 +190,14 @@ Route::prefix('api/formats')
                     ->name('reminders.store');
 
                 // Read the board again for this one performance, now, instead
-                // of waiting for the nightly run. Narrowed to the cards its own
-                // name appears on; the crew alone may ask — see
-                // App\Policies\PerformancePolicy::reimportFromPlanka().
+                // of waiting for the nightly run. Narrowed to its own card; the
+                // crew alone may ask — see
+                // App\Policies\PerformancePolicy::reimportFromPlanka(). Every
+                // press is a fresh, paid reading by the model, so it is
+                // throttled well under the group's.
                 Route::post('{performance}/planka-import', [PerformancePlankaImportController::class, 'store'])
-                    ->name('planka-import');
+                    ->name('planka-import')
+                    ->middleware('throttle:10,45,planka-import');
 
                 Route::get('{performance}/claude-logs', [ClaudeReasoningLogController::class, 'forPerformance'])
                     ->middleware('can:'.ClaudeReasoningLog::VIEW_PERMISSION)

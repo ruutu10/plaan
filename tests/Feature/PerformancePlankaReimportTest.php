@@ -183,6 +183,31 @@ class PerformancePlankaReimportTest extends TestCase
             ->assertJsonPath('data.canReimportFromPlanka', false);
     }
 
+    public function test_presses_are_limited_to_ten_in_forty_five_minutes(): void
+    {
+        Event::fake();
+
+        $performance = Performance::factory()->create(['planka_card_id' => 'card-1']);
+        $technician = $this->technician();
+
+        for ($press = 0; $press < 10; $press++) {
+            $this->actingAs($technician)->postJson($this->reimportUrl($performance))->assertAccepted();
+        }
+
+        $this->actingAs($technician)->postJson($this->reimportUrl($performance))->assertTooManyRequests();
+
+        // Somebody else on the crew still has presses of their own.
+        $this->actingAs($this->technician())->postJson($this->reimportUrl($performance))->assertAccepted();
+
+        $this->travel(44)->minutes();
+        $this->actingAs($technician)->postJson($this->reimportUrl($performance))->assertTooManyRequests();
+
+        $this->travel(2)->minutes();
+        $this->actingAs($technician)->postJson($this->reimportUrl($performance))->assertAccepted();
+
+        Event::assertDispatchedTimes(PlankaReimportRequested::class, 12);
+    }
+
     public function test_the_reading_is_queued_rather_than_done_in_the_request(): void
     {
         $listener = new ImportPlankaCardsForPerformance;
@@ -217,6 +242,8 @@ class PerformancePlankaReimportTest extends TestCase
         ]);
 
         $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            // The card is read afresh, not answered from last week's reading.
+            $mock->shouldReceive('withoutClaudeCache')->once()->andReturnSelf();
             $mock->shouldReceive('extract')
                 ->once()
                 ->withArgs(fn (string $cardName): bool => $cardName === 'Improkolmapäev 13.09')

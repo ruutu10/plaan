@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Gate;
  * The nightly run keeps the books level with the board on its own; this is for
  * the hour after somebody has just moved a card and wants the change here now.
  * Nothing is imported in the request itself — see
- * {@see ImportPlankaCardsForPerformance}, which is queued.
+ * {@see ImportPlankaCardsForPerformance}, which is queued, and which asks the
+ * model about the card afresh rather than taking last week's reading of it.
  */
 class PerformancePlankaImportController extends Controller
 {
