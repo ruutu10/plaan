@@ -4,8 +4,10 @@ namespace Tests\Feature\Users;
 
 use App\Enums\SignupSource;
 use App\Models\User;
+use App\Notifications\Users\AccountCreated;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -40,6 +42,10 @@ class UserAdminTest extends TestCase
                 'name' => 'Uus nimi',
                 'email' => 'uus@naide.ee',
             ])
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->postJson(route('api.users.store'), ['email' => 'uus@naide.ee'])
             ->assertForbidden();
 
         $this->actingAs($user)
@@ -151,6 +157,163 @@ class UserAdminTest extends TestCase
         }
     }
 
+    public function test_a_technician_can_create_an_account_from_an_address_alone(): void
+    {
+        Notification::fake();
+
+        $this->actingAs($this->technician())
+            ->postJson(route('api.users.store'), ['email' => '  Uus.Kasutaja@Naide.ee '])
+            ->assertCreated()
+            ->assertJsonPath('data.email', 'uus.kasutaja@naide.ee')
+            ->assertJsonPath('data.name', 'uus.kasutaja')
+            ->assertJsonPath('data.emailVerified', false)
+            ->assertJsonPath('data.signupSource', 'admin-created')
+            ->assertJsonPath('data.signupSourceLabel', 'Loodud halduses');
+
+        $user = User::where('email', 'uus.kasutaja@naide.ee')->firstOrFail();
+
+        $this->assertNull($user->email_verified_at);
+        $this->assertSame(SignupSource::AdminCreated, $user->signup_source);
+    }
+
+    public function test_a_created_account_is_mailed_a_welcome_naming_its_creator(): void
+    {
+        Notification::fake();
+
+        $technician = $this->technician();
+        $technician->update(['name' => 'Ando Roots']);
+
+        $this->actingAs($technician)
+            ->postJson(route('api.users.store'), ['email' => 'uus@naide.ee'])
+            ->assertCreated();
+
+        Notification::assertSentTo(
+            User::where('email', 'uus@naide.ee')->firstOrFail(),
+            AccountCreated::class,
+            fn (AccountCreated $notification): bool => $notification->createdBy->is($technician),
+        );
+    }
+
+    public function test_the_welcome_link_logs_the_newcomer_in_and_verifies_the_address(): void
+    {
+        Notification::fake();
+
+        $this->actingAs($this->technician())
+            ->postJson(route('api.users.store'), ['email' => 'uus@naide.ee'])
+            ->assertCreated();
+
+        $newcomer = User::where('email', 'uus@naide.ee')->firstOrFail();
+
+        $loginUrl = null;
+        Notification::assertSentTo($newcomer, AccountCreated::class, function (AccountCreated $notification) use (&$loginUrl): bool {
+            $loginUrl = $notification->loginUrl;
+
+            return true;
+        });
+
+        auth()->logout();
+
+        $this->get($loginUrl)->assertRedirect(route('dashboard'));
+
+        $this->assertAuthenticatedAs($newcomer);
+        $this->assertNotNull($newcomer->fresh()->email_verified_at);
+    }
+
+    public function test_the_welcome_email_stays_estonian_under_another_locale(): void
+    {
+        app()->setLocale('en');
+
+        $mail = (new AccountCreated('https://example.test/logi-sisse', User::factory()->create()))
+            ->toMail(User::factory()->unverified()->create());
+
+        $this->assertSame('Tere tulemast Plaan\'i', $mail->subject);
+        $this->assertSame('Ava Plaan', $mail->actionText);
+    }
+
+    public function test_the_welcome_email_can_be_left_unsent(): void
+    {
+        Notification::fake();
+        Log::spy();
+
+        $this->actingAs($this->technician())
+            ->postJson(route('api.users.store'), ['email' => 'uus@naide.ee', 'sendWelcome' => false])
+            ->assertCreated()
+            ->assertJsonPath('data.emailVerified', false);
+
+        $this->assertDatabaseHas('users', ['email' => 'uus@naide.ee', 'email_verified_at' => null]);
+
+        Notification::assertNothingSent();
+
+        Log::shouldHaveReceived('notice')
+            ->withArgs(fn (string $message, array $context) => $message === 'Account created from the management screen'
+                && $context['welcome_sent'] === false)
+            ->once();
+    }
+
+    public function test_the_welcome_email_is_sent_when_asked_for_explicitly(): void
+    {
+        Notification::fake();
+
+        $this->actingAs($this->technician())
+            ->postJson(route('api.users.store'), ['email' => 'uus@naide.ee', 'sendWelcome' => true])
+            ->assertCreated();
+
+        Notification::assertSentTo(User::where('email', 'uus@naide.ee')->firstOrFail(), AccountCreated::class);
+    }
+
+    public function test_the_welcome_choice_has_to_be_a_yes_or_no(): void
+    {
+        $this->actingAs($this->technician())
+            ->postJson(route('api.users.store'), ['email' => 'uus@naide.ee', 'sendWelcome' => 'mõnikord'])
+            ->assertJsonValidationErrors('sendWelcome');
+
+        $this->assertDatabaseMissing('users', ['email' => 'uus@naide.ee']);
+    }
+
+    public function test_an_account_cannot_be_created_for_a_taken_or_invalid_address(): void
+    {
+        Notification::fake();
+
+        User::factory()->create(['email' => 'juba@naide.ee']);
+
+        $technician = $this->technician();
+
+        $this->actingAs($technician)
+            ->postJson(route('api.users.store'), ['email' => 'JUBA@naide.ee'])
+            ->assertJsonValidationErrors(['email' => 'Selle aadressiga konto on juba olemas.']);
+
+        $this->actingAs($technician)
+            ->postJson(route('api.users.store'), ['email' => 'not-an-address'])
+            ->assertJsonValidationErrors('email');
+
+        $this->actingAs($technician)
+            ->postJson(route('api.users.store'), [])
+            ->assertJsonValidationErrors('email');
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_creating_an_account_is_written_down(): void
+    {
+        Notification::fake();
+        Log::spy();
+
+        $technician = $this->technician();
+
+        $this->actingAs($technician)
+            ->postJson(route('api.users.store'), ['email' => 'uus@naide.ee'])
+            ->assertCreated();
+
+        $user = User::where('email', 'uus@naide.ee')->firstOrFail();
+
+        Log::shouldHaveReceived('notice')
+            ->withArgs(fn (string $message, array $context) => $message === 'Account created from the management screen'
+                && $context['user_id'] === $user->id
+                && $context['created_by'] === $technician->id
+                && $context['welcome_sent'] === true)
+            ->once();
+    }
+
     public function test_an_account_is_read_with_every_grantable_role_and_what_the_reader_may_write(): void
     {
         $subject = User::factory()->unverified()->create(['name' => 'Kaarel']);
@@ -251,6 +414,21 @@ class UserAdminTest extends TestCase
                 'email' => $somebodyElse->email,
             ])
             ->assertJsonValidationErrors('email');
+    }
+
+    public function test_a_corrected_address_is_stored_lowercased_and_checked_regardless_of_case(): void
+    {
+        $subject = User::factory()->create();
+        User::factory()->create(['email' => 'juba@naide.ee']);
+
+        $this->actingAs($this->technician())
+            ->patchJson(route('api.users.update', $subject), ['name' => 'Nimi', 'email' => 'JUBA@naide.ee'])
+            ->assertJsonValidationErrors('email');
+
+        $this->actingAs($this->technician())
+            ->patchJson(route('api.users.update', $subject), ['name' => 'Nimi', 'email' => ' Uus@Naide.ee '])
+            ->assertOk()
+            ->assertJsonPath('data.email', 'uus@naide.ee');
     }
 
     public function test_an_account_keeping_its_own_address_is_not_refused_as_a_duplicate(): void

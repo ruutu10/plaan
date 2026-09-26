@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Users;
 
+use App\Concerns\NormalizesEmailInput;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -18,7 +19,7 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class SaveUserRequest extends FormRequest
 {
-    use ProfileValidationRules;
+    use NormalizesEmailInput, ProfileValidationRules;
 
     /**
      * Get the validation rules that apply to the request.

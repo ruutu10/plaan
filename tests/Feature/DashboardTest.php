@@ -612,11 +612,11 @@ class DashboardTest extends TestCase
                 ->where('myPerformances.upcoming.1.id', $nextWeek->id));
     }
 
-    public function test_my_performances_reaches_three_nights_in_each_direction(): void
+    public function test_my_performances_reaches_two_nights(): void
     {
         $user = User::factory()->create();
 
-        // Five behind and five ahead: only the three nearest of each side are
+        // Five behind and five ahead: only the two nearest of each side are
         // the reader's business on a dashboard.
         $behind = [];
         $ahead = [];
@@ -630,16 +630,14 @@ class DashboardTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->has('myPerformances.past', 3)
+                ->has('myPerformances.past', 2)
                 // The nearest night behind the reader sits closest to the line,
                 // so the past side reads forward through time like the rest.
-                ->where('myPerformances.past.0.id', $behind[3]->id)
-                ->where('myPerformances.past.1.id', $behind[2]->id)
-                ->where('myPerformances.past.2.id', $behind[1]->id)
-                ->has('myPerformances.upcoming', 3)
+                ->where('myPerformances.past.0.id', $behind[2]->id)
+                ->where('myPerformances.past.1.id', $behind[1]->id)
+                ->has('myPerformances.upcoming', 2)
                 ->where('myPerformances.upcoming.0.id', $ahead[1]->id)
-                ->where('myPerformances.upcoming.1.id', $ahead[2]->id)
-                ->where('myPerformances.upcoming.2.id', $ahead[3]->id));
+                ->where('myPerformances.upcoming.1.id', $ahead[2]->id));
     }
 
     public function test_my_performances_names_every_role_the_reader_holds_on_a_night(): void

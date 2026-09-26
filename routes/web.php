@@ -268,6 +268,7 @@ Route::prefix('api/users')
     ->middleware(['auth', 'verified', 'can:'.User::MANAGE_PERMISSION, 'throttle:200,1'])
     ->group(function () {
         Route::get('/', [UserAdminController::class, 'index'])->name('index');
+        Route::post('/', [UserAdminController::class, 'store'])->name('store');
         Route::get('{user}', [UserAdminController::class, 'show'])->name('show');
         Route::patch('{user}', [UserAdminController::class, 'update'])->name('update');
 

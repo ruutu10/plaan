@@ -71,7 +71,7 @@ class AddTeamMemberRequest extends FormRequest
      */
     public function member(): ?User
     {
-        return once(fn (): ?User => User::where('email', strtolower($this->string('email')->trim()->value()))->first());
+        return once(fn (): ?User => User::where('email', User::normalizeEmail($this->string('email')->value()))->first());
     }
 
     /**

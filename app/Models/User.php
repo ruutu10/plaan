@@ -10,6 +10,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -61,6 +62,60 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public const MANAGE_PERMISSION = 'users.manage';
 
     /**
+     * Create an account nobody signed up for by hand: one that will be got
+     * into by a magic link, an SSO login or a password reset, and so carries a
+     * password nobody is ever told.
+     *
+     * Every door but the registration form comes through here, so an address
+     * is stored the same way whichever of them it arrived by. Whether the door
+     * also vouches for the address is the caller's to say: an SSO provider or
+     * a hand-compiled import list does, a typed-in address does not.
+     *
+     * @param  string|null  $name  when none is known, the address's local part
+     *                             stands in until the owner corrects it
+     */
+    public static function provision(
+        string $email,
+        SignupSource $signupSource,
+        ?string $name = null,
+        bool $verified = false,
+    ): self {
+        $email = self::normalizeEmail($email);
+
+        $user = new self([
+            'name' => filled($name) ? $name : self::nameFromEmail($email),
+            'email' => $email,
+            'password' => Str::random(40),
+            'signup_source' => $signupSource,
+        ]);
+
+        if ($verified) {
+            $user->forceFill(['email_verified_at' => now()]);
+        }
+
+        $user->save();
+
+        return $user;
+    }
+
+    /**
+     * An address the way accounts are stored and looked up by: trimmed and
+     * lowercased, so the same mailbox typed two ways is one account.
+     */
+    public static function normalizeEmail(string $email): string
+    {
+        return Str::lower(trim($email));
+    }
+
+    /**
+     * A stand-in name for an account nobody has named yet.
+     */
+    private static function nameFromEmail(string $email): string
+    {
+        return Str::of($email)->before('@')->trim()->value() ?: 'Esineja';
+    }
+
+    /**
      * Whether this account is one of the house's own — its address sits on a
      * domain the theatre runs, rather than on whatever a visiting performer
      * signed up with.
@@ -109,6 +164,17 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'signup_source' => SignupSource::class,
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Every write of the address goes through {@see normalizeEmail()}, whichever
+     * form or import it came from.
+     *
+     * @return Attribute<string, string>
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(set: fn (string $value): string => self::normalizeEmail($value));
     }
 
     /**

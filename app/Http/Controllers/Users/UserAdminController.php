@@ -2,19 +2,25 @@
 
 namespace App\Http\Controllers\Users;
 
+use App\Actions\FindOrCreateUserByEmail;
 use App\Actions\GrantStaffAccess;
+use App\Enums\SignupSource;
+use App\Events\UserProvisioned;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Users\CreateUserRequest;
 use App\Http\Requests\Users\SaveUserRequest;
 use App\Http\Resources\AdminRole as AdminRoleResource;
 use App\Http\Resources\AdminUser as AdminUserResource;
 use App\Models\User;
 use App\Policies\UserPolicy;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 use Spatie\Permission\Models\Role;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
  * Account management: every account in the house, what it is called and where
@@ -31,6 +37,8 @@ use Spatie\Permission\Models\Role;
  */
 class UserAdminController extends Controller
 {
+    public function __construct(private FindOrCreateUserByEmail $findOrCreateUser) {}
+
     /**
      * Render the list of accounts.
      */
@@ -63,6 +71,34 @@ class UserAdminController extends Controller
             ->get();
 
         return AdminUserResource::collection($users);
+    }
+
+    /**
+     * Create an account from nothing but an address, and — unless the
+     * technician said not to — mail its owner a one-time link in.
+     *
+     * The address stays unproven until that link is followed — see
+     * {@see UserProvisioned} — so a mistyped house address is not taken on as
+     * staff merely because a technician entered it.
+     */
+    public function store(CreateUserRequest $request): JsonResponse
+    {
+        $user = $this->findOrCreateUser->handle($request->validated('email'), SignupSource::AdminCreated);
+
+        Log::notice('Account created from the management screen', [
+            'user_id' => $user->id,
+            'created_by' => $request->user()->id,
+            'welcome_sent' => $request->sendsWelcome(),
+        ]);
+
+        UserProvisioned::dispatch($user, $request->user(), $request->sendsWelcome());
+
+        $user->load('roles');
+        $user->loadCount('teams');
+
+        return AdminUserResource::make($user)
+            ->response()
+            ->setStatusCode(SymfonyResponse::HTTP_CREATED);
     }
 
     /**

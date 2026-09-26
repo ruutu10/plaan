@@ -61,6 +61,38 @@ class ProfileUpdateTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
+    public function test_an_address_differing_only_in_case_is_the_same_address(): void
+    {
+        $user = User::factory()->create(['email' => 'keegi@naide.ee']);
+
+        $this
+            ->actingAs($user)
+            ->patch(route('profile.update'), [
+                'name' => $user->name,
+                'email' => ' Keegi@Naide.EE ',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $user->refresh();
+
+        $this->assertSame('keegi@naide.ee', $user->email);
+        $this->assertNotNull($user->email_verified_at);
+    }
+
+    public function test_another_accounts_address_cannot_be_taken_in_different_case(): void
+    {
+        User::factory()->create(['email' => 'juba@naide.ee']);
+        $user = User::factory()->create();
+
+        $this
+            ->actingAs($user)
+            ->patch(route('profile.update'), [
+                'name' => $user->name,
+                'email' => 'JUBA@naide.ee',
+            ])
+            ->assertSessionHasErrors('email');
+    }
+
     public function test_user_can_delete_their_account()
     {
         $user = User::factory()->create();

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Head, useHttp } from '@inertiajs/vue3';
-import { Pencil } from '@lucide/vue';
+import { Pencil, Plus } from '@lucide/vue';
+import { ref } from 'vue';
+import AdminCreateUserModal from '@/components/AdminCreateUserModal.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
@@ -12,9 +14,15 @@ import { edit, index } from '@/routes/admin/users';
 import { index as usersApi } from '@/routes/api/users';
 import type { ManagedUser } from '@/types';
 
+const createOpen = ref(false);
+
 const http = useHttp();
 
-const { data: users, loadFailed } = useResource(async () => {
+const {
+    data: users,
+    loadFailed,
+    reload: reloadUsers,
+} = useResource(async () => {
     const response = (await http.submit(usersApi())) as {
         data: ManagedUser[];
     };
@@ -38,11 +46,21 @@ defineOptions({
     <Head title="Kasutajad" />
 
     <R10Page>
-        <StepHeader
-            eyebrow="Haldus"
-            title="Kasutajad"
-            lead="Kõik maja kontod. Ava konto, et muuta selle andmeid või rolle."
-        />
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <StepHeader
+                eyebrow="Haldus"
+                title="Kasutajad"
+                lead="Kõik maja kontod. Ava konto, et muuta selle andmeid või rolle."
+            />
+
+            <R10Button
+                data-test="create-user-button"
+                @click="createOpen = true"
+            >
+                <Plus class="h-4 w-4" />
+                Uus kasutaja
+            </R10Button>
+        </div>
 
         <R10Table
             :columns="[
@@ -119,5 +137,10 @@ defineOptions({
                 </td>
             </template>
         </R10Table>
+
+        <AdminCreateUserModal
+            v-model:open="createOpen"
+            @created="reloadUsers"
+        />
     </R10Page>
 </template>

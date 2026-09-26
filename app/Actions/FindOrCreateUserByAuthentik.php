@@ -5,9 +5,7 @@ namespace App\Actions;
 use App\Enums\SignupSource;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 
 class FindOrCreateUserByAuthentik
@@ -26,7 +24,7 @@ class FindOrCreateUserByAuthentik
     public function handle(SocialiteUser $ssoUser): User
     {
         $subject = (string) $ssoUser->getId();
-        $email = strtolower(trim((string) $ssoUser->getEmail()));
+        $email = User::normalizeEmail((string) $ssoUser->getEmail());
 
         if ($user = User::where('authentik_id', $subject)->first()) {
             return $user;
@@ -43,18 +41,11 @@ class FindOrCreateUserByAuthentik
         }
 
         return DB::transaction(function () use ($ssoUser, $subject, $email) {
-            $user = User::create([
-                'name' => $ssoUser->getName() ?: Str::of($email)->before('@')->trim()->value(),
-                'email' => $email,
-                'password' => Hash::make(Str::random(40)),
-                'authentik_id' => $subject,
-                'signup_source' => SignupSource::AuthentikSso->value,
-            ]);
-
             // Authentik is the authority on this address; a self-registered
             // account still has to click a verification e-mail, an SSO one
             // does not.
-            $user->forceFill(['email_verified_at' => now()])->save();
+            $user = User::provision($email, SignupSource::AuthentikSso, $ssoUser->getName(), verified: true);
+            $user->forceFill(['authentik_id' => $subject])->save();
 
             $this->grantStaffAccess->handle($user);
 

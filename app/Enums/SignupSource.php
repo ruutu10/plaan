@@ -13,6 +13,7 @@ enum SignupSource: string
     case AuthentikSso = 'authentik-sso';
     case TeamMember = 'team-member';
     case CsvImport = 'csv-import';
+    case AdminCreated = 'admin-created';
 
     /**
      * How the door the account came through is named in the interface.
@@ -25,6 +26,7 @@ enum SignupSource: string
             self::AuthentikSso => 'Ruutu10 konto',
             self::TeamMember => 'Lisatud tiimi liikmena',
             self::CsvImport => 'Imporditud failist',
+            self::AdminCreated => 'Loodud halduses',
         };
     }
 }

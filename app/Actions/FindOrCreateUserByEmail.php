@@ -4,9 +4,7 @@ namespace App\Actions;
 
 use App\Enums\SignupSource;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class FindOrCreateUserByEmail
 {
@@ -17,16 +15,8 @@ class FindOrCreateUserByEmail
      */
     public function handle(string $email, SignupSource $signupSource = SignupSource::AnonymousPlan): User
     {
-        $email = strtolower(trim($email));
-
-        $user = User::firstOrCreate(
-            ['email' => $email],
-            [
-                'name' => Str::of($email)->before('@')->trim()->value() ?: 'Esineja',
-                'password' => Hash::make(Str::random(40)),
-                'signup_source' => $signupSource->value,
-            ],
-        );
+        $user = User::where('email', User::normalizeEmail($email))->first()
+            ?? User::provision($email, $signupSource);
 
         if ($user->wasRecentlyCreated) {
             // Accounts born here were never registered by hand, so this is the

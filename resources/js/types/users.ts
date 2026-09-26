@@ -37,6 +37,13 @@ export interface ManagedUserFormData {
     email: string;
 }
 
+/** What an account is created from; the name is taken from the address. */
+export interface NewManagedUserFormData {
+    email: string;
+    /** Whether the newcomer is mailed a one-time link in. */
+    sendWelcome: boolean;
+}
+
 export type ManagedUserFieldErrors = Partial<
     Record<keyof ManagedUserFormData, string>
 >;

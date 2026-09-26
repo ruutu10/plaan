@@ -10,10 +10,8 @@ use App\Models\User;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -264,7 +262,7 @@ class ImportUsers extends Command
     private function readRow(array $row, int $line): ?array
     {
         $name = trim((string) ($row[0] ?? ''));
-        $email = mb_strtolower(trim((string) ($row[1] ?? '')));
+        $email = User::normalizeEmail((string) ($row[1] ?? ''));
 
         $validator = Validator::make(
             ['name' => $name, 'email' => $email],
@@ -300,19 +298,10 @@ class ImportUsers extends Command
      */
     private function import(string $name, string $email, ?Team $team, ?Role $role): void
     {
-        $user = User::create([
-            'name' => $name,
-            'email' => $email,
-            // Nobody will ever be told this, and nobody needs to be: the way in
-            // is a reset or a magic link, both of which replace it.
-            'password' => Hash::make(Str::random(40)),
-            'signup_source' => SignupSource::CsvImport->value,
-        ]);
-
         // Taken as proven on the word of whoever compiled the list. The
         // alternative — an unverified address on an account that is never
         // e-mailed — would leave every imported account permanently unusable.
-        $user->forceFill(['email_verified_at' => now()])->save();
+        $user = User::provision($email, SignupSource::CsvImport, $name, verified: true);
 
         if ($team !== null) {
             $team->memberships()->create([
