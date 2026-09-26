@@ -12,9 +12,10 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
  * the reasoning behind a wrong name or a wrong hour can be read from the screen
  * that shows it.
  *
- * A performance is read off one card and has one account of itself. A format may
- * have many: an Õppelava is created by the first card that announces one and
- * gathers a night from every card after it, each read on its own.
+ * A performance is read off one card, and has an account for each time that card
+ * was read to a different answer. A format may have many: an Õppelava is created
+ * by the first card that announces one and gathers a night from every card after
+ * it, each read on its own.
  *
  * @mixin Model
  */

@@ -83,6 +83,27 @@ class ClaudeReasoningLogTest extends TestCase
             ->assertJsonPath('data.0.cardName', 'Õppelava 9.10');
     }
 
+    public function test_a_performance_shows_its_latest_reading_first(): void
+    {
+        $format = Format::factory()->create();
+        $performance = Performance::factory()->create(['format_id' => $format->id]);
+
+        // Read twice within the same second: the timestamps cannot tell them
+        // apart, so the order they were written in has to.
+        $first = ClaudeReasoningLog::factory()->create(['notes' => ['Esimene.'], 'created_at' => '2025-10-01 10:00:00']);
+        $second = ClaudeReasoningLog::factory()->create(['notes' => ['Teine.'], 'created_at' => '2025-10-01 10:00:00']);
+
+        $second->link($performance);
+        $first->link($performance);
+
+        $this->actingAs($this->technician())
+            ->getJson(route('api.formats.performances.claude-logs', [$format, $performance]))
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.notes', ['Teine.'])
+            ->assertJsonPath('data.1.notes', ['Esimene.']);
+    }
+
     public function test_a_record_nobody_imported_has_nothing_to_read(): void
     {
         $format = Format::factory()->create();

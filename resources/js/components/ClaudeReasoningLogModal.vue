@@ -14,10 +14,10 @@ import type { ClaudeReasoningLog } from '@/types';
  * for the house's own people — the button that opens it is only rendered for
  * users the server told there was something to read.
  *
- * A performance has one reading. A format may have many, one per card that made it
- * or added a night to it, and they are shown newest first: an Õppelava is built
- * a card at a time, and the card that explains a wrong date is rarely the one
- * the format was created with.
+ * A performance has one reading per time its card was read to a different answer.
+ * A format may have many, one per card that made it or added a night to it. Both
+ * are shown newest first: an Õppelava is built a card at a time, and the card
+ * that explains a wrong date is rarely the one the format was created with.
  */
 const props = defineProps<{
     /**

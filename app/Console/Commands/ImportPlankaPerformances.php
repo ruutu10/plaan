@@ -407,6 +407,8 @@ class ImportPlankaPerformances extends Command
      * model made of it. For the same reason only the records this run *creates*
      * are linked — a night added to a format the house already had explains the
      * night, not the format, and the format keeps whatever account it was made with.
+     * The one exception is an act re-read to a different answer, see
+     * {@see explainReread()}.
      */
     protected function logForCard(bool $dryRun): ?ClaudeReasoningLog
     {
@@ -497,6 +499,7 @@ class ImportPlankaPerformances extends Command
                 $this->syncStaff($already, $act, $dryRun);
                 $this->syncLocation($already, $night, $dryRun);
                 $this->markImported($already, $dryRun);
+                $this->explainReread($already, $dryRun);
 
                 continue;
             }
@@ -635,6 +638,40 @@ class ImportPlankaPerformances extends Command
         }
 
         $performance->update(['planka_imported_at' => now()]);
+    }
+
+    /**
+     * Tie this reading to an act already on the books, when the model read the
+     * card differently from the last time — a card re-read from the
+     * performance's own screen is read afresh, and the reasoning shown there
+     * must be the one behind the crew and venue just written, not the one the
+     * act was first created with.
+     *
+     * A reading the act already has an identical account of is not kept again,
+     * so the weekly run — which is handed its cached answers back — does not
+     * gather the same explanation on every performance every week. Put aside
+     * and dry runs are spared for the same reasons as {@see syncStaff()}.
+     */
+    protected function explainReread(Performance $performance, bool $dryRun): void
+    {
+        if ($dryRun || $performance->trashed() || $this->extractor->reasoningNotes() === []) {
+            return;
+        }
+
+        $latest = $performance->reasoningLogs()
+            ->latest()
+            ->latest('claude_reasoning_logs.id')
+            ->first();
+
+        // Compared loosely: a JSON column need not hand the keys back in the
+        // order they were written.
+        if ($latest !== null
+            && $latest->notes === $this->extractor->reasoningNotes()
+            && $latest->raw_response == $this->extractor->rawResponse()) {
+            return;
+        }
+
+        $this->logForCard($dryRun)?->link($performance);
     }
 
     /**

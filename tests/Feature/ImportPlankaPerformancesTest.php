@@ -814,6 +814,92 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertDatabaseCount('claude_reasoning_log_subjects', 2);
     }
 
+    public function test_a_card_read_again_to_a_different_answer_explains_the_act_anew(): void
+    {
+        // The re-read the performance screen asks for: the act is already on
+        // the books, the model reads the card afresh, and the screen must show
+        // that reading rather than the one the act was created with.
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $reading = 0;
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) use (&$reading) {
+            $mock->shouldReceive('extract')->andReturnUsing(function () use (&$reading): array {
+                $reading++;
+
+                return [$this->night('Õppelava', '2025-10-09')];
+            });
+            $mock->shouldReceive('reasoningNotes')->andReturnUsing(function () use (&$reading): array {
+                return ["Lugemine {$reading}."];
+            });
+            $mock->shouldReceive('rawResponse')->andReturnUsing(function () use (&$reading): array {
+                return ['formats' => [], 'reasoningNotes' => ["Lugemine {$reading}."]];
+            });
+        });
+
+        $this->artisan('planka:import')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $performance = Performance::sole();
+
+        $this->assertSame(
+            [['Lugemine 1.'], ['Lugemine 2.']],
+            $performance->reasoningLogs()->orderBy('claude_reasoning_logs.id')->pluck('notes')->all(),
+        );
+
+        // The format explains itself by the card that made it, as before.
+        $this->assertSame([['Lugemine 1.']], Format::sole()->reasoningLogs->pluck('notes')->all());
+    }
+
+    public function test_a_card_read_again_to_the_same_answer_keeps_no_second_account(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')->andReturn([$this->night('Õppelava', '2025-10-09')]);
+            $mock->shouldReceive('reasoningNotes')->andReturn(['Lugemine.']);
+            // Handed back in a different key order, as a JSON column may.
+            $mock->shouldReceive('rawResponse')->andReturn(
+                ['formats' => [], 'reasoningNotes' => ['Lugemine.']],
+                ['reasoningNotes' => ['Lugemine.'], 'formats' => []],
+            );
+        });
+
+        $this->artisan('planka:import')->assertSuccessful();
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertDatabaseCount('claude_reasoning_logs', 1);
+    }
+
+    public function test_a_put_aside_act_is_not_explained_anew(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $reading = 0;
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) use (&$reading) {
+            $mock->shouldReceive('extract')->andReturnUsing(function () use (&$reading): array {
+                $reading++;
+
+                return [$this->night('Õppelava', '2025-10-09')];
+            });
+            $mock->shouldReceive('reasoningNotes')->andReturnUsing(function () use (&$reading): array {
+                return ["Lugemine {$reading}."];
+            });
+            $mock->shouldReceive('rawResponse')->andReturnUsing(function () use (&$reading): array {
+                return ['reasoningNotes' => ["Lugemine {$reading}."]];
+            });
+        });
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        Performance::sole()->delete();
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertDatabaseCount('claude_reasoning_logs', 1);
+    }
+
     public function test_a_card_the_ai_gave_no_account_of_is_imported_without_one(): void
     {
         $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);

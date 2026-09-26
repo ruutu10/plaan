@@ -30,17 +30,17 @@ class ClaudeReasoningLogController extends Controller
      */
     public function forFormat(Format $format): AnonymousResourceCollection
     {
-        return ClaudeReasoningLogResource::collection($format->reasoningLogs()->latest()->get());
+        return ClaudeReasoningLogResource::collection($format->reasoningLogs()->latest()->latest('claude_reasoning_logs.id')->get());
     }
 
     /**
-     * The reading that registered this performance — one card, at most one
-     * reading, but answered in the same shape as a format's.
+     * Every reading of this performance's card, newest first: the one that
+     * registered it, and each later re-read that read the card differently.
      *
      * @return AnonymousResourceCollection<int, ClaudeReasoningLogResource>
      */
     public function forPerformance(Format $format, Performance $performance): AnonymousResourceCollection
     {
-        return ClaudeReasoningLogResource::collection($performance->reasoningLogs()->latest()->get());
+        return ClaudeReasoningLogResource::collection($performance->reasoningLogs()->latest()->latest('claude_reasoning_logs.id')->get());
     }
 }
