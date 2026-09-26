@@ -176,7 +176,7 @@ defineOptions({
                         data-test="admin-performance-edit-link"
                         class="px-4 py-2"
                     >
-                        Muuda
+                        Detailid
                         <Pencil class="h-3.5 w-3.5" />
                     </R10Button>
                 </td>

@@ -328,7 +328,7 @@ defineOptions({
                     Minu järgmised etendused
                 </h2>
                 <p class="mt-1 text-sm text-r10-grey-500">
-                    Õhtud, millel sul on roll — kolm viimast ja kolm järgmist.
+                    Õhtud, kus sulle on määratud roll Planka kaardil.
                 </p>
 
                 <ol

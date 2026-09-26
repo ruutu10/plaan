@@ -30,7 +30,7 @@ class DashboardController extends Controller
      * How far the reader's own strip of the bill reaches in each direction —
      * this many nights behind them, and this many ahead.
      */
-    private const OWN_BILL_LENGTH = 3;
+    private const OWN_BILL_LENGTH = 2;
 
     public function __invoke(Request $request): Response
     {
