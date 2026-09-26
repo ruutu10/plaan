@@ -40,6 +40,7 @@ use Throwable;
 #[Signature('planka:import
     {--dry-run : Report what would be imported without writing anything}
     {--filter-title= : Read only the cards whose title contains this text}
+    {--card-id= : Read only the card with this Planka id}
     {--no-cache : Ask the AI about every card again, ignoring the answers it gave before}
     {--json : Write nothing to stdout but the answers the AI gave, as one JSON array}')]
 #[Description('Import new formats and performances from the cards of the configured Planka list.')]
@@ -130,6 +131,7 @@ class ImportPlankaPerformances extends Command
 
         $dryRun = (bool) $this->option('dry-run');
         $titleFilter = (string) $this->option('filter-title');
+        $cardIdFilter = trim((string) $this->option('card-id'));
         $listIds = PlankaClient::listIds();
 
         // Every card goes to the model again, at the run's own expense: what a
@@ -146,6 +148,7 @@ class ImportPlankaPerformances extends Command
         Log::info('Planka import started', [
             'dry_run' => $dryRun,
             'filter_title' => blank($titleFilter) ? null : $titleFilter,
+            'filter_card_id' => blank($cardIdFilter) ? null : $cardIdFilter,
             'ignore_cache' => $ignoreCache,
             'lists' => count($listIds),
         ]);
@@ -177,6 +180,20 @@ class ImportPlankaPerformances extends Command
 
             Log::info('Narrowed the Planka cards to a title', [
                 'filter_title' => $titleFilter,
+                'cards' => count($cards),
+            ]);
+        }
+
+        if (filled($cardIdFilter)) {
+            $cards = $this->cardsWithId($cards, $cardIdFilter);
+
+            $this->info(sprintf('Kept %d card(s) with the id %s.', count($cards), $cardIdFilter));
+
+            // A card that is no longer in a watched list — archived, or moved
+            // off the season's board — reads to nothing, which is worth telling
+            // apart from a card that was read and announced nothing new.
+            Log::log($cards === [] ? 'warning' : 'info', 'Narrowed the Planka cards to one card', [
+                'filter_card_id' => $cardIdFilter,
                 'cards' => count($cards),
             ]);
         }
@@ -272,6 +289,26 @@ class ImportPlankaPerformances extends Command
         return array_values(array_filter(
             $cards,
             fn (array $card): bool => str_contains(mb_strtolower($card['name']), $wanted),
+        ));
+    }
+
+    /**
+     * The one card with the given id, if a watched list still holds it. The
+     * narrowing a performance's own re-read asks for when it knows its card:
+     * unlike a title, an id cannot catch a neighbouring card by accident.
+     *
+     * Looked for among the watched lists rather than fetched on its own, so a
+     * card moved off the season's lists is read no more by this than by the
+     * weekly run.
+     *
+     * @param  list<array{id: string, name: string, description: string|null, dueDate: string|null, labels: list<string>}>  $cards
+     * @return list<array{id: string, name: string, description: string|null, dueDate: string|null, labels: list<string>}>
+     */
+    protected function cardsWithId(array $cards, string $cardId): array
+    {
+        return array_values(array_filter(
+            $cards,
+            fn (array $card): bool => $card['id'] === $cardId,
         ));
     }
 

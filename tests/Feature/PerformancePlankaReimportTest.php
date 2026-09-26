@@ -25,8 +25,9 @@ use Tests\TestCase;
  *
  * The screen's button is the whole of it: the crew presses it when a card has
  * just changed and the nightly run is too far off. What matters here is who may
- * press it, that nothing is imported in the request itself, and that the run is
- * narrowed to the name the screen heads the performance with.
+ * press it, that nothing is imported in the request itself, and that the run
+ * reads the performance's own card and nothing else — a performance that knows
+ * no card is refused rather than guessed at by title.
  */
 class PerformancePlankaReimportTest extends TestCase
 {
@@ -45,50 +46,62 @@ class PerformancePlankaReimportTest extends TestCase
     {
         Event::fake();
 
-        $performance = Performance::factory()->create();
+        $performance = Performance::factory()->create(['planka_card_id' => 'card-1']);
 
         $this->postJson($this->reimportUrl($performance))->assertUnauthorized();
 
         Event::assertNotDispatched(PlankaReimportRequested::class);
     }
 
-    public function test_the_crew_may_set_a_reading_going(): void
+    public function test_the_crew_may_set_a_reading_of_the_performances_card_going(): void
     {
         Event::fake();
 
-        $format = Format::factory()->create(['name' => 'Improkolmapäev']);
-        $performance = Performance::factory()->for($format)->create(['title' => null]);
+        $performance = Performance::factory()->create(['planka_card_id' => '1516073411733063234']);
         $technician = $this->technician();
 
         $this->actingAs($technician)
             ->postJson($this->reimportUrl($performance))
             ->assertAccepted()
-            ->assertJson(['filterTitle' => 'Improkolmapäev']);
+            ->assertExactJson(['cardId' => '1516073411733063234']);
 
         Event::assertDispatched(
             PlankaReimportRequested::class,
             fn (PlankaReimportRequested $event): bool => $event->performance->is($performance)
-                && $event->filterTitle === 'Improkolmapäev'
+                && $event->cardId === '1516073411733063234'
                 && $event->requestedBy->is($technician),
         );
     }
 
-    public function test_an_act_of_a_shared_evening_is_read_by_its_own_name(): void
+    public function test_a_performance_that_knows_no_card_is_not_read_by_its_title(): void
     {
         Event::fake();
 
-        $format = Format::factory()->create(['name' => 'Õppelava']);
-        $performance = Performance::factory()->for($format)->create(['title' => 'Rühm B']);
+        $format = Format::factory()->create(['name' => 'Improkolmapäev']);
+        $performance = Performance::factory()->for($format)->create([
+            'title' => null,
+            'planka_card_id' => null,
+        ]);
 
         $this->actingAs($this->technician())
             ->postJson($this->reimportUrl($performance))
-            ->assertAccepted()
-            ->assertJson(['filterTitle' => 'Rühm B']);
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Etendusel pole Planka kaardi ID-d, mille järgi importida.');
 
-        Event::assertDispatched(
-            PlankaReimportRequested::class,
-            fn (PlankaReimportRequested $event): bool => $event->filterTitle === 'Rühm B',
-        );
+        Event::assertNotDispatched(PlankaReimportRequested::class);
+    }
+
+    public function test_a_blank_card_id_counts_as_no_card(): void
+    {
+        Event::fake();
+
+        $performance = Performance::factory()->create(['planka_card_id' => '']);
+
+        $this->actingAs($this->technician())
+            ->postJson($this->reimportUrl($performance))
+            ->assertUnprocessable();
+
+        Event::assertNotDispatched(PlankaReimportRequested::class);
     }
 
     public function test_the_group_whose_night_it_is_may_not_set_one_going(): void
@@ -176,18 +189,13 @@ class PerformancePlankaReimportTest extends TestCase
 
         $this->assertInstanceOf(ShouldQueue::class, $listener);
 
-        // Two presses on one title are one run: the same lock, whatever case
-        // the board writes the name in.
-        $format = Format::factory()->create(['name' => 'Õppelava']);
-        $performance = Performance::factory()->for($format)->create(['title' => 'Rühm B']);
+        // Two presses on one card are one run — and so are two acts of one
+        // shared evening, whose performances carry the same card.
+        $performance = Performance::factory()->create(['planka_card_id' => 'card-7']);
 
         $this->assertSame(
-            'rühm b',
-            $listener->uniqueId(new PlankaReimportRequested(
-                $performance,
-                $performance->plankaImportFilter(),
-                $this->technician(),
-            )),
+            'card-7',
+            $listener->uniqueId(new PlankaReimportRequested($performance, 'card-7', $this->technician())),
         );
     }
 
@@ -196,16 +204,18 @@ class PerformancePlankaReimportTest extends TestCase
         $format = Format::factory()->create(['name' => 'Improkolmapäev']);
         $performance = Performance::factory()->for($format)->create([
             'title' => null,
-            'date' => Carbon::parse('2025-09-06 19:00', Performance::venueTimezone()),
+            'date' => Carbon::parse('2025-09-13 19:00', Performance::venueTimezone()),
+            'planka_card_id' => 'card-2',
+            'location' => 'Vana saal',
         ]);
 
+        // Both titles contain the format's name; only the performance's own card
+        // is read.
         $this->fakeBoard([
-            $this->card('card-1', 'Improkolmapäev 13.09'),
-            $this->card('card-2', 'Sketšikas 20.09'),
+            $this->card('card-1', 'Improkolmapäev 06.09'),
+            $this->card('card-2', 'Improkolmapäev 13.09'),
         ]);
 
-        // Called once, for the one card the title kept: the other is dropped
-        // before it is ever read, which is the whole point of the narrowing.
         $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
             $mock->shouldReceive('extract')
                 ->once()
@@ -220,23 +230,17 @@ class PerformancePlankaReimportTest extends TestCase
             $mock->shouldReceive('reasoningNotes')->andReturn([]);
         });
 
-        // Fired for real on the sync queue the test suite runs, so the listener
-        // and the command it calls are both exercised.
-        PlankaReimportRequested::dispatch(
-            $performance,
-            $performance->plankaImportFilter(),
-            $this->technician(),
-        );
+        // Pressed for real, with the listener on the sync queue the test suite
+        // runs, so the controller, the listener and the command it calls are
+        // all exercised.
+        $this->actingAs($this->technician())
+            ->postJson($this->reimportUrl($performance))
+            ->assertAccepted();
 
-        $this->assertDatabaseHas('performances', [
-            'format_id' => $format->id,
-            'planka_card_id' => 'card-1',
-            'location' => 'Vaba Lava',
-            'status' => 'draft',
-        ]);
-
-        // Nothing was invented for the card the filter dropped.
-        $this->assertDatabaseMissing('performances', ['planka_card_id' => 'card-2']);
+        // The card's venue reached the performance it already described, and
+        // no second one was made from it or from its neighbour.
+        $this->assertSame('Vaba Lava', $performance->fresh()->location);
+        $this->assertSame(1, Performance::query()->count());
     }
 
     /**

@@ -22,18 +22,27 @@ use Illuminate\Support\Facades\Gate;
 class PerformancePlankaImportController extends Controller
 {
     /**
-     * Set a Planka import going for the cards this performance is named on.
+     * Set a Planka import going for the card this performance was announced on.
+     *
+     * A performance that knows no card has nothing to be read off: guessing at
+     * its card by title could catch a neighbouring one and register nights
+     * nobody asked about, so the request is refused until a card is named.
      */
     public function store(Request $request, Format $format, Performance $performance): JsonResponse
     {
         Gate::authorize('reimportFromPlanka', $performance);
 
-        $filterTitle = $performance->setRelation('format', $format)->plankaImportFilter();
+        if (blank($performance->planka_card_id)) {
+            return response()->json(
+                ['message' => 'Etendusel pole Planka kaardi ID-d, mille järgi importida.'],
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+            );
+        }
 
-        PlankaReimportRequested::dispatch($performance, $filterTitle, $request->user());
+        PlankaReimportRequested::dispatch($performance, $performance->planka_card_id, $request->user());
 
         // Accepted, not done: the answer says what was asked for, and the run
         // itself happens on a queue where the browser cannot see it.
-        return response()->json(['filterTitle' => $filterTitle], Response::HTTP_ACCEPTED);
+        return response()->json(['cardId' => $performance->planka_card_id], Response::HTTP_ACCEPTED);
     }
 }

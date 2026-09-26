@@ -25,12 +25,11 @@ class PlankaReimportRequested
     use Dispatchable, SerializesModels;
 
     /**
-     * @param  string  $filterTitle  The card titles the run is narrowed to — see
-     *                               {@see Performance::plankaImportFilter()}.
+     * @param  string  $cardId  The one card the run reads — the performance's own.
      */
     public function __construct(
         public Performance $performance,
-        public string $filterTitle,
+        public string $cardId,
         public User $requestedBy,
     ) {
         //

@@ -1585,6 +1585,44 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame(0, Performance::query()->count());
     }
 
+    public function test_a_card_id_filter_reads_that_card_alone(): void
+    {
+        $this->fakeBoard([
+            $this->card('card-1', 'Õppelava 9.10'),
+            $this->card('card-2', 'Õppelava 16.10'),
+        ]);
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')
+                ->once()
+                ->with('Õppelava 16.10', \Mockery::any(), \Mockery::any(), \Mockery::any())
+                ->andReturn([$this->night('Trupp 1')]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
+
+        $this->artisan('planka:import', ['--card-id' => 'card-2'])
+            ->expectsOutputToContain('Kept 1 card(s) with the id card-2.')
+            ->assertSuccessful();
+
+        $this->assertDatabaseHas('performances', ['planka_card_id' => 'card-2']);
+        $this->assertDatabaseMissing('performances', ['planka_card_id' => 'card-1']);
+    }
+
+    public function test_a_card_id_no_watched_list_holds_imports_nothing(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+        $this->mock(
+            PlankaPerformanceExtractor::class,
+            fn (MockInterface $mock) => $mock->shouldNotReceive('extract'),
+        );
+
+        $this->artisan('planka:import', ['--card-id' => 'card-archived'])
+            ->expectsOutputToContain('Kept 0 card(s) with the id card-archived.')
+            ->assertSuccessful();
+
+        $this->assertSame(0, Performance::query()->count());
+    }
+
     public function test_a_run_naming_no_title_filter_reads_every_card(): void
     {
         $this->fakeBoard([

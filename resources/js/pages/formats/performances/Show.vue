@@ -23,6 +23,12 @@ import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useResource } from '@/composables/useResource';
 import { formatLocalDate, formatLocalTime } from '@/lib/date';
 import { performanceStatusLabel } from '@/lib/performanceStatus';
@@ -278,6 +284,25 @@ async function refreshFromPlanka(): Promise<void> {
                         <span v-else>—</span>
                     </dd>
                 </div>
+                <div>
+                    <dt class="text-xs font-bold text-r10-grey-500 uppercase">
+                        Planka kaart
+                    </dt>
+                    <dd class="text-r10-ink">
+                        <a
+                            v-if="performance.plankaCardUrl"
+                            :href="performance.plankaCardUrl"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            data-test="performance-planka-card-link"
+                            class="inline-flex w-fit items-center gap-1.5 font-medium text-r10-navy underline underline-offset-2 hover:text-r10-orange-700"
+                        >
+                            <ExternalLink class="h-3.5 w-3.5" />
+                            Ava Plankas
+                        </a>
+                        <span v-else>—</span>
+                    </dd>
+                </div>
             </dl>
 
             <RecordOriginFields
@@ -323,22 +348,55 @@ async function refreshFromPlanka(): Promise<void> {
                     <!--
                         Offered to the crew alone, and only where a board is
                         configured — the server says which, so the button is
-                        never shown where the API would refuse it.
+                        never shown where the API would refuse it. A
+                        performance that knows no card has nothing to read, so
+                        the button stays in sight but switched off, and the
+                        tooltip says why. The span takes the hover because a
+                        disabled button takes no pointer events.
                     -->
-                    <R10Button
+                    <TooltipProvider
                         v-if="performance.canReimportFromPlanka"
-                        variant="outline"
-                        size="sm"
-                        :disabled="reimport.processing"
-                        data-test="refresh-from-planka-button"
-                        @click="refreshFromPlanka"
+                        :delay-duration="0"
                     >
-                        <RefreshCw
-                            class="h-3.5 w-3.5"
-                            :class="{ 'animate-spin': reimport.processing }"
-                        />
-                        Impordi
-                    </R10Button>
+                        <Tooltip :disabled="!!performance.plankaCardId">
+                            <TooltipTrigger as-child>
+                                <span
+                                    class="inline-flex"
+                                    :tabindex="
+                                        performance.plankaCardId ? undefined : 0
+                                    "
+                                    data-test="refresh-from-planka-trigger"
+                                >
+                                    <R10Button
+                                        variant="outline"
+                                        size="sm"
+                                        :disabled="
+                                            reimport.processing ||
+                                            !performance.plankaCardId
+                                        "
+                                        data-test="refresh-from-planka-button"
+                                        @click="refreshFromPlanka"
+                                    >
+                                        <RefreshCw
+                                            class="h-3.5 w-3.5"
+                                            :class="{
+                                                'animate-spin':
+                                                    reimport.processing,
+                                            }"
+                                        />
+                                        Impordi
+                                    </R10Button>
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent class="max-w-xs">
+                                <p>
+                                    Etendusel pole Planka kaarti. Lisa kaardi ID
+                                    etenduse muutmise vaates, siis saab selle
+                                    Plankast uuesti importida.
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
 
                     <R10Button
                         variant="outline"
