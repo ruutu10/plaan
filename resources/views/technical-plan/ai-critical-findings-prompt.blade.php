@@ -11,7 +11,7 @@ Ainult kaks asja lähevad arvesse:
 1. **Vastuolu, mis muudab plaani mängimatuks.** Plaan ütleb ühes kohas ühte ja teises kohas selle vastupidist, nii et tehnik ei saa etenduse ajal otsustada, kumba teha. Näiteks: stseen kirjeldab heli, mida stseenide loetelu järgi ei eksisteeri; vaheaeg on kahes eri kohas; osade pikkused ei mahu etenduse kogupikkusesse.
 2. **Puuduv helifail.** Stseen viitab helile — pala, muusika, efekt — aga ülevaatuse järgi ei ole seda ei lingina, üleslaaditud failina ega manusena olemas. Tehnikul ei ole midagi mängida.
 
-Siia alla käib ka ülevaatuses selgelt blokeerivaks nimetatud teostamatus, kui see tähendab, et etendust sellisel kujul mängida ei saa (nt plaan nõuab suitsumasinat improkeskuses).
+Siia alla käib ka ülevaatuses selgelt blokeerivaks nimetatud teostamatus, kui see tähendab, et etendust sellisel kujul mängida ei saa.
 
 ## Mis EI lähe arvesse
 

@@ -119,7 +119,7 @@ Need väljendid on Ruutu10-s levinud lühendid — tunne need ära ja ära märg
 
 Järmised tehnilised lahendused ei ole improkeskuse tehnikapargiga teostatavad:
 
-- lavasuits või haze - töötav ATS (tuletõrjesüsteem) ei võimalda improkeskuses suitsu kasutamist. Väljaspool meie ruume on see võimalik.
+- lavasuits või haze - töötav ATS (tuletõrjesüsteem) ei võimalda improkeskuses suitsu kasutamist. Väljaspool meie ruume on see võimalik. Märgi see ainult siis, kui toimumispaigaks on improkeskus.
 - peamikrofonid - ei ole saadaval
 - rohkem kui üks juhtmeta käsimikrofon - ainult üks on võimalik, kui küsitakse rohkem mikrofone, siis need peavad olema juhtmega
 - basskõlar - puudub
