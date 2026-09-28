@@ -29,10 +29,10 @@ class AdminPerformance extends JsonResource
      *     title: string|null,
      *     location: string|null,
      *     teamName: string|null,
+     *     technicians: array<int, string>,
      *     startsAt: string,
-     *     duration: int|null,
      *     status: string,
-     *     technicalPlanCount: int|null,
+     *     hasSentTechnicalPlan: bool,
      * }
      */
     public function toArray(Request $request): array
@@ -52,13 +52,13 @@ class AdminPerformance extends JsonResource
             // Who plays it — its own group, or the format's. Never read off the
             // format directly; see Performance::performerName().
             'teamName' => $performance->performerName(),
+            'technicians' => $performance->technicianNames(),
             'startsAt' => $performance->date->toIso8601String(),
-            'duration' => $performance->duration,
             // A draft is imported and not reviewed yet, which keeps it out of
             // the listing technical plans are written from; an archived night
             // has been played.
             'status' => $performance->status->value,
-            'technicalPlanCount' => $performance->technical_plans_count,
+            'hasSentTechnicalPlan' => (bool) $performance->has_sent_technical_plan,
         ];
     }
 }

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PerformanceStaffRole;
+use App\Enums\TechnicalPlanStatus;
 use App\Models\Format;
 use App\Models\Performance;
 use App\Models\Team;
@@ -111,7 +113,7 @@ class PerformanceAdminTest extends TestCase
         $performance = Performance::factory()
             ->startingAt('2026-09-01', '19:30')
             ->playedAt('Vaba Lava, Telliskivi')
-            ->create(['format_id' => $ours->id, 'duration' => 75]);
+            ->create(['format_id' => $ours->id]);
 
         TechnicalPlan::factory()->submitted()->create(['performance_id' => $performance->id]);
 
@@ -132,9 +134,8 @@ class PerformanceAdminTest extends TestCase
                     ->where('0.startsAt', fn ($value) => Carbon::parse($value)
                         ->setTimezone(Performance::venueTimezone())
                         ->format('Y-m-d H:i') === '2026-09-01 19:30')
-                    ->where('0.duration', 75)
                     ->where('0.status', 'upcoming')
-                    ->where('0.technicalPlanCount', 1)
+                    ->where('0.hasSentTechnicalPlan', true)
                     ->where('0.title', null)
                     ->where('0.location', 'Vaba Lava, Telliskivi')
                     ->etc()));
@@ -174,6 +175,59 @@ class PerformanceAdminTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->has('performances', 1)
                 ->where('performances.0.status', 'draft'));
+    }
+
+    /**
+     * A row names whoever runs the night's tech, and nobody else on its staff.
+     */
+    public function test_the_overview_names_each_nights_technicians(): void
+    {
+        $staffed = Performance::factory()->startingAt('2026-08-01')->create();
+        $staffed->staff()->attach(
+            User::factory()->create(['name' => 'Tiit Tehnik']),
+            ['role' => PerformanceStaffRole::Technician->value],
+        );
+        $staffed->staff()->attach(
+            User::factory()->create(['name' => 'Arne Õhtujuht']),
+            ['role' => PerformanceStaffRole::Host->value],
+        );
+        Performance::factory()->startingAt('2026-09-10')->create();
+
+        $this->actingAs($this->technician())
+            ->get(route('admin.performances.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('performances.0.technicians', ['Tiit Tehnik'])
+                ->where('performances.1.technicians', []));
+    }
+
+    /**
+     * A plan still in draft has not been handed to the crew, so its night is
+     * still missing one; an archived plan was handed in before it was put away.
+     */
+    public function test_the_overview_says_whether_each_nights_plan_was_sent(): void
+    {
+        $withDraft = Performance::factory()->startingAt('2026-08-01')->create();
+        TechnicalPlan::factory()->create([
+            'status' => TechnicalPlanStatus::Draft,
+            'performance_id' => $withDraft->id,
+        ]);
+
+        $withArchived = Performance::factory()->startingAt('2026-08-02')->create();
+        TechnicalPlan::factory()->create([
+            'status' => TechnicalPlanStatus::Archived,
+            'performance_id' => $withArchived->id,
+        ]);
+
+        Performance::factory()->startingAt('2026-08-03')->create();
+
+        $this->actingAs($this->technician())
+            ->get(route('admin.performances.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('performances.0.hasSentTechnicalPlan', false)
+                ->where('performances.1.hasSentTechnicalPlan', true)
+                ->where('performances.2.hasSentTechnicalPlan', false));
     }
 
     public function test_the_overview_sorts_the_soonest_performance_first(): void

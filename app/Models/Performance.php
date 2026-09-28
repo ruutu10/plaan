@@ -68,6 +68,7 @@ use Illuminate\Support\Facades\Date;
  * @property-read Team|null $team
  * @property-read Collection<int, TechnicalPlan> $technicalPlans
  * @property-read int|null $technical_plans_count
+ * @property-read bool|null $has_sent_technical_plan
  * @property-read Collection<int, ClaudeReasoningLog> $reasoningLogs
  * @property-read Collection<int, User> $staff
  * @property-read Collection<int, PerformanceStaff> $staffings

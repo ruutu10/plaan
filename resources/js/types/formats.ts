@@ -257,13 +257,14 @@ export interface AdminPerformanceRow {
     location: string | null;
     /** Who plays it: the performance's own group, or the format's. */
     teamName: string | null;
+    /** The technicians signed on to the night, by name. */
+    technicians: string[];
     /** ISO 8601 UTC instant the performance starts at. */
     startsAt: string;
-    /** Minutes, or null when the performance is not timed. */
-    duration: number | null;
     /** Where the night stands: unreviewed, on the bill, or played. */
     status: PerformanceStatus;
-    technicalPlanCount: number | null;
+    /** Whether a plan has been handed in for the night; a draft does not count. */
+    hasSentTechnicalPlan: boolean;
 }
 
 /** The fields a performance is written through. */

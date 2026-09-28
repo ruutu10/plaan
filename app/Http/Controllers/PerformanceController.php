@@ -59,8 +59,11 @@ class PerformanceController extends Controller
         // Soonest first: what is coming up next is what the crew looks for,
         // with already-played nights sinking toward the bottom.
         $performances = Performance::query()
-            ->with(['format.team', 'team'])
-            ->withCount('technicalPlans')
+            ->with(['format.team', 'team', 'technicians'])
+            // A draft has not been handed to the crew yet, so it does not count
+            // as the night's plan having been sent.
+            ->withExists(['technicalPlans as has_sent_technical_plan' => fn ($plans) => $plans
+                ->whereIn('status', TechnicalPlanStatus::reusable())])
             ->listableBy($user)
             ->orderBy('date')
             ->get();

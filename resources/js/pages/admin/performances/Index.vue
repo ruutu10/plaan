@@ -8,6 +8,7 @@ import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
+import { Checkbox } from '@/components/ui/checkbox';
 import { formatLocalDate, formatLocalTime } from '@/lib/date';
 import { performanceStatusLabel } from '@/lib/performanceStatus';
 import { index } from '@/routes/admin/performances';
@@ -18,7 +19,7 @@ import type {
     FormatTeamOption,
 } from '@/types';
 
-defineProps<{
+const props = defineProps<{
     performances: AdminPerformanceRow[];
     /** Offered only to whoever may add a performance to any format — see below. */
     formats: FormatOption[];
@@ -40,10 +41,39 @@ const canEditEveryPerformance = computed(
     () => page.props.auth?.can?.manageAllPerformances === true,
 );
 
+/**
+ * Whether the archived performances are in the table. Off to begin with: an
+ * archived night has been played, so it no longer needs anybody's attention.
+ */
+const showArchived = ref(false);
+
+const archivedCount = computed(
+    () =>
+        props.performances.filter(
+            (performance) => performance.status === 'archived',
+        ).length,
+);
+
+const rows = computed(() =>
+    showArchived.value
+        ? props.performances
+        : props.performances.filter(
+              (performance) => performance.status !== 'archived',
+          ),
+);
+
 const lead = computed(() =>
     canEditEveryPerformance.value
-        ? 'Kõik maja etendused, olenemata formaadist ja tiimist. Muutmiseks ava etendus.'
-        : 'Kõik maja etendused, olenemata formaadist ja tiimist. Muuta saab neid oma tiimi formaadi alt.',
+        ? 'Kõik maja etendused, olenemata formaadist ja tiimist. Arhiveeritud etendused on vaikimisi peidus. Muutmiseks ava etendus.'
+        : 'Kõik maja etendused, olenemata formaadist ja tiimist. Arhiveeritud etendused on vaikimisi peidus. Muuta saab neid oma tiimi formaadi alt.',
+);
+
+// Saying nothing has been entered while the checkbox beside it counts out the
+// archived nights would read as a fault, so the hidden ones answer for themselves.
+const emptyText = computed(() =>
+    props.performances.length > 0
+        ? 'Kõik etendused on arhiveeritud ja peidetud.'
+        : 'Ühtegi etendust pole veel sisestatud.',
 );
 
 defineOptions({
@@ -76,19 +106,29 @@ defineOptions({
             </R10Button>
         </div>
 
+        <div v-if="archivedCount > 0" class="mb-4 flex justify-end">
+            <label class="flex items-center gap-2 text-sm text-r10-grey-700">
+                <Checkbox
+                    v-model="showArchived"
+                    data-test="toggle-archived-performances"
+                />
+                <span>Näita arhiveerituid ({{ archivedCount }})</span>
+            </label>
+        </div>
+
         <R10Table
             :columns="[
                 { label: 'Algus' },
                 { label: 'Formaat' },
                 { label: 'Etteaste' },
-                { label: 'Kestus' },
+                { label: 'Tehnik' },
                 { label: 'Olek' },
-                { label: 'Tehnikaplaane' },
+                { label: 'Tehnikaplaan' },
                 { label: 'Tegevused', align: 'right', srOnly: true },
             ]"
-            :rows="performances"
+            :rows="rows"
             row-test-id="admin-performance-row"
-            empty-text="Ühtegi etendust pole veel sisestatud."
+            :empty-text="emptyText"
             error-text="Etenduste laadimine ebaõnnestus. Proovi lehte värskendada."
         >
             <template #row="{ row: performance }">
@@ -130,10 +170,13 @@ defineOptions({
                         {{ performance.location }}
                     </span>
                 </td>
-                <td class="px-5 py-4 align-top whitespace-nowrap">
+                <td
+                    class="px-5 py-4 align-top"
+                    data-test="admin-performance-technicians"
+                >
                     {{
-                        performance.duration
-                            ? `${performance.duration} min`
+                        performance.technicians.length > 0
+                            ? performance.technicians.join(', ')
                             : '—'
                     }}
                 </td>
@@ -156,8 +199,21 @@ defineOptions({
                         {{ performanceStatusLabel(performance.status) }}
                     </span>
                 </td>
-                <td class="px-5 py-4 align-top tabular-nums">
-                    {{ performance.technicalPlanCount ?? 0 }}
+                <td class="px-5 py-4 align-top whitespace-nowrap">
+                    <R10Pill
+                        :tone="
+                            performance.hasSentTechnicalPlan
+                                ? 'success'
+                                : 'danger'
+                        "
+                        data-test="admin-performance-plan-badge"
+                    >
+                        {{
+                            performance.hasSentTechnicalPlan
+                                ? 'Saadetud'
+                                : 'Puudu'
+                        }}
+                    </R10Pill>
                 </td>
                 <td class="px-5 py-4 text-right align-top">
                     <!-- Straight to the performance's own page, which is where
