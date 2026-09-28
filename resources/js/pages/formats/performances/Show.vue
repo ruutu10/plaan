@@ -22,7 +22,9 @@ import R10BackLink from '@/components/technical-plan/R10BackLink.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
+import R10SectionHeader from '@/components/technical-plan/R10SectionHeader.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
+import TechnicalPlanTable from '@/components/technical-plan/TechnicalPlanTable.vue';
 import {
     Tooltip,
     TooltipContent,
@@ -45,6 +47,7 @@ import type {
     Performance,
     PerformanceReminderRecipient,
 } from '@/types';
+import type { AdminPlanRow } from '@/types/technicalPlan';
 
 const props = defineProps<{ formatId: number; performanceId: number }>();
 
@@ -57,6 +60,12 @@ const teams = ref<FormatTeamOption[]>([]);
  * which is what leaves the button switched off.
  */
 const reminderRecipients = ref<PerformanceReminderRecipient[]>([]);
+
+/**
+ * The plans handed in for this performance, drafts left out. Null until the
+ * performance has loaded, which is what the table's skeleton keys off.
+ */
+const technicalPlans = ref<AdminPlanRow[] | null>(null);
 
 const editModalOpen = ref(false);
 const deleteModalOpen = ref(false);
@@ -78,10 +87,12 @@ const {
         data: Performance;
         teams: FormatTeamOption[];
         reminderRecipients: PerformanceReminderRecipient[];
+        technicalPlans: AdminPlanRow[];
     };
 
     teams.value = response.teams;
     reminderRecipients.value = response.reminderRecipients;
+    technicalPlans.value = response.technicalPlans;
 
     nameTheTrail(response.data);
     chosenLogSource.value = reasoningLogsApi([
@@ -158,7 +169,7 @@ async function refreshFromPlanka(): Promise<void> {
 
         <p
             v-if="loadFailed"
-            class="max-w-2xl rounded-xl border-2 border-r10-grey-200 bg-white p-5 text-[15px] text-r10-orange-700 md:p-7"
+            class="rounded-xl border-2 border-r10-grey-200 bg-white p-5 text-[15px] text-r10-orange-700 md:p-7"
         >
             Etenduse laadimine ebaõnnestus. Proovi lehte värskendada.
         </p>
@@ -167,7 +178,7 @@ async function refreshFromPlanka(): Promise<void> {
         <div
             v-else-if="performance === null"
             data-test="performance-details-skeleton"
-            class="flex max-w-2xl flex-col gap-6 rounded-xl border-2 border-r10-grey-200 bg-white p-5 md:p-7"
+            class="flex flex-col gap-6 rounded-xl border-2 border-r10-grey-200 bg-white p-5 md:p-7"
         >
             <div v-for="field in 3" :key="field" class="flex flex-col gap-2">
                 <span
@@ -181,7 +192,7 @@ async function refreshFromPlanka(): Promise<void> {
 
         <div
             v-else
-            class="flex max-w-2xl flex-col gap-6 rounded-xl border-2 border-r10-grey-200 bg-white p-5 md:p-7"
+            class="flex flex-col gap-6 rounded-xl border-2 border-r10-grey-200 bg-white p-5 md:p-7"
         >
             <dl class="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 <div>
@@ -252,14 +263,6 @@ async function refreshFromPlanka(): Promise<void> {
                         >
                             {{ performanceStatusLabel(performance.status) }}
                         </span>
-                    </dd>
-                </div>
-                <div>
-                    <dt class="text-xs font-bold text-r10-grey-500 uppercase">
-                        Tehnikaplaane
-                    </dt>
-                    <dd class="text-r10-ink">
-                        {{ performance.technicalPlanCount ?? 0 }}
                     </dd>
                 </div>
                 <!-- Shown to everybody who may open the night: watching a
@@ -420,6 +423,20 @@ async function refreshFromPlanka(): Promise<void> {
                 </div>
             </div>
         </div>
+
+        <!-- The page's own error above already says the load failed. -->
+        <section v-if="!loadFailed" class="mt-9">
+            <R10SectionHeader
+                title="Tehnilised plaanid"
+                lead="Selle etenduse jaoks esitatud plaanid."
+                class="mb-4"
+            />
+
+            <TechnicalPlanTable
+                :rows="technicalPlans"
+                empty-text="Selle etenduse jaoks pole veel ühtegi plaani esitatud."
+            />
+        </section>
 
         <PerformanceModal
             v-model:open="editModalOpen"

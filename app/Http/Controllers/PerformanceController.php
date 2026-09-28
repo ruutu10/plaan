@@ -5,14 +5,17 @@ namespace App\Http\Controllers;
 use App\Actions\LinkPerformanceRecording;
 use App\Console\Commands\ImportPlankaPerformances;
 use App\Enums\PerformanceStaffRole;
+use App\Enums\TechnicalPlanStatus;
 use App\Events\PerformanceRecordingLinked;
 use App\Http\Requests\Performances\SavePerformanceRequest;
 use App\Http\Resources\AdminPerformance as AdminPerformanceResource;
+use App\Http\Resources\AdminTechnicalPlan as AdminTechnicalPlanResource;
 use App\Http\Resources\Performance as PerformanceResource;
 use App\Models\Format;
 use App\Models\Performance;
 use App\Models\PerformanceStaff;
 use App\Models\Team;
+use App\Models\TechnicalPlan;
 use App\Models\User;
 use App\Policies\PerformancePolicy;
 use Illuminate\Http\JsonResponse;
@@ -121,10 +124,11 @@ class PerformanceController extends Controller
 
     /**
      * Return a single performance, together with the staff imported for it, the
-     * groups it may be handed to, and the people a technical-plan reminder may
-     * be sent to — the details screen's own edit form needs the same choice
-     * {@see index()} offers, its reminder dialog needs the group's members, and
-     * one round trip is enough for all three.
+     * groups it may be handed to, the people a technical-plan reminder may be
+     * sent to, and the plans handed in for it — the details screen's own edit
+     * form needs the same choice {@see index()} offers, its reminder dialog
+     * needs the group's members, its plan table the plans, and one round trip
+     * is enough for all of them.
      */
     public function show(Request $request, Format $format, Performance $performance): PerformanceResource
     {
@@ -137,7 +141,26 @@ class PerformanceController extends Controller
                 ->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])
                 ->values(),
             'reminderRecipients' => $this->reminderRecipients($performance),
+            'technicalPlans' => AdminTechnicalPlanResource::collection($this->sentPlans($request->user(), $performance))
+                ->resolve($request),
         ]);
+    }
+
+    /**
+     * The plans handed in for this performance that the user may read, newest
+     * first. Drafts are left out: nobody has been asked to read one yet, the
+     * same reason the plans overview hides them by default.
+     *
+     * @return Collection<int, TechnicalPlan>
+     */
+    private function sentPlans(User $user, Performance $performance): Collection
+    {
+        return $performance->technicalPlans()
+            ->with(['user', 'performance.team', 'performance.format.team', 'performance.technicians'])
+            ->listableBy($user)
+            ->where('status', '!=', TechnicalPlanStatus::Draft)
+            ->latest()
+            ->get();
     }
 
     /**

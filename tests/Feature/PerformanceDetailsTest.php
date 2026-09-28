@@ -7,6 +7,7 @@ use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\PerformancePageController;
 use App\Models\Format;
 use App\Models\Performance;
+use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -140,5 +141,58 @@ class PerformanceDetailsTest extends TestCase
         $this->actingAs($guest)
             ->get(route('formats.performances.show', [$evening, $slot]))
             ->assertOk();
+    }
+
+    public function test_the_json_api_lists_the_plans_sent_for_the_performance_but_not_drafts(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+        $format = Format::factory()->create(['team_id' => $team->id]);
+        $performance = Performance::factory()->for($format)->create();
+
+        $submitted = TechnicalPlan::factory()->submitted()->for($performance)->for($user)->create();
+        $archived = TechnicalPlan::factory()->archived()->for($performance)->for($user)->create(['created_at' => now()->subDay()]);
+        TechnicalPlan::factory()->for($performance)->for($user)->create();
+        TechnicalPlan::factory()->submitted()->create();
+
+        $this->actingAs($user)
+            ->getJson(route('api.formats.performances.show', [$format, $performance]))
+            ->assertOk()
+            ->assertJsonCount(2, 'technicalPlans')
+            ->assertJsonPath('technicalPlans.0.token', $submitted->token)
+            ->assertJsonPath('technicalPlans.0.url', route('technical-plan.public', $submitted))
+            ->assertJsonPath('technicalPlans.1.token', $archived->token);
+    }
+
+    public function test_a_technician_is_shown_the_plans_whoever_wrote_them(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+        $format = Format::factory()->create(['team_id' => $team->id]);
+        $performance = Performance::factory()->for($format)->create();
+
+        TechnicalPlan::factory()->submitted()->for($performance)->create();
+
+        $this->actingAs($this->technician())
+            ->getJson(route('api.formats.performances.show', [$format, $performance]))
+            ->assertOk()
+            ->assertJsonCount(1, 'technicalPlans');
+    }
+
+    public function test_the_json_api_names_the_nights_technicians_on_each_plan(): void
+    {
+        $user = User::factory()->create();
+        $team = $this->teamOf($user);
+        $format = Format::factory()->create(['team_id' => $team->id]);
+        $performance = Performance::factory()->for($format)->create();
+        TechnicalPlan::factory()->submitted()->for($performance)->for($user)->create();
+
+        $performance->staff()->attach(User::factory()->create(['name' => 'Tiit']), ['role' => PerformanceStaffRole::Technician->value]);
+        $performance->staff()->attach(User::factory()->create(['name' => 'Arne']), ['role' => PerformanceStaffRole::Host->value]);
+
+        $this->actingAs($user)
+            ->getJson(route('api.formats.performances.show', [$format, $performance]))
+            ->assertOk()
+            ->assertJsonPath('technicalPlans.0.technicians', ['Tiit']);
     }
 }
