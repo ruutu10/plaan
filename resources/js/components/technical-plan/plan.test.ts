@@ -19,6 +19,7 @@ import {
     intermissionLabel,
     intermissionMinutes,
     isDelivered,
+    isArchived,
     isDraft,
     isIntermission,
     isReady,
@@ -265,6 +266,19 @@ describe('isDraft', () => {
         expect(isDraft('received')).toBe(false);
         expect(isDraft('archived')).toBe(false);
         expect(isDraft(null)).toBe(false);
+    });
+});
+
+describe('isArchived', () => {
+    it('counts a plan that has been put away', () => {
+        expect(isArchived('archived')).toBe(true);
+    });
+
+    it('leaves out every status a plan holds before it is archived', () => {
+        expect(isArchived('draft')).toBe(false);
+        expect(isArchived('submitted')).toBe(false);
+        expect(isArchived('received')).toBe(false);
+        expect(isArchived(null)).toBe(false);
     });
 });
 

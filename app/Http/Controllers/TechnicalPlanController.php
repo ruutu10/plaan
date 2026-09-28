@@ -106,16 +106,15 @@ class TechnicalPlanController extends Controller
      */
     public function overview(Request $request): Response
     {
-        // Newest performance first: what is coming up (or has just been played)
-        // is what the crew looks for. The plans filed under the stand-in
-        // performance are dated years out and so gather at the top, which is
-        // where the crew wants them — those are the ones needing a real night.
+        // Earliest performance first, the same order as the performances
+        // overview. The plans filed under the stand-in performance are dated
+        // years out and so gather at the bottom.
         $plans = TechnicalPlan::query()
             ->with(['user', 'performance.team', 'performance.format.team', 'performance.technicians'])
             ->listableBy($request->user())
             ->leftJoin('performances', 'performances.id', '=', 'technical_plans.performance_id')
-            ->orderByDesc('performances.date')
-            ->orderByDesc('technical_plans.created_at')
+            ->orderBy('performances.date')
+            ->orderBy('technical_plans.created_at')
             ->select('technical_plans.*')
             ->get();
 

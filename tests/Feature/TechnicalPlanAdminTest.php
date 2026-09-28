@@ -182,12 +182,12 @@ class TechnicalPlanAdminTest extends TestCase
         // before the plan asserted on below, which sorts them after it.
         $draft = TechnicalPlan::factory()->create([
             'status' => TechnicalPlanStatus::Draft,
-            'performance_id' => Performance::factory()->create(['date' => '2026-02-01']),
+            'performance_id' => Performance::factory()->create(['date' => '2026-10-01']),
         ]);
 
         $archived = TechnicalPlan::factory()->create([
             'status' => TechnicalPlanStatus::Archived,
-            'performance_id' => Performance::factory()->create(['date' => '2026-01-01']),
+            'performance_id' => Performance::factory()->create(['date' => '2026-11-01']),
         ]);
 
         $this->actingAs($this->technician())
@@ -215,21 +215,21 @@ class TechnicalPlanAdminTest extends TestCase
                     ->contains($archived->token)));
     }
 
-    public function test_the_overview_sorts_the_newest_performance_first(): void
+    public function test_the_overview_sorts_the_earliest_performance_first(): void
     {
-        $older = TechnicalPlan::factory()->create([
-            'performance_id' => Performance::factory()->create(['date' => '2026-01-10']),
-        ]);
         $newer = TechnicalPlan::factory()->create([
             'performance_id' => Performance::factory()->create(['date' => '2026-09-10']),
+        ]);
+        $older = TechnicalPlan::factory()->create([
+            'performance_id' => Performance::factory()->create(['date' => '2026-01-10']),
         ]);
 
         $this->actingAs($this->technician())
             ->get(route('technical-plans.index'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('plans.0.token', $newer->token)
-                ->where('plans.1.token', $older->token));
+                ->where('plans.0.token', $older->token)
+                ->where('plans.1.token', $newer->token));
     }
 
     public function test_the_view_all_ability_is_shared_with_the_frontend(): void

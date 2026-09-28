@@ -463,6 +463,14 @@ export function isDraft(status: string | null): boolean {
 }
 
 /**
+ * Whether a plan's night has been played and it has been put away. Mirrors
+ * `TechnicalPlanStatus::Archived`.
+ */
+export function isArchived(status: string | null): boolean {
+    return status === 'archived';
+}
+
+/**
  * Whether the wizard offers to save this plan as a draft. A plan nobody has
  * saved yet counts, and so does one still sitting in draft.
  *
