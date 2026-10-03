@@ -27,7 +27,7 @@
     <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6;">
         Sinu etendus toimub <strong style="color:#0c0f16;">{{ $startsAt->format('d.m.Y') }}</strong>
         kell <strong style="color:#0c0f16;">{{ $startsAt->format('H:i') }}</strong> — kuid tehnikaplaan on veel esitamata.
-        Ilma plaanita ei tea tehnik, millist valgust, heli ja erivahendeid te laval vajate.
+        Ilma plaanita ei tea tehnik, millist valgust, heli ja erivahendeid etendus laval vajab.
     </p>
 
     {{-- The one thing this mail is for. --}}
@@ -78,8 +78,4 @@
         @endif
     </table>
 
-    <p style="margin:24px 0 0 0; font-size:13px; line-height:1.6; color:#6b7386;">
-        Kui plaan on juba teel või etendus ära jääb, anna palun teada aadressil
-        <a href="mailto:{{ $techEmail }}" style="{{ $link }}">{{ $techEmail }}</a>.
-    </p>
 @endsection
