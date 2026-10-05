@@ -2301,8 +2301,8 @@ class TechnicalPlanTest extends TestCase
         config(['technical_plan.tech_email' => 'tehnikud@ruutu10.ee']);
 
         $performance = $this->defaultPerformance();
-        $performance->staff()->attach(User::factory()->create(['email' => 'peeter@naide.ee']), ['role' => PerformanceStaffRole::Performer->value]);
-        $performance->staff()->attach(User::factory()->create(['email' => 'anna@naide.ee']), ['role' => PerformanceStaffRole::Performer->value]);
+        $performance->staff()->attach(User::factory()->create(['name' => 'Peeter', 'email' => 'peeter@naide.ee']), ['role' => PerformanceStaffRole::Performer->value]);
+        $performance->staff()->attach(User::factory()->create(['name' => 'Anna', 'email' => 'anna@naide.ee']), ['role' => PerformanceStaffRole::Performer->value]);
         $performance->staff()->attach(User::factory()->create(['email' => 'juht@naide.ee']), ['role' => PerformanceStaffRole::Host->value]);
         $performance->staff()->attach(User::factory()->create(['email' => 'tiit@naide.ee']), ['role' => PerformanceStaffRole::Technician->value]);
         // The author plays too, and is already written to openly.
