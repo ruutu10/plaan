@@ -51,6 +51,19 @@ class RemindAboutTechnicalPlan
             'user_id' => $sentBy->id,
         ]);
 
+        activity()
+            ->performedOn($performance)
+            ->causedBy($sentBy)
+            ->event('technical_plan_reminder_sent')
+            ->withProperties([
+                'recipients' => $performers->count(),
+                'recipient_ids' => $performers->map(fn (User $performer): int => $performer->id)->values()->all(),
+            ])
+            ->log(sprintf(
+                'Technical plan reminder sent to %s',
+                $performers->map(fn (User $performer): string => $performer->name)->join(', '),
+            ));
+
         return $performers->count();
     }
 }

@@ -15,6 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
 /**
@@ -74,6 +75,41 @@ class TechnicalPlanReminderTest extends TestCase
         Notification::assertNotSentTo($members[2], TechnicalPlanMissing::class);
         Notification::assertSentTimes(TechnicalPlanMissing::class, 2);
         Notification::assertNotSentTo(new AnonymousNotifiable, TechnicalPlanMissing::class);
+    }
+
+    public function test_sending_a_reminder_is_kept_in_the_activity_log(): void
+    {
+        Notification::fake();
+
+        [$performance, $members] = $this->performanceWithGroup();
+        $technician = $this->technician();
+
+        $this->actingAs($technician)
+            ->postJson($this->reminderUrl($performance), [
+                'user_ids' => [$members[0]->id, $members[1]->id],
+            ])
+            ->assertOk();
+
+        $activity = Activity::query()->forSubject($performance)->forEvent('technical_plan_reminder_sent')->sole();
+
+        $this->assertTrue($technician->is($activity->causer));
+        $this->assertSame(2, $activity->getProperty('recipients'));
+        $this->assertEqualsCanonicalizing([$members[0]->id, $members[1]->id], $activity->getProperty('recipient_ids'));
+        $this->assertStringContainsString($members[0]->name, $activity->description);
+        $this->assertStringContainsString($members[1]->name, $activity->description);
+    }
+
+    public function test_a_refused_reminder_leaves_no_activity_log_entry(): void
+    {
+        Notification::fake();
+
+        [$performance] = $this->performanceWithGroup();
+
+        $this->actingAs($this->technician())
+            ->postJson($this->reminderUrl($performance), ['user_ids' => []])
+            ->assertUnprocessable();
+
+        $this->assertSame(0, Activity::query()->forSubject($performance)->forEvent('technical_plan_reminder_sent')->count());
     }
 
     public function test_no_reminder_is_ever_addressed_to_more_than_one_person(): void
