@@ -8,6 +8,7 @@ use App\Concerns\ScopedByTeamAccess;
 use App\Enums\CreatedBy;
 use App\Enums\PerformanceStaffRole;
 use App\Enums\PerformanceStatus;
+use App\Listeners\NotifyPlanSubmitted;
 use App\Listeners\NotifyRecordingAvailable;
 use App\Services\PerformanceStaffSync;
 use Carbon\CarbonInterface;
@@ -440,6 +441,24 @@ class Performance extends Model
                 PerformanceStaffRole::Performer->value,
                 PerformanceStaffRole::Host->value,
             ])
+            // Every reader lists them in the same order, and the import gives
+            // no order of its own worth keeping.
+            ->orderBy('users.name');
+    }
+
+    /**
+     * Whoever the card names as playing this night, of everybody
+     * {@see staff()} names — the compère and the crew left out. Asked for on
+     * its own because they are who a technical plan is written on behalf of —
+     * see {@see NotifyPlanSubmitted}, which blind-copies them when a plan for
+     * the night is first submitted.
+     *
+     * @return BelongsToMany<User, $this, PerformanceStaff, 'pivot'>
+     */
+    public function performers(): BelongsToMany
+    {
+        return $this->staff()
+            ->wherePivot('role', PerformanceStaffRole::Performer->value)
             // Every reader lists them in the same order, and the import gives
             // no order of its own worth keeping.
             ->orderBy('users.name');

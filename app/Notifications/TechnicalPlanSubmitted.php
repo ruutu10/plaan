@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Http\Resources\PlanDocument;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
+use App\Listeners\NotifyPlanSubmitted;
 use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -23,9 +24,19 @@ class TechnicalPlanSubmitted extends Notification implements ShouldQueue
 
     /**
      * Create a new notification instance.
+     *
+     * @param  array<int, string>  $blindCopies  The night's performers, who get
+     *                                           a copy of the plan written on
+     *                                           their behalf without being shown
+     *                                           each other's addresses. Empty
+     *                                           unless this is the author's own
+     *                                           letter — see
+     *                                           {@see NotifyPlanSubmitted}.
      */
-    public function __construct(public TechnicalPlan $plan)
-    {
+    public function __construct(
+        public TechnicalPlan $plan,
+        public array $blindCopies = [],
+    ) {
         //
     }
 
@@ -46,7 +57,7 @@ class TechnicalPlanSubmitted extends Notification implements ShouldQueue
     {
         $contactEmail = $this->plan->user?->email;
 
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject('Tehnikaplaan · '.$this->planLabel())
             ->view('emails.technical-plan-submitted', [
                 // The document the wizard's review page and the printout show,
@@ -58,6 +69,12 @@ class TechnicalPlanSubmitted extends Notification implements ShouldQueue
                 'contactEmail' => $contactEmail,
                 'isAuthor' => $notifiable instanceof User && $notifiable->is($this->plan->user),
             ]);
+
+        if ($this->blindCopies !== []) {
+            $mail->bcc($this->blindCopies);
+        }
+
+        return $mail;
     }
 
     /**

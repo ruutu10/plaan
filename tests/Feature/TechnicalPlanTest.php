@@ -2291,6 +2291,60 @@ class TechnicalPlanTest extends TestCase
         Notification::assertSentTo($this->user, TechnicalPlanSubmitted::class);
     }
 
+    /**
+     * The plan is written on the performers' behalf, so they get a copy of the
+     * author's letter — blindly, and nobody else on the card does.
+     */
+    public function test_submitting_blind_copies_the_nights_performers_on_the_authors_letter(): void
+    {
+        Notification::fake();
+        config(['technical_plan.tech_email' => 'tehnikud@ruutu10.ee']);
+
+        $performance = $this->defaultPerformance();
+        $performance->staff()->attach(User::factory()->create(['email' => 'peeter@naide.ee']), ['role' => PerformanceStaffRole::Performer->value]);
+        $performance->staff()->attach(User::factory()->create(['email' => 'anna@naide.ee']), ['role' => PerformanceStaffRole::Performer->value]);
+        $performance->staff()->attach(User::factory()->create(['email' => 'juht@naide.ee']), ['role' => PerformanceStaffRole::Host->value]);
+        $performance->staff()->attach(User::factory()->create(['email' => 'tiit@naide.ee']), ['role' => PerformanceStaffRole::Technician->value]);
+        // The author plays too, and is already written to openly.
+        $performance->staff()->attach($this->user, ['role' => PerformanceStaffRole::Performer->value]);
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload(['submit' => true]))->assertOk();
+
+        Notification::assertSentTo(
+            $this->user,
+            fn (TechnicalPlanSubmitted $notification): bool => $notification->blindCopies === ['anna@naide.ee', 'peeter@naide.ee'],
+        );
+
+        Notification::assertSentOnDemand(
+            TechnicalPlanSubmitted::class,
+            fn (TechnicalPlanSubmitted $notification): bool => $notification->blindCopies === [],
+        );
+
+        Notification::assertCount(2);
+    }
+
+    public function test_the_submission_mail_carries_its_blind_copies(): void
+    {
+        $this->postJson(route('technical-plan.store'), $this->validPayload(['submit' => true]))->assertOk();
+
+        $mail = (new TechnicalPlanSubmitted(TechnicalPlan::first(), ['anna@naide.ee']))->toMail($this->user);
+
+        $this->assertSame([['anna@naide.ee', null]], $mail->bcc);
+    }
+
+    public function test_submitting_for_a_night_with_no_performers_blind_copies_no_one(): void
+    {
+        Notification::fake();
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload(['submit' => true]))->assertOk();
+
+        Notification::assertSentTo(
+            $this->user,
+            fn (TechnicalPlanSubmitted $notification): bool => $notification->blindCopies === [],
+        );
+        $this->assertSame([], (new TechnicalPlanSubmitted(TechnicalPlan::first()))->toMail($this->user)->bcc);
+    }
+
     public function test_resubmitting_a_submitted_plan_mails_no_one_again(): void
     {
         config(['technical_plan.tech_email' => 'tehnikud@ruutu10.ee']);
