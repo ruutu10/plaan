@@ -40,7 +40,7 @@
                     Täida tehnikaplaan
                 </a>
                 <p style="margin:14px 0 0 0; font-size:12px; line-height:1.6; color:#6b7386;">
-                    Link logib sind ise sisse ja avab plaani õige etendusega.
+                    Link logib sind sisse ja avab plaani esitamiseks õige etenduse.
                 </p>
             </td>
         </tr>
