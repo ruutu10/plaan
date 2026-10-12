@@ -127,7 +127,7 @@ class ReviewSubmittedPlanWithAi implements ShouldQueue
         }
 
         try {
-            $findings = app(TechnicalPlanCriticalFindings::class)->findIn($review);
+            $findings = app(TechnicalPlanCriticalFindings::class)->findIn($plan, $review);
         } catch (Throwable $e) {
             report($e);
 

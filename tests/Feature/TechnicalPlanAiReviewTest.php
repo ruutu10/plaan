@@ -197,6 +197,7 @@ class TechnicalPlanAiReviewTest extends TestCase
         $this->mock(TechnicalPlanCriticalFindings::class)
             ->shouldReceive('findIn')
             ->once()
+            ->withArgs(fn (TechnicalPlan $plan, string $review): bool => $plan->is($this->plan))
             ->andReturn($findings);
     }
 }

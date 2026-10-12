@@ -4,7 +4,9 @@ namespace App\Services;
 
 use Anthropic\Client;
 use App\Concerns\CachesClaudeMessages;
+use App\Http\Resources\TechnicalPlan as TechnicalPlanReviewResource;
 use App\Listeners\ReviewSubmittedPlanWithAi;
+use App\Models\TechnicalPlan;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -14,9 +16,12 @@ use Illuminate\Support\Facades\Log;
  * A review written for a performer to read is generous by design — it praises
  * what works, asks for precision where precision would help, and offers ideas.
  * None of that is worth interrupting somebody over. This second pass is given
- * the review and nothing else, and asked one question: is there a contradiction
- * that makes the plan unplayable, or a sound a scene calls for that the
- * technician has no way to play? Everything else is dropped.
+ * the review and the plan it was written about, and asked one question: is
+ * there a contradiction that makes the plan unplayable, or a sound a scene calls
+ * for that the technician has no way to play? Everything else is dropped. The
+ * plan is there so a finding can be checked against it before it goes to the
+ * performer — a review can be wrong, and a show-stopper that is not in the plan
+ * is a letter the performer should never have had.
  *
  * Most reviews yield nothing here, and that is the point: what comes back is
  * only ever worth putting in front of the performer as something to fix.
@@ -37,10 +42,11 @@ class TechnicalPlanCriticalFindings
      * performer should go and fix. Empty — the usual answer — when the review
      * describes a plan that can be played as it stands.
      *
+     * @param  TechnicalPlan  $plan  The plan the review was written about.
      * @param  string  $reviewMarkdown  The first pass's feedback in its own words.
      * @return list<string>
      */
-    public function findIn(string $reviewMarkdown): array
+    public function findIn(TechnicalPlan $plan, string $reviewMarkdown): array
     {
         if (trim($reviewMarkdown) === '') {
             return [];
@@ -53,7 +59,7 @@ class TechnicalPlanCriticalFindings
             'messages' => [
                 [
                     'role' => 'user',
-                    'content' => $reviewMarkdown,
+                    'content' => $this->buildUserPrompt($plan, $reviewMarkdown),
                 ],
             ],
             'model' => config('services.anthropic.model'),
@@ -159,6 +165,21 @@ class TechnicalPlanCriticalFindings
             'required' => ['criticalFindings', 'reasoningNotes'],
             'additionalProperties' => false,
         ];
+    }
+
+    /**
+     * The plan, as the first pass saw it, and the review written about it —
+     * each in its own tag, so the review can be checked against the plan
+     * rather than taken on its word.
+     */
+    protected function buildUserPrompt(TechnicalPlan $plan, string $reviewMarkdown): string
+    {
+        $planJson = json_encode(
+            new TechnicalPlanReviewResource($plan),
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
+        ) ?: '{}';
+
+        return "<plan>\n{$planJson}\n</plan>\n\n<review>\n{$reviewMarkdown}\n</review>";
     }
 
     /**
