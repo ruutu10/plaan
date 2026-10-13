@@ -24,6 +24,10 @@
         {{ $formatName }}
     </h1>
 
+    <p style="margin:0 0 12px 0; font-size:16px; line-height:1.6;">
+        Hei, {{ $recipientName }}!
+    </p>
+
     <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6;">
         Sinu etendus toimub <strong style="color:#0c0f16;">{{ $startsAt->format('d.m.Y') }}</strong>
         kell <strong style="color:#0c0f16;">{{ $startsAt->format('H:i') }}</strong> — kuid tehnikaplaan on veel esitamata.

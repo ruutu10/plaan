@@ -116,6 +116,14 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
+     * The first word of the account's name, to greet its holder by.
+     */
+    public function firstName(): string
+    {
+        return Str::before(trim($this->name), ' ');
+    }
+
+    /**
      * Whether this account is one of the house's own — its address sits on a
      * domain the theatre runs, rather than on whatever a visiting performer
      * signed up with.

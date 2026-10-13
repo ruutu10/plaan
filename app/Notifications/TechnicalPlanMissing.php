@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Actions\BuildTechnicalPlanInvite;
 use App\Models\Performance;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -46,13 +47,14 @@ class TechnicalPlanMissing extends Notification implements ShouldQueue
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(User $notifiable): MailMessage
     {
         $format = $this->performance->format;
 
         return (new MailMessage)
             ->subject($this->subject())
             ->view('emails.technical-plan-missing', [
+                'recipientName' => $notifiable->firstName(),
                 'formatName' => $this->performance->title === null
                     ? $format->name
                     : $format->name.' — '.$this->performance->title,

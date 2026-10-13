@@ -201,6 +201,18 @@ class TechnicalPlanReminderTest extends TestCase
         $this->assertStringContainsString('Vaba Lava, Telliskivi', $body);
     }
 
+    public function test_the_reminder_greets_its_recipient_by_first_name(): void
+    {
+        [$performance, $members] = $this->performanceWithGroup();
+
+        $members[0]->update(['name' => 'Mari-Liis Tamm']);
+
+        $body = $this->reminderBodyFor($performance, $members[0]);
+
+        $this->assertStringContainsString('Hei, Mari-Liis!', $body);
+        $this->assertStringNotContainsString('Tamm', $body);
+    }
+
     /**
      * The letter one member would be sent about one performance, rendered.
      */
