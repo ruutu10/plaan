@@ -20,6 +20,26 @@ export function performanceStatusLabel(status: PerformanceStatus): string {
     return LABELS[status];
 }
 
+/**
+ * Whether the wizard will take this performance when a link names it: one the
+ * house has vouched for and whose night is still to come. Mirrors the check in
+ * `TechnicalPlanController::linkedPerformance()`, which quietly drops any other.
+ */
+export function acceptsNewPlan(
+    performance: { status: PerformanceStatus; startsAt: string },
+    now: Date = new Date(),
+): boolean {
+    return performance.status !== 'draft' && isStillToCome(performance, now);
+}
+
+/** Whether the performance's night has not started yet. */
+export function isStillToCome(
+    performance: { startsAt: string },
+    now: Date = new Date(),
+): boolean {
+    return new Date(performance.startsAt).getTime() > now.getTime();
+}
+
 /** Every standing as a value/label pair, for the dialog's picker. */
 export function performanceStatusOptions(): {
     value: PerformanceStatus;

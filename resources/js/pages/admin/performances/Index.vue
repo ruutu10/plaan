@@ -120,8 +120,8 @@ defineOptions({
             :columns="[
                 { label: 'Algus' },
                 { label: 'Formaat' },
-                { label: 'Etteaste' },
-                { label: 'Tehnik' },
+                { label: 'Etteaste', class: 'hidden lg:table-cell' },
+                { label: 'Tehnik', class: 'hidden lg:table-cell' },
                 { label: 'Olek' },
                 { label: 'Tehnikaplaan' },
                 { label: 'Tegevused', align: 'right', srOnly: true },
@@ -147,7 +147,7 @@ defineOptions({
                         {{ performance.formatName }}
                     </span>
                 </td>
-                <td class="px-5 py-4 align-top">
+                <td class="hidden px-5 py-4 align-top lg:table-cell">
                     <span
                         v-if="performance.title"
                         class="block text-r10-ink"
@@ -171,7 +171,7 @@ defineOptions({
                     </span>
                 </td>
                 <td
-                    class="px-5 py-4 align-top"
+                    class="hidden px-5 py-4 align-top lg:table-cell"
                     data-test="admin-performance-technicians"
                 >
                     {{

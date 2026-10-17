@@ -274,10 +274,10 @@ async function save(): Promise<void> {
                 :columns="[
                     { label: 'Algus' },
                     { label: 'Etteaste' },
-                    { label: 'Kestus' },
+                    { label: 'Kestus', class: 'hidden lg:table-cell' },
                     { label: 'Olek' },
                     { label: 'Meeskonnas' },
-                    { label: 'Tehnikaplaane' },
+                    { label: 'Tehnikaplaane', class: 'hidden lg:table-cell' },
                     { label: 'Tegevused', align: 'right', srOnly: true },
                 ]"
                 :rows="performances"
@@ -323,7 +323,9 @@ async function save(): Promise<void> {
                             {{ performance.location }}
                         </span>
                     </td>
-                    <td class="px-5 py-4 whitespace-nowrap">
+                    <td
+                        class="hidden px-5 py-4 whitespace-nowrap lg:table-cell"
+                    >
                         {{
                             performance.duration
                                 ? `${performance.duration} min`
@@ -355,7 +357,7 @@ async function save(): Promise<void> {
                     >
                         {{ performance.staffCount ?? 0 }}
                     </td>
-                    <td class="px-5 py-4 tabular-nums">
+                    <td class="hidden px-5 py-4 tabular-nums lg:table-cell">
                         {{ performance.technicalPlanCount ?? 0 }}
                     </td>
                     <td class="px-5 py-4 text-right whitespace-nowrap">

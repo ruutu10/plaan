@@ -15,6 +15,12 @@ withDefaults(
             align?: 'left' | 'center' | 'right';
             /** Header text kept for screen readers only, e.g. an actions column. */
             srOnly?: boolean;
+            /**
+             * Extra classes for the column's header and skeleton cells, e.g.
+             * `hidden lg:table-cell` to drop it on narrow screens. The page's
+             * own row cells need the same classes.
+             */
+            class?: string;
         }[];
         rows: T[] | null;
         loadFailed?: boolean;
@@ -57,7 +63,10 @@ const alignClass = {
                         v-for="(column, index) in columns"
                         :key="index"
                         class="px-5 py-3.5"
-                        :class="alignClass[column.align ?? 'left']"
+                        :class="[
+                            alignClass[column.align ?? 'left'],
+                            column.class,
+                        ]"
                     >
                         <span v-if="column.srOnly" class="sr-only">{{
                             column.label
@@ -90,6 +99,7 @@ const alignClass = {
                         v-for="(column, index) in columns"
                         :key="index"
                         class="px-5 py-4"
+                        :class="column.class"
                     >
                         <span
                             class="block h-4 animate-pulse rounded-full bg-r10-grey-200"

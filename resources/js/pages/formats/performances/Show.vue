@@ -6,6 +6,7 @@ import {
     FileClock,
     Mail,
     Pencil,
+    Plus,
     RefreshCw,
     Sparkles,
     Trash2,
@@ -33,7 +34,11 @@ import {
 } from '@/components/ui/tooltip';
 import { useResource } from '@/composables/useResource';
 import { formatLocalDate, formatLocalTime } from '@/lib/date';
-import { performanceStatusLabel } from '@/lib/performanceStatus';
+import {
+    acceptsNewPlan,
+    isStillToCome,
+    performanceStatusLabel,
+} from '@/lib/performanceStatus';
 import {
     claudeLogs as reasoningLogsApi,
     plankaImport as plankaImportApi,
@@ -41,6 +46,7 @@ import {
 } from '@/routes/api/formats/performances';
 import { edit, index } from '@/routes/formats';
 import { show as performancePage } from '@/routes/formats/performances';
+import { index as planWizard } from '@/routes/technical-plan';
 import type {
     BreadcrumbItem,
     FormatTeamOption,
@@ -430,7 +436,65 @@ async function refreshFromPlanka(): Promise<void> {
                 title="Tehnilised plaanid"
                 lead="Selle etenduse jaoks esitatud plaanid."
                 class="mb-4"
-            />
+            >
+                <!--
+                    Opens the wizard with this night already chosen, the same
+                    link a reminder carries. Offered only for a night still to
+                    come; a draft one keeps the button in sight but switched
+                    off, since the wizard would quietly drop the night and open
+                    blank, and the tooltip says why. A disabled button takes no
+                    pointer events, so the span takes the hover — and a link
+                    cannot be disabled, so the switched-off one gets no href.
+                -->
+                <template
+                    v-if="performance && isStillToCome(performance)"
+                    #action
+                >
+                    <TooltipProvider :delay-duration="0">
+                        <Tooltip :disabled="acceptsNewPlan(performance)">
+                            <TooltipTrigger as-child>
+                                <span
+                                    class="inline-flex"
+                                    :tabindex="
+                                        acceptsNewPlan(performance)
+                                            ? undefined
+                                            : 0
+                                    "
+                                    data-test="new-technical-plan-trigger"
+                                >
+                                    <R10Button
+                                        variant="primary"
+                                        size="sm"
+                                        :disabled="!acceptsNewPlan(performance)"
+                                        :href="
+                                            acceptsNewPlan(performance)
+                                                ? planWizard({
+                                                      query: {
+                                                          performance:
+                                                              performanceId,
+                                                          step: 1,
+                                                      },
+                                                  })
+                                                : undefined
+                                        "
+                                        data-test="new-technical-plan-button"
+                                    >
+                                        <Plus class="h-3.5 w-3.5" />
+                                        Uus tehnikaplaan
+                                    </R10Button>
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent class="max-w-xs">
+                                <p>
+                                    Etendus on ülevaatamata. Muuda etenduse
+                                    olekuks „Tulevane“, siis saab sellele
+                                    tehnikaplaani lisada.
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </template>
+            </R10SectionHeader>
 
             <TechnicalPlanTable
                 :rows="technicalPlans"
