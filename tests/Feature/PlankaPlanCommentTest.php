@@ -124,6 +124,23 @@ class PlankaPlanCommentTest extends TestCase
             && $request['text'] === $this->expectedComment($plan));
     }
 
+    public function test_a_titled_performance_is_named_in_the_comment(): void
+    {
+        $this->fakeCardComments('card-1');
+
+        $plan = TechnicalPlan::factory()->submitted()->create([
+            'performance_id' => Performance::factory()->create([
+                'planka_card_id' => 'card-1',
+                'title' => 'Külalisetendus',
+            ]),
+        ]);
+
+        $this->confirm($plan);
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && str_starts_with((string) $request['text'], 'Tehnikaplaan „Külalisetendus“ on esitatud (esitas '));
+    }
+
     public function test_a_plan_with_no_author_is_announced_under_its_performer(): void
     {
         $this->fakeCardComments('card-1');

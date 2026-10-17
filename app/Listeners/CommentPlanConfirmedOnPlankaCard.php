@@ -84,15 +84,19 @@ class CommentPlanConfirmedOnPlankaCard
     }
 
     /**
-     * What the card is told: who wrote the plan, who confirmed it, and where
-     * to read it. The share link comes last and unpunctuated — it is both the
+     * What the card is told: which act the plan is for when the night has a
+     * title of its own, who wrote the plan, who confirmed it, and where to
+     * read it. The share link comes last and unpunctuated — it is both the
      * thing a reader clicks and the mark this listener looks for before
      * writing, so nothing may run up against it.
      */
     protected function text(TechnicalPlan $plan, User $confirmedBy, string $planUrl): string
     {
+        $title = $plan->performance->title;
+
         return sprintf(
-            'Tehnikaplaan on esitatud (esitas %s) ja tehniku (%s) poolt kinnitatud. Plaani link: %s',
+            'Tehnikaplaan%s on esitatud (esitas %s) ja tehniku (%s) poolt kinnitatud. Plaani link: %s',
+            $title === null ? '' : ' „'.$title.'“',
             $plan->user->name ?? $plan->performance->performerName() ?? 'teadmata',
             $confirmedBy->name,
             $planUrl,
