@@ -325,7 +325,7 @@ async function refreshFromPlanka(): Promise<void> {
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <R10BackLink :href="edit(formatId)" label="Formaadi juurde" />
 
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <R10Button
                         v-if="performance.reasoningLogCount > 0"
                         variant="outline"
