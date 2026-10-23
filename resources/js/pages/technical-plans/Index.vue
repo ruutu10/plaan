@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { isArchived, isDraft } from '@/components/technical-plan/plan';
+import { isArchived, isDraft } from '@/components/technical-plan/planStatus';
 import R10Page from '@/components/technical-plan/R10Page.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import TechnicalPlanTable from '@/components/technical-plan/TechnicalPlanTable.vue';

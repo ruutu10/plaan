@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PlanFile } from '@/types/technicalPlan';
 import Diamond from './Diamond.vue';
-import { formatFileSize } from './plan';
+import { formatFileSize } from './files';
 
 /**
  * One attached file, in whichever state its upload is in: on its way up, up and

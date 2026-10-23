@@ -4,10 +4,12 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { formatVenueClockTime } from '@/lib/date';
 import { hideFeedbackWidget, showFeedbackWidget } from '@/lib/sentry';
 import Diamond from './Diamond.vue';
-import { formatFileSize, intermissionLabel, soundAudioUrl } from './plan';
+import { formatFileSize } from './files';
+import { intermissionLabel } from './intermissions';
 import { usePlan } from './planKey';
 import { normaliseScenes } from './presentPlan';
 import SceneAudio from './SceneAudio.vue';
+import { soundAudioUrl } from './sceneSounds';
 import { showSchedule } from './showSchedule';
 
 const plan = usePlan();

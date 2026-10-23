@@ -4,7 +4,7 @@ import type {
     ReusableSound,
     WizardConfig,
 } from '@/types/technicalPlan';
-import { formatFileSize } from './plan';
+import { formatFileSize } from './files';
 
 /**
  * Shared file-upload plumbing for the wizard. Files are uploaded on their own
