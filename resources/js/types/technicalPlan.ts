@@ -23,7 +23,7 @@ export interface Scene {
      * Only an interval carries it, and only when its author said — the part
      * that closes the show is never asked, because it is what is left of the
      * evening once every other part and interval is taken off. Null everywhere
-     * else. See `showParts()` in the wizard's own `plan.ts`.
+     * else. See `showParts()` in the wizard's own `intermissions.ts`.
      */
     actMinutes: number | null;
     collapsed?: boolean;

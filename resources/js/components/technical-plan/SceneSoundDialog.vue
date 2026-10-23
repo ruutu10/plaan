@@ -16,11 +16,13 @@ import {
     uploadAttachment,
     validationError,
 } from './attachments';
-import { formatFileSize, nextSoundId, soundLinkError } from './plan';
+import { formatFileSize } from './files';
+import { nextSoundId } from './plan';
 import { usePlan, useWizardConfig } from './planKey';
 import R10Dialog from './R10Dialog.vue';
 import R10Dropzone from './R10Dropzone.vue';
 import RadioPills from './RadioPills.vue';
+import { soundLinkError } from './sceneSounds';
 
 /**
  * Adding a cue to a scene: pick where the sound comes from, give it, done.

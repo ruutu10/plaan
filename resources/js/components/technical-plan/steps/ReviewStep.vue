@@ -12,10 +12,10 @@ import {
 import { computed, ref } from 'vue';
 import type { User } from '@/types';
 import Diamond from '../Diamond.vue';
-import { canSaveDraft, isDelivered } from '../plan';
 import PlanComments from '../PlanComments.vue';
 import PlanDocument from '../PlanDocument.vue';
 import { usePlan } from '../planKey';
+import { canSaveDraft, isDelivered } from '../planStatus';
 import { presentPlan } from '../presentPlan';
 import R10Button from '../R10Button.vue';
 import R10Notice from '../R10Notice.vue';

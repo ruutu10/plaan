@@ -115,7 +115,8 @@ class TechnicalPlan extends JsonResource
      * the entry is an ordinary scene. The one place the stored value is judged,
      * so the wizard's document and the mail draw the line in the same place;
      * `intermissionMinutes()` in
-     * `resources/js/components/technical-plan/plan.ts` mirrors it client-side.
+     * `resources/js/components/technical-plan/intermissions.ts` mirrors it
+     * client-side.
      */
     public static function intermission(mixed $value): int
     {
@@ -126,7 +127,7 @@ class TechnicalPlan extends JsonResource
 
     /**
      * The interval as every reader is shown it, minutes included. Mirrored by
-     * `intermissionLabel()` in the wizard's own `plan.ts`.
+     * `intermissionLabel()` in the wizard's own `intermissions.ts`.
      */
     public static function intermissionLabel(int $minutes): string
     {
@@ -137,7 +138,7 @@ class TechnicalPlan extends JsonResource
      * How long the part of the show an interval *ends* runs, as its author
      * wrote it, or null when nobody has said. Only an interval carries this;
      * see {@see showParts()}, which is where it becomes the split the reader
-     * sees. `actMinutes()` in the wizard's own `plan.ts` mirrors it.
+     * sees. `actMinutes()` in the wizard's own `intermissions.ts` mirrors it.
      */
     public static function actMinutes(mixed $value): ?int
     {
@@ -160,7 +161,8 @@ class TechnicalPlan extends JsonResource
      *
      * A show with nothing to split — no interval, or one standing before the
      * first scene or after the last — has no parts at all, and no reader shows
-     * a split for it. Mirrored by `showParts()` in the wizard's own `plan.ts`.
+     * a split for it. Mirrored by `showParts()` in the wizard's own
+     * `intermissions.ts`.
      *
      * @param  array<int, mixed>  $scenes
      * @return array<int, array{num: int, start: int, minutes: int|null}>
@@ -221,7 +223,7 @@ class TechnicalPlan extends JsonResource
 
     /**
      * One part of the show as every reader is shown it, its length included.
-     * Mirrored by `actLabel()` in the wizard's own `plan.ts`.
+     * Mirrored by `actLabel()` in the wizard's own `intermissions.ts`.
      */
     public static function actLabel(int $num, ?int $minutes): string
     {
