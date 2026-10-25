@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\TechnicalPlanComment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -15,7 +16,7 @@ use Illuminate\Notifications\Notification;
  * recipient can tell from the letter whether it needs them, and a link back to
  * the plan, where it is answered.
  */
-class TechnicalPlanCommented extends Notification implements ShouldQueue
+class TechnicalPlanCommented extends Notification implements AboutRecord, ShouldQueue
 {
     use Queueable;
 
@@ -23,6 +24,14 @@ class TechnicalPlanCommented extends Notification implements ShouldQueue
      * Create a new notification instance.
      */
     public function __construct(public TechnicalPlanComment $comment) {}
+
+    /**
+     * The plan the comment was left on.
+     */
+    public function auditSubject(): ?Model
+    {
+        return $this->comment->plan;
+    }
 
     /**
      * Get the notification's delivery channels.

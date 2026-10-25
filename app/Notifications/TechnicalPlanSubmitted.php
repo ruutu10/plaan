@@ -9,6 +9,7 @@ use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -18,7 +19,7 @@ use Illuminate\Notifications\Notification;
  * play the format from. Both get the same document; only the opening line and
  * the sharing link's framing differ.
  */
-class TechnicalPlanSubmitted extends Notification implements ShouldQueue
+class TechnicalPlanSubmitted extends Notification implements AboutRecord, ShouldQueue
 {
     use Queueable;
 
@@ -38,6 +39,14 @@ class TechnicalPlanSubmitted extends Notification implements ShouldQueue
         public array $blindCopies = [],
     ) {
         //
+    }
+
+    /**
+     * The plan mailed out.
+     */
+    public function auditSubject(): ?Model
+    {
+        return $this->plan;
     }
 
     /**

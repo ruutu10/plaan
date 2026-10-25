@@ -4,7 +4,7 @@
  */
 export interface AuditLogEntry {
     id: number;
-    /** e.g. "created", "updated", "deleted", "submitted", "status_changed". */
+    /** e.g. "created", "updated", "deleted", "submitted", "status_changed", "mail_sent". */
     event: string | null;
     /** The full sentence: what happened, and who did it. */
     description: string;

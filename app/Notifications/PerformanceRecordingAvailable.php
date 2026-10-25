@@ -7,6 +7,7 @@ use App\Models\PerformanceRecording;
 use App\Services\JellyfinClient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -16,7 +17,7 @@ use Illuminate\Notifications\Notification;
  * then. Who gets it, and that they only get it once, is
  * {@see NotifyRecordingAvailable}'s to settle.
  */
-class PerformanceRecordingAvailable extends Notification implements ShouldQueue
+class PerformanceRecordingAvailable extends Notification implements AboutRecord, ShouldQueue
 {
     use Queueable;
 
@@ -36,6 +37,14 @@ class PerformanceRecordingAvailable extends Notification implements ShouldQueue
         public array $blindCopies = [],
     ) {
         //
+    }
+
+    /**
+     * The recording the letter announces.
+     */
+    public function auditSubject(): ?Model
+    {
+        return $this->recording;
     }
 
     /**

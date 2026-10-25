@@ -33,6 +33,7 @@ const EVENT_LABELS: Record<
     restored: { label: 'Taastatud', tone: 'neutral' },
     submitted: { label: 'Esitatud', tone: 'navy' },
     status_changed: { label: 'Oleku muutus', tone: 'neutral' },
+    mail_sent: { label: 'E-kiri saadetud', tone: 'muted' },
 };
 
 function eventLabel(event: string | null): string {

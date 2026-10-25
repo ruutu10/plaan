@@ -4,12 +4,14 @@ namespace App\Notifications\Teams;
 
 use App\Models\Team;
 use App\Models\User;
+use App\Notifications\AboutRecord;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class AddedToTeam extends Notification implements ShouldQueue
+class AddedToTeam extends Notification implements AboutRecord, ShouldQueue
 {
     use Queueable;
 
@@ -19,6 +21,14 @@ class AddedToTeam extends Notification implements ShouldQueue
     public function __construct(public Team $team, public string $loginUrl, public User $addedBy)
     {
         //
+    }
+
+    /**
+     * The team the recipient was added to.
+     */
+    public function auditSubject(): ?Model
+    {
+        return $this->team;
     }
 
     /**

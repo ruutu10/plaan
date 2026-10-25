@@ -7,6 +7,7 @@ use App\Models\Performance;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -20,7 +21,7 @@ use Illuminate\Notifications\Notification;
  * credential, and a credential is not something two people share — so no copy
  * of this letter is ever addressed, copied or blind-copied to anybody else.
  */
-class TechnicalPlanMissing extends Notification implements ShouldQueue
+class TechnicalPlanMissing extends Notification implements AboutRecord, ShouldQueue
 {
     use Queueable;
 
@@ -32,6 +33,14 @@ class TechnicalPlanMissing extends Notification implements ShouldQueue
         public string $planUrl,
     ) {
         //
+    }
+
+    /**
+     * The night the plan is missing for.
+     */
+    public function auditSubject(): ?Model
+    {
+        return $this->performance;
     }
 
     /**

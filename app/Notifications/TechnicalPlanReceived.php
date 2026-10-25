@@ -7,6 +7,7 @@ use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -17,7 +18,7 @@ use Illuminate\Notifications\Notification;
  * technical team is copied on their own letter, so the mail also stands as
  * the crew's own record of who was told.
  */
-class TechnicalPlanReceived extends Notification implements ShouldQueue
+class TechnicalPlanReceived extends Notification implements AboutRecord, ShouldQueue
 {
     use Queueable;
 
@@ -27,6 +28,14 @@ class TechnicalPlanReceived extends Notification implements ShouldQueue
     public function __construct(public TechnicalPlan $plan, public User $confirmedBy)
     {
         //
+    }
+
+    /**
+     * The plan confirmed as received.
+     */
+    public function auditSubject(): ?Model
+    {
+        return $this->plan;
     }
 
     /**

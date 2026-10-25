@@ -3,12 +3,14 @@
 namespace App\Notifications\Teams;
 
 use App\Models\TeamInvitation as TeamInvitationModel;
+use App\Notifications\AboutRecord;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class TeamInvitation extends Notification implements ShouldQueue
+class TeamInvitation extends Notification implements AboutRecord, ShouldQueue
 {
     use Queueable;
 
@@ -23,6 +25,14 @@ class TeamInvitation extends Notification implements ShouldQueue
     public function __construct(public TeamInvitationModel $invitation, public string $loginUrl)
     {
         //
+    }
+
+    /**
+     * The team the recipient is invited to.
+     */
+    public function auditSubject(): ?Model
+    {
+        return $this->invitation->team;
     }
 
     /**
