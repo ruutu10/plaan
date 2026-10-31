@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { UrlMethodPair } from '@inertiajs/core';
-import { Head, Link, useHttp } from '@inertiajs/vue3';
+import { Head, useHttp } from '@inertiajs/vue3';
 import {
     ExternalLink,
     FileClock,
     MapPin,
-    Pencil,
     Plus,
     Sparkles,
     Trash2,
@@ -281,6 +280,10 @@ async function save(): Promise<void> {
                     { label: 'Tegevused', align: 'right', srOnly: true },
                 ]"
                 :rows="performances"
+                :row-href="
+                    (performance) =>
+                        performancePage([formatId, performance.id]).url
+                "
                 :load-failed="performancesFailed"
                 :skeleton-rows="2"
                 :skeleton-widths="['w-24', 'w-12']"
@@ -388,19 +391,6 @@ async function save(): Promise<void> {
                                 <Sparkles class="h-3.5 w-3.5" />
                                 <span class="sr-only">Põhjendused</span>
                             </button>
-
-                            <Link
-                                :href="
-                                    performancePage([formatId, performance.id])
-                                        .url
-                                "
-                                title="Ava etendus"
-                                data-test="edit-performance-button"
-                                class="inline-flex cursor-pointer items-center justify-center rounded-full border-2 border-r10-navy bg-white p-2 text-r10-navy transition hover:bg-r10-navy hover:text-white"
-                            >
-                                <Pencil class="h-3.5 w-3.5" />
-                                <span class="sr-only">Ava etendus</span>
-                            </Link>
 
                             <button
                                 type="button"

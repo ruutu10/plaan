@@ -6,7 +6,7 @@
  *
  * `rows` is null until the first response lands — see {@link R10Table}.
  */
-import { ExternalLink, Info } from '@lucide/vue';
+import { ExternalLink } from '@lucide/vue';
 import { statusTone } from '@/components/technical-plan/presentPlan';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
@@ -30,6 +30,7 @@ defineProps<{ rows: AdminPlanRow[] | null; emptyText: string }>();
             { label: 'Tegevused', align: 'right', srOnly: true },
         ]"
         :rows="rows"
+        :row-href="(plan) => show(plan.token).url"
         row-test-id="technical-plan-row"
         :empty-text="emptyText"
         error-text="Plaanide laadimine ebaõnnestus. Proovi lehte värskendada."
@@ -77,16 +78,6 @@ defineProps<{ rows: AdminPlanRow[] | null; emptyText: string }>();
             </td>
             <td class="px-5 py-4 text-right align-top">
                 <div class="flex justify-end gap-2">
-                    <R10Button
-                        variant="outline"
-                        size="sm"
-                        :href="show(plan.token)"
-                        data-test="technical-plan-details"
-                        class="px-4 py-2"
-                    >
-                        Detailid
-                        <Info class="h-3.5 w-3.5" />
-                    </R10Button>
                     <R10Button
                         variant="outline"
                         size="sm"

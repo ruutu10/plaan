@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useHttp } from '@inertiajs/vue3';
-import { Pencil, Plus } from '@lucide/vue';
+import { Plus } from '@lucide/vue';
 import { ref } from 'vue';
 import AdminCreateUserModal from '@/components/AdminCreateUserModal.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
@@ -68,9 +68,9 @@ defineOptions({
                 { label: 'Rollid' },
                 { label: 'Tiime' },
                 { label: 'Liitunud' },
-                { label: 'Tegevused', align: 'right', srOnly: true },
             ]"
             :rows="users"
+            :row-href="(user) => edit(user.id).url"
             :load-failed="loadFailed"
             :skeleton-widths="['w-48', 'w-24', 'w-8', 'w-28']"
             row-test-id="user-row"
@@ -122,18 +122,6 @@ defineOptions({
                     class="px-5 py-4 align-top text-[13px] whitespace-nowrap text-r10-grey-500"
                 >
                     {{ formatLocalTimestamp(user.createdAt) }}
-                </td>
-                <td class="px-5 py-4 text-right align-top">
-                    <R10Button
-                        variant="outline"
-                        size="sm"
-                        :href="edit(user.id).url"
-                        data-test="user-edit-link"
-                        class="px-4 py-2"
-                    >
-                        Muuda
-                        <Pencil class="h-3.5 w-3.5" />
-                    </R10Button>
                 </td>
             </template>
         </R10Table>

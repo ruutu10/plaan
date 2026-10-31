@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useHttp } from '@inertiajs/vue3';
-import { Pencil, Plus, Trash2 } from '@lucide/vue';
+import { Plus, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import AdminCreateTeamModal from '@/components/AdminCreateTeamModal.vue';
 import AdminDeleteTeamModal from '@/components/AdminDeleteTeamModal.vue';
@@ -77,6 +77,7 @@ function openDelete(team: ManagedTeam): void {
                 { label: 'Tegevused', align: 'right', srOnly: true },
             ]"
             :rows="teams"
+            :row-href="(team) => edit(team.id).url"
             :load-failed="loadFailed"
             row-test-id="team-row"
             skeleton-test-id="team-skeleton-row"
@@ -99,17 +100,6 @@ function openDelete(team: ManagedTeam): void {
                 </td>
                 <td class="px-5 py-4 text-right align-top">
                     <div class="inline-flex items-center justify-end gap-2">
-                        <R10Button
-                            variant="outline"
-                            size="sm"
-                            :href="edit(team.id).url"
-                            data-test="team-edit-link"
-                            class="px-4 py-2"
-                        >
-                            Muuda
-                            <Pencil class="h-3.5 w-3.5" />
-                        </R10Button>
-
                         <button
                             type="button"
                             title="Kustuta tiim"

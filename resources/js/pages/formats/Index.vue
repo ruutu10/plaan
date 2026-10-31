@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { UrlMethodPair } from '@inertiajs/core';
 import { Head, useHttp } from '@inertiajs/vue3';
-import { Pencil, Plus, Sparkles, Trash2 } from '@lucide/vue';
+import { Plus, Sparkles, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import ClaudeReasoningLogModal from '@/components/ClaudeReasoningLogModal.vue';
 import CreateFormatModal from '@/components/CreateFormatModal.vue';
@@ -95,6 +95,7 @@ function openReasoningLog(format: Format): void {
                 { label: 'Tegevused', align: 'right', srOnly: true },
             ]"
             :rows="formats"
+            :row-href="(format) => edit(format.id).url"
             :load-failed="loadFailed"
             row-test-id="format-row"
             skeleton-test-id="format-skeleton-row"
@@ -123,20 +124,6 @@ function openReasoningLog(format: Format): void {
                 </td>
                 <td class="px-5 py-4 text-right align-top">
                     <div class="inline-flex items-center justify-end gap-2">
-                        <R10Button
-                            variant="outline"
-                            size="sm"
-                            :href="edit(format.id).url"
-                            data-test="format-edit-link"
-                            class="px-4 py-2"
-                        >
-                            <!-- A format reached only because one of the user's
-                                 groups plays an act on it opens read-only,
-                                 apart from that act. -->
-                            {{ format.canEdit ? 'Muuda' : 'Vaata' }}
-                            <Pencil class="h-3.5 w-3.5" />
-                        </R10Button>
-
                         <!-- Only shown to a user the server told there is
                              something to read; everyone else is sent zero. -->
                         <button

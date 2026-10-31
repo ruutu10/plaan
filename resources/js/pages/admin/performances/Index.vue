@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { FileClock, MapPin, Pencil, Plus } from '@lucide/vue';
+import { FileClock, MapPin, Plus } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PerformanceModal from '@/components/PerformanceModal.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
@@ -42,6 +42,16 @@ const canEditEveryPerformance = computed(
 );
 
 /**
+ * The row leads straight to the performance's own page, which is where a night
+ * is corrected — but only for those the format would let in.
+ */
+function performanceHref(performance: AdminPerformanceRow): string | null {
+    return canEditEveryPerformance.value
+        ? showPerformance([performance.formatId, performance.id]).url
+        : null;
+}
+
+/**
  * Whether the archived performances are in the table. Off to begin with: an
  * archived night has been played, so it no longer needs anybody's attention.
  */
@@ -64,8 +74,8 @@ const rows = computed(() =>
 
 const lead = computed(() =>
     canEditEveryPerformance.value
-        ? 'Kõik maja etendused, olenemata formaadist ja tiimist. Arhiveeritud etendused on vaikimisi peidus. Muutmiseks ava etendus.'
-        : 'Kõik maja etendused, olenemata formaadist ja tiimist. Arhiveeritud etendused on vaikimisi peidus. Muuta saab neid oma tiimi formaadi alt.',
+        ? 'Kõik etendused, olenemata formaadist ja tiimist. Arhiveeritud etendused on vaikimisi peidus. Muutmiseks ava etendus.'
+        : 'Kõik etendused, olenemata formaadist ja tiimist. Arhiveeritud etendused on vaikimisi peidus. Muuta saab neid oma tiimi formaadi alt.',
 );
 
 // Saying nothing has been entered while the checkbox beside it counts out the
@@ -124,9 +134,9 @@ defineOptions({
                 { label: 'Tehnik', class: 'hidden lg:table-cell' },
                 { label: 'Olek' },
                 { label: 'Tehnikaplaan' },
-                { label: 'Tegevused', align: 'right', srOnly: true },
             ]"
             :rows="rows"
+            :row-href="performanceHref"
             row-test-id="admin-performance-row"
             :empty-text="emptyText"
             error-text="Etenduste laadimine ebaõnnestus. Proovi lehte värskendada."
@@ -135,7 +145,7 @@ defineOptions({
                 <td
                     class="px-5 py-4 align-top font-medium whitespace-nowrap text-r10-ink"
                 >
-                    {{ formatLocalDate(performance.startsAt) }}
+                    {{ formatLocalDate(performance.startsAt) }}<br />
                     <span class="text-r10-grey-500">
                         {{ formatLocalTime(performance.startsAt) }}
                     </span>
@@ -214,27 +224,6 @@ defineOptions({
                                 : 'Puudu'
                         }}
                     </R10Pill>
-                </td>
-                <td class="px-5 py-4 text-right align-top">
-                    <!-- Straight to the performance's own page, which is where
-                         a night is corrected. Offered only to those the format
-                         would let in. -->
-                    <R10Button
-                        v-if="canEditEveryPerformance"
-                        variant="outline"
-                        size="sm"
-                        :href="
-                            showPerformance([
-                                performance.formatId,
-                                performance.id,
-                            ]).url
-                        "
-                        data-test="admin-performance-edit-link"
-                        class="px-4 py-2"
-                    >
-                        Detailid
-                        <Pencil class="h-3.5 w-3.5" />
-                    </R10Button>
                 </td>
             </template>
         </R10Table>

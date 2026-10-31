@@ -1,4 +1,6 @@
 <script setup lang="ts" generic="T">
+import { router } from '@inertiajs/vue3';
+
 /**
  * The listing table every management screen uses, together with the four states
  * a listing is ever in: rows, still loading, failed to load, or nothing to
@@ -35,6 +37,11 @@ withDefaults(
         skeletonWidths?: string[];
         rowTestId?: string;
         skeletonTestId?: string;
+        /**
+         * Where clicking a row leads. A row it answers null for is not a link,
+         * so a page can keep the way through to those allowed in.
+         */
+        rowHref?: (row: T) => string | null;
     }>(),
     {
         loadFailed: false,
@@ -42,6 +49,22 @@ withDefaults(
         skeletonWidths: () => ['w-48', 'w-16'],
     },
 );
+
+function visitRow(
+    href: string | null,
+    event: MouseEvent | KeyboardEvent,
+): void {
+    if (href === null) {
+        return;
+    }
+
+    // A click that lands on a button or link inside the row is that control's own.
+    if ((event.target as HTMLElement).closest('a, button, input, label')) {
+        return;
+    }
+
+    router.visit(href);
+}
 
 const alignClass = {
     left: 'text-left',
@@ -81,6 +104,14 @@ const alignClass = {
                     :key="index"
                     :data-test="rowTestId"
                     class="border-b border-r10-grey-200 transition-colors last:border-0 hover:bg-r10-grey-100"
+                    :class="{
+                        'cursor-pointer focus-visible:bg-r10-grey-100 focus-visible:outline-none':
+                            rowHref?.(row),
+                    }"
+                    :role="rowHref?.(row) ? 'link' : undefined"
+                    :tabindex="rowHref?.(row) ? 0 : undefined"
+                    @click="visitRow(rowHref?.(row) ?? null, $event)"
+                    @keydown.enter="visitRow(rowHref?.(row) ?? null, $event)"
                 >
                     <slot name="row" :row="row" :index="index" />
                 </tr>
