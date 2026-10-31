@@ -14,6 +14,7 @@ import {
 } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
+import NavCollapse from '@/components/NavCollapse.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -156,6 +157,7 @@ const footerNavItems: NavItem[] = [
         </SidebarContent>
 
         <SidebarFooter>
+            <NavCollapse />
             <NavFooter :items="footerNavItems" />
             <NavUser />
         </SidebarFooter>
