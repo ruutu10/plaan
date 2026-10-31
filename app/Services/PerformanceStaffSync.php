@@ -36,7 +36,7 @@ class PerformanceStaffSync
             $user = $this->lookup->find($member->name);
 
             if ($user === null) {
-                Log::warning('Could not match a Planka staff name to a house account', [
+                Log::warning('Could not match a Planka staff name to an account', [
                     'performance_id' => $performance->id,
                     'name' => $member->name,
                     'role' => $member->role->value,

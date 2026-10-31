@@ -11,60 +11,88 @@ use Illuminate\Support\Str;
  * Turns the bare first name a Planka card gives a crew or cast member into an
  * account, the way {@see PerformanceStaffSync} needs one to
  * write a row. A card almost never gives a full name or an address, so the
- * only thing to match on is the first name — narrowed to the house's own
- * e-mail domains ({@see GrantStaffAccess}), because that is the
- * one fact that tells a "Märt" who happens to have an account from a "Märt"
- * who is a guest performer with none.
+ * only thing to match on is the first name.
  *
- * A name that is not unique within those domains is not a wrong guess away
- * from being right — it is two or more different people — so it resolves to
- * nothing rather than to whichever one happened to be found first.
+ * Anybody with an account can staff a night — guests play on the house's
+ * stage and lend a hand behind it — but the house's own people, those on its
+ * e-mail domains ({@see GrantStaffAccess}), are looked for first: a card
+ * naming "Märt" means the house's Märt when there is one, not a guest who
+ * happens to share the name.
+ *
+ * A name that is not unique among the accounts it is looked for in is not a
+ * wrong guess away from being right — it is two or more different people — so
+ * it resolves to nothing rather than to whichever one happened to be found
+ * first.
  */
 class StaffMemberLookup
 {
     /**
-     * The house's own accounts, grouped by first name — read once per run
-     * rather than once per name.
+     * Every account — read once per run rather than once per name.
      *
-     * @var array<string, Collection<int, User>>|null
+     * @var Collection<int, User>|null
      */
-    protected ?array $usersByFirstName = null;
+    protected ?Collection $users = null;
 
     /**
-     * The account this first name names, or null when there is none — or more
-     * than one.
+     * The account this name names: the house's own when the house has one by
+     * that name, otherwise anybody's — still only when exactly one account
+     * answers to it.
+     *
+     * The name is read as a first name first. Only when no account has that
+     * first name is it matched against whole account names instead — so a
+     * card that does spell out "Arne Tamm" is matched on all of it.
+     *
+     * A name shared by two house accounts is not handed on to the wider
+     * search: it is already two people, and finding a third outside would
+     * only be a guess.
      */
-    public function find(string $firstName): ?User
+    public function find(string $name): ?User
     {
-        $key = mb_strtolower(trim($firstName));
+        $key = $this->fold($name);
 
         if ($key === '') {
             return null;
         }
 
-        $matches = $this->usersByFirstName()[$key] ?? null;
+        $matches = $this->users()->filter(fn (User $user): bool => $this->fold(Str::before($user->name, ' ')) === $key);
 
-        return $matches !== null && $matches->count() === 1 ? $matches->first() : null;
+        if ($matches->isEmpty()) {
+            $matches = $this->users()->filter(fn (User $user): bool => $this->fold($user->name) === $key);
+        }
+
+        $house = $matches->filter(fn (User $user): bool => $user->isHouseStaff());
+
+        return $house->isNotEmpty() ? $this->soleMatch($house) : $this->soleMatch($matches);
     }
 
     /**
-     * The house's own accounts — those whose address is on one of the theatre's
-     * own e-mail domains — grouped by the first word of their name, folded for
-     * the same reason the Planka importer folds names in PHP rather than SQL:
-     * SQLite's `LOWER()` leaves Estonian capitals alone.
+     * The one account in the matches, or null when there is none or more.
      *
-     * @return array<string, Collection<int, User>>
+     * @param  Collection<int, User>  $matches
      */
-    protected function usersByFirstName(): array
+    protected function soleMatch(Collection $matches): ?User
     {
-        if ($this->usersByFirstName !== null) {
-            return $this->usersByFirstName;
-        }
+        return $matches->count() === 1 ? $matches->first() : null;
+    }
 
-        return $this->usersByFirstName = User::query()
-            ->get(['id', 'name', 'email'])
-            ->filter(fn (User $user): bool => $user->isHouseStaff())
-            ->groupBy(fn (User $user): string => mb_strtolower(trim(Str::before($user->name, ' '))))
-            ->all();
+    /**
+     * A name as it is compared: trimmed, its runs of whitespace made single,
+     * and folded in PHP for the same reason the Planka importer folds names
+     * in PHP rather than SQL — SQLite's `LOWER()` leaves Estonian capitals
+     * alone.
+     */
+    protected function fold(string $name): string
+    {
+        return mb_strtolower((string) preg_replace('/\s+/u', ' ', trim($name)));
+    }
+
+    /**
+     * Every account, with only what matching needs.
+     *
+     * @return Collection<int, User>
+     */
+    protected function users(): Collection
+    {
+        return $this->users ??= User::query()->get(['id', 'name', 'email'])->toBase();
     }
 }

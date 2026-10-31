@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Mockery\MockInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionMethod;
 use RuntimeException;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -1886,16 +1887,157 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertSame(0, Performance::sole()->staff()->count());
     }
 
-    public function test_a_name_outside_the_house_domains_is_left_unmatched(): void
+    /**
+     * @return array<string, array{PerformanceStaffRole}>
+     */
+    public static function staffRoles(): array
+    {
+        return array_combine(
+            PerformanceStaffRole::values(),
+            array_map(fn (PerformanceStaffRole $role): array => [$role], PerformanceStaffRole::cases()),
+        );
+    }
+
+    #[DataProvider('staffRoles')]
+    public function test_a_name_outside_the_house_domains_is_matched_to_that_account(PerformanceStaffRole $role): void
     {
         config()->set('mail.verified_email_domains', ['ruutu10.ee']);
-        // Shares the first name and is otherwise a perfectly good account — a
-        // guest performer's, most likely — just not one on the house's own mail.
+        // A guest on the stage, or lending a hand behind it — not on the
+        // house's own mail, and the only Arne there is.
+        $guest = User::factory()->create(['name' => 'Arne Guest', 'email' => 'arne@example.com']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([
+            $this->night('Trupp 1', staff: [$this->staffMember('Arne', $role)]),
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $staffing = Performance::sole()->staff()->sole();
+
+        $this->assertSame($guest->id, $staffing->id);
+        $this->assertSame($role, $staffing->pivot->role);
+    }
+
+    public function test_a_house_account_is_matched_before_anyone_elses(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        $arne = User::factory()->create(['name' => 'Arne Tamm', 'email' => 'arne@ruutu10.ee']);
         User::factory()->create(['name' => 'Arne Guest', 'email' => 'arne@example.com']);
 
         $this->fakeBoard([$this->card()]);
         $this->fakeExtraction([
-            $this->night('Trupp 1', staff: [$this->staffMember('Arne', PerformanceStaffRole::Host)]),
+            $this->night('Trupp 1', staff: [$this->staffMember('Arne', PerformanceStaffRole::Technician)]),
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame($arne->id, Performance::sole()->staff()->sole()->id);
+    }
+
+    public function test_a_name_shared_by_two_outside_accounts_is_left_unmatched(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        User::factory()->create(['name' => 'Arne Üks', 'email' => 'arne1@example.com']);
+        User::factory()->create(['name' => 'Arne Kaks', 'email' => 'arne2@example.com']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([
+            $this->night('Trupp 1', staff: [$this->staffMember('Arne', PerformanceStaffRole::Performer)]),
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame(0, Performance::sole()->staff()->count());
+    }
+
+    public function test_a_name_shared_by_two_house_accounts_is_not_looked_for_outside(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        User::factory()->create(['name' => 'Märt Kask', 'email' => 'mart.kask@ruutu10.ee']);
+        User::factory()->create(['name' => 'Märt Ots', 'email' => 'mart.ots@ruutu10.ee']);
+        User::factory()->create(['name' => 'Märt Guest', 'email' => 'mart@example.com']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([
+            $this->night('Trupp 1', staff: [$this->staffMember('Märt', PerformanceStaffRole::Host)]),
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame(0, Performance::sole()->staff()->count());
+    }
+
+    public function test_a_full_name_on_the_card_is_matched_to_the_account_by_that_full_name(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        $arne = User::factory()->create(['name' => 'Arne Tamm', 'email' => 'arne@example.com']);
+        User::factory()->create(['name' => 'Arne Kask', 'email' => 'arne.kask@example.com']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([
+            $this->night('Trupp 1', staff: [$this->staffMember('  arne   TAMM ', PerformanceStaffRole::Performer)]),
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame($arne->id, Performance::sole()->staff()->sole()->id);
+    }
+
+    public function test_a_full_name_prefers_the_house_account_when_two_share_it(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        $arne = User::factory()->create(['name' => 'Arne Tamm', 'email' => 'arne@ruutu10.ee']);
+        User::factory()->create(['name' => 'Arne Tamm', 'email' => 'arne@example.com']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([
+            $this->night('Trupp 1', staff: [$this->staffMember('Arne Tamm', PerformanceStaffRole::Host)]),
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame($arne->id, Performance::sole()->staff()->sole()->id);
+    }
+
+    public function test_a_full_name_shared_by_two_outside_accounts_is_left_unmatched(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        User::factory()->create(['name' => 'Arne Tamm', 'email' => 'arne1@example.com']);
+        User::factory()->create(['name' => 'Arne Tamm', 'email' => 'arne2@example.com']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([
+            $this->night('Trupp 1', staff: [$this->staffMember('Arne Tamm', PerformanceStaffRole::Performer)]),
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame(0, Performance::sole()->staff()->count());
+    }
+
+    public function test_a_full_name_nobody_has_is_left_unmatched(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        User::factory()->create(['name' => 'Arne Kask', 'email' => 'arne@example.com']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([
+            $this->night('Trupp 1', staff: [$this->staffMember('Arne Tamm', PerformanceStaffRole::Performer)]),
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame(0, Performance::sole()->staff()->count());
+    }
+
+    public function test_a_performer_with_no_account_at_all_is_left_unmatched(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+
+        $this->fakeBoard([$this->card()]);
+        $this->fakeExtraction([
+            $this->night('Trupp 1', staff: [$this->staffMember('Keegi', PerformanceStaffRole::Performer)]),
         ]);
 
         $this->artisan('planka:import')->assertSuccessful();
