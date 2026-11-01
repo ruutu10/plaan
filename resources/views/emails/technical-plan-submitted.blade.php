@@ -32,9 +32,8 @@
         </p>
     @else
         <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6;">
-            Esineja esitas uue tehnikaplaani. Allpool on plaan tervikuna;
-            küsimustega saab pöörduda plaani koostaja poole aadressil
-            <a href="mailto:{{ $contactEmail }}" style="{{ $link }}">{{ $doc['contact'] }}</a>.
+            Esineja esitas uue tehnikaplaani. Allpool on plaani ülevaade - ava plaan veebist, et näha stseenide fokuseeritud vaadet, või seda muuta.
+            Kui plaanis ei ole kõik vajalik kirjas, saad plaani "Ülevaade" vaates esitajale kommentaare ja küsimusi esitada.
         </p>
     @endif
 

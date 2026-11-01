@@ -95,7 +95,8 @@ export interface FormatTeamOption {
 
 /**
  * Somebody a technical-plan reminder may be sent to: a member of the group
- * playing the performance, as the details endpoint offers them.
+ * playing the performance, or anybody its Planka card names on the night's
+ * staff — as the details endpoint offers them.
  */
 export interface PerformanceReminderRecipient {
     id: number;
@@ -106,6 +107,11 @@ export interface PerformanceReminderRecipient {
      * than the people on stage, and it is the people on stage who owe the plan.
      */
     staffedAsPerformer: boolean;
+    /**
+     * Every job the Planka card gives this person that night, as labels, the
+     * stage first. Empty for a group member the card does not name.
+     */
+    roles: string[];
 }
 
 /** A format a new performance may be added to, as offered by the admin overview. */

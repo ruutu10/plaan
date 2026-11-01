@@ -371,6 +371,25 @@ class Performance extends Model
     }
 
     /**
+     * Everybody a reminder about this night's missing technical plan may be
+     * sent to: the members of the group playing it, and everybody the card
+     * names on its staff — whatever their role, and whether or not they are
+     * in that group. A guest performer is in no group of the house, and is
+     * still somebody who owes the plan.
+     *
+     * One person on both lists is offered once.
+     *
+     * @return Collection<int, User>
+     */
+    public function reminderCandidates(): Collection
+    {
+        /** @var Collection<int, User> $members */
+        $members = $this->performedBy()->members ?? new Collection;
+
+        return $members->merge($this->staff);
+    }
+
+    /**
      * The technical plans prepared for this performance.
      *
      * @return HasMany<TechnicalPlan, $this>

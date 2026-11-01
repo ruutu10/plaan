@@ -24,7 +24,8 @@ use Tests\TestCase;
  *
  * Nothing sends this on a schedule any more, so the things worth being sure of
  * are that only the people the crew picked are written to, that only members of
- * the group playing the night can be picked at all, and that each letter goes
+ * the group playing the night or its imported staff can be picked at all, and
+ * that each letter goes
  * to one person alone: the link it carries signs its holder in.
  */
 class TechnicalPlanReminderTest extends TestCase
@@ -358,32 +359,88 @@ class TechnicalPlanReminderTest extends TestCase
             ->assertJsonPath('reminderRecipients.2.staffedAsPerformer', false);
     }
 
-    public function test_somebody_cast_as_a_performer_outside_the_playing_group_is_not_offered(): void
+    public function test_somebody_cast_as_a_performer_outside_the_playing_group_is_offered_and_marked(): void
     {
         [$performance] = $this->performanceWithGroup();
 
-        // A guest on the card who is in no group of the house: the plan may not
-        // be chased through them, so they are not among the choices at all.
-        $guest = User::factory()->create();
+        // A guest on the card who is in no group of the house: still somebody
+        // on stage that night, and so somebody who owes the plan.
+        $guest = User::factory()->create(['name' => 'Külli Külaline']);
         $performance->staff()->attach($guest, ['role' => PerformanceStaffRole::Performer->value]);
 
-        $offered = $this->actingAs($this->technician())
+        $this->actingAs($this->technician())
             ->getJson(route('api.formats.performances.show', [$performance->format, $performance]))
             ->assertOk()
-            ->assertJsonCount(3, 'reminderRecipients')
-            ->json('reminderRecipients.*.id');
-
-        // On the card — the staff list says so — but not among the people the
-        // reminder may be sent to.
-        $this->assertNotContains($guest->id, $offered);
+            ->assertJsonCount(4, 'reminderRecipients')
+            // Alphabetical: Jaan, Külli, Mari, Tiit.
+            ->assertJsonPath('reminderRecipients.1.id', $guest->id)
+            ->assertJsonPath('reminderRecipients.1.staffedAsPerformer', true)
+            ->assertJsonPath('reminderRecipients.1.roles', ['Esineja']);
 
         Notification::fake();
 
         $this->actingAs($this->technician())
             ->postJson($this->reminderUrl($performance), ['user_ids' => [$guest->id]])
-            ->assertUnprocessable();
+            ->assertOk()
+            ->assertJson(['sent' => 1]);
 
-        Notification::assertNothingSent();
+        Notification::assertSentTo($guest, TechnicalPlanMissing::class);
+    }
+
+    public function test_the_nights_staff_outside_the_playing_group_is_offered_whatever_their_role(): void
+    {
+        [$performance] = $this->performanceWithGroup();
+
+        $technician = User::factory()->create(['name' => 'Aare Heli']);
+        $performance->staff()->attach($technician, ['role' => PerformanceStaffRole::Technician->value]);
+
+        $this->actingAs($this->technician())
+            ->getJson(route('api.formats.performances.show', [$performance->format, $performance]))
+            ->assertOk()
+            ->assertJsonCount(4, 'reminderRecipients')
+            ->assertJsonPath('reminderRecipients.0.id', $technician->id)
+            // On the list, but not ticked: it is the people on stage who owe it.
+            ->assertJsonPath('reminderRecipients.0.staffedAsPerformer', false)
+            ->assertJsonPath('reminderRecipients.0.roles', ['Heli- ja valgusmeister']);
+
+        Notification::fake();
+
+        $this->actingAs($this->technician())
+            ->postJson($this->reminderUrl($performance), ['user_ids' => [$technician->id]])
+            ->assertOk();
+
+        Notification::assertSentTo($technician, TechnicalPlanMissing::class);
+    }
+
+    public function test_a_group_member_on_the_staff_is_offered_once_with_every_role(): void
+    {
+        [$performance, $members] = $this->performanceWithGroup();
+
+        $performance->staff()->attach($members[1], ['role' => PerformanceStaffRole::Technician->value]);
+        $performance->staff()->attach($members[1], ['role' => PerformanceStaffRole::Performer->value]);
+
+        $this->actingAs($this->technician())
+            ->getJson(route('api.formats.performances.show', [$performance->format, $performance]))
+            ->assertOk()
+            ->assertJsonCount(3, 'reminderRecipients')
+            ->assertJsonPath('reminderRecipients.0.id', $members[1]->id)
+            ->assertJsonPath('reminderRecipients.0.staffedAsPerformer', true)
+            // The stage first, whatever order the card gave them in.
+            ->assertJsonPath('reminderRecipients.0.roles', ['Esineja', 'Heli- ja valgusmeister'])
+            ->assertJsonPath('reminderRecipients.1.roles', []);
+    }
+
+    public function test_a_performance_no_group_plays_offers_its_staff(): void
+    {
+        $performance = Performance::factory()->for(Format::factory()->create(['team_id' => null]))->create();
+        $guest = User::factory()->create();
+        $performance->staff()->attach($guest, ['role' => PerformanceStaffRole::Performer->value]);
+
+        $this->actingAs($this->technician())
+            ->getJson(route('api.formats.performances.show', [$performance->format, $performance]))
+            ->assertOk()
+            ->assertJsonCount(1, 'reminderRecipients')
+            ->assertJsonPath('reminderRecipients.0.id', $guest->id);
     }
 
     public function test_the_group_playing_an_act_is_offered_rather_than_the_formats_owner(): void

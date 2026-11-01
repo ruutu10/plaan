@@ -167,61 +167,65 @@ class PerformanceController extends Controller
     }
 
     /**
-     * Who this performance's plan may be chased with: the members of the group
-     * playing it — its own when the evening is shared, the format's otherwise.
-     * Empty when no group owns the night, which is what leaves the screen's
-     * reminder button switched off.
+     * Who this performance's plan may be chased with — see
+     * {@see Performance::reminderCandidates()}: the group playing it, and
+     * everybody the card names on its staff. Empty when there is nobody,
+     * which is what leaves the screen's reminder button switched off.
      *
-     * `staffedAsPerformer` says whether the Planka card cast this member as an
+     * `staffedAsPerformer` says whether the Planka card cast this person as an
      * esineja that night, which is who the reminder dialog offers ticked. A
      * group is more than the people on stage, and it is the people on stage who
-     * owe the plan.
+     * owe the plan. `roles` names every job the card gives them, so a name
+     * that is in no group still says why it is on the list.
      *
      * Names only, no addresses: the screen picks people, and their e-mail is
      * the server's business — it is where the letter goes, not something the
      * page needs to hold or show.
      *
-     * @return Collection<int, array{id: int, name: string, staffedAsPerformer: bool}>
+     * @return Collection<int, array{id: int, name: string, staffedAsPerformer: bool, roles: list<string>}>
      */
     private function reminderRecipients(Performance $performance): Collection
     {
-        $members = $performance->performedBy()?->members;
+        $roles = $this->rolesOf($performance);
 
-        if ($members === null) {
-            return new Collection;
-        }
-
-        $cast = $this->castOf($performance);
-
-        return $members
+        return $performance->reminderCandidates()
             ->sortBy(fn (User $member): string => mb_strtolower($member->name))
             ->map(fn (User $member): array => [
                 'id' => $member->id,
                 'name' => $member->name,
-                'staffedAsPerformer' => in_array($member->id, $cast, strict: true),
+                'staffedAsPerformer' => in_array(PerformanceStaffRole::Performer, $roles[$member->id] ?? [], strict: true),
+                'roles' => array_map(
+                    fn (PerformanceStaffRole $role): string => $role->label(),
+                    $roles[$member->id] ?? [],
+                ),
             ])
             ->values()
             ->toBase();
     }
 
     /**
-     * The ids of the people this performance's card names as esinejad. Empty
-     * for a night nothing was imported for, which is a night the screen ticks
-     * nobody on.
+     * The jobs this performance's card gives each person it names, by their
+     * id, the stage first. Empty for a night nothing was imported for, which
+     * is a night the screen ticks nobody on.
      *
-     * @return list<int>
+     * @return array<int, list<PerformanceStaffRole>>
      */
-    private function castOf(Performance $performance): array
+    private function rolesOf(Performance $performance): array
     {
-        return array_values($performance->staff
-            ->filter(function (User $member): bool {
-                /** @var PerformanceStaff $staffing */
-                $staffing = $member->getRelation('pivot');
+        $roles = [];
 
-                return $staffing->role === PerformanceStaffRole::Performer;
-            })
-            ->map(fn (User $member): int => $member->id)
-            ->all());
+        foreach ($performance->staff as $member) {
+            /** @var PerformanceStaff $staffing */
+            $staffing = $member->getRelation('pivot');
+
+            $roles[$member->id][] = $staffing->role;
+        }
+
+        foreach ($roles as &$held) {
+            usort($held, fn (PerformanceStaffRole $a, PerformanceStaffRole $b): int => $a->listingOrder() <=> $b->listingOrder());
+        }
+
+        return $roles;
     }
 
     /**

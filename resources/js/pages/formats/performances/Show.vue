@@ -61,9 +61,9 @@ const props = defineProps<{ formatId: number; performanceId: number }>();
 const teams = ref<FormatTeamOption[]>([]);
 
 /**
- * The members of the group playing this performance — who a reminder about the
- * missing technical plan may be sent to. Empty when no group owns the night,
- * which is what leaves the button switched off.
+ * The members of the group playing this performance and the night's imported
+ * staff — who a reminder about the missing technical plan may be sent to.
+ * Empty when there is nobody, which is what leaves the button switched off.
  */
 const reminderRecipients = ref<PerformanceReminderRecipient[]>([]);
 
@@ -339,9 +339,9 @@ async function refreshFromPlanka(): Promise<void> {
 
                     <!--
                         Offered only when there is somebody to write to: a
-                        performance whose group has no members — or which no
-                        group plays — has no reminder to send, the same way the
-                        reasoning log is offered only where there is one.
+                        performance with no group members and no imported staff
+                        has no reminder to send, the same way the reasoning log
+                        is offered only where there is one.
                     -->
                     <R10Button
                         v-if="reminderRecipients.length > 0"

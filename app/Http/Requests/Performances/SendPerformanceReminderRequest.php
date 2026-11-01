@@ -26,8 +26,8 @@ class SendPerformanceReminderRequest extends FormRequest
      * Get the validation rules that apply to the request.
      *
      * Who may be written to is not the client's to decide: the addresses come
-     * off the group playing this performance, and an id from anywhere else is
-     * refused however the request was put together.
+     * off the group playing this performance and the night's own staff, and an
+     * id from anywhere else is refused however the request was put together.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -67,16 +67,14 @@ class SendPerformanceReminderRequest extends FormRequest
     }
 
     /**
-     * Everybody who could be chased about this night: the members of the group
-     * playing it — the performance's own when the evening is shared, the
-     * format's otherwise.
+     * Everybody who could be chased about this night — see
+     * {@see Performance::reminderCandidates()}.
      *
      * @return Collection<int, User>
      */
     private function candidates(): Collection
     {
-        /** @var Collection<int, User> */
-        return $this->performance()->performedBy()->members ?? new Collection;
+        return $this->performance()->reminderCandidates();
     }
 
     /**
@@ -89,7 +87,7 @@ class SendPerformanceReminderRequest extends FormRequest
         return [
             'user_ids.required' => __('Vali vähemalt üks saaja.'),
             'user_ids.min' => __('Vali vähemalt üks saaja.'),
-            'user_ids.*.in' => __('Meeldetuletust saab saata ainult etendust mängiva tiimi liikmetele.'),
+            'user_ids.*.in' => __('Meeldetuletust saab saata ainult etendust mängiva tiimi liikmetele ja etenduse meeskonnale.'),
         ];
     }
 }

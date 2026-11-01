@@ -3,15 +3,17 @@ import { useHttp } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { toast } from 'vue-sonner';
 import R10FormDialog from '@/components/technical-plan/R10FormDialog.vue';
+import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import { store } from '@/routes/api/formats/performances/reminders';
 import type { PerformanceReminderRecipient } from '@/types';
 
 /**
  * Who to chase about a missing technical plan. The choice is the whole of the
- * group playing the performance; ticked to begin with are the members the
- * Planka card casts as esinejad that night, because they are the ones who owe
- * the plan. A night nothing was imported for starts with nobody ticked rather
- * than with everybody.
+ * group playing the performance and everybody the Planka card names on the
+ * night's staff, whatever their job and whether or not they are in the group;
+ * ticked to begin with are the people the card casts as esinejad, because
+ * they are the ones who owe the plan. A night nothing was imported for starts
+ * with nobody ticked rather than with everybody.
  *
  * Each person picked gets a letter of their own carrying a link that signs them
  * in, so nobody is copied on anybody else's.
@@ -138,6 +140,19 @@ async function send(): Promise<void> {
                 />
                 <span class="text-sm font-bold text-r10-ink">
                     {{ recipient.name }}
+                </span>
+                <span
+                    v-if="recipient.roles.length > 0"
+                    class="ml-auto flex flex-wrap justify-end gap-1"
+                >
+                    <R10Pill
+                        v-for="role in recipient.roles"
+                        :key="role"
+                        tone="neutral"
+                        :data-test="`reminder-recipient-${recipient.id}-role`"
+                    >
+                        {{ role }}
+                    </R10Pill>
                 </span>
             </label>
 
