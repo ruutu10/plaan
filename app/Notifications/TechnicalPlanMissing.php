@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Actions\BuildTechnicalPlanInvite;
+use App\Http\Resources\PerformanceDetails;
 use App\Models\Performance;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -67,10 +68,8 @@ class TechnicalPlanMissing extends Notification implements AboutRecord, ShouldQu
                 'formatName' => $this->performance->title === null
                     ? $format->name
                     : $format->name.' — '.$this->performance->title,
-                'performer' => $this->performance->performerName() ?? '',
                 'startsAt' => $this->performance->startsAt(),
-                'duration' => $this->performance->duration,
-                'location' => $this->performance->location,
+                'details' => PerformanceDetails::make($this->performance)->resolve(),
                 'planUrl' => $this->planUrl,
                 'techEmail' => (string) config('technical_plan.tech_email'),
             ]);

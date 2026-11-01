@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Http\Resources\PerformanceDetails;
 use App\Listeners\NotifyRecordingAvailable;
 use App\Models\PerformanceRecording;
 use App\Services\JellyfinClient;
@@ -68,9 +69,7 @@ class PerformanceRecordingAvailable extends Notification implements AboutRecord,
             ->subject('Etenduse salvestus on olemas · '.$this->label())
             ->view('emails.performance-recording-available', [
                 'formatName' => $performance?->displayName(),
-                'performer' => $performance?->performerName(),
-                'startsAt' => $performance?->startsAt(),
-                'location' => $performance?->location,
+                'details' => PerformanceDetails::make($performance)->resolve(),
                 // The item as the library holds it, so a link that was pasted
                 // in an odd shape still opens the right episode. What was
                 // typed is the fallback, never nothing.

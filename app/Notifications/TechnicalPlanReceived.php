@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Http\Resources\PerformanceDetails;
 use App\Models\Performance;
 use App\Models\TechnicalPlan;
 use App\Models\User;
@@ -61,8 +62,7 @@ class TechnicalPlanReceived extends Notification implements AboutRecord, ShouldQ
             ->subject('Tehnikaplaan kätte saadud · '.$this->planLabel())
             ->view('emails.technical-plan-received', [
                 'formatName' => $this->formatName($performance),
-                'performer' => $performance?->performerName(),
-                'startsAt' => $performance?->startsAt(),
+                'details' => PerformanceDetails::make($performance)->withFallbackName($this->plan->token)->resolve(),
                 'statusLabel' => $this->plan->status->label(),
                 'confirmedByName' => $this->confirmedBy->name,
                 'publicUrl' => route('technical-plan.public', $this->plan),

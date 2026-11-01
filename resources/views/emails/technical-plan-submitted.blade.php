@@ -54,37 +54,16 @@
         </tr>
     </table>
 
-    <div style="{{ $sectionTitle }}">Etendus</div>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
-        <tr>
-            <td style="{{ $labelCell }}">Esineja</td>
-            <td style="{{ $cell }}">{{ $doc['performer'] }}</td>
-        </tr>
+    <x-emails.performance-details :details="$details">
         <tr>
             <td style="{{ $labelCell }}">Kontakt</td>
             <td style="{{ $cell }}">{{ $doc['contact'] }}</td>
         </tr>
         <tr>
-            <td style="{{ $labelCell }}">Tehnik</td>
-            <td style="{{ $cell }}">{{ $doc['techniciansLine'] }}</td>
-        </tr>
-        <tr>
-            <td style="{{ $labelCell }}">Etenduse aeg</td>
-            <td style="{{ $cell }}">{{ $doc['performanceDate'] }} {{ $doc['startTime'] }}</td>
-        </tr>
-        <tr>
-            <td style="{{ $labelCell }}">Kestus</td>
-            <td style="{{ $cell }}">{{ $doc['durationLabel'] }}</td>
-        </tr>
-        <tr>
-            <td style="{{ $labelCell }}">Asukoht</td>
-            <td style="{{ $cell }}">{{ $doc['location'] }}</td>
-        </tr>
-        <tr>
             <td style="{{ $labelCell }}">Lühikirjeldus</td>
             <td style="{{ $cell }} white-space:pre-line;">{{ $doc['description'] }}</td>
         </tr>
-    </table>
+    </x-emails.performance-details>
 
     <div style="{{ $sectionTitle }}">Heliplaan</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">

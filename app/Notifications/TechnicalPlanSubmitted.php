@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Http\Resources\PerformanceDetails;
 use App\Http\Resources\PlanDocument;
 use App\Http\Resources\TechnicalPlan as TechnicalPlanResource;
 use App\Listeners\NotifyPlanSubmitted;
@@ -74,6 +75,7 @@ class TechnicalPlanSubmitted extends Notification implements AboutRecord, Should
                 'doc' => PlanDocument::make(TechnicalPlanResource::make($this->plan)->resolve())
                     ->withContact($contactEmail)
                     ->resolve(),
+                'details' => PerformanceDetails::make($this->plan->performance)->withFallbackName($this->plan->token)->resolve(),
                 'publicUrl' => route('technical-plan.public', $this->plan),
                 'contactEmail' => $contactEmail,
                 'isAuthor' => $notifiable instanceof User && $notifiable->is($this->plan->user),

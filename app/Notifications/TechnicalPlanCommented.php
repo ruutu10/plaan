@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Http\Resources\PerformanceDetails;
 use App\Models\TechnicalPlanComment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -55,8 +56,7 @@ class TechnicalPlanCommented extends Notification implements AboutRecord, Should
             ->subject('Uus kommentaar tehnikaplaanile · '.$this->planLabel())
             ->view('emails.technical-plan-commented', [
                 'formatName' => $performance?->displayName() ?? $plan->token,
-                'performer' => $performance?->performerName(),
-                'startsAt' => $performance?->startsAt(),
+                'details' => PerformanceDetails::make($performance)->withFallbackName($plan->token)->resolve(),
                 'authorName' => $this->comment->authorName(),
                 'fromTechnicalTeam' => $this->comment->from_technical_team,
                 'body' => $this->comment->body,
