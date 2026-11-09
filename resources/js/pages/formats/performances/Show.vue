@@ -2,6 +2,7 @@
 import type { UrlMethodPair } from '@inertiajs/core';
 import { Head, router, setLayoutProps, useHttp } from '@inertiajs/vue3';
 import {
+    Download,
     ExternalLink,
     FileClock,
     Mail,
@@ -13,6 +14,7 @@ import {
 } from '@lucide/vue';
 import { ref } from 'vue';
 import { toast } from 'vue-sonner';
+import { download as downloadRecording } from '@/actions/App/Http/Controllers/PerformanceRecordingController';
 import ClaudeReasoningLogModal from '@/components/ClaudeReasoningLogModal.vue';
 import DeletePerformanceModal from '@/components/DeletePerformanceModal.vue';
 import PerformanceModal from '@/components/PerformanceModal.vue';
@@ -278,7 +280,7 @@ async function refreshFromPlanka(): Promise<void> {
                     <dt class="text-xs font-bold text-r10-grey-500 uppercase">
                         Salvestus
                     </dt>
-                    <dd class="text-r10-ink">
+                    <dd class="flex flex-col gap-1 text-r10-ink">
                         <a
                             v-if="performance.recording?.itemUrl"
                             :href="performance.recording.itemUrl"
@@ -290,7 +292,24 @@ async function refreshFromPlanka(): Promise<void> {
                             <ExternalLink class="h-3.5 w-3.5" />
                             Vaata Jellyfinis
                         </a>
-                        <span v-else>—</span>
+                        <!-- A plain link, not an Inertia visit: the browser has
+                             to take this as a file download. -->
+                        <a
+                            v-if="performance.recording?.canDownload"
+                            :href="downloadRecording.url(props.performanceId)"
+                            data-test="performance-recording-download"
+                            class="inline-flex w-fit items-center gap-1.5 font-medium text-r10-navy underline underline-offset-2 hover:text-r10-orange-700"
+                        >
+                            <Download class="h-3.5 w-3.5" />
+                            Laadi alla
+                        </a>
+                        <span
+                            v-if="
+                                !performance.recording?.itemUrl &&
+                                !performance.recording?.canDownload
+                            "
+                            >—</span
+                        >
                     </dd>
                 </div>
                 <div>

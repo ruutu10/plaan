@@ -299,6 +299,8 @@ export interface AdminPlanRow {
     statusLabel: string;
     /** ISO 8601 UTC instant. */
     submittedAt: string | null;
+    /** When a technician approved the plan; null while it is unapproved. */
+    approvedAt: string | null;
     /** Public link opening the plan itself. */
     url: string;
 }

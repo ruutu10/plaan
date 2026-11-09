@@ -345,8 +345,22 @@ class TechnicalPlanAdminTest extends TestCase
                 ->where('plan.status', TechnicalPlanStatus::Submitted->value)
                 ->where('plan.statusLabel', TechnicalPlanStatus::Submitted->label())
                 ->where('plan.submittedAt', '2026-07-20T12:00:00+00:00')
+                ->where('plan.approvedAt', null)
                 ->where('plan.url', route('technical-plan.public', $plan))
                 ->has('statuses', count(TechnicalPlanStatus::cases())));
+    }
+
+    public function test_a_plans_details_give_the_date_it_was_approved_even_once_archived(): void
+    {
+        $plan = TechnicalPlan::factory()->approved()->create();
+        $plan->forceFill(['approved_at' => '2026-07-21 09:30:00'])->save();
+        $plan->update(['status' => TechnicalPlanStatus::Archived]);
+
+        $this->actingAs($this->technician())
+            ->get(route('technical-plans.show', $plan))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('plan.approvedAt', '2026-07-21T09:30:00+00:00'));
     }
 
     public function test_a_plans_details_name_the_night_it_is_filed_under(): void

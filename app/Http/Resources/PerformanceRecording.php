@@ -22,6 +22,7 @@ class PerformanceRecording extends JsonResource
      * @return array{
      *     url: string,
      *     itemUrl: string|null,
+     *     canDownload: bool,
      *     syncedAt: string|null,
      *     syncError: string|null,
      * }
@@ -45,6 +46,11 @@ class PerformanceRecording extends JsonResource
             // but readable shape still opens the right video. Empty when no
             // library is configured to open it on.
             'itemUrl' => JellyfinClient::itemUrl($recording->item_id),
+            // Whether this reader gets the download button: that needs an item
+            // to fetch as well as the right to fetch it.
+            'canDownload' => $recording->item_id !== null
+                && $recording->performance instanceof PerformanceModel
+                && Gate::allows('downloadRecording', $recording->performance),
             'syncedAt' => $recording->synced_at?->toIso8601String(),
             // Kept from everybody but the crew: a group has nothing to do with
             // the media server refusing a write, and nothing it could do about

@@ -212,6 +212,24 @@ function confirmStatus(): void {
                 </dd>
             </div>
 
+            <div>
+                <dt
+                    class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-grey-500 uppercase"
+                >
+                    Tehniku kinnitus
+                </dt>
+                <dd
+                    class="mt-1 text-r10-ink"
+                    data-test="technical-plan-approved-at"
+                >
+                    {{
+                        plan.approvedAt
+                            ? formatLocalDate(plan.approvedAt)
+                            : 'Pole veel kinnitatud'
+                    }}
+                </dd>
+            </div>
+
             <div :class="{ 'sm:col-span-2': canEditPlan }">
                 <dt
                     class="font-r10-body text-xs font-bold tracking-[0.12em] text-r10-grey-500 uppercase"

@@ -54,6 +54,7 @@ class AdminTechnicalPlan extends JsonResource
      *     status: string,
      *     statusLabel: string,
      *     submittedAt: string|null,
+     *     approvedAt: string|null,
      *     url: string,
      * }
      */
@@ -84,6 +85,9 @@ class AdminTechnicalPlan extends JsonResource
             'status' => $plan->status->value,
             'statusLabel' => $plan->status->label(),
             'submittedAt' => $plan->submitted_at?->toIso8601String(),
+            // Stays set once the plan is archived, so a screen can still say
+            // whether a technician ever approved it.
+            'approvedAt' => $plan->approved_at?->toIso8601String(),
             'url' => route('technical-plan.public', $plan),
         ];
     }

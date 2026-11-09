@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Rules\JellyfinItemUrl;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -208,6 +209,39 @@ class JellyfinClient
     }
 
     /**
+     * Open an episode's original file for reading, without fetching any of it.
+     *
+     * The answer's body is a live stream the caller reads and closes: these
+     * files run to several gigabytes, so nothing may buffer them, and a request
+     * retried or cut off by a total timeout would be a download thrown away.
+     * Only a stalled connection gives up.
+     *
+     * Refuses anything that is not an episode, for the reason {@see EPISODE}
+     * gives: a link pointing at a folder names no one video.
+     *
+     * @throws RuntimeException when the item is missing or is not an episode
+     */
+    public function download(string $itemId, ?string $range = null, ?string $ifRange = null): Response
+    {
+        $type = $this->item($itemId)['Type'] ?? null;
+
+        if ($type !== self::EPISODE) {
+            throw new RuntimeException(sprintf(
+                'Refusing to download Jellyfin item %s: it is a %s, not an episode.',
+                $itemId,
+                $type === null ? 'record of no stated kind' : (string) $type,
+            ));
+        }
+
+        return $this->connection()
+            ->withHeaders(array_filter(['Range' => $range, 'If-Range' => $ifRange]))
+            ->connectTimeout(10)
+            ->timeout(0)
+            ->withOptions(['stream' => true, 'read_timeout' => 60])
+            ->get("/Items/{$itemId}/Download");
+    }
+
+    /**
      * Spell the empty maps as maps — see {@see MAPS} for why they would
      * otherwise go out as lists and have the whole write refused.
      *
@@ -233,13 +267,21 @@ class JellyfinClient
      * Jellyfin takes the key in an `Authorization` header of its own devising;
      * a plain `Bearer` of the same value is refused with a 401.
      */
-    protected function request(): PendingRequest
+    private function connection(): PendingRequest
     {
         return Http::baseUrl(rtrim((string) config('services.jellyfin.url'), '/'))
             ->withHeader('Authorization', sprintf(
                 'MediaBrowser Token="%s"',
                 (string) config('services.jellyfin.api_key'),
-            ))
+            ));
+    }
+
+    /**
+     * A JSON request to the API, patient enough for a busy server.
+     */
+    protected function request(): PendingRequest
+    {
+        return $this->connection()
             ->acceptJson()
             ->timeout(30)
             ->retry(2, 500);

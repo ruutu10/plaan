@@ -140,6 +140,8 @@ export interface PerformanceRecording {
      * opens the right video. Null when no library is configured.
      */
     itemUrl: string | null;
+    /** Whether this reader may download the video through this app. */
+    canDownload: boolean;
     /**
      * When this night's details were last pushed to the library; ISO 8601 UTC
      * instant. Null while the push is still queued, or after one that failed.

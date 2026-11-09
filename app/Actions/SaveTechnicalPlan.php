@@ -41,7 +41,16 @@ class SaveTechnicalPlan
             $attributes['submitted_at'] = now();
         }
 
-        $plan->fill($attributes)->save();
+        $plan->fill($attributes);
+
+        // A technician approved this plan for one night. Anybody holding the
+        // share link can re-point it from the wizard, and the approval must
+        // not travel with it.
+        if ($plan->exists && $plan->isDirty('performance_id')) {
+            $plan->approved_at = null;
+        }
+
+        $plan->save();
 
         $plan->syncAttachments($data['extra']['files'] ?? []);
         $plan->syncSceneSoundFiles();

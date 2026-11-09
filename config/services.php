@@ -76,6 +76,9 @@ return [
     'jellyfin' => [
         'url' => env('JELLYFIN_URL'),
         'api_key' => env('JELLYFIN_API_KEY'),
+        // Each download holds a PHP worker for as long as it runs, so this has
+        // to stay well under the number of workers.
+        'max_concurrent_downloads' => (int) env('JELLYFIN_MAX_CONCURRENT_DOWNLOADS', 5),
     ],
 
     /*
