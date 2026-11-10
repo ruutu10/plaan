@@ -18,7 +18,11 @@
     </h1>
 
     <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6;">
-        Sinu etenduse salvestus on nüüd saadaval.
+        Aitäh, et esinesid hiljuti Ruutu10 laval! Sinu etendusest tehti ka videosalvestis ja see on nüüd järelvaatamiseks saadaval.
+    </p>
+
+    <p style="margin:0 0 24px 0; font-size:16px; line-height:1.6;">
+        Salvestis on mõeldud eelkõige esinejatele endile: oma show analüüsiks ja grupi tutvustamiseks sotsiaalmeedias. Enne avalikku jagamist küsi palun nõusolekut kõigilt grupi liikmetelt.
     </p>
 
     @if ($recordingUrl || $downloadUrl)

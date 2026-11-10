@@ -69,7 +69,7 @@ class PerformanceRecordingAvailable extends Notification implements AboutRecord,
         $downloadUrl = $this->downloadUrl();
 
         $mail = (new MailMessage)
-            ->subject('Etenduse salvestus on olemas · '.$this->label())
+            ->subject('Etenduse salvestus · '.$this->label())
             ->view('emails.performance-recording-available', [
                 'formatName' => $performance?->displayName(),
                 'details' => PerformanceDetails::make($performance)->resolve(),
