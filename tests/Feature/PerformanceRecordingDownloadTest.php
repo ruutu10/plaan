@@ -242,14 +242,16 @@ class PerformanceRecordingDownloadTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_the_crew_on_the_staff_list_gain_nothing_from_being_on_it(): void
+    public function test_the_crew_behind_the_night_may_download_it_too(): void
     {
+        // Being on the staff in any role opens the night's page, and the
+        // recording comes with it — the bar as much as the stage.
         $this->fakeLibrary();
         [$performance] = $this->recorded();
         $bar = User::factory()->create();
         $performance->staff()->attach($bar, ['role' => PerformanceStaffRole::Bar->value]);
 
-        $this->actingAs($bar)->get($this->url($performance))->assertForbidden();
+        $this->actingAs($bar)->get($this->url($performance))->assertOk()->assertStreamed();
     }
 
     public function test_a_guest_is_sent_to_log_in(): void

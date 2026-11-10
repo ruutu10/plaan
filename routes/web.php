@@ -13,6 +13,7 @@ use App\Http\Controllers\PerformancePageController;
 use App\Http\Controllers\PerformancePlankaImportController;
 use App\Http\Controllers\PerformanceRecordingController;
 use App\Http\Controllers\PerformanceReminderController;
+use App\Http\Controllers\PerformanceStaffController;
 use App\Http\Controllers\Teams\TeamAdminController;
 use App\Http\Controllers\Teams\TeamAdminMemberController;
 use App\Http\Controllers\Teams\TeamAdminPageController;
@@ -71,8 +72,9 @@ Route::prefix('tehnikaplaan')->name('technical-plan.')->group(function () {
 // The overview of the plans that have been written, whatever state they are in.
 // Open to every signed-in user, because how far it reaches is the listing's own
 // question rather than the door's: holders of the view-all permission (the
-// "technician" role) are shown the whole house, everybody else their own plans
-// and their groups' — see App\Models\TechnicalPlan::listableBy().
+// "technician" role) are shown the whole house, everybody else their own plans,
+// their groups' and those of the nights they are on the staff of — see
+// App\Models\TechnicalPlan::listableBy().
 Route::get('admin/technical-plans', [TechnicalPlanController::class, 'overview'])
     ->middleware(['auth'])
     ->name('technical-plans.index');
@@ -196,6 +198,13 @@ Route::prefix('api/formats')
                 Route::post('{performance}/reminders', [PerformanceReminderController::class, 'store'])
                     ->name('reminders.store');
 
+                // Staff put on this night by hand, beside whoever the Planka
+                // card names. Only hand-added rows can be taken off again.
+                Route::post('{performance}/staff', [PerformanceStaffController::class, 'store'])
+                    ->name('staff.store');
+                Route::delete('{performance}/staff/{staffing}', [PerformanceStaffController::class, 'destroy'])
+                    ->name('staff.destroy');
+
                 // Read the board again for this one performance, now, instead
                 // of waiting for the nightly run. Narrowed to its own card; the
                 // crew alone may ask — see
@@ -269,6 +278,15 @@ Route::prefix('admin')->middleware(['auth', 'verified', 'can:'.User::MANAGE_PERM
     Route::get('users', [UserAdminController::class, 'overview'])->name('admin.users.index');
     Route::get('users/{user}/edit', [UserAdminController::class, 'edit'])->name('admin.users.edit');
 });
+
+// Finding an account by name, for any screen that adds a person to something —
+// a night's staff, say. Wider than the account screens below, so it answers to
+// App\Policies\UserPolicy::search() rather than to their permission, and a few
+// names at a time: never the whole house in one answer. Registered ahead of
+// them so `{user}` does not take "search" for an id.
+Route::get('api/users/search', [UserAdminController::class, 'search'])
+    ->middleware(['auth', 'verified', 'throttle:60,1,users-search'])
+    ->name('api.users.search');
 
 // JSON API behind those pages, guarded by the same permission rather than by
 // what the reader belongs to — an account is nobody's to keep but the crew's.

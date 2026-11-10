@@ -246,9 +246,10 @@ class TechnicalPlan extends Model implements HasMedia
     /**
      * Limit the query to the plans the given user may open as the basis for a
      * new plan: their own plans, whatever state those are in, plus the plans
-     * their teams' performances have already been handed in with — archived
-     * ones included, since a played format's plan is the one worth copying for
-     * its next run. A team-mate's unfinished draft stays theirs alone.
+     * their teams' performances — and the performances they are on the staff
+     * of — have already been handed in with, archived ones included, since a
+     * played format's plan is the one worth copying for its next run. A
+     * team-mate's unfinished draft stays theirs alone.
      *
      * @param  Builder<TechnicalPlan>  $query
      */
@@ -266,7 +267,8 @@ class TechnicalPlan extends Model implements HasMedia
                 // an Õppelava slot's plan belongs to whoever plays the slot.
                 ->whereHas('performance', fn (Builder $performance) => $performance
                     ->whereIn('performances.team_id', $teamIds)
-                    ->orWhereHas('format', fn (Builder $format) => $format->whereIn('team_id', $teamIds)))));
+                    ->orWhereHas('format', fn (Builder $format) => $format->whereIn('team_id', $teamIds))
+                    ->orWhereHas('staffings', fn (Builder $staffing) => $staffing->where('user_id', $user->id)))));
     }
 
     /**
@@ -282,8 +284,9 @@ class TechnicalPlan extends Model implements HasMedia
 
     /**
      * Limit the query to the plans this user may write to on the strength of
-     * who they are: their own, and those of a performance — or its format —
-     * staged by one of their teams.
+     * who they are: their own, those of a performance — or its format —
+     * staged by one of their teams, and those of a performance they are on the
+     * staff of, whatever their role there and however they were put on it.
      *
      * Unlike {@see visibleTo()}, a team-mate's unfinished draft counts. That
      * one governs opening a plan as the basis for a *new* plan, where somebody
@@ -305,14 +308,18 @@ class TechnicalPlan extends Model implements HasMedia
             // an Õppelava slot's plan belongs to whoever plays the slot.
             ->orWhereHas('performance', fn (Builder $performance) => $performance
                 ->whereIn('performances.team_id', $teamIds)
-                ->orWhereHas('format', fn (Builder $format) => $format->whereIn('team_id', $teamIds))));
+                ->orWhereHas('format', fn (Builder $format) => $format->whereIn('team_id', $teamIds))
+                // Whoever works the night — on stage or behind it, read off
+                // the card or added by hand — fixes its plan as well.
+                ->orWhereHas('staffings', fn (Builder $staffing) => $staffing->where('user_id', $user->id))));
     }
 
     /**
      * Determine whether the user may write to this plan. Three ways in: they
      * hold the plan's key — handing out the share link is how a plan's author
      * lets somebody else work on it — {@see editableBy()} covers them on the
-     * strength of the team the plan's night belongs to, or they hold
+     * strength of the team the plan's night belongs to or of working that
+     * night themselves, or they hold
      * {@see EDIT_ALL_PERMISSION}, which reaches every plan in the house.
      *
      * @param  string|null  $key  The plan token the caller arrived with, if any.

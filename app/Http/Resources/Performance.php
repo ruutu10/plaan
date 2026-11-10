@@ -110,8 +110,8 @@ class Performance extends JsonResource
             // When the card was last read for this performance — the crew and
             // venue are only as fresh as that. Empty for one never imported.
             'plankaImportedAt' => $performance->planka_imported_at?->toIso8601String(),
-            // Imported and read-only: see App\Services\PerformanceStaffSync.
-            // Empty unless eager-loaded, so a listing that has no use for it
+            // Imported (see App\Services\PerformanceStaffSync) and added by
+            // hand alike, each row saying which it is. Empty unless eager-loaded, so a listing that has no use for it
             // never pays for the query.
             'staff' => PerformanceStaffMember::collection($this->whenLoaded('staff')),
         ];

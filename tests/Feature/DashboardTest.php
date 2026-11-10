@@ -730,10 +730,11 @@ class DashboardTest extends TestCase
                 ->where('myPerformances.upcoming.0.formatUrl', route('formats.edit', $format)));
     }
 
-    public function test_my_performances_leaves_a_name_unlinked_for_a_reader_who_may_not_open_it(): void
+    public function test_my_performances_links_a_guest_to_the_night_but_not_its_format(): void
     {
         // A guest performer with a job on a night that belongs to a group they
-        // are no part of: the night is theirs to read, not to correct.
+        // are no part of: working it opens the night's own page to read, but
+        // not the format it belongs to.
         $guest = User::factory()->create();
         $performance = $this->staffing($guest, now()->addDay(), PerformanceStaffRole::Performer);
 
@@ -743,7 +744,10 @@ class DashboardTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->has('myPerformances.upcoming', 1)
                 ->where('myPerformances.upcoming.0.id', $performance->id)
-                ->where('myPerformances.upcoming.0.performanceUrl', null)
+                ->where(
+                    'myPerformances.upcoming.0.performanceUrl',
+                    route('formats.performances.show', [$performance->format_id, $performance->id]),
+                )
                 ->where('myPerformances.upcoming.0.formatUrl', null));
     }
 

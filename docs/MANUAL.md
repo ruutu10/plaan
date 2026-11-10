@@ -264,8 +264,8 @@ Vaba tekst ja failimanused.
 
 **7. Ülevaade - vaata üle ja saada.**
 Valmis plaan dokumendina. Real **Tehnik** on selle õhtu **heli- ja
-valgusmeister**, kui Planka kaardilt on ta juba imporditud (§11.2) - nii tead,
-kellele kirjutad. Kui kaardil pole veel kedagi kirjas, ütleb rida
+valgusmeister**, kui ta on juba etenduse meeskonnas (§11.2, §11.3) - nii tead,
+kellele kirjutad. Kui tehnikut pole veel kirjas, ütleb rida
 **„Tehnikut pole veel kinnitatud“**. Sama rida on ka väljatrükil ja esitamise
 järel saadetud kirjas. Siit saad:
 
@@ -551,9 +551,8 @@ valikuliselt kestus, valikuliselt oma pealkiri ja oma esinev tiim (jagatud
 õhtute jaoks) ning olek.
 
 **Asukoht** on vabatekstiline koht, kus etendus toimub - nii nagu Planka kaardil
-kirjas (nt `improkeskus`, `Vaba Lava, Telliskivi`). See on **puhtalt loetav**,
-nagu meeskondki: koht kuulub Planka kaardile ja iga import kirjutab
-selle üle.
+kirjas (nt `improkeskus`, `Vaba Lava, Telliskivi`). See on **puhtalt loetav**:
+koht kuulub Planka kaardile ja iga import kirjutab selle üle.
 
 - **Etenduse lisamine** on ainuüksi formaadi tiimi õigus - külalistrupp võib oma
   lõiku parandada, kuid mitte kavva enda omi juurde panna.
@@ -575,8 +574,8 @@ selle üle.
   kaardilt järgmisel korral uuesti.
 
 Igal etendusel on ka oma leht (avatav muutmisnimekirja pliiatsinupust), kus
-lisaks eelnimetatud väljadele näeb ka etenduse **meeskonda**, kui see on
-Plankast imporditud - vt §11.2.
+lisaks eelnimetatud väljadele näeb ka etenduse **meeskonda** - nii Plankast
+imporditud (§11.2) kui käsitsi lisatud (§11.3) - ja saab seda täiendada.
 
 **„Värskenda Plankast“** on sellelsamal lehel nupp, mis paneb Planka impordi
 käima kohe, ootamata igaöist jooksu. Loetakse ainult neid kaarte, mille
@@ -738,8 +737,9 @@ saab otse plaani sisse minna.
 Ajajoon näitab **3 viimast** õhtut, millel sa mängisid või tööd tegid, siis
 oranži joone **Praegu**, siis **3 järgmist** õhtut, millele sa oled kirja pandud.
 
-Rollid tulevad Planka kaardilt (vt [§11.2](#112-meeskonna-import)), mitte käsitsi
-sisestusest: kui sa end real ei näe, ei nimeta kaart sind.
+Rollid tulevad Planka kaardilt (vt [§11.2](#112-meeskonna-import)) või etenduse
+lehel käsitsi lisatust (§11.3): kui sa end real ei näe, ei nimeta kaart sind ega
+ole sind keegi käsitsi lisanud.
 
 Formaatide ja etenduste nimed on töölaual lingid kirje enda juurde: formaadi nimi
 viib formaadi ekraanile, etenduse oma (kuupäev, kellaaeg või etteaste nimi)
@@ -803,11 +803,45 @@ valgusmeistrit** - nimetab lisaks ka selle õhtu tehnikaplaan ise: plaani
 (§5.1). Nii teab esineja, kelle jaoks ta kirjutab. Kuni kaart kedagi ei nimeta,
 seisab seal **„Tehnikut pole veel kinnitatud“**.
 
-Meeskond on **puhtalt loetav** - seda ei saa käsitsi muuta ega täiendada. Iga
-uus import kirjutab eelmise meeskonna üle, nii et kui kaardil roll muutub,
-lisandub või kaob, kajastub see sama moodi ka siin. Ka juba esitatud plaan loeb
-tehniku iga kord etenduse pealt, nii et hilisem import parandab vastust ka
-vanas plaanis.
+Iga uus import kirjutab **kaardilt imporditud** meeskonna üle, nii et kui
+kaardil roll muutub, lisandub või kaob, kajastub see sama moodi ka siin. Ka
+juba esitatud plaan loeb tehniku iga kord etenduse pealt, nii et hilisem import
+parandab vastust ka vanas plaanis.
+
+### 11.3 Meeskonna käsitsi täiendamine
+
+Etenduse lehel saab meeskonda ka **käsitsi** inimesi lisada - näiteks
+külalisesineja, keda kaart ei nimeta, või asendustehnik. Lisada saab igaüks,
+kes tohib etendust muuta (formaadi tiim, etendust mängiv tiim ja tehnikud):
+nupp **„Lisa“** meeskonna kohal, otsi kasutaja nime järgi (vähemalt 4
+tähemärki; sõnad võivad olla mis tahes järjekorras) ja vali roll.
+
+- Käsitsi lisatud inimene on süsteemi jaoks **täpselt samasugune** nagu
+  imporditud: ta saab samad teavitused (plaani esitamine, salvestuse
+  valmimine), sama ligipääsu etenduse lehele, plaanidele ja salvestusele
+  (§11.4) ja ilmub töölaual oma etenduste hulka.
+- Iga rida näitab, kas see tuli **Plankast** või lisati **käsitsi**.
+- Planka import **käsitsi lisatud ridu ei puutu** - ei kustuta ega muuda. Kui
+  kaart hiljem sama inimese samas rollis nimetab, jääb alles käsitsi rida.
+- **Eemaldada** saab ainult käsitsi lisatud ridu. Kaardilt imporditud inimene
+  tuleks järgmise impordiga niikuinii tagasi, nii et tema muutmiseks paranda
+  Planka kaarti.
+- Sama inimest ei saa samasse rolli kaks korda lisada; teise rolli küll.
+
+### 11.4 Mida meeskonnas olemine avab
+
+Igaüks, kes on etenduse meeskonnas - mis tahes rollis, imporditud või käsitsi
+lisatud - saab, ka siis kui ta pole ühegi etendusega seotud tiimi liige:
+
+- **avada etenduse lehe** (töölaual on etendus tema jaoks link) ja seda
+  lugeda, salvestus kaasa arvatud. Etendust **muuta, kustutada, meeskonda
+  lisada ega meeldetuletusi saata ta ei saa** - need jäävad etenduse tiimidele
+  ja tehnikutele. Formaadi lehte meeskonnas olemine ei ava;
+- **näha ja muuta selle etenduse tehnikaplaane** - plaanide ülevaates, plaani
+  detailivaates ja vormis, mustandid kaasa arvatud;
+- kasutada etenduse esitatud plaane **uue plaani lähtekohaks**.
+
+Ühe etenduse meeskonnas olemine ei ava ühtegi teist etendust ega selle plaane.
 
 ---
 
@@ -822,6 +856,9 @@ vanas plaanis.
 Igaüks, kelle käes on plaani **jagamislink**, saab seda plaani ilma kontota
 lugeda ja sisse logides ka muuta.
 
+Etenduse **meeskonnaliikmed** näevad ja muudavad lisaks oma etenduse plaane ning
+saavad avada etenduse lehe lugemiseks (§11.4).
+
 Veel kolm märkust piiride kohta:
 
 - Kõigi plaanide lugemine ja nende muutmine on eraldi õigused: majarahvas saab
@@ -829,8 +866,8 @@ Veel kolm märkust piiride kohta:
 - Sama kehtib etenduste kohta: majarahvas näeb kogu maja kava (§7.4), kuid muuta
   saab ainult oma tiimi etendusi, formaadi enda alt.
 - Jellyfini salvestuse **vaatamine ja allalaadimine** on kõigil, kes etenduse
-  lehe avavad, allalaadimine ka sel õhtul laval olnutel ja tehniku kinnitatud plaani
-  kirjutajatel;
+  lehe avavad - etenduse meeskond kaasa arvatud (§11.4) -, allalaadimine ka
+  tehniku kinnitatud plaani kirjutajatel;
   **lingi lisamine** on ainult tehnikutel (§7.2).
 - Kolleegi *lõpetamata mustandit* saab tema tiim muuta (selleks mustand ongi),
   kuid seda ei pakuta kunagi uue plaani lähtekohaks - selleks pakutakse ainult

@@ -126,27 +126,73 @@ class PerformanceController extends Controller
     }
 
     /**
-     * Return a single performance, together with the staff imported for it, the
-     * groups it may be handed to, the people a technical-plan reminder may be
-     * sent to, and the plans handed in for it — the details screen's own edit
-     * form needs the same choice {@see index()} offers, its reminder dialog
-     * needs the group's members, its plan table the plans, and one round trip
-     * is enough for all of them.
+     * Return a single performance, together with its staff, the groups it may
+     * be handed to, the people a technical-plan reminder may be sent to, the
+     * plans handed in for it, and the jobs its staff may be added in — the details
+     * screen's own edit form needs the same choice {@see index()} offers, its
+     * reminder dialog needs the group's members, its plan table the plans, its
+     * staff list the jobs to pick from, and one round trip is
+     * enough for all of them.
+     *
+     * The page is also opened by the night's staff, who may read it but not
+     * change it — see {@see PerformancePolicy::view()}. `can` says which
+     * reader this is, so the screen offers only the buttons the API would
+     * honour, and what only the edit and reminder dialogs need — the groups,
+     * the group's members — is left out for a reader who has neither.
      */
     public function show(Request $request, Format $format, Performance $performance): PerformanceResource
     {
         Gate::authorize('view', $performance);
 
+        $user = $request->user();
+        $canEdit = $user->can('update', $performance);
+
         return PerformanceResource::make(
             $performance->load(['team', 'staff', 'reasoningLogs', 'recording'])->loadCount(['technicalPlans', 'staff']),
         )->additional([
-            'teams' => Performance::assignableTeams($request->user())
-                ->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])
-                ->values(),
-            'reminderRecipients' => $this->reminderRecipients($performance),
+            'can' => [
+                'edit' => $canEdit,
+                // The page links back to its format, which working one night of
+                // it does not open.
+                'openFormat' => $user->can('view', $format),
+            ],
+            'teams' => $canEdit
+                ? Performance::assignableTeams($user)
+                    ->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name])
+                    ->values()
+                : [],
+            'reminderRecipients' => $canEdit ? $this->reminderRecipients($performance) : [],
             'technicalPlans' => AdminTechnicalPlanResource::collection($this->sentPlans($request->user(), $performance))
                 ->resolve($request),
+            ...$this->staffOptions($request->user(), $performance),
         ]);
+    }
+
+    /**
+     * The jobs somebody may be put on this night's staff in by hand — the
+     * staff list's own add dialog offers the choice. Empty for a reader who may
+     * not change the night, so the screen offers no dialog the API would
+     * refuse.
+     *
+     * The people to choose from are not here: the dialog searches for them by
+     * name as it is typed into ({@see PerformanceStaffController::search()}),
+     * so the house's accounts are never handed over in one answer.
+     *
+     * @return array{staffRoles: array<int, array{value: string, label: string}>}
+     */
+    private function staffOptions(User $user, Performance $performance): array
+    {
+        if (! $user->can('update', $performance)) {
+            return ['staffRoles' => []];
+        }
+
+        return [
+            'staffRoles' => collect(PerformanceStaffRole::cases())
+                ->sortBy(fn (PerformanceStaffRole $role): int => $role->listingOrder())
+                ->map(fn (PerformanceStaffRole $role): array => ['value' => $role->value, 'label' => $role->label()])
+                ->values()
+                ->all(),
+        ];
     }
 
     /**

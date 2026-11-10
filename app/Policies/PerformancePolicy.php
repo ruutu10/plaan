@@ -42,11 +42,13 @@ class PerformancePolicy
 
     /**
      * Determine whether the user can open the performance's own details page:
-     * the same reach as editing it, since the page exists to correct it.
+     * whoever may edit it, and whoever is on its staff — see
+     * {@see Performance::viewableBy()}. Staff read the page; the edit, delete
+     * and reminder buttons on it stay with {@see update()}.
      */
     public function view(User $user, Performance $performance): bool
     {
-        return $performance->isEditableBy($user);
+        return $performance->isViewableBy($user);
     }
 
     /**
@@ -100,10 +102,11 @@ class PerformancePolicy
     /**
      * Determine whether the user can download this performance's recording.
      *
-     * Wider than opening the night's page: the people on stage and the plan's
-     * authors are the ones written to about the video, and they may well sit
-     * outside the team playing it. Only an approved plan counts, since anybody
-     * with a login can file one against any night.
+     * Wider than opening the night's page — which already lets in its whole
+     * staff, the people on stage among them: the authors of its plans are
+     * written to about the video too, and may be on no staff and in no team
+     * of the night. Only an approved plan counts, since anybody with a login
+     * can file one against any night.
      */
     public function downloadRecording(User $user, Performance $performance): bool
     {
@@ -112,7 +115,6 @@ class PerformancePolicy
         }
 
         return $this->view($user, $performance)
-            || $performance->onStage()->whereKey($user->getKey())->exists()
             || $performance->technicalPlans()->approved()->whereBelongsTo($user)->exists();
     }
 }

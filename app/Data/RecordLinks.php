@@ -59,7 +59,7 @@ final class RecordLinks
                 ->pluck('id'),
             Performance::query()
                 ->whereKey($performances->map->getKey()->all())
-                ->editableBy($user)
+                ->viewableBy($user)
                 ->pluck('id'),
         );
     }
@@ -78,7 +78,8 @@ final class RecordLinks
 
     /**
      * The performance's own screen, reached through the format it belongs to —
-     * a performance is corrected there, not on a page of its own.
+     * for whoever may edit it and for whoever works it; see
+     * {@see Performance::viewableBy()}.
      */
     public function performanceUrl(?Performance $performance): ?string
     {

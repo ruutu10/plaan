@@ -6,10 +6,10 @@ use App\Concerns\HasValues;
 use App\Services\PerformanceStaffSync;
 
 /**
- * Who a person is to one performance, as the Planka import reads a card's cast
- * and crew. Nothing here is ever set by hand — see
- * {@see PerformanceStaffSync} — so the cases are only the jobs a
- * card can plainly name, not every role the house might ever have.
+ * Who a person is to one performance — as the Planka import reads a card's cast
+ * and crew (see {@see PerformanceStaffSync}), or as somebody puts them on the
+ * night by hand. The cases are the jobs a card can plainly name, and the same
+ * ones are offered by hand, so both ways in describe a night alike.
  */
 enum PerformanceStaffRole: string
 {
