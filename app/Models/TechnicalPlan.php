@@ -34,6 +34,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property array<string, mixed> $equipment
  * @property array<string, mixed> $extra
  * @property Carbon|null $submitted_at
+ * @property Carbon|null $approved_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User|null $user
@@ -372,6 +373,22 @@ class TechnicalPlan extends Model implements HasMedia
     }
 
     /**
+     * Plans a technician has approved, including those archived since.
+     *
+     * Read off `approved_at` rather than the status, because archiving
+     * overwrites the status of approved and unapproved plans alike. Anybody
+     * with a login can file a plan against any night, so this is what makes
+     * authorship worth trusting.
+     *
+     * @param  Builder<TechnicalPlan>  $query
+     */
+    #[Scope]
+    protected function approved(Builder $query): void
+    {
+        $query->whereNotNull('approved_at');
+    }
+
+    /**
      * The contact who owns this plan.
      *
      * @return BelongsTo<User, $this>
@@ -418,6 +435,21 @@ class TechnicalPlan extends Model implements HasMedia
                 $plan->token = static::generateUniqueToken();
             }
         });
+
+        // Kept here so every route to a status is covered. Archiving leaves
+        // the approval standing; going back to a draft or a fresh submission
+        // withdraws it.
+        static::saving(function (TechnicalPlan $plan) {
+            if (! $plan->isDirty('status')) {
+                return;
+            }
+
+            if ($plan->status === TechnicalPlanStatus::Received) {
+                $plan->approved_at ??= Carbon::now();
+            } elseif ($plan->status !== TechnicalPlanStatus::Archived) {
+                $plan->approved_at = null;
+            }
+        });
     }
 
     /**
@@ -455,6 +487,7 @@ class TechnicalPlan extends Model implements HasMedia
             'equipment' => 'array',
             'extra' => 'array',
             'submitted_at' => 'datetime',
+            'approved_at' => 'datetime',
         ];
     }
 

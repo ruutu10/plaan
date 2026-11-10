@@ -72,10 +72,20 @@ return [
     | `Authorization: MediaBrowser Token="..."`. A user's own token is refused:
     | writing an item needs elevation. Leave the URL empty to switch the whole
     | thing off — the field and the link both stay off the screens.
+    |
+    | `url` is the public address, used for every link a person clicks.
+    | `internal_url` is how this app reaches the same server from inside the
+    | cluster: every API call, recording downloads included, goes there instead
+    | of out to the internet and back. Empty means the public address is used
+    | for those too.
     */
     'jellyfin' => [
         'url' => env('JELLYFIN_URL'),
+        'internal_url' => env('JELLYFIN_INTERNAL_URL'),
         'api_key' => env('JELLYFIN_API_KEY'),
+        // Each download holds a PHP worker for as long as it runs, so this has
+        // to stay well under the number of workers.
+        'max_concurrent_downloads' => (int) env('JELLYFIN_MAX_CONCURRENT_DOWNLOADS', 5),
     ],
 
     /*

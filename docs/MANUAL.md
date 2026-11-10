@@ -604,15 +604,30 @@ täispikk aadress (`.../web/#/details?id=...`) kui ka paljas video ID kõlbavad.
   vaheaeg) ning lingid tagasi plaani ja Planka kaardi peale.
 - Andmed liiguvad **ainult ühes suunas**, plaanist Jellyfini. Kui keegi
   Jellyfinis kirjelduse käsitsi üle kirjutab, kaob see järgmise uuendusega.
-- Kui link **esimest korda** lisatakse, saavad selle etenduse tehnikaplaani
-  kirjutajad kirja, et salvestus on olemas. Hilisem lingi parandamine teist
-  kirja ei saada.
+- Kui link **esimest korda** lisatakse, saavad selle etenduse **tehniku
+  kinnitatud** tehnikaplaani kirjutajad kirja, et salvestus on olemas. Hilisem
+  lingi parandamine teist kirja ei saada.
 - Sedasama kirja saavad **pimekoopiana** ka kõik, kes sel õhtul laval olid -
   esinejad ja õhtujuht, nii nagu Planka kaart nad nimetas. 
-- Kui plaani kirjutajat pole (nt formaadil, mille tehnikaplaan ei ole
-  kohustuslik), ei saada kirja kellelegi - ka lavalolijatele mitte.
-- Kiri läheb **ainult teatri enda e-posti domeenide** aadressidele (vt §2.4).
-  Salvestus on maja meediakogus, mida külalisaadressilt avada ei saa.
+- Kui tehniku kinnitatud plaani kirjutajat pole (nt formaadil, mille
+  tehnikaplaan ei ole kohustuslik, või kui plaan jäi kinnitamata), ei saada
+  kirja kellelegi - ka lavalolijatele mitte.
+- Kirjas on nupud **Vaata Jellyfinis** ja **Laadi alla**. Allalaadimiseks
+  piisab Plaani sisselogimisest, Jellyfini kontot pole vaja. Sama nupp on ka
+  etenduse lehel. Neile, kes faili alla laadida saavad, näidatakse kirjas ja
+  etenduse lehel ka faili nime, suurust ja Jellyfini lisamise kuupäeva. Kui
+  Jellyfin ei vasta, jäävad need andmed lihtsalt näitamata.
+- Teatri enda e-posti domeenidest (vt §2.4) väljaspool olevad kirjutajad ja
+  esinejad saavad kirja eraldi ja ainult allalaadimise nupuga, sest Jellyfini
+  nad sisse ei pääse.
+- Alla laadida saavad need, kes etenduse lehe avada saavad, sel õhtul laval
+  olnud ja **tehniku kinnitatud** plaani kirjutajad. Ainult esitatud plaan
+  ligipääsu ei anna; kinnitus jääb kehtima ka pärast plaani arhiveerimist, aga
+  kaob, kui plaan uuesti esitatakse või kui keegi tõstab plaani vormil teise
+  etenduse alla - siis läheb plaan tagasi olekusse **Esitatud** ja tehnik peab
+  selle uue etenduse jaoks uuesti kinnitama. Korraga saab alla laadida piiratud arv
+  inimesi; kui kohad on täis, tuleb mõne minuti pärast uuesti proovida. Iga
+  allalaadimine jääb auditilogisse.
 
 ### 7.3 Etenduse olek
 
@@ -813,7 +828,9 @@ Veel kolm märkust piiride kohta:
   lugeda, aga mitte kinnitada ega teise etenduse alla tõsta (§5.2, §5.3).
 - Sama kehtib etenduste kohta: majarahvas näeb kogu maja kava (§7.4), kuid muuta
   saab ainult oma tiimi etendusi, formaadi enda alt.
-- Jellyfini salvestuse **vaatamine** on kõigil, kes etenduse lehe avavad;
+- Jellyfini salvestuse **vaatamine ja allalaadimine** on kõigil, kes etenduse
+  lehe avavad, allalaadimine ka sel õhtul laval olnutel ja tehniku kinnitatud plaani
+  kirjutajatel;
   **lingi lisamine** on ainult tehnikutel (§7.2).
 - Kolleegi *lõpetamata mustandit* saab tema tiim muuta (selleks mustand ongi),
   kuid seda ei pakuta kunagi uue plaani lähtekohaks - selleks pakutakse ainult

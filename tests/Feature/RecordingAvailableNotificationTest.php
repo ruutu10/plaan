@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Notifications\PerformanceRecordingAvailable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Activitylog\Models\Activity;
@@ -43,7 +44,12 @@ class RecordingAvailableNotificationTest extends TestCase
         Http::preventStrayRequests();
         Http::fake([
             'jellyfin.test/Items?*' => Http::response([
-                'Items' => [['Id' => self::ITEM_ID, 'Type' => 'Episode']],
+                'Items' => [[
+                    'Id' => self::ITEM_ID,
+                    'Type' => 'Episode',
+                    'DateCreated' => '2026-04-03T23:36:24.0000000Z',
+                    'MediaSources' => [['Path' => '/media/Tšikid Reas S01E04.mp4', 'Size' => 9712902453]],
+                ]],
                 'TotalRecordCount' => 1,
             ]),
             'jellyfin.test/*' => Http::response(null, 204),
@@ -56,7 +62,7 @@ class RecordingAvailableNotificationTest extends TestCase
 
         $performance = Performance::factory()->create();
         $author = User::factory()->ofTheHouse()->create();
-        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($author, 'user')->create();
 
         $recording = $this->recordingFor($performance);
 
@@ -77,7 +83,7 @@ class RecordingAvailableNotificationTest extends TestCase
 
         $performance = Performance::factory()->create();
         $author = User::factory()->ofTheHouse()->create();
-        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($author, 'user')->create();
 
         $player = $this->staff($performance, PerformanceStaffRole::Performer);
         $host = $this->staff($performance, PerformanceStaffRole::Host);
@@ -107,7 +113,7 @@ class RecordingAvailableNotificationTest extends TestCase
 
         $performance = Performance::factory()->create();
         $author = User::factory()->ofTheHouse()->create();
-        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($author, 'user')->create();
 
         $player = $this->staff($performance, PerformanceStaffRole::Performer);
         $this->staff($performance, PerformanceStaffRole::Technician);
@@ -134,7 +140,7 @@ class RecordingAvailableNotificationTest extends TestCase
 
         $performance = Performance::factory()->create();
         $author = User::factory()->ofTheHouse()->create();
-        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($author, 'user')->create();
 
         $performance->staff()->attach($author, ['role' => PerformanceStaffRole::Performer->value]);
 
@@ -158,8 +164,8 @@ class RecordingAvailableNotificationTest extends TestCase
         $performance = Performance::factory()->create();
         $first = User::factory()->ofTheHouse()->create();
         $second = User::factory()->ofTheHouse()->create();
-        TechnicalPlan::factory()->for($performance)->for($first, 'user')->create();
-        TechnicalPlan::factory()->for($performance)->for($second, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($first, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($second, 'user')->create();
 
         $player = $this->staff($performance, PerformanceStaffRole::Performer);
 
@@ -188,7 +194,7 @@ class RecordingAvailableNotificationTest extends TestCase
     {
         $performance = Performance::factory()->create();
         $author = User::factory()->ofTheHouse()->create();
-        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($author, 'user')->create();
 
         $player = $this->staff($performance, PerformanceStaffRole::Performer);
 
@@ -206,7 +212,7 @@ class RecordingAvailableNotificationTest extends TestCase
 
         $performance = Performance::factory()->create();
         $author = User::factory()->ofTheHouse()->create();
-        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($author, 'user')->create();
 
         $this->announce($this->recordingFor($performance));
 
@@ -218,30 +224,89 @@ class RecordingAvailableNotificationTest extends TestCase
     }
 
     /**
-     * The letter carries a link into a library only the house can open, so
-     * sending it to a visiting performer's private address would be telling
-     * somebody about a video they cannot watch.
+     * A visiting author can download the video with a login here, so they are
+     * written to, without the link into a library they cannot open.
      */
-    public function test_an_author_on_an_outside_address_is_not_written_to(): void
+    public function test_an_author_on_an_outside_address_gets_a_download_only_letter(): void
     {
-        Notification::fake();
-
         $performance = Performance::factory()->create();
         $guest = User::factory()->create(['email' => 'guest@gmail.com']);
-        TechnicalPlan::factory()->for($performance)->for($guest, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($guest, 'user')->create();
 
-        $this->announce($this->recordingFor($performance));
+        $recording = $this->recordingFor($performance);
 
-        Notification::assertNothingSent();
+        Notification::fake();
+        $this->announce($recording);
+        Notification::assertSentTo($guest, PerformanceRecordingAvailable::class);
+
+        $mail = (new PerformanceRecordingAvailable($recording))->toMail($guest);
+
+        $this->assertNull($mail->viewData['recordingUrl']);
+        $this->assertSame(route('performances.recording.download', $performance), $mail->viewData['downloadUrl']);
+
+        $html = (string) $mail->render();
+        $this->assertStringNotContainsString('Vaata Jellyfinis', $html);
+        $this->assertStringContainsString('Laadi alla', $html);
     }
 
-    public function test_somebody_on_stage_on_an_outside_address_is_not_copied(): void
+    public function test_the_letter_names_the_file_with_its_size_and_date(): void
+    {
+        $performance = Performance::factory()->create();
+        $author = User::factory()->ofTheHouse()->create();
+
+        $html = (string) (new PerformanceRecordingAvailable($this->recordingFor($performance)))
+            ->toMail($author)
+            ->render();
+
+        $this->assertStringContainsString('Tšikid Reas S01E04.mp4', $html);
+        $this->assertStringContainsString('9.0 GB', $html);
+        $this->assertStringContainsString('lisatud 04.04.2026', $html);
+        $this->assertStringNotContainsString('/media/', $html);
+    }
+
+    /**
+     * How a failed lookup is remembered is covered with the lookup itself;
+     * this is only the letter going out without it.
+     */
+    public function test_a_library_that_does_not_answer_still_lets_the_letter_go(): void
+    {
+        Cache::put('jellyfin-file:'.self::ITEM_ID, [], 60);
+
+        $performance = Performance::factory()->create();
+        $author = User::factory()->ofTheHouse()->create();
+
+        $html = (string) (new PerformanceRecordingAvailable($this->recordingFor($performance)))
+            ->toMail($author)
+            ->render();
+
+        $this->assertStringContainsString('Laadi alla', $html);
+        $this->assertStringContainsString('mitu gigabaiti', $html);
+    }
+
+    public function test_the_house_letter_offers_both_buttons(): void
+    {
+        $performance = Performance::factory()->create();
+        $author = User::factory()->ofTheHouse()->create();
+
+        $html = (string) (new PerformanceRecordingAvailable($this->recordingFor($performance)))
+            ->toMail($author)
+            ->render();
+
+        $this->assertStringContainsString('Vaata Jellyfinis', $html);
+        $this->assertStringContainsString('Laadi alla', $html);
+    }
+
+    /**
+     * Sharing a blind copy would hand a visitor the house's letter, library
+     * link and all.
+     */
+    public function test_somebody_on_stage_on_an_outside_address_gets_a_letter_of_their_own(): void
     {
         Notification::fake();
 
         $performance = Performance::factory()->create();
         $author = User::factory()->ofTheHouse()->create();
-        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($author, 'user')->create();
 
         $ours = $this->staff($performance, PerformanceStaffRole::Performer);
         $guest = User::factory()->create(['email' => 'guest@gmail.com']);
@@ -254,11 +319,36 @@ class RecordingAvailableNotificationTest extends TestCase
             PerformanceRecordingAvailable::class,
             fn (PerformanceRecordingAvailable $notification): bool => $notification->blindCopies === [$ours->email],
         );
+        Notification::assertSentTo(
+            $guest,
+            PerformanceRecordingAvailable::class,
+            fn (PerformanceRecordingAvailable $notification): bool => $notification->blindCopies === [],
+        );
+        Notification::assertCount(2);
+    }
+
+    public function test_with_only_outside_authors_the_house_on_stage_are_written_to_separately(): void
+    {
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        $guest = User::factory()->create(['email' => 'guest@gmail.com']);
+        TechnicalPlan::factory()->approved()->for($performance)->for($guest, 'user')->create();
+
+        $player = $this->staff($performance, PerformanceStaffRole::Performer);
+
+        $this->announce($this->recordingFor($performance));
+
+        Notification::assertCount(2);
+        Notification::assertSentTo(
+            $player,
+            PerformanceRecordingAvailable::class,
+            fn (PerformanceRecordingAvailable $notification): bool => $notification->blindCopies === [],
+        );
     }
 
     /**
-     * Only one of the evening's two plans was written by somebody the house can
-     * write to, so that is the one letter that goes — carrying the blind copy.
+     * Listed first or not, a visitor's letter cannot carry the house's copies.
      */
     public function test_an_outside_author_does_not_take_the_blind_copy_with_them(): void
     {
@@ -267,14 +357,19 @@ class RecordingAvailableNotificationTest extends TestCase
         $performance = Performance::factory()->create();
         $guest = User::factory()->create(['email' => 'guest@gmail.com']);
         $ours = User::factory()->ofTheHouse()->create();
-        TechnicalPlan::factory()->for($performance)->for($guest, 'user')->create();
-        TechnicalPlan::factory()->for($performance)->for($ours, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($guest, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($ours, 'user')->create();
 
         $player = $this->staff($performance, PerformanceStaffRole::Performer);
 
         $this->announce($this->recordingFor($performance));
 
-        Notification::assertCount(1);
+        Notification::assertCount(2);
+        Notification::assertSentTo(
+            $guest,
+            PerformanceRecordingAvailable::class,
+            fn (PerformanceRecordingAvailable $notification): bool => $notification->blindCopies === [],
+        );
         Notification::assertSentTo(
             $ours,
             PerformanceRecordingAvailable::class,
@@ -298,13 +393,26 @@ class RecordingAvailableNotificationTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    public function test_the_author_of_an_unapproved_plan_is_not_written_to(): void
+    {
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        TechnicalPlan::factory()->submitted()->for($performance)->for(User::factory()->ofTheHouse(), 'user')->create();
+        $this->staff($performance, PerformanceStaffRole::Performer);
+
+        $this->announce($this->recordingFor($performance));
+
+        Notification::assertNothingSent();
+    }
+
     public function test_two_plans_by_one_author_are_one_letter(): void
     {
         Notification::fake();
 
         $performance = Performance::factory()->create();
         $author = User::factory()->ofTheHouse()->create();
-        TechnicalPlan::factory()->count(2)->for($performance)->for($author, 'user')->create();
+        TechnicalPlan::factory()->approved()->count(2)->for($performance)->for($author, 'user')->create();
 
         $this->announce($this->recordingFor($performance));
 
@@ -318,8 +426,8 @@ class RecordingAvailableNotificationTest extends TestCase
         $performance = Performance::factory()->create();
         $first = User::factory()->ofTheHouse()->create();
         $second = User::factory()->ofTheHouse()->create();
-        TechnicalPlan::factory()->for($performance)->for($first, 'user')->create();
-        TechnicalPlan::factory()->for($performance)->for($second, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($first, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($second, 'user')->create();
 
         $this->announce($this->recordingFor($performance));
 
@@ -337,7 +445,7 @@ class RecordingAvailableNotificationTest extends TestCase
 
         $performance = Performance::factory()->create();
         $author = User::factory()->ofTheHouse()->create();
-        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($author, 'user')->create();
 
         $recording = $this->recordingFor($performance);
 
@@ -361,7 +469,7 @@ class RecordingAvailableNotificationTest extends TestCase
         Notification::fake();
 
         $performance = Performance::factory()->create();
-        TechnicalPlan::factory()->for($performance)->create(['user_id' => null]);
+        TechnicalPlan::factory()->approved()->for($performance)->create(['user_id' => null]);
 
         $this->announce($this->recordingFor($performance));
 
@@ -372,7 +480,7 @@ class RecordingAvailableNotificationTest extends TestCase
     {
         $performance = Performance::factory()->create();
         $author = User::factory()->ofTheHouse()->create();
-        TechnicalPlan::factory()->for($performance)->for($author, 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($author, 'user')->create();
 
         $recording = $this->recordingFor($performance);
 
@@ -400,7 +508,7 @@ class RecordingAvailableNotificationTest extends TestCase
         Notification::fake();
 
         $performance = Performance::factory()->create();
-        TechnicalPlan::factory()->for($performance)->for(User::factory()->ofTheHouse(), 'user')->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for(User::factory()->ofTheHouse(), 'user')->create();
 
         $recording = $this->recordingFor($performance);
         $crew = $this->technician();

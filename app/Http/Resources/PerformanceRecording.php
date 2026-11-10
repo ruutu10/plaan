@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Models\Performance as PerformanceModel;
 use App\Models\PerformanceRecording as PerformanceRecordingModel;
 use App\Services\JellyfinClient;
+use App\Services\RecordingFileDetails;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
@@ -22,6 +23,8 @@ class PerformanceRecording extends JsonResource
      * @return array{
      *     url: string,
      *     itemUrl: string|null,
+     *     canDownload: bool,
+     *     file: array{name: string, sizeLabel: string, addedOn: string|null}|null,
      *     syncedAt: string|null,
      *     syncError: string|null,
      * }
@@ -36,6 +39,12 @@ class PerformanceRecording extends JsonResource
         $isCrew = $recording->performance instanceof PerformanceModel
             && Gate::allows('linkRecording', $recording->performance);
 
+        $canDownload = $recording->item_id !== null
+            && $recording->performance instanceof PerformanceModel
+            && Gate::allows('downloadRecording', $recording->performance);
+
+        $file = $canDownload ? app(RecordingFileDetails::class)->for($recording) : null;
+
         return [
             // What was pasted, which is what the field holds when it is opened
             // again for correcting.
@@ -45,6 +54,15 @@ class PerformanceRecording extends JsonResource
             // but readable shape still opens the right video. Empty when no
             // library is configured to open it on.
             'itemUrl' => JellyfinClient::itemUrl($recording->item_id),
+            // Whether this reader gets the download button: that needs an item
+            // to fetch as well as the right to fetch it.
+            'canDownload' => $canDownload,
+            // What the button fetches, shown only to whoever may fetch it.
+            'file' => $file === null ? null : [
+                'name' => $file->name,
+                'sizeLabel' => $file->sizeLabel(),
+                'addedOn' => $file->addedOnLabel(),
+            ],
             'syncedAt' => $recording->synced_at?->toIso8601String(),
             // Kept from everybody but the crew: a group has nothing to do with
             // the media server refusing a write, and nothing it could do about

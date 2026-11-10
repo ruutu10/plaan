@@ -5,7 +5,9 @@ namespace App\Notifications;
 use App\Http\Resources\PerformanceDetails;
 use App\Listeners\NotifyRecordingAvailable;
 use App\Models\PerformanceRecording;
+use App\Models\User;
 use App\Services\JellyfinClient;
+use App\Services\RecordingFileDetails;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
@@ -64,17 +66,24 @@ class PerformanceRecordingAvailable extends Notification implements AboutRecord,
     public function toMail(object $notifiable): MailMessage
     {
         $performance = $this->recording->performance;
+        $downloadUrl = $this->downloadUrl();
 
         $mail = (new MailMessage)
-            ->subject('Etenduse salvestus on olemas · '.$this->label())
+            ->subject('Etenduse salvestus · '.$this->label())
             ->view('emails.performance-recording-available', [
                 'formatName' => $performance?->displayName(),
                 'details' => PerformanceDetails::make($performance)->resolve(),
                 // The item as the library holds it, so a link that was pasted
                 // in an odd shape still opens the right episode. What was
-                // typed is the fallback, never nothing.
-                'recordingUrl' => JellyfinClient::itemUrl($this->recording->item_id)
-                    ?? $this->recording->url,
+                // typed is the fallback. Only the house can open the library,
+                // so nobody else is shown the way in.
+                'recordingUrl' => $notifiable instanceof User && $notifiable->isHouseStaff()
+                    ? JellyfinClient::itemUrl($this->recording->item_id) ?? $this->recording->url
+                    : null,
+                'downloadUrl' => $downloadUrl,
+                // Read when the letter is sent rather than when it was queued;
+                // a library that does not answer leaves it out.
+                'recordingFile' => $downloadUrl === null ? null : app(RecordingFileDetails::class)->for($this->recording),
                 'techEmail' => (string) config('technical_plan.tech_email'),
             ]);
 
@@ -86,6 +95,20 @@ class PerformanceRecordingAvailable extends Notification implements AboutRecord,
         }
 
         return $mail;
+    }
+
+    /**
+     * Where the video can be downloaded with a login here, when it can be.
+     */
+    private function downloadUrl(): ?string
+    {
+        $performance = $this->recording->performance;
+
+        if ($performance === null || $this->recording->item_id === null || ! JellyfinClient::isConfigured()) {
+            return null;
+        }
+
+        return route('performances.recording.download', $performance);
     }
 
     /**

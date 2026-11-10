@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Data\RecordingFile;
 use App\Rules\JellyfinItemUrl;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -107,6 +110,9 @@ class JellyfinClient
      * client: the same host serves the API and the interface, so the episode a
      * link was accepted as is one click away from the screen showing it. Null
      * when there is no item, or no server configured to look on.
+     *
+     * Always the public address, never {@see apiBaseUrl()}: a person cannot
+     * reach the cluster-internal one.
      */
     public static function itemUrl(?string $itemId): ?string
     {
@@ -208,6 +214,74 @@ class JellyfinClient
     }
 
     /**
+     * The file behind an item: its name, size and when it was added to the
+     * library. Null when the library has no such item or no file for it.
+     *
+     * Asked with a short timeout and no retries, because it is only ever shown
+     * beside a download and must not hold up the page or letter showing it.
+     */
+    public function file(string $itemId): ?RecordingFile
+    {
+        $item = $this->connection()
+            ->acceptJson()
+            ->connectTimeout(3)
+            ->timeout(5)
+            ->get('/Items', ['ids' => $itemId, 'fields' => 'MediaSources,DateCreated'])
+            ->throw()
+            ->json('Items.0');
+
+        $source = is_array($item) ? ($item['MediaSources'][0] ?? null) : null;
+
+        if (! is_array($source) || blank($source['Path'] ?? null) || ! is_numeric($source['Size'] ?? null)) {
+            return null;
+        }
+
+        // The server's own path to the file stays on the server: only its
+        // last segment is a name worth showing.
+        $name = basename(str_replace('\\', '/', (string) $source['Path']));
+        $addedAt = $item['DateCreated'] ?? null;
+
+        return new RecordingFile(
+            $name,
+            (int) $source['Size'],
+            is_string($addedAt) ? CarbonImmutable::parse($addedAt) : null,
+        );
+    }
+
+    /**
+     * Open an episode's original file for reading, without fetching any of it.
+     *
+     * The answer's body is a live stream the caller reads and closes: these
+     * files run to several gigabytes, so nothing may buffer them, and a request
+     * retried or cut off by a total timeout would be a download thrown away.
+     * Only a stalled connection gives up.
+     *
+     * Refuses anything that is not an episode, for the reason {@see EPISODE}
+     * gives: a link pointing at a folder names no one video.
+     *
+     * @throws RuntimeException when the item is missing or is not an episode
+     */
+    public function download(string $itemId, ?string $range = null, ?string $ifRange = null): Response
+    {
+        $type = $this->item($itemId)['Type'] ?? null;
+
+        if ($type !== self::EPISODE) {
+            throw new RuntimeException(sprintf(
+                'Refusing to download Jellyfin item %s: it is a %s, not an episode.',
+                $itemId,
+                $type === null ? 'record of no stated kind' : (string) $type,
+            ));
+        }
+
+        return $this->connection()
+            ->withHeaders(array_filter(['Range' => $range, 'If-Range' => $ifRange]))
+            ->connectTimeout(10)
+            ->timeout(0)
+            ->withOptions(['stream' => true, 'read_timeout' => 60])
+            ->get("/Items/{$itemId}/Download");
+    }
+
+    /**
      * Spell the empty maps as maps — see {@see MAPS} for why they would
      * otherwise go out as lists and have the whole write refused.
      *
@@ -233,13 +307,33 @@ class JellyfinClient
      * Jellyfin takes the key in an `Authorization` header of its own devising;
      * a plain `Bearer` of the same value is refused with a 401.
      */
-    protected function request(): PendingRequest
+    private function connection(): PendingRequest
     {
-        return Http::baseUrl(rtrim((string) config('services.jellyfin.url'), '/'))
+        return Http::baseUrl(self::apiBaseUrl())
             ->withHeader('Authorization', sprintf(
                 'MediaBrowser Token="%s"',
                 (string) config('services.jellyfin.api_key'),
-            ))
+            ));
+    }
+
+    /**
+     * Where this app talks to the server: the cluster-internal address when
+     * one is set, so API calls and downloads stay off the internet, otherwise
+     * the public one.
+     */
+    private static function apiBaseUrl(): string
+    {
+        $internal = (string) config('services.jellyfin.internal_url');
+
+        return rtrim(filled($internal) ? $internal : (string) config('services.jellyfin.url'), '/');
+    }
+
+    /**
+     * A JSON request to the API, patient enough for a busy server.
+     */
+    protected function request(): PendingRequest
+    {
+        return $this->connection()
             ->acceptJson()
             ->timeout(30)
             ->retry(2, 500);

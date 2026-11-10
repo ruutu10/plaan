@@ -96,4 +96,23 @@ class PerformancePolicy
     {
         return JellyfinClient::isConfigured() && $user->can(Performance::EDIT_ALL_PERMISSION);
     }
+
+    /**
+     * Determine whether the user can download this performance's recording.
+     *
+     * Wider than opening the night's page: the people on stage and the plan's
+     * authors are the ones written to about the video, and they may well sit
+     * outside the team playing it. Only an approved plan counts, since anybody
+     * with a login can file one against any night.
+     */
+    public function downloadRecording(User $user, Performance $performance): bool
+    {
+        if (! JellyfinClient::isConfigured()) {
+            return false;
+        }
+
+        return $this->view($user, $performance)
+            || $performance->onStage()->whereKey($user->getKey())->exists()
+            || $performance->technicalPlans()->approved()->whereBelongsTo($user)->exists();
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Data\PlanContent;
 use App\Enums\TechnicalPlanStatus;
+use App\Events\TechnicalPlanStatusChanged;
 use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
@@ -24,6 +25,7 @@ class SaveTechnicalPlan
     public function handle(TechnicalPlan $plan, array $data, User $user, bool $submitting): TechnicalPlan
     {
         $wasNew = ! $plan->exists;
+        $previousStatus = $wasNew ? null : $plan->status;
 
         $attributes = PlanContent::fromValidated($data) + [
             'performance_id' => $data['meta']['performanceId'],
@@ -41,7 +43,26 @@ class SaveTechnicalPlan
             $attributes['submitted_at'] = now();
         }
 
-        $plan->fill($attributes)->save();
+        $plan->fill($attributes);
+
+        // A technician approved this plan for one night. Anybody holding the
+        // share link can re-point it from the wizard, so the approval must not
+        // travel with it: the plan goes back to submitted, waiting for a
+        // technician to look at it for the new night.
+        $losesApproval = $previousStatus !== null
+            && $plan->isDirty('performance_id')
+            && ($plan->approved_at !== null || $previousStatus === TechnicalPlanStatus::Received);
+
+        if ($losesApproval) {
+            $plan->status = TechnicalPlanStatus::Submitted;
+            $plan->approved_at = null;
+        }
+
+        $plan->save();
+
+        if ($losesApproval && $previousStatus !== TechnicalPlanStatus::Submitted) {
+            TechnicalPlanStatusChanged::dispatch($plan, $previousStatus, TechnicalPlanStatus::Submitted, $user);
+        }
 
         $plan->syncAttachments($data['extra']['files'] ?? []);
         $plan->syncSceneSoundFiles();

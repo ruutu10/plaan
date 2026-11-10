@@ -75,6 +75,16 @@ defineProps<{ rows: AdminPlanRow[] | null; emptyText: string }>();
                 <R10Pill :tone="statusTone(plan.status)" size="md">
                     {{ plan.statusLabel }}
                 </R10Pill>
+                <span
+                    class="mt-1 block text-[13px] whitespace-nowrap text-r10-grey-500"
+                    data-test="technical-plan-approved-at"
+                >
+                    {{
+                        plan.approvedAt
+                            ? `Kinnitatud ${formatLocalDate(plan.approvedAt)}`
+                            : 'Pole veel kinnitatud'
+                    }}
+                </span>
             </td>
             <td class="px-5 py-4 text-right align-top">
                 <div class="flex justify-end gap-2">

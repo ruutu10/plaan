@@ -58,6 +58,17 @@ class TechnicalPlanFactory extends Factory
     }
 
     /**
+     * Indicate that a technician has approved the plan.
+     */
+    public function approved(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => TechnicalPlanStatus::Received,
+            'submitted_at' => now(),
+        ]);
+    }
+
+    /**
      * Indicate that the plan's night has been played and it has been archived.
      */
     public function archived(): static

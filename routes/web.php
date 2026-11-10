@@ -11,6 +11,7 @@ use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\PerformancePageController;
 use App\Http\Controllers\PerformancePlankaImportController;
+use App\Http\Controllers\PerformanceRecordingController;
 use App\Http\Controllers\PerformanceReminderController;
 use App\Http\Controllers\Teams\TeamAdminController;
 use App\Http\Controllers\Teams\TeamAdminMemberController;
@@ -150,6 +151,12 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
         ->name('formats.performances.show')
         ->scopeBindings();
 });
+
+// A night's video, streamed out of the media library for somebody with no
+// account on it. Outside the admin shell: this is where the letter's link lands.
+Route::get('performances/{performance}/recording/download', [PerformanceRecordingController::class, 'download'])
+    ->middleware(['auth', 'verified', 'throttle:60,1,recording-download'])
+    ->name('performances.recording.download');
 
 // JSON API for format management. A user reaches the formats of the groups they
 // belong to and no others; holders of App\Models\Format::EDIT_ALL_PERMISSION

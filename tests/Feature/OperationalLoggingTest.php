@@ -360,8 +360,9 @@ class OperationalLoggingTest extends TestCase
     public function test_announcing_a_recording_is_logged_with_who_was_reached(): void
     {
         $recording = $this->linkedRecording();
-        // On a house address, which is the only kind the letter goes to.
+        // Approved, since an unapproved plan's author is not written to.
         TechnicalPlan::factory()
+            ->approved()
             ->for($recording->performance)
             ->for(User::factory()->ofTheHouse(), 'user')
             ->create();
