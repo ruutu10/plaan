@@ -36,7 +36,12 @@ class RecordingFileDetails
         $cached = Cache::get($key);
 
         if (is_array($cached)) {
-            return $cached === [] ? null : RecordingFile::fromArray($cached);
+            if ($cached === []) {
+                return null;
+            }
+
+            /** @var array{name: string, sizeBytes: int, addedAt: string|null} $cached written by this class from RecordingFile::toArray() */
+            return RecordingFile::fromArray($cached);
         }
 
         try {

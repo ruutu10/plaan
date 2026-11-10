@@ -445,7 +445,7 @@ class TechnicalPlan extends Model implements HasMedia
             }
 
             if ($plan->status === TechnicalPlanStatus::Received) {
-                $plan->approved_at ??= now();
+                $plan->approved_at ??= Carbon::now();
             } elseif ($plan->status !== TechnicalPlanStatus::Archived) {
                 $plan->approved_at = null;
             }
