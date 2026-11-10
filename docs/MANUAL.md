@@ -621,7 +621,9 @@ täispikk aadress (`.../web/#/details?id=...`) kui ka paljas video ID kõlbavad.
 - Alla laadida saavad need, kes etenduse lehe avada saavad, sel õhtul laval
   olnud ja **tehniku kinnitatud** plaani kirjutajad. Ainult esitatud plaan
   ligipääsu ei anna; kinnitus jääb kehtima ka pärast plaani arhiveerimist, aga
-  kaob, kui plaan uuesti esitatakse või teise etenduse alla tõstetakse. Korraga saab alla laadida piiratud arv
+  kaob, kui plaan uuesti esitatakse või kui keegi tõstab plaani vormil teise
+  etenduse alla - siis läheb plaan tagasi olekusse **Esitatud** ja tehnik peab
+  selle uue etenduse jaoks uuesti kinnitama. Korraga saab alla laadida piiratud arv
   inimesi; kui kohad on täis, tuleb mõne minuti pärast uuesti proovida. Iga
   allalaadimine jääb auditilogisse.
 

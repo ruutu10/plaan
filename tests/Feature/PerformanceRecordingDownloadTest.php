@@ -153,7 +153,36 @@ class PerformanceRecordingDownloadTest extends TestCase
 
         $this->assertSame($target->id, $plan->refresh()->performance_id);
         $this->assertNull($plan->approved_at);
+        $this->assertSame(TechnicalPlanStatus::Submitted, $plan->status);
         $this->assertFalse($author->can('downloadRecording', $target));
+
+        $activity = Activity::query()->forSubject($plan)->forEvent('status_changed')->sole();
+        $this->assertSame('received', $activity->getProperty('from'));
+        $this->assertSame('submitted', $activity->getProperty('to'));
+        $this->assertTrue($author->is($activity->causer));
+    }
+
+    public function test_an_archived_approved_plan_moved_from_the_wizard_goes_back_to_submitted(): void
+    {
+        $author = User::factory()->create();
+        $plan = TechnicalPlan::factory()->approved()->for($author, 'user')->create();
+        $plan->update(['status' => TechnicalPlanStatus::Archived]);
+
+        app(SaveTechnicalPlan::class)->handle($plan, $this->wizardInput($plan, Performance::factory()->create()), $author, false);
+
+        $this->assertSame(TechnicalPlanStatus::Submitted, $plan->refresh()->status);
+        $this->assertNull($plan->approved_at);
+    }
+
+    public function test_an_unapproved_plan_moved_from_the_wizard_keeps_its_status(): void
+    {
+        $author = User::factory()->create();
+        $plan = TechnicalPlan::factory()->for($author, 'user')->create();
+
+        app(SaveTechnicalPlan::class)->handle($plan, $this->wizardInput($plan, Performance::factory()->create()), $author, false);
+
+        $this->assertSame(TechnicalPlanStatus::Draft, $plan->refresh()->status);
+        $this->assertFalse(Activity::query()->forSubject($plan)->forEvent('status_changed')->exists());
     }
 
     public function test_saving_an_approved_plan_on_its_own_night_keeps_the_approval(): void
@@ -164,6 +193,7 @@ class PerformanceRecordingDownloadTest extends TestCase
         app(SaveTechnicalPlan::class)->handle($plan, $this->wizardInput($plan, $plan->performance), $author, false);
 
         $this->assertNotNull($plan->refresh()->approved_at);
+        $this->assertSame(TechnicalPlanStatus::Received, $plan->status);
     }
 
     public function test_a_technician_moving_an_approved_plan_keeps_the_approval(): void
