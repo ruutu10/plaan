@@ -41,6 +41,7 @@ import {
     isStillToCome,
     performanceStatusLabel,
 } from '@/lib/performanceStatus';
+import { dashboard } from '@/routes';
 import {
     claudeLogs as reasoningLogsApi,
     plankaImport as plankaImportApi,
@@ -53,7 +54,9 @@ import type {
     BreadcrumbItem,
     FormatTeamOption,
     Performance,
+    PerformanceAbilities,
     PerformanceReminderRecipient,
+    PerformanceStaffRoleOption,
 } from '@/types';
 import type { AdminPlanRow } from '@/types/technicalPlan';
 
@@ -74,6 +77,19 @@ const reminderRecipients = ref<PerformanceReminderRecipient[]>([]);
  * performance has loaded, which is what the table's skeleton keys off.
  */
 const technicalPlans = ref<AdminPlanRow[] | null>(null);
+
+/**
+ * The jobs somebody may be put on this night's staff in by hand. Empty
+ * for a reader who may not change the night, which hides the add button.
+ */
+const staffRoles = ref<PerformanceStaffRoleOption[]>([]);
+
+/**
+ * What this reader may do here. The night's staff open the page to read it;
+ * changing it stays with its groups and the crew. Nothing is offered until the
+ * server has said.
+ */
+const can = ref<PerformanceAbilities>({ edit: false, openFormat: false });
 
 const editModalOpen = ref(false);
 const deleteModalOpen = ref(false);
@@ -96,11 +112,15 @@ const {
         teams: FormatTeamOption[];
         reminderRecipients: PerformanceReminderRecipient[];
         technicalPlans: AdminPlanRow[];
+        staffRoles: PerformanceStaffRoleOption[];
+        can: PerformanceAbilities;
     };
 
+    can.value = response.can;
     teams.value = response.teams;
     reminderRecipients.value = response.reminderRecipients;
     technicalPlans.value = response.technicalPlans;
+    staffRoles.value = response.staffRoles;
 
     nameTheTrail(response.data);
     chosenLogSource.value = reasoningLogsApi([
@@ -118,16 +138,21 @@ const {
  * completes its own single trailing crumb.
  */
 function nameTheTrail(performance: Performance): void {
+    const self = {
+        title: performance.title ?? formatLocalDate(performance.startsAt),
+        href: performancePage([props.formatId, props.performanceId]),
+    };
+
+    // Somebody who only works this night cannot open its format, so their
+    // trail leads home instead of to a page that would turn them away.
     setLayoutProps<{ breadcrumbs: BreadcrumbItem[] }>({
-        breadcrumbs: [
-            { title: 'Formaadid', href: index() },
-            { title: performance.formatName, href: edit(props.formatId) },
-            {
-                title:
-                    performance.title ?? formatLocalDate(performance.startsAt),
-                href: performancePage([props.formatId, props.performanceId]),
-            },
-        ],
+        breadcrumbs: can.value.openFormat
+            ? [
+                  { title: 'Formaadid', href: index() },
+                  { title: performance.formatName, href: edit(props.formatId) },
+                  self,
+              ]
+            : [{ title: 'Töölaud', href: dashboard() }, self],
     });
 }
 
@@ -354,10 +379,21 @@ async function refreshFromPlanka(): Promise<void> {
                 :imported-at="performance.plankaImportedAt"
             />
 
-            <PerformanceStaffList :staff="performance.staff ?? []" />
+            <PerformanceStaffList
+                :format-id="formatId"
+                :performance-id="performanceId"
+                :staff="performance.staff ?? []"
+                :roles="staffRoles"
+                @changed="reload"
+            />
 
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <R10BackLink :href="edit(formatId)" label="Formaadi juurde" />
+                <R10BackLink
+                    v-if="can.openFormat"
+                    :href="edit(formatId)"
+                    label="Formaadi juurde"
+                />
+                <R10BackLink v-else :href="dashboard()" label="Töölauale" />
 
                 <div class="flex flex-wrap items-center gap-2">
                     <R10Button
@@ -442,6 +478,7 @@ async function refreshFromPlanka(): Promise<void> {
                     </TooltipProvider>
 
                     <R10Button
+                        v-if="can.edit"
                         variant="outline"
                         size="sm"
                         data-test="edit-performance-button"
@@ -452,6 +489,7 @@ async function refreshFromPlanka(): Promise<void> {
                     </R10Button>
 
                     <R10Button
+                        v-if="can.edit"
                         variant="danger"
                         size="sm"
                         data-test="delete-performance-button"

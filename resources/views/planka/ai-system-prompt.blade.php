@@ -152,12 +152,13 @@ Iga etteaste küljes on massiiv `staff`, kus iga element on üks inimene: `{ nam
 - `host` — õhtujuht
 - `technician` — heli- ja valgusmeister
 - `video-operator` — operaator või videoprodutsent
+- `photographer` — fotograaf
 - `ticket-seller` — piletimüüja
 - `bar` — baaris töötaja (baarivahetus)
 
-Inimene, kelle roll ei vasta selgelt ühelegi neist (fotograaf, projektijuht, vastutaja, turundus, vastuvõtja jms), jääb `staff`-ist välja. Lähimat rolli ära vali, sest rakendus paneks ta siis tööle, mida ta tegelikult ei tee.
+Inimene, kelle roll ei vasta selgelt ühelegi neist (projektijuht, vastutaja, turundus, vastuvõtja jms), jääb `staff`-ist välja. Lähimat rolli ära vali, sest rakendus paneks ta siis tööle, mida ta tegelikult ei tee.
 
-- Terve õhtu rollid (õhtujuht, tehnik, operaator, piletimüüja, baarirahvas) lisa iga selle õhtu etteaste `staff` massiivi.
+- Terve õhtu rollid (õhtujuht, tehnik, operaator, fotograaf, piletimüüja, baarirahvas) lisa iga selle õhtu etteaste `staff` massiivi.
 - Esinejad kuuluvad ainult oma etteaste `staff` alla.
 - Kohatäited (vt `<sisend>`) ei ole nimed ja jäävad `staff`-ist välja.
 
@@ -171,6 +172,7 @@ Rollid seisavad malli ridade taga. Loe rida rea kaupa; sõnastus kõigub, sisu m
 | `Õhtujuht:` | `host` |
 | `Heli- ja valgus:`, `Heli ja valgus:`, `Tehnik:` | `technician` |
 | `Operaator:`, `Video:` | `video-operator` |
+| `Fotograaf:`, `Foto:`, `Pildistab:` | `photographer` |
 | `Piletimüüja:` | `ticket-seller` |
 | `Baar:`, `Baaris on:`, `Tallinna Improkeskuse Improbaaris on:`, `Improbaaris on:` | `bar` |
 | `Projekti juht:`, `Projektijuht:`, `Riietus stiil:` | jääb välja |
@@ -320,6 +322,7 @@ Kirjeldus:
 - Piletimüüja: Grete
 - Tallinna Improkeskuse Improbaaris on: Rauno
 - Fotograaf: Liis
+- Projektijuht: Marju
 ```
 
 Vastus:
@@ -333,7 +336,7 @@ Vastus:
       "team_id": 4,
       "location": "Vaba Lava, Telliskivi",
       "performances": [
-        {"title": "HELGED VENNAD", "start_time": "19:00", "duration_minutes": 90, "team_id": 4, "staff": [{"name": "Rauno", "role": "host"}, {"name": "Grete", "role": "ticket-seller"}, {"name": "Rauno", "role": "bar"}]}
+        {"title": "HELGED VENNAD", "start_time": "19:00", "duration_minutes": 90, "team_id": 4, "staff": [{"name": "Rauno", "role": "host"}, {"name": "Grete", "role": "ticket-seller"}, {"name": "Rauno", "role": "bar"}, {"name": "Liis", "role": "photographer"}]}
       ]
     }
   ],
@@ -343,7 +346,7 @@ Vastus:
     "\"HELGED VENNAD\" vastab tiimile 4 \"Helged Vennad\"; ühe etteastega õhtul on see ka õhtu tiim.",
     "Koht \"Vaba Lava, Telliskivi\" realt \"Toimumiskoht:\", ukseavamise aeg jäi välja.",
     "Õhtujuht \"Raunot\" nimetavas käändes \"Rauno\"; Rauno on ka baaris, seega kaks kirjet.",
-    "Tehnik on kohatäide ja jäi välja; fotograaf Liis jäi välja, sest fotograaf pole lubatud roll."
+    "Tehnik on kohatäide ja jäi välja; projektijuht Marju jäi välja, sest projektijuht pole lubatud roll."
   ]
 }
 ```

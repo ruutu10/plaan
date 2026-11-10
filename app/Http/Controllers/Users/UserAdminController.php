@@ -9,10 +9,13 @@ use App\Events\UserProvisioned;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Users\CreateUserRequest;
 use App\Http\Requests\Users\SaveUserRequest;
+use App\Http\Requests\Users\SearchUsersRequest;
 use App\Http\Resources\AdminRole as AdminRoleResource;
 use App\Http\Resources\AdminUser as AdminUserResource;
+use App\Http\Resources\UserSearchResult as UserSearchResultResource;
 use App\Models\User;
 use App\Policies\UserPolicy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Gate;
@@ -28,7 +31,9 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
  * reader belongs to — either they hold {@see User::MANAGE_PERMISSION} and see
  * the house, or they are refused. That is one flat right with no per-account
  * shading to it, so the routes guard the whole controller with `can:` and
- * nothing below asks a second time.
+ * nothing below asks a second time — except {@see search()}, which finding a
+ * person by name for other screens needs well beyond this one, and which
+ * answers to a policy of its own.
  *
  * The two screens are shells: {@see overview()} and {@see edit()} carry no
  * account data, and everything they list or save travels over the JSON actions
@@ -37,6 +42,12 @@ use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
  */
 class UserAdminController extends Controller
 {
+    /**
+     * The most accounts one {@see search()} answers with. The search exists to
+     * find a person, not to page through the house.
+     */
+    public const SEARCH_LIMIT = 10;
+
     public function __construct(private FindOrCreateUserByEmail $findOrCreateUser) {}
 
     /**
@@ -71,6 +82,50 @@ class UserAdminController extends Controller
             ->get();
 
         return AdminUserResource::collection($users);
+    }
+
+    /**
+     * The accounts whose names match the search, a few at a time — for any
+     * screen that adds a person to something, such as a night's staff.
+     *
+     * Fuzzy in the forgiving sense: every word typed must turn up somewhere in
+     * the name, in any order and any case — "tamm arn" finds Arne Tamm. On
+     * MySQL the column's collation also ignores accents, so "mart" finds
+     * Märt. Names that begin with the first word come first.
+     *
+     * Reaches further than the rest of this controller — see
+     * {@see UserPolicy::search()}, which {@see SearchUsersRequest} asks.
+     *
+     * @return AnonymousResourceCollection<int, UserSearchResultResource>
+     */
+    public function search(SearchUsersRequest $request): AnonymousResourceCollection
+    {
+        $terms = $request->terms();
+
+        $users = User::query()
+            ->select(['id', 'name'])
+            ->where(function (Builder $query) use ($terms): void {
+                foreach ($terms as $term) {
+                    $query->whereRaw("LOWER(name) LIKE ? ESCAPE '!'", ['%'.$this->escapeLike(mb_strtolower($term)).'%']);
+                }
+            })
+            ->orderByRaw("CASE WHEN LOWER(name) LIKE ? ESCAPE '!' THEN 0 ELSE 1 END", [$this->escapeLike(mb_strtolower($terms[0] ?? '')).'%'])
+            ->orderByRaw('LOWER(name)')
+            ->limit(self::SEARCH_LIMIT)
+            ->get();
+
+        return UserSearchResultResource::collection($users);
+    }
+
+    /**
+     * A typed word made safe to stand inside a LIKE pattern: its own `%` and
+     * `_` match themselves rather than anything at all. Escaped with `!`
+     * rather than a backslash, which SQLite does not treat as an escape and
+     * MySQL reads twice over.
+     */
+    private function escapeLike(string $term): string
+    {
+        return str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term);
     }
 
     /**

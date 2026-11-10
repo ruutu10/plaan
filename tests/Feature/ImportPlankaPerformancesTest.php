@@ -2078,6 +2078,91 @@ class ImportPlankaPerformancesTest extends TestCase
         $this->assertFalse(Performance::sole()->staff()->whereKey($arne->id)->exists());
     }
 
+    public function test_reimporting_leaves_manually_added_staff_alone(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        $arne = User::factory()->create(['name' => 'Arne', 'email' => 'arne@ruutu10.ee']);
+        $guest = User::factory()->create(['name' => 'Külaline Mees', 'email' => 'guest@example.com']);
+
+        $this->fakeBoard([$this->card()]);
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                $this->night('Trupp 1', staff: [$this->staffMember('Arne', PerformanceStaffRole::Host)]),
+            ]);
+            // The card dropped Arne, and never named the guest at all.
+            $mock->shouldReceive('extract')->once()->andReturn([$this->night('Trupp 1')]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        Performance::sole()->staffings()->create([
+            'user_id' => $guest->id,
+            'role' => PerformanceStaffRole::Performer,
+            'manually_added' => true,
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $staffing = Performance::sole()->staffings()->sole();
+
+        $this->assertSame($guest->id, $staffing->user_id);
+        $this->assertTrue($staffing->manually_added);
+        $this->assertFalse(Performance::sole()->staff()->whereKey($arne->id)->exists());
+    }
+
+    public function test_imported_staff_is_marked_as_not_manually_added(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        User::factory()->create(['name' => 'Arne', 'email' => 'arne@ruutu10.ee']);
+
+        $this->fakeBoard([$this->card()]);
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                $this->night('Trupp 1', staff: [$this->staffMember('Arne', PerformanceStaffRole::Host)]),
+            ]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertFalse(Performance::sole()->staffings()->sole()->manually_added);
+    }
+
+    public function test_a_card_naming_a_job_already_held_by_hand_does_not_duplicate_it(): void
+    {
+        config()->set('mail.verified_email_domains', ['ruutu10.ee']);
+        $arne = User::factory()->create(['name' => 'Arne', 'email' => 'arne@ruutu10.ee']);
+
+        $this->fakeBoard([$this->card()]);
+
+        $this->mock(PlankaPerformanceExtractor::class, function (MockInterface $mock) {
+            $mock->shouldReceive('extract')->once()->andReturn([$this->night('Trupp 1')]);
+            // The card catches up with what somebody already entered by hand.
+            $mock->shouldReceive('extract')->once()->andReturn([
+                $this->night('Trupp 1', staff: [$this->staffMember('Arne', PerformanceStaffRole::Technician)]),
+            ]);
+            $mock->shouldReceive('reasoningNotes')->andReturn([]);
+        });
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        Performance::sole()->staffings()->create([
+            'user_id' => $arne->id,
+            'role' => PerformanceStaffRole::Technician,
+            'manually_added' => true,
+        ]);
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $staffing = Performance::sole()->staffings()->sole();
+
+        $this->assertSame($arne->id, $staffing->user_id);
+        $this->assertTrue($staffing->manually_added);
+    }
+
     public function test_reimporting_a_card_that_now_names_no_staff_clears_it(): void
     {
         config()->set('mail.verified_email_domains', ['ruutu10.ee']);

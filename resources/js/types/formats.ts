@@ -15,24 +15,53 @@ export type CreatedBy = 'manual' | 'planka-import';
 export type PerformanceStatus = 'draft' | 'upcoming' | 'archived';
 
 /**
- * What a person is to one performance, as the Planka import reads a card's
- * cast and crew. Never set by hand — see {@link Performance.staff}.
+ * What a person is to one performance — read off a card's cast and crew by the
+ * Planka import, or chosen by hand — see {@link Performance.staff}.
  */
 export type PerformanceStaffRole =
     | 'performer'
     | 'host'
     | 'technician'
     | 'video-operator'
+    | 'photographer'
     | 'ticket-seller'
-    | 'bar';
+    | 'bar'
+    | 'other';
 
-/** One person staffing one performance, imported from its Planka card. */
+/**
+ * One person staffing one performance, imported from its Planka card or added
+ * by hand. `id` is the person; `staffingId` is this one job of theirs, which a
+ * hand-added row is removed by.
+ */
 export interface PerformanceStaffMember {
     id: number;
+    staffingId: number;
     name: string;
     email: string;
     role: PerformanceStaffRole;
     roleLabel: string;
+    /**
+     * Put on the night by hand rather than read off the card. Only these can
+     * be removed; the import's own come back with the next read of the card.
+     */
+    manuallyAdded: boolean;
+}
+
+/**
+ * What the reader of a performance's details screen may do there. Its staff
+ * open it to read; changing it stays with its groups and the crew.
+ */
+export interface PerformanceAbilities {
+    /** Edit, delete, send reminders and manage staff. */
+    edit: boolean;
+    /** Open the format the performance belongs to. */
+    openFormat: boolean;
+}
+
+/** A job somebody may be put on a performance's staff in. */
+export interface PerformanceStaffRoleOption {
+    value: PerformanceStaffRole;
+    label: string;
 }
 
 /** One format as the management screens list and edit it. */

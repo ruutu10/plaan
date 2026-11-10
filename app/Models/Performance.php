@@ -45,9 +45,8 @@ use Illuminate\Support\Facades\Date;
  * conversion and the only places it should happen.
  *
  * `location` is where it is played, free text as the board writes it. It is the
- * Planka card's to say and read-only here — like {@see staff()}, and for the
- * same reason: every import rewrites it, so anything typed over it would not
- * survive the week. Empty means the card places the night nowhere, and every
+ * Planka card's to say and read-only here: every import rewrites it, so
+ * anything typed over it would not survive the week. Empty means the card places the night nowhere, and every
  * listing shows a venue only when there is one rather than standing an absence
  * in.
  *
@@ -166,6 +165,39 @@ class Performance extends Model
         }
 
         $query->editableBy($user);
+    }
+
+    /**
+     * Limit the query to the performances the given user may open on their own
+     * details screen: every one they may edit — see {@see editableBy()} — plus
+     * every one they are on the staff of, whatever the role and whether the
+     * card or a person put them there. Somebody working a night sees what is
+     * planned for it without being handed the right to change it.
+     *
+     * @param  Builder<Performance>  $query
+     */
+    #[Scope]
+    protected function viewableBy(Builder $query, User $user): void
+    {
+        if (self::seesEverything($user)) {
+            return;
+        }
+
+        $query->where(fn (Builder $performance) => $performance
+            ->editableBy($user)
+            ->orWhereHas('staffings', fn (Builder $staffing) => $staffing->where('user_id', $user->id)));
+    }
+
+    /**
+     * Whether the user may open this performance's details screen — see
+     * {@see viewableBy()}.
+     */
+    public function isViewableBy(User $user): bool
+    {
+        return static::query()
+            ->whereKey($this->getKey())
+            ->viewableBy($user)
+            ->exists();
     }
 
     /**
@@ -412,10 +444,10 @@ class Performance extends Model
     }
 
     /**
-     * The people staffing this performance — on stage and behind it — as read
-     * off its Planka card. Read-only in the app: see
-     * {@see PerformanceStaffSync}, the only place a row here is
-     * ever written.
+     * The people staffing this performance — on stage and behind it — whether
+     * read off its Planka card ({@see PerformanceStaffSync}) or put on it by
+     * hand. Everything that reads this treats the two alike; only the import
+     * cares which is which.
      *
      * @return BelongsToMany<User, $this, PerformanceStaff, 'pivot'>
      */
@@ -423,7 +455,7 @@ class Performance extends Model
     {
         return $this->belongsToMany(User::class, 'performance_staff')
             ->using(PerformanceStaff::class)
-            ->withPivot(['role'])
+            ->withPivot(['id', 'role', 'manually_added'])
             ->withTimestamps();
     }
 

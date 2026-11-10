@@ -47,3 +47,9 @@ export interface NewManagedUserFormData {
 export type ManagedUserFieldErrors = Partial<
     Record<keyof ManagedUserFormData, string>
 >;
+
+/** An account as the name search lists it: who, and nothing more. */
+export interface UserSearchResult {
+    id: number;
+    name: string;
+}
