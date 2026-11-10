@@ -283,6 +283,63 @@ class PerformanceAdminTest extends TestCase
                 ->has('formats', 0));
     }
 
+    /**
+     * The crew may open every night, so every row leads to its page.
+     */
+    public function test_every_row_leads_technicians_to_the_performance(): void
+    {
+        $performance = Performance::factory()->create();
+
+        $this->actingAs($this->technician())
+            ->get(route('admin.performances.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('performances.0.performanceUrl', route('formats.performances.show', [$performance->format_id, $performance->id])));
+    }
+
+    /**
+     * Somebody working a night may open its page whatever their job on it, so
+     * the row leads there — and only that row, not the nights they have no part in.
+     */
+    public function test_a_row_leads_the_nights_own_staff_to_the_performance(): void
+    {
+        $host = User::factory()->create()->assignRole('staff');
+        $staffed = Performance::factory()->startingAt('2026-08-01')->create();
+        $staffed->staff()->attach($host, ['role' => PerformanceStaffRole::Host->value]);
+        Performance::factory()->startingAt('2026-09-10')->create();
+
+        $this->actingAs($host)
+            ->get(route('admin.performances.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('performances.0.performanceUrl', route('formats.performances.show', [$staffed->format_id, $staffed->id]))
+                ->where('performances.1.performanceUrl', null));
+
+        $this->actingAs($host)
+            ->get(route('formats.performances.show', [$staffed->format_id, $staffed->id]))
+            ->assertOk();
+    }
+
+    /**
+     * A group's own nights are theirs to correct, so the row leads its members
+     * there even without the crew's house-wide reach.
+     */
+    public function test_a_row_leads_the_performing_group_to_the_performance(): void
+    {
+        $member = User::factory()->create()->assignRole('staff');
+        $ours = Performance::factory()->startingAt('2026-08-01')->create([
+            'format_id' => Format::factory()->create(['team_id' => $this->teamOf($member)]),
+        ]);
+        Performance::factory()->startingAt('2026-09-10')->create();
+
+        $this->actingAs($member)
+            ->get(route('admin.performances.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('performances.0.performanceUrl', route('formats.performances.show', [$ours->format_id, $ours->id]))
+                ->where('performances.1.performanceUrl', null));
+    }
+
     public function test_the_manage_all_ability_is_shared_with_the_frontend(): void
     {
         $this->actingAs($this->technician())

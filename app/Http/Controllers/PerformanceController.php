@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\LinkPerformanceRecording;
 use App\Console\Commands\ImportPlankaPerformances;
+use App\Data\RecordLinks;
 use App\Enums\PerformanceStaffRole;
 use App\Enums\TechnicalPlanStatus;
 use App\Events\PerformanceRecordingLinked;
@@ -75,8 +76,17 @@ class PerformanceController extends Controller
         // nothing beyond the button press.
         $canAddToAnyFormat = $user->can(Performance::EDIT_ALL_PERMISSION);
 
+        $links = RecordLinks::for($user, $performances);
+
         return Inertia::render('admin/performances/Index', [
-            'performances' => AdminPerformanceResource::collection($performances)->resolve($request),
+            // A row leads to the performance's own page for whoever may open
+            // it — not only the crew, but the night's own staff and the group
+            // that plays it — so the reach is worked out per row, in one go.
+            'performances' => $performances
+                ->map(fn (Performance $performance) => AdminPerformanceResource::make($performance)
+                    ->linkedBy($links)
+                    ->resolve($request))
+                ->all(),
             'formats' => $canAddToAnyFormat
                 ? Format::query()
                     ->where('name', '!=', Format::PLACEHOLDER_NAME)

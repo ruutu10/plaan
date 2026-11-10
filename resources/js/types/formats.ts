@@ -299,6 +299,8 @@ export interface AdminPerformanceRow {
     id: number;
     /** The format the performance hangs off, which its own page is scoped to. */
     formatId: number;
+    /** The performance's own page; null when this reader may not open it. */
+    performanceUrl: string | null;
     formatName: string;
     /** The act's own name, for an evening several groups share. */
     title: string | null;

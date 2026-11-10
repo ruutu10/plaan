@@ -12,7 +12,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { formatLocalDate, formatLocalTime } from '@/lib/date';
 import { performanceStatusLabel } from '@/lib/performanceStatus';
 import { index } from '@/routes/admin/performances';
-import { show as showPerformance } from '@/routes/formats/performances';
 import type {
     AdminPerformanceRow,
     FormatOption,
@@ -35,20 +34,18 @@ function reloadPerformances(): void {
 }
 
 // Reading the whole bill and correcting a night on it are separate rights: the
-// house's own people follow every performance here, but only the crew are
-// offered the way through to the performance that changes one.
+// house's own people follow every performance here, but only the crew may add
+// one or correct any of them.
 const canEditEveryPerformance = computed(
     () => page.props.auth?.can?.manageAllPerformances === true,
 );
 
 /**
- * The row leads straight to the performance's own page, which is where a night
- * is corrected — but only for those the format would let in.
+ * The row leads straight to the performance's own page — for whoever the server
+ * says may open it: the crew, the group that plays it, and the night's staff.
  */
 function performanceHref(performance: AdminPerformanceRow): string | null {
-    return canEditEveryPerformance.value
-        ? showPerformance([performance.formatId, performance.id]).url
-        : null;
+    return performance.performanceUrl;
 }
 
 /**
