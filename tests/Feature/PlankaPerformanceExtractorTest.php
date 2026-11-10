@@ -373,8 +373,14 @@ class PlankaPerformanceExtractorTest extends TestCase
             ['name', 'role'],
             $formats['items']['properties']['performances']['items']['properties']['staff']['items']['required'],
         );
+        // Every role but "other", which is only ever entered by hand: the
+        // card's other jobs are left off the staff on purpose.
         $this->assertSame(
-            PerformanceStaffRole::values(),
+            ['performer', 'host', 'technician', 'video-operator', 'photographer', 'ticket-seller', 'bar'],
+            $formats['items']['properties']['performances']['items']['properties']['staff']['items']['properties']['role']['enum'],
+        );
+        $this->assertNotContains(
+            PerformanceStaffRole::Other->value,
             $formats['items']['properties']['performances']['items']['properties']['staff']['items']['properties']['role']['enum'],
         );
 
@@ -647,6 +653,26 @@ class PlankaPerformanceExtractorTest extends TestCase
         $this->assertSame(PerformanceStaffRole::Technician, $staff[1]->role);
     }
 
+    public function test_it_reads_a_photographer(): void
+    {
+        $nights = $this->extractorAnswering((string) json_encode([
+            'formats' => [[
+                'format_name' => 'Õppelava',
+                'date' => '2025-10-09',
+                'performances' => [[
+                    'title' => 'Märtu10',
+                    'staff' => [['name' => 'Liis', 'role' => 'photographer']],
+                ]],
+            ]],
+        ]))->extract('Õppelava 9.10', 'Fotograaf: Liis');
+
+        $staff = $nights[0]->performances[0]->staff;
+
+        $this->assertCount(1, $staff);
+        $this->assertSame('Liis', $staff[0]->name);
+        $this->assertSame(PerformanceStaffRole::Photographer, $staff[0]->role);
+    }
+
     public function test_it_drops_a_staff_entry_with_no_name_or_an_unknown_role(): void
     {
         $nights = $this->extractorAnswering((string) json_encode([
@@ -661,6 +687,8 @@ class PlankaPerformanceExtractorTest extends TestCase
                     'staff' => [
                         ['name' => '', 'role' => 'host'],
                         ['name' => 'Marju', 'role' => 'project-manager'],
+                        // A real role, but one the import never reads.
+                        ['name' => 'Kaido', 'role' => 'other'],
                         ['name' => 'Tom', 'role' => 'technician'],
                     ],
                 ]],

@@ -2,6 +2,7 @@
 import { useHttp } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import { toast } from 'vue-sonner';
+import R10ChoiceRow from '@/components/technical-plan/R10ChoiceRow.vue';
 import R10FormDialog from '@/components/technical-plan/R10FormDialog.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import { store } from '@/routes/api/formats/performances/reminders';
@@ -126,25 +127,15 @@ async function send(): Promise<void> {
                 </span>
             </div>
 
-            <label
+            <R10ChoiceRow
                 v-for="recipient in recipients"
                 :key="recipient.id"
-                class="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-r10-grey-200 bg-white p-4"
+                v-model="form.user_ids"
+                :value="recipient.id"
+                :label="recipient.name"
+                :input-test-id="`reminder-recipient-${recipient.id}`"
             >
-                <input
-                    v-model="form.user_ids"
-                    type="checkbox"
-                    :value="recipient.id"
-                    :data-test="`reminder-recipient-${recipient.id}`"
-                    class="h-4 w-4 shrink-0 cursor-pointer accent-r10-orange"
-                />
-                <span class="text-sm font-bold text-r10-ink">
-                    {{ recipient.name }}
-                </span>
-                <span
-                    v-if="recipient.roles.length > 0"
-                    class="ml-auto flex flex-wrap justify-end gap-1"
-                >
+                <template v-if="recipient.roles.length > 0">
                     <R10Pill
                         v-for="role in recipient.roles"
                         :key="role"
@@ -153,8 +144,8 @@ async function send(): Promise<void> {
                     >
                         {{ role }}
                     </R10Pill>
-                </span>
-            </label>
+                </template>
+            </R10ChoiceRow>
 
             <span
                 v-if="form.errors.user_ids"

@@ -23,8 +23,10 @@ export type PerformanceStaffRole =
     | 'host'
     | 'technician'
     | 'video-operator'
+    | 'photographer'
     | 'ticket-seller'
-    | 'bar';
+    | 'bar'
+    | 'other';
 
 /**
  * One person staffing one performance, imported from its Planka card or added

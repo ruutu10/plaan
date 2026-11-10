@@ -8,8 +8,13 @@ use App\Services\PerformanceStaffSync;
 /**
  * Who a person is to one performance — as the Planka import reads a card's cast
  * and crew (see {@see PerformanceStaffSync}), or as somebody puts them on the
- * night by hand. The cases are the jobs a card can plainly name, and the same
- * ones are offered by hand, so both ways in describe a night alike.
+ * night by hand. Most cases are the jobs a card can plainly name, offered by
+ * hand as well, so both ways in describe a night alike.
+ *
+ * {@see self::Other} is the exception: a job outside that list, entered by hand
+ * for somebody who should be on the night all the same. The import never reads
+ * it — see {@see importable()} — since the card's other jobs (marketing, the
+ * project lead) are left off the staff on purpose.
  */
 enum PerformanceStaffRole: string
 {
@@ -19,8 +24,38 @@ enum PerformanceStaffRole: string
     case Host = 'host';
     case Technician = 'technician';
     case VideoOperator = 'video-operator';
+    case Photographer = 'photographer';
     case TicketSeller = 'ticket-seller';
     case Bar = 'bar';
+    case Other = 'other';
+
+    /**
+     * The roles the Planka import may read off a card: every one but
+     * {@see self::Other}, which only a person puts somebody in.
+     *
+     * @return list<self>
+     */
+    public static function importable(): array
+    {
+        return [
+            self::Performer,
+            self::Host,
+            self::Technician,
+            self::VideoOperator,
+            self::Photographer,
+            self::TicketSeller,
+            self::Bar,
+        ];
+    }
+
+    /**
+     * Whether the Planka import may read this role off a card — see
+     * {@see importable()}.
+     */
+    public function isImportable(): bool
+    {
+        return in_array($this, self::importable(), strict: true);
+    }
 
     /**
      * How the role is named on the staff list.
@@ -32,8 +67,10 @@ enum PerformanceStaffRole: string
             self::Host => 'Õhtujuht',
             self::Technician => 'Heli- ja valgusmeister',
             self::VideoOperator => 'Operaator/videoprodutsent',
+            self::Photographer => 'Fotograaf',
             self::TicketSeller => 'Piletimüüja',
             self::Bar => 'Baar',
+            self::Other => 'Muu',
         };
     }
 
@@ -53,8 +90,10 @@ enum PerformanceStaffRole: string
             self::Host => 1,
             self::Technician => 2,
             self::VideoOperator => 3,
-            self::TicketSeller => 4,
-            self::Bar => 5,
+            self::Photographer => 4,
+            self::TicketSeller => 5,
+            self::Bar => 6,
+            self::Other => 7,
         };
     }
 
@@ -76,7 +115,7 @@ enum PerformanceStaffRole: string
             self::Host => 'GuestStar',
             self::Technician => 'Engineer',
             self::VideoOperator => 'Producer',
-            self::TicketSeller, self::Bar => null,
+            self::Photographer, self::TicketSeller, self::Bar, self::Other => null,
         };
     }
 }

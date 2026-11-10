@@ -346,7 +346,7 @@ class PlankaPerformanceExtractor
 
     /**
      * The people the model named for one act — cast and crew alike. An entry
-     * with no usable name or a role outside {@see PerformanceStaffRole} is
+     * with no usable name or a role outside {@see PerformanceStaffRole::importable()} is
      * dropped rather than guessed at, the same defence the schema's own `enum`
      * already gives this field once, kept here in case that ever changes.
      *
@@ -364,7 +364,7 @@ class PlankaPerformanceExtractor
             $name = trim((string) ($entry['name'] ?? ''));
             $role = PerformanceStaffRole::tryFrom((string) ($entry['role'] ?? ''));
 
-            if ($name === '' || $role === null) {
+            if ($name === '' || $role === null || ! $role->isImportable()) {
                 continue;
             }
 
@@ -596,7 +596,10 @@ class PlankaPerformanceExtractor
                                                     ],
                                                     'role' => [
                                                         'type' => 'string',
-                                                        'enum' => PerformanceStaffRole::values(),
+                                                        'enum' => array_map(
+                                                            fn (PerformanceStaffRole $role): string => $role->value,
+                                                            PerformanceStaffRole::importable(),
+                                                        ),
                                                         'description' => 'What this person does at the performance.',
                                                     ],
                                                 ],

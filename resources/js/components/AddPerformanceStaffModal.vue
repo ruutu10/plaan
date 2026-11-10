@@ -3,9 +3,9 @@ import { useHttp } from '@inertiajs/vue3';
 import { watchDebounced } from '@vueuse/core';
 import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
+import R10ChoiceRow from '@/components/technical-plan/R10ChoiceRow.vue';
 import R10Combobox from '@/components/technical-plan/R10Combobox.vue';
 import R10FormDialog from '@/components/technical-plan/R10FormDialog.vue';
-import R10Select from '@/components/technical-plan/R10Select.vue';
 import { store } from '@/routes/api/formats/performances/staff';
 import { search as searchUsers } from '@/routes/api/users';
 import type {
@@ -153,15 +153,37 @@ async function save(): Promise<void> {
             data-test="add-staff-user-search"
         />
 
-        <R10Select
-            v-model="form.role"
-            label="Roll"
-            required
-            placeholder="Vali roll"
-            :options="roles"
-            :error="form.errors.role"
-            error-test-id="add-staff-role-error"
-            data-test="add-staff-role-select"
-        />
+        <!--
+            One row per job, the same rows the reminder dialog picks its
+            recipients from — radios here, since a person is added in one job
+            at a time.
+        -->
+        <fieldset class="flex flex-col gap-1.5">
+            <legend
+                class="mb-1.5 font-r10-body text-xs font-bold tracking-[0.12em] text-r10-ink uppercase"
+            >
+                Roll
+                <span class="text-r10-orange">*</span>
+            </legend>
+
+            <R10ChoiceRow
+                v-for="role in roles"
+                :key="role.value"
+                v-model="form.role"
+                type="radio"
+                name="role"
+                :value="role.value"
+                :label="role.label"
+                :input-test-id="`add-staff-role-${role.value}`"
+            />
+
+            <span
+                v-if="form.errors.role"
+                class="text-xs font-medium text-r10-orange-700"
+                data-test="add-staff-role-error"
+            >
+                {{ form.errors.role }}
+            </span>
+        </fieldset>
     </R10FormDialog>
 </template>

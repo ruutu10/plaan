@@ -70,6 +70,23 @@ class PerformanceStaffManagementTest extends TestCase
             ->assertCreated();
     }
 
+    public function test_staff_may_be_added_by_hand_in_the_other_role(): void
+    {
+        [$user, $format, $performance] = $this->performanceOfOwnTeam();
+        $photographer = User::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson(route('api.formats.performances.staff.store', [$format, $performance]), [
+                'user_id' => $photographer->id,
+                'role' => PerformanceStaffRole::Other->value,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.role', 'other')
+            ->assertJsonPath('data.roleLabel', 'Muu');
+
+        $this->assertSame(PerformanceStaffRole::Other, $performance->staffings()->sole()->role);
+    }
+
     public function test_a_stranger_to_the_performance_may_not_add_staff(): void
     {
         $performance = Performance::factory()->create();
@@ -256,7 +273,7 @@ class PerformanceStaffManagementTest extends TestCase
             ->assertJsonMissingPath('staffCandidates');
 
         $this->assertSame(
-            ['performer', 'host', 'technician', 'video-operator', 'ticket-seller', 'bar'],
+            ['performer', 'host', 'technician', 'video-operator', 'photographer', 'ticket-seller', 'bar', 'other'],
             collect($response->json('staffRoles'))->pluck('value')->all(),
         );
     }

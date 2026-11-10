@@ -787,9 +787,10 @@ Kirjed näitavad, kas need sisestati käsitsi või impordiga.
 Sama importija loeb kaardilt ka iga etenduse **meeskonna** - nii laval olevad
 esinejad (kui kaart nimetab neid nimepidi) kui lava taga töötavad inimesed.
 Tuntakse ainult järgnevaid rolle: **esineja**, **õhtujuht**, **heli- ja
-valgusmeister**, **operaator/videoprodutsent**, **piletimüüja** ja **baar**.
-Kõik muu, mida kaart mainib (fotograaf, projektijuht, turundus, vastutaja
-jms), jäetakse importimata.
+valgusmeister**, **operaator/videoprodutsent**, **fotograaf**, **piletimüüja**
+ja **baar**. Kõik muu, mida kaart mainib (projektijuht, turundus, vastutaja
+jms), jäetakse importimata. Käsitsi saab lisaks valida rolli **muu** (§11.3) -
+seda import kunagi ei määra.
 
 Kaardil on inimesed enamasti kirjas ainult eesnimega. Süsteem otsib selle nime
 järgi kasutajakontot, kelle **e-posti aadress on ühel teatri enda
