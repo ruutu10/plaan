@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Notifications\PerformanceRecordingAvailable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Activitylog\Models\Activity;
@@ -43,7 +44,12 @@ class RecordingAvailableNotificationTest extends TestCase
         Http::preventStrayRequests();
         Http::fake([
             'jellyfin.test/Items?*' => Http::response([
-                'Items' => [['Id' => self::ITEM_ID, 'Type' => 'Episode']],
+                'Items' => [[
+                    'Id' => self::ITEM_ID,
+                    'Type' => 'Episode',
+                    'DateCreated' => '2026-04-03T23:36:24.0000000Z',
+                    'MediaSources' => [['Path' => '/media/Tšikid Reas S01E04.mp4', 'Size' => 9712902453]],
+                ]],
                 'TotalRecordCount' => 1,
             ]),
             'jellyfin.test/*' => Http::response(null, 204),
@@ -241,6 +247,40 @@ class RecordingAvailableNotificationTest extends TestCase
         $html = (string) $mail->render();
         $this->assertStringNotContainsString('Vaata Jellyfinis', $html);
         $this->assertStringContainsString('Laadi alla', $html);
+    }
+
+    public function test_the_letter_names_the_file_with_its_size_and_date(): void
+    {
+        $performance = Performance::factory()->create();
+        $author = User::factory()->ofTheHouse()->create();
+
+        $html = (string) (new PerformanceRecordingAvailable($this->recordingFor($performance)))
+            ->toMail($author)
+            ->render();
+
+        $this->assertStringContainsString('Tšikid Reas S01E04.mp4', $html);
+        $this->assertStringContainsString('9.0 GB', $html);
+        $this->assertStringContainsString('lisatud 04.04.2026', $html);
+        $this->assertStringNotContainsString('/media/', $html);
+    }
+
+    /**
+     * How a failed lookup is remembered is covered with the lookup itself;
+     * this is only the letter going out without it.
+     */
+    public function test_a_library_that_does_not_answer_still_lets_the_letter_go(): void
+    {
+        Cache::put('jellyfin-file:'.self::ITEM_ID, [], 60);
+
+        $performance = Performance::factory()->create();
+        $author = User::factory()->ofTheHouse()->create();
+
+        $html = (string) (new PerformanceRecordingAvailable($this->recordingFor($performance)))
+            ->toMail($author)
+            ->render();
+
+        $this->assertStringContainsString('Laadi alla', $html);
+        $this->assertStringContainsString('mitu gigabaiti', $html);
     }
 
     public function test_the_house_letter_offers_both_buttons(): void

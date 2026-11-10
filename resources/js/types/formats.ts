@@ -143,6 +143,17 @@ export interface PerformanceRecording {
     /** Whether this reader may download the video through this app. */
     canDownload: boolean;
     /**
+     * The file the download fetches, as Jellyfin describes it. Null for a
+     * reader who may not download it, or when the library did not answer.
+     */
+    file: {
+        name: string;
+        /** e.g. "9.0 GB" */
+        sizeLabel: string;
+        /** The day it was added to the library, e.g. "04.04.2026". */
+        addedOn: string | null;
+    } | null;
+    /**
      * When this night's details were last pushed to the library; ISO 8601 UTC
      * instant. Null while the push is still queued, or after one that failed.
      */

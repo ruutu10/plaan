@@ -189,23 +189,40 @@ class PerformanceRecordingController extends Controller
     }
 
     /**
-     * Named for what was played and when, keeping the library's file extension.
+     * Named as the file is in the library, which is the name the letter and
+     * the performance page show. A library that names nothing gets what was
+     * played and when instead.
      */
     private function disposition(UpstreamResponse $upstream, Performance $performance): string
     {
-        $extension = preg_match('/filename="?[^";]*\.([A-Za-z0-9]{2,5})"?/', $upstream->header('Content-Disposition'), $matches) === 1
-            ? strtolower($matches[1])
-            : 'mp4';
-
-        $name = Str::of($performance->format->name.' '.$performance->startsAt()->format('Y-m-d'))
-            ->replaceMatches('/[\/\\\\%"]+/', ' ')
+        $name = Str::of($this->upstreamFileName($upstream->header('Content-Disposition'))
+            ?? $performance->format->name.' '.$performance->startsAt()->format('Y-m-d').'.mp4')
+            ->replaceMatches('/[\/\\\\%"\x00-\x1F\x7F]+/', ' ')
             ->squish()
-            ->append('.'.$extension)
             ->toString();
 
-        $fallback = preg_replace('/[^A-Za-z0-9 ._-]+/', '_', Str::ascii($name)) ?? 'salvestus.'.$extension;
+        $fallback = preg_replace('/[^A-Za-z0-9 ._-]+/', '_', Str::ascii($name)) ?? 'salvestus.mp4';
 
         return HeaderUtils::makeDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $name, $fallback);
+    }
+
+    /**
+     * The file name Jellyfin gives, preferring its UTF-8 spelling: the plain
+     * one has every non-ASCII letter replaced ("T_ikid" for "Tšikid").
+     */
+    private function upstreamFileName(string $disposition): ?string
+    {
+        if (preg_match("/filename\\*=UTF-8''([^;\\s]+)/i", $disposition, $matches) === 1) {
+            $name = rawurldecode($matches[1]);
+        } elseif (preg_match('/filename="?([^";]+)"?/i', $disposition, $matches) === 1) {
+            $name = $matches[1];
+        } else {
+            return null;
+        }
+
+        $name = basename(str_replace('\\', '/', trim($name)));
+
+        return $name === '' || ! mb_check_encoding($name, 'UTF-8') ? null : $name;
     }
 
     private function libraryFailed(PerformanceRecording $recording, string $reason): Response

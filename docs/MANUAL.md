@@ -614,7 +614,9 @@ täispikk aadress (`.../web/#/details?id=...`) kui ka paljas video ID kõlbavad.
   kirja kellelegi - ka lavalolijatele mitte.
 - Kirjas on nupud **Vaata Jellyfinis** ja **Laadi alla**. Allalaadimiseks
   piisab Plaani sisselogimisest, Jellyfini kontot pole vaja. Sama nupp on ka
-  etenduse lehel.
+  etenduse lehel. Neile, kes faili alla laadida saavad, näidatakse kirjas ja
+  etenduse lehel ka faili nime, suurust ja Jellyfini lisamise kuupäeva. Kui
+  Jellyfin ei vasta, jäävad need andmed lihtsalt näitamata.
 - Teatri enda e-posti domeenidest (vt §2.4) väljaspool olevad kirjutajad ja
   esinejad saavad kirja eraldi ja ainult allalaadimise nupuga, sest Jellyfini
   nad sisse ei pääse.

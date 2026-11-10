@@ -38,8 +38,16 @@
                            style="display:inline-block; margin:4px; padding:14px 30px; border-radius:999px; background-color:#0c0f16; font-family:'Futura','Century Gothic','Roboto',Arial,sans-serif; font-size:14px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#ffffff; text-decoration:none;">
                             Laadi alla
                         </a>
+                        @if ($recordingFile)
+                            <p style="margin:14px 0 0 0; font-size:14px; line-height:1.5; color:#0c0f16; word-break:break-word;">
+                                {{ $recordingFile->name }}
+                            </p>
+                            <p style="margin:2px 0 0 0; font-size:13px; line-height:1.5; color:#6b7386;">
+                                {{ $recordingFile->sizeLabel() }}@if ($recordingFile->addedOnLabel()) · lisatud {{ $recordingFile->addedOnLabel() }}@endif
+                            </p>
+                        @endif
                         <p style="margin:12px 0 0 0; font-size:13px; line-height:1.5; color:#6b7386;">
-                            Allalaadimiseks logi Plaani sisse. Fail võib olla mitu gigabaiti suur.
+                            Allalaadimiseks logi Plaani sisse.@unless ($recordingFile) Fail võib olla mitu gigabaiti suur.@endunless
                         </p>
                     @endif
                 </td>

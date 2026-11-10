@@ -305,6 +305,21 @@ async function refreshFromPlanka(): Promise<void> {
                         </a>
                         <span
                             v-if="
+                                performance.recording?.canDownload &&
+                                performance.recording.file
+                            "
+                            class="text-[13px] break-all text-r10-grey-500"
+                            data-test="performance-recording-file"
+                        >
+                            {{ performance.recording.file.name }} ·
+                            {{ performance.recording.file.sizeLabel }}
+                            <template v-if="performance.recording.file.addedOn">
+                                · lisatud
+                                {{ performance.recording.file.addedOn }}
+                            </template>
+                        </span>
+                        <span
+                            v-if="
                                 !performance.recording?.itemUrl &&
                                 !performance.recording?.canDownload
                             "

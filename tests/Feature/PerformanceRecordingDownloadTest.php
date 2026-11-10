@@ -10,6 +10,7 @@ use App\Models\Performance;
 use App\Models\PerformanceRecording;
 use App\Models\TechnicalPlan;
 use App\Models\User;
+use App\Services\RecordingFileDetails;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
@@ -52,8 +53,10 @@ class PerformanceRecordingDownloadTest extends TestCase
         $response->assertHeader('Content-Type', 'video/mp4');
         $response->assertHeader('Content-Length', '11');
         $response->assertHeader('Accept-Ranges', 'bytes');
-        $this->assertStringContainsString('attachment', $response->headers->get('Content-Disposition'));
-        $this->assertStringContainsString('.mkv', $response->headers->get('Content-Disposition'));
+        $this->assertSame(
+            'attachment; filename="Tsikid Reas S01E04.mkv"; filename*=utf-8\'\'T%C5%A1ikid%20Reas%20S01E04.mkv',
+            $response->headers->get('Content-Disposition'),
+        );
         $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
     }
 
@@ -399,6 +402,68 @@ class PerformanceRecordingDownloadTest extends TestCase
         $this->assertSlotIsFree();
     }
 
+    public function test_a_library_naming_no_file_falls_back_to_the_night(): void
+    {
+        Http::fake([
+            'jellyfin.test/Items?*' => Http::response(['Items' => [['Id' => self::ITEM_ID, 'Type' => 'Episode']]]),
+            'jellyfin.test/Items/*/Download' => Http::response('video-bytes', 200, ['Content-Type' => 'video/mp4']),
+        ]);
+        [$performance] = $this->recorded();
+
+        $response = $this->actingAs($this->technician())->get($this->url($performance));
+        $response->streamedContent();
+
+        $this->assertStringContainsString(
+            $performance->startsAt()->format('Y-m-d').'.mp4',
+            $response->headers->get('Content-Disposition'),
+        );
+    }
+
+    public function test_the_resource_describes_the_file_to_whoever_may_download_it(): void
+    {
+        $this->fakeFileDetails();
+        [, $recording] = $this->recorded();
+        $resource = new PerformanceRecordingResource($recording);
+
+        $this->actingAs($this->technician());
+        $file = $resource->toArray(request())['file'];
+
+        $this->assertSame('Tšikid Reas S01E04.mp4', $file['name']);
+        $this->assertSame('9.0 GB', $file['sizeLabel']);
+        $this->assertSame('04.04.2026', $file['addedOn']);
+
+        $this->actingAs(User::factory()->create());
+        $this->assertNull($resource->toArray(request())['file']);
+    }
+
+    public function test_the_file_details_are_cached(): void
+    {
+        $this->fakeFileDetails();
+        [, $recording] = $this->recorded();
+        $details = app(RecordingFileDetails::class);
+
+        $details->for($recording);
+        $details->for($recording);
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_a_library_that_is_down_leaves_the_file_details_out(): void
+    {
+        $attempts = 0;
+        Http::fake(function () use (&$attempts) {
+            $attempts++;
+
+            throw new ConnectionException('refused');
+        });
+        [, $recording] = $this->recorded();
+
+        $this->assertNull(app(RecordingFileDetails::class)->for($recording));
+        $this->assertNull(app(RecordingFileDetails::class)->for($recording));
+
+        $this->assertSame(1, $attempts, 'A library that is down should not be asked again straight away.');
+    }
+
     public function test_the_resource_says_who_gets_the_button(): void
     {
         [$performance, $recording] = $this->recorded();
@@ -424,7 +489,28 @@ class PerformanceRecordingDownloadTest extends TestCase
             'jellyfin.test/Items/*/Download' => Http::response('video-bytes', $status, $headers + [
                 'Content-Type' => 'video/mp4',
                 'Content-Length' => '11',
-                'Content-Disposition' => 'attachment; filename="Something S01E04.mkv"',
+                'Content-Disposition' => 'attachment; filename="T_ikid Reas S01E04.mkv"; filename*=UTF-8\'\'T%C5%A1ikid%20Reas%20S01E04.mkv',
+            ]),
+        ]);
+    }
+
+    /**
+     * The library describing the recording's file, as a real 10.11 server
+     * answers: a server path, a size in bytes and the day it was added.
+     */
+    private function fakeFileDetails(): void
+    {
+        Http::fake([
+            'jellyfin.test/Items?*' => Http::response([
+                'Items' => [[
+                    'Id' => self::ITEM_ID,
+                    'Type' => 'Episode',
+                    'DateCreated' => '2026-04-03T23:36:24.0000000Z',
+                    'MediaSources' => [[
+                        'Path' => '/media/shows/Tšikid reas/Tšikid Reas S01E04.mp4',
+                        'Size' => 9712902453,
+                    ]],
+                ]],
             ]),
         ]);
     }

@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Data\RecordingFile;
 use App\Rules\JellyfinItemUrl;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -206,6 +208,41 @@ class JellyfinClient
         $this->updateItem($itemId, $payload);
 
         return $payload;
+    }
+
+    /**
+     * The file behind an item: its name, size and when it was added to the
+     * library. Null when the library has no such item or no file for it.
+     *
+     * Asked with a short timeout and no retries, because it is only ever shown
+     * beside a download and must not hold up the page or letter showing it.
+     */
+    public function file(string $itemId): ?RecordingFile
+    {
+        $item = $this->connection()
+            ->acceptJson()
+            ->connectTimeout(3)
+            ->timeout(5)
+            ->get('/Items', ['ids' => $itemId, 'fields' => 'MediaSources,DateCreated'])
+            ->throw()
+            ->json('Items.0');
+
+        $source = is_array($item) ? ($item['MediaSources'][0] ?? null) : null;
+
+        if (! is_array($source) || blank($source['Path'] ?? null) || ! is_numeric($source['Size'] ?? null)) {
+            return null;
+        }
+
+        // The server's own path to the file stays on the server: only its
+        // last segment is a name worth showing.
+        $name = basename(str_replace('\\', '/', (string) $source['Path']));
+        $addedAt = $item['DateCreated'] ?? null;
+
+        return new RecordingFile(
+            $name,
+            (int) $source['Size'],
+            is_string($addedAt) ? CarbonImmutable::parse($addedAt) : null,
+        );
     }
 
     /**

@@ -7,6 +7,7 @@ use App\Listeners\NotifyRecordingAvailable;
 use App\Models\PerformanceRecording;
 use App\Models\User;
 use App\Services\JellyfinClient;
+use App\Services\RecordingFileDetails;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
@@ -65,6 +66,7 @@ class PerformanceRecordingAvailable extends Notification implements AboutRecord,
     public function toMail(object $notifiable): MailMessage
     {
         $performance = $this->recording->performance;
+        $downloadUrl = $this->downloadUrl();
 
         $mail = (new MailMessage)
             ->subject('Etenduse salvestus on olemas · '.$this->label())
@@ -78,7 +80,10 @@ class PerformanceRecordingAvailable extends Notification implements AboutRecord,
                 'recordingUrl' => $notifiable instanceof User && $notifiable->isHouseStaff()
                     ? JellyfinClient::itemUrl($this->recording->item_id) ?? $this->recording->url
                     : null,
-                'downloadUrl' => $this->downloadUrl(),
+                'downloadUrl' => $downloadUrl,
+                // Read when the letter is sent rather than when it was queued;
+                // a library that does not answer leaves it out.
+                'recordingFile' => $downloadUrl === null ? null : app(RecordingFileDetails::class)->for($this->recording),
                 'techEmail' => (string) config('technical_plan.tech_email'),
             ]);
 
