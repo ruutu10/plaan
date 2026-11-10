@@ -62,6 +62,29 @@ class JellyfinSyncTest extends TestCase
     }
 
     /**
+     * Inside the cluster the push stays off the internet. Strays are refused,
+     * so a call to the public address would fail the test.
+     */
+    public function test_the_push_goes_to_the_internal_address_when_one_is_set(): void
+    {
+        config()->set('services.jellyfin.internal_url', 'http://jellyfin.internal:8096/');
+
+        Http::fake([
+            'jellyfin.internal:8096/Items?*' => Http::response([
+                'Items' => [['Id' => self::ITEM_ID, 'Type' => 'Episode', 'Name' => 'Episode 4']],
+                'TotalRecordCount' => 1,
+            ]),
+            'jellyfin.internal:8096/Items/*' => Http::response(null, 204),
+        ]);
+
+        $this->push($this->recordingFor($this->night()));
+
+        Http::assertSentCount(2);
+        Http::assertSent(fn (Request $request): bool => str_starts_with($request->url(), 'http://jellyfin.internal:8096/Items/')
+            && $request->method() === 'POST');
+    }
+
+    /**
      * The one that matters most. A bare read leaves fields out of its answer,
      * and a field left out of the answer is a field the write clears — so the
      * read names them, and everything the library holds beyond them survives.

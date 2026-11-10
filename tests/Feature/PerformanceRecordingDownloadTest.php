@@ -464,6 +464,40 @@ class PerformanceRecordingDownloadTest extends TestCase
         $this->assertSame(1, $attempts, 'A library that is down should not be asked again straight away.');
     }
 
+    /**
+     * The download and the lookup stay inside the cluster, but what a person
+     * clicks must be the address they can reach. Strays are refused, so a call
+     * to the public address would fail the test.
+     */
+    public function test_an_internal_address_carries_the_traffic_and_links_stay_public(): void
+    {
+        config()->set('services.jellyfin.internal_url', 'http://jellyfin.internal:8096');
+
+        Http::fake([
+            'jellyfin.internal:8096/Items?*' => Http::response([
+                'Items' => [[
+                    'Id' => self::ITEM_ID,
+                    'Type' => 'Episode',
+                    'MediaSources' => [['Path' => '/media/Show S01E01.mp4', 'Size' => 1024]],
+                ]],
+            ]),
+            'jellyfin.internal:8096/Items/*/Download' => Http::response('video-bytes', 200, ['Content-Type' => 'video/mp4']),
+        ]);
+        [$performance, $recording] = $this->recorded();
+
+        $this->actingAs($this->technician());
+
+        $response = $this->get($this->url($performance));
+        $response->assertOk();
+        $this->assertSame('video-bytes', $response->streamedContent());
+
+        $resource = (new PerformanceRecordingResource($recording))->toArray(request());
+        $this->assertSame('Show S01E01.mp4', $resource['file']['name']);
+        $this->assertSame('https://jellyfin.test/web/#/details?id='.self::ITEM_ID, $resource['itemUrl']);
+
+        Http::assertSent(fn (Request $request): bool => $request->url() === 'http://jellyfin.internal:8096/Items/'.self::ITEM_ID.'/Download');
+    }
+
     public function test_the_resource_says_who_gets_the_button(): void
     {
         [$performance, $recording] = $this->recorded();

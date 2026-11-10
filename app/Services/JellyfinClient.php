@@ -110,6 +110,9 @@ class JellyfinClient
      * client: the same host serves the API and the interface, so the episode a
      * link was accepted as is one click away from the screen showing it. Null
      * when there is no item, or no server configured to look on.
+     *
+     * Always the public address, never {@see apiBaseUrl()}: a person cannot
+     * reach the cluster-internal one.
      */
     public static function itemUrl(?string $itemId): ?string
     {
@@ -306,11 +309,23 @@ class JellyfinClient
      */
     private function connection(): PendingRequest
     {
-        return Http::baseUrl(rtrim((string) config('services.jellyfin.url'), '/'))
+        return Http::baseUrl(self::apiBaseUrl())
             ->withHeader('Authorization', sprintf(
                 'MediaBrowser Token="%s"',
                 (string) config('services.jellyfin.api_key'),
             ));
+    }
+
+    /**
+     * Where this app talks to the server: the cluster-internal address when
+     * one is set, so API calls and downloads stay off the internet, otherwise
+     * the public one.
+     */
+    private static function apiBaseUrl(): string
+    {
+        $internal = (string) config('services.jellyfin.internal_url');
+
+        return rtrim(filled($internal) ? $internal : (string) config('services.jellyfin.url'), '/');
     }
 
     /**
