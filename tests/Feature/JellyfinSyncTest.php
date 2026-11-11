@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\PerformanceStaffRole;
 use App\Enums\TechnicalPlanStatus;
+use App\Events\PerformancePlotSummaryWritten;
 use App\Events\PerformanceRecordingLinked;
 use App\Listeners\SyncPerformanceToJellyfin;
 use App\Models\Format;
@@ -422,6 +423,38 @@ class JellyfinSyncTest extends TestCase
      * Run the push for real, on the sync queue the suite uses, so the listener
      * and the client it calls are both exercised.
      */
+    public function test_the_overview_ends_with_the_plot_summary(): void
+    {
+        $this->fakeLibrary();
+
+        $recording = $this->recordingFor($this->night());
+        $recording->forceFill(['plot_summary' => "Esimene lõik.\n\nTeine lõik."])->save();
+
+        $this->push($recording);
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && str_ends_with($request['Overview'], "Sisukokkuvõte:\nEsimene lõik.\n\nTeine lõik."));
+    }
+
+    public function test_a_written_summary_is_pushed_with_nobody_behind_it(): void
+    {
+        $this->fakeLibrary();
+
+        $recording = $this->recordingFor($this->night());
+        $recording->forceFill(['plot_summary' => 'Kokkuvõte.'])->save();
+
+        PerformancePlotSummaryWritten::dispatch($recording);
+
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && str_contains($request['Overview'], 'Kokkuvõte.'));
+
+        $this->assertNotNull($recording->fresh()->synced_at);
+        $this->assertSame(
+            'Performance metadata pushed to Jellyfin by the system',
+            Activity::query()->where('event', 'jellyfin_synced')->sole()->description,
+        );
+    }
+
     private function push(PerformanceRecording $recording, ?User $linkedBy = null): void
     {
         PerformanceRecordingLinked::dispatch($recording, $linkedBy ?? $this->technician());

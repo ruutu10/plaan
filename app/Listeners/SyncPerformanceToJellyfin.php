@@ -2,7 +2,9 @@
 
 namespace App\Listeners;
 
+use App\Events\PerformancePlotSummaryWritten;
 use App\Events\PerformanceRecordingLinked;
+use App\Models\User;
 use App\Services\JellyfinClient;
 use App\Services\JellyfinEpisodeMetadata;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -50,7 +52,12 @@ class SyncPerformanceToJellyfin implements ShouldQueue
         protected JellyfinEpisodeMetadata $metadata,
     ) {}
 
-    public function handle(PerformanceRecordingLinked $event): void
+    /**
+     * Pushed again when the link changes and when its plot summary does — the
+     * summary is part of the episode's description, see
+     * {@see JellyfinEpisodeMetadata::overview()}.
+     */
+    public function handle(PerformanceRecordingLinked|PerformancePlotSummaryWritten $event): void
     {
         $recording = $event->recording;
 
@@ -90,7 +97,7 @@ class SyncPerformanceToJellyfin implements ShouldQueue
             return;
         }
 
-        $performance->load(['format', 'team', 'staff']);
+        $performance->load(['format', 'team', 'staff'])->setRelation('recording', $recording);
 
         $patch = $this->metadata->for($performance);
 
@@ -123,24 +130,36 @@ class SyncPerformanceToJellyfin implements ShouldQueue
             'fields' => array_keys($patch),
         ]);
 
+        $causer = $this->causer($event);
+
         activity()
             ->performedOn($recording)
-            ->causedBy($event->linkedBy)
+            ->causedBy($causer)
             ->event('jellyfin_synced')
             ->withProperties([
                 'item_id' => $itemId,
                 'fields' => array_keys($patch),
             ])
-            ->log(sprintf('Performance metadata pushed to Jellyfin by %s', $event->linkedBy->name));
+            ->log(sprintf('Performance metadata pushed to Jellyfin by %s', $causer->name ?? 'the system'));
+    }
+
+    /**
+     * Whoever set the push off: the person who linked the video or corrected
+     * its summary, or nobody for a summary the model wrote.
+     */
+    private function causer(PerformanceRecordingLinked|PerformancePlotSummaryWritten $event): ?User
+    {
+        return $event instanceof PerformanceRecordingLinked ? $event->linkedBy : $event->writtenBy;
     }
 
     /**
      * Every attempt is spent. Said out loud in the trail as well as the log: a
      * push nobody can see failing is one nobody fixes.
      */
-    public function failed(PerformanceRecordingLinked $event, Throwable $e): void
+    public function failed(PerformanceRecordingLinked|PerformancePlotSummaryWritten $event, Throwable $e): void
     {
         $recording = $event->recording;
+        $causer = $this->causer($event);
 
         Log::error('Gave up pushing performance metadata to Jellyfin', [
             'recording_id' => $recording->id,
@@ -151,7 +170,7 @@ class SyncPerformanceToJellyfin implements ShouldQueue
 
         activity()
             ->performedOn($recording)
-            ->causedBy($event->linkedBy)
+            ->causedBy($causer)
             ->event('jellyfin_sync_failed')
             ->withProperties([
                 'item_id' => $recording->item_id,

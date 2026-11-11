@@ -41,6 +41,15 @@ Schedule::command('technical-plans:archive')
     ->daily()
     ->description('Archive technical plans whose performance has been played');
 
+// Daily: the library's speech-to-text takes hours to days over a new video, and
+// a summary a day late is no loss. Each run only lists who is still waiting —
+// the reading itself is queued, one recording at a time — so it is cheap even
+// on a week of nights waiting at once.
+Schedule::command('performances:summarise-recordings')
+    ->daily()
+    ->withoutOverlapping()
+    ->description('Write plot summaries for recordings whose subtitles have arrived');
+
 // Weekly: a performance moving to archived changes nothing anybody is waiting
 // on — every listing that cares whether a night is still to come asks the date,
 // not the status — so the tidying can happen on the house's own quiet day. The

@@ -193,6 +193,18 @@ export interface PerformanceRecording {
      * through, and for everybody but the crew.
      */
     syncError: string | null;
+    /**
+     * What happened on stage, read off the video's speech-to-text subtitles
+     * or corrected by the crew. Null until one is written.
+     */
+    plotSummary: string | null;
+    /** When the model wrote the summary; ISO 8601 UTC instant. */
+    plotSummaryGeneratedAt: string | null;
+    /**
+     * Whether there is a summary, one is still waited for (the subtitles
+     * are not in yet), or the house gave up on one.
+     */
+    plotSummaryState: 'written' | 'waiting' | 'abandoned';
 }
 
 /** One dated performance of a format. */
@@ -268,6 +280,12 @@ export interface Performance {
      * entirely.
      */
     canLinkRecording: boolean;
+    /**
+     * Whether this reader may ask for the plot summary to be read off the
+     * recording's subtitles again. Correcting it by hand goes with
+     * `canLinkRecording`.
+     */
+    canRegeneratePlotSummary: boolean;
     /** Whether the performance was entered by hand or read off a Planka card. */
     createdBy: CreatedBy;
     /**
@@ -335,6 +353,11 @@ export interface PerformanceFormData {
      * and sent at all only by a reader the server says may set it.
      */
     recording_url: string;
+    /**
+     * The recording's plot summary, as corrected by hand. Sent only by a
+     * reader who may set the link, and only for a night with a recording.
+     */
+    recording_plot_summary?: string;
 }
 
 export type PerformanceFieldErrors = Partial<

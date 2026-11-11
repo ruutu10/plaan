@@ -34,7 +34,7 @@ class SavePerformanceRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        foreach (['duration', 'start_time', 'title', 'team_id', 'planka_card_id', 'recording_url'] as $field) {
+        foreach (['duration', 'start_time', 'title', 'team_id', 'planka_card_id', 'recording_url', 'recording_plot_summary'] as $field) {
             if ($this->input($field) === '') {
                 $this->merge([$field => null]);
             }
@@ -81,6 +81,14 @@ class SavePerformanceRequest extends FormRequest
                 'max:2048',
                 new JellyfinItemUrl,
             ],
+            // What happened on stage, as read off the recording's subtitles —
+            // the crew's to correct, by the same right as the link itself.
+            'recording_plot_summary' => [
+                'nullable',
+                Rule::prohibitedIf(fn (): bool => ! $this->maySetRecordingLink()),
+                'string',
+                'max:10000',
+            ],
             'date' => ['required', 'date_format:Y-m-d'],
             // Curtain-up on the venue's clock, as a 24-hour "19:00". Left out,
             // the performance takes the house's usual hour — see
@@ -117,9 +125,29 @@ class SavePerformanceRequest extends FormRequest
 
         // The recording is a record of its own, not a column here — see
         // App\Models\PerformanceRecording and recordingUrl() below.
-        unset($data['recording_url']);
+        unset($data['recording_url'], $data['recording_plot_summary']);
 
         return $data;
+    }
+
+    /**
+     * Whether this request both may and does say anything about the
+     * recording's plot summary — asked first for the same reason as
+     * {@see saysAnythingAboutRecording()}.
+     */
+    public function saysAnythingAboutPlotSummary(): bool
+    {
+        return $this->maySetRecordingLink() && $this->has('recording_plot_summary');
+    }
+
+    /**
+     * The corrected plot summary, or null for one being cleared.
+     */
+    public function plotSummary(): ?string
+    {
+        $summary = $this->input('recording_plot_summary');
+
+        return is_string($summary) && trim($summary) !== '' ? trim($summary) : null;
     }
 
     /**
@@ -179,6 +207,8 @@ class SavePerformanceRequest extends FormRequest
             'status.in' => __('Vali etenduse olek.'),
             'recording_url.prohibited' => __('Salvestuse linki saab lisada ainult tehnik.'),
             'recording_url.max' => __('Jellyfini link saab olla kuni 2048 tähemärki.'),
+            'recording_plot_summary.prohibited' => __('Sisukokkuvõtet saab muuta ainult tehnik.'),
+            'recording_plot_summary.max' => __('Sisukokkuvõte saab olla kuni 10000 tähemärki.'),
         ];
     }
 }

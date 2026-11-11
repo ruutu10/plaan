@@ -47,6 +47,7 @@ import {
     plankaImport as plankaImportApi,
     show as performanceApi,
 } from '@/routes/api/formats/performances';
+import { store as plotSummaryApi } from '@/routes/api/formats/performances/plot-summary';
 import { edit, index } from '@/routes/formats';
 import { show as performancePage } from '@/routes/formats/performances';
 import { index as planWizard } from '@/routes/technical-plan';
@@ -182,6 +183,27 @@ async function refreshFromPlanka(): Promise<void> {
         );
     } catch {
         toast.error('Planka impordi käivitamine ebaõnnestus. Proovi uuesti.');
+    }
+}
+
+/** Asking for a fresh plot summary has its own request, like the re-read. */
+const summaryRequest = useHttp();
+
+/**
+ * Ask for the plot to be read off the recording's subtitles again. Queued like
+ * the Planka re-read, so the page says it was ordered rather than waiting.
+ */
+async function regeneratePlotSummary(): Promise<void> {
+    try {
+        await summaryRequest.submit(
+            plotSummaryApi([props.formatId, props.performanceId]),
+        );
+
+        toast.success(
+            'Sisukokkuvõte tellitud. Uus kokkuvõte ilmub mõne minuti pärast, kui subtiitrid on olemas.',
+        );
+    } catch {
+        toast.error('Sisukokkuvõtte tellimine ebaõnnestus. Proovi uuesti.');
     }
 }
 </script>
@@ -373,6 +395,33 @@ async function refreshFromPlanka(): Promise<void> {
                 </div>
             </dl>
 
+            <!--
+                Prose rather than another grid cell: read off the recording's
+                subtitles once they are in, so a night with a video and no
+                summary yet says it is waiting rather than showing a dash.
+            -->
+            <div
+                v-if="performance.recording"
+                data-test="performance-plot-summary"
+            >
+                <div class="text-xs font-bold text-r10-grey-500 uppercase">
+                    Sisukokkuvõte
+                </div>
+                <p
+                    v-if="performance.recording.plotSummary"
+                    class="mt-1 whitespace-pre-line text-r10-ink"
+                >
+                    {{ performance.recording.plotSummary }}
+                </p>
+                <p v-else class="mt-1 text-[13px] text-r10-grey-500">
+                    {{
+                        performance.recording.plotSummaryState === 'abandoned'
+                            ? 'Kokkuvõtet ei õnnestunud salvestuse subtiitritest koostada.'
+                            : 'Kirjutatakse automaatselt, kui salvestuse subtiitrid on valmis.'
+                    }}
+                </p>
+            </div>
+
             <RecordOriginFields
                 :created-by="performance.createdBy"
                 :created-at="performance.createdAt"
@@ -433,6 +482,18 @@ async function refreshFromPlanka(): Promise<void> {
                         tooltip says why. The span takes the hover because a
                         disabled button takes no pointer events.
                     -->
+                    <R10Button
+                        v-if="performance.canRegeneratePlotSummary"
+                        variant="outline"
+                        size="sm"
+                        :disabled="summaryRequest.processing"
+                        data-test="regenerate-plot-summary-button"
+                        @click="regeneratePlotSummary"
+                    >
+                        <Sparkles class="h-3.5 w-3.5" />
+                        Uus kokkuvõte
+                    </R10Button>
+
                     <TooltipProvider
                         v-if="performance.canReimportFromPlanka"
                         :delay-duration="0"

@@ -628,6 +628,24 @@ täispikk aadress (`.../web/#/details?id=...`) kui ka paljas video ID kõlbavad.
   inimesi; kui kohad on täis, tuleb mõne minuti pärast uuesti proovida. Iga
   allalaadimine jääb auditilogisse.
 
+**Sisukokkuvõte.** Jellyfin teeb uuele videole ise eestikeelsed
+kõnetuvastusega subtiitrid, mis võtab aega. Süsteem vaatab kord päevas, kas
+salvestusel need juba on, ja kui on, kirjutab nende põhjal lühikese
+sisukokkuvõtte: mis laval juhtus. Kokkuvõte kirjutatakse **ühe korra** iga
+salvestuse kohta.
+
+- Kokkuvõte on näha etenduse lehel kõigile, kes lehe avada saavad, ja lisatakse
+  Jellyfinis video kirjelduse lõppu (pealkirja **Sisukokkuvõte** alla).
+- Subtiitrites on kõnetuvastuse vigu; kokkuvõte püüab mõtte järgi aru saada,
+  mida öeldi, aga võib eksida. Tehnik saab kokkuvõtet etenduse muutmise aknas
+  parandada - parandus läheb ka Jellyfini.
+- Kui subtiitreid pole **30 päeva** jooksul pärast lingi lisamist tulnud, või
+  kui neist ei saa sisu välja lugeda, jääb kokkuvõte kirjutamata.
+- Tehnik saab etenduse lehel nupuga **Uus kokkuvõte** lasta selle uuesti
+  kirjutada. Senine kokkuvõte jääb näha, kuni uus valmis saab.
+- Kui salvestuse link muutub (teine video), kustub vana kokkuvõte ja uue video
+  jaoks hakatakse otsast peale ootama.
+
 ### 7.3 Etenduse olek
 
 Etendusel on kolm olekut:

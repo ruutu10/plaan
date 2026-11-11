@@ -43,6 +43,20 @@ const EVENT_LABELS: Record<
     comment_deleted: { label: 'Kommentaar kustutatud', tone: 'neutral' },
     planka_reimport_requested: { label: 'Planka import', tone: 'muted' },
     copied: { label: 'Kopeeritud', tone: 'muted' },
+    plot_summary_generated: {
+        label: 'Sisukokkuvõte kirjutatud',
+        tone: 'muted',
+    },
+    plot_summary_edited: { label: 'Sisukokkuvõte muudetud', tone: 'neutral' },
+    plot_summary_abandoned: {
+        label: 'Sisukokkuvõttest loobutud',
+        tone: 'muted',
+    },
+    plot_summary_failed: { label: 'Sisukokkuvõte ebaõnnestus', tone: 'accent' },
+    plot_summary_regeneration_requested: {
+        label: 'Uus sisukokkuvõte tellitud',
+        tone: 'muted',
+    },
     password_changed: { label: 'Parool muudetud', tone: 'accent' },
     password_reset: { label: 'Parool lähtestatud', tone: 'accent' },
     two_factor_enabled: { label: '2FA sisse lülitatud', tone: 'neutral' },

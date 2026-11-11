@@ -27,6 +27,9 @@ class PerformanceRecording extends JsonResource
      *     file: array{name: string, sizeLabel: string, addedOn: string|null}|null,
      *     syncedAt: string|null,
      *     syncError: string|null,
+     *     plotSummary: string|null,
+     *     plotSummaryGeneratedAt: string|null,
+     *     plotSummaryState: 'written'|'waiting'|'abandoned',
      * }
      */
     public function toArray(Request $request): array
@@ -68,6 +71,16 @@ class PerformanceRecording extends JsonResource
             // the media server refusing a write, and nothing it could do about
             // it.
             'syncError' => $isCrew ? $recording->sync_error : null,
+            // What happened on stage, for everybody who can open the night —
+            // read off the video's subtitles, or corrected by the crew.
+            'plotSummary' => $recording->plot_summary,
+            'plotSummaryGeneratedAt' => $recording->plot_summary_generated_at?->toIso8601String(),
+            // Why there is no summary yet, for the line shown in its place.
+            'plotSummaryState' => match (true) {
+                filled($recording->plot_summary) => 'written',
+                $recording->plot_summary_abandoned_at !== null => 'abandoned',
+                default => 'waiting',
+            },
         ];
     }
 }

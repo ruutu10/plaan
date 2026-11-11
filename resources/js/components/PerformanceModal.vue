@@ -7,6 +7,7 @@ import PlankaCardField from '@/components/PlankaCardField.vue';
 import R10FormDialog from '@/components/technical-plan/R10FormDialog.vue';
 import R10Input from '@/components/technical-plan/R10Input.vue';
 import R10Select from '@/components/technical-plan/R10Select.vue';
+import R10Textarea from '@/components/technical-plan/R10Textarea.vue';
 import { formatLocalTime, toLocalDateInputValue } from '@/lib/date';
 import { performanceStatusOptions } from '@/lib/performanceStatus';
 import { store, update } from '@/routes/api/formats/performances';
@@ -72,6 +73,7 @@ const form = useHttp({
     status: 'upcoming' as string | number,
     planka_card_id: '',
     recording_url: '',
+    recording_plot_summary: '',
 }).transform((data) => ({
     title: data.title,
     team_id: data.team_id === FORMAT_S_OWN_TEAM ? null : Number(data.team_id),
@@ -85,6 +87,14 @@ const form = useHttp({
     // field is not on the screen to be cleared. The server holds the same line
     // on its own; this only keeps the request honest.
     ...(canLinkRecording.value ? { recording_url: data.recording_url } : {}),
+    // Only a summary somebody actually touched: a corrected link clears the
+    // previous video's summary on the server, and posting it back untouched
+    // would pin that old text onto the new video.
+    ...(canEditPlotSummary.value &&
+    data.recording_plot_summary !==
+        (props.performance?.recording?.plotSummary ?? '')
+        ? { recording_plot_summary: data.recording_plot_summary }
+        : {}),
 }));
 
 const isEditing = computed(() => props.performance !== null);
@@ -95,6 +105,14 @@ const isEditing = computed(() => props.performance !== null);
  */
 const canLinkRecording = computed(
     () => props.performance?.canLinkRecording ?? false,
+);
+
+/**
+ * Whether this reader may correct the recording's plot summary — the same
+ * right as the link, and only once there is a recording to summarise.
+ */
+const canEditPlotSummary = computed(
+    () => canLinkRecording.value && !!props.performance?.recording,
 );
 
 /** Whether the dialog itself offers the choice of format — see `formatId`. */
@@ -149,6 +167,8 @@ function fill(): void {
     form.status = props.performance?.status ?? 'upcoming';
     form.planka_card_id = props.performance?.plankaCardId ?? '';
     form.recording_url = props.performance?.recording?.url ?? '';
+    form.recording_plot_summary =
+        props.performance?.recording?.plotSummary ?? '';
 }
 
 async function save(): Promise<void> {
@@ -259,6 +279,15 @@ async function save(): Promise<void> {
             :synced-at="performance?.recording?.syncedAt"
             :sync-error="performance?.recording?.syncError"
             :error="form.errors.recording_url"
+        />
+
+        <R10Textarea
+            v-if="canEditPlotSummary"
+            v-model="form.recording_plot_summary"
+            label="Sisukokkuvõte"
+            hint="Kirjutatakse automaatselt salvestuse subtiitritest. Paranda vajadusel — muudatus läheb ka Jellyfini kirjeldusse."
+            :error="form.errors.recording_plot_summary"
+            data-test="performance-plot-summary-input"
         />
 
         <R10Select

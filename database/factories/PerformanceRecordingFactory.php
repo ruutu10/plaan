@@ -77,6 +77,27 @@ class PerformanceRecordingFactory extends Factory
     }
 
     /**
+     * Indicate that a plot summary has been written for the video.
+     */
+    public function withPlotSummary(string $summary = 'Etenduse sisukokkuvõte.'): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'plot_summary' => $summary,
+            'plot_summary_generated_at' => now(),
+        ]);
+    }
+
+    /**
+     * Indicate that the house gave up waiting for the video's subtitles.
+     */
+    public function plotSummaryAbandoned(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'plot_summary_abandoned_at' => now(),
+        ]);
+    }
+
+    /**
      * An episode's address as Jellyfin's own interface writes it.
      */
     private static function addressOf(string $itemId): string
