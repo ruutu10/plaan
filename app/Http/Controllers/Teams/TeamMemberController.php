@@ -60,9 +60,12 @@ class TeamMemberController extends Controller
 
         abort_if($team->owner()?->is($user), 403, __('The team owner cannot be removed.'));
 
+        // Each membership deleted as a model rather than in one statement, so
+        // the removal goes on the audit trail — see LogsModelActivity.
         $team->memberships()
             ->where('user_id', $user->id)
-            ->delete();
+            ->get()
+            ->each->delete();
 
         $home = $user->relocateFrom($team);
 

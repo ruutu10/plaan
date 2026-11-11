@@ -49,6 +49,20 @@ class PerformanceStaffController extends Controller
 
         $member = $performance->staff()->wherePivot('id', $staffing->id)->sole();
 
+        // Being on the staff opens the night's page and its plans, so who put
+        // whom there is worth keeping past the app log's retention.
+        activity()
+            ->performedOn($performance)
+            ->causedBy($request->user())
+            ->event('staff_added')
+            ->withProperties(['user_id' => $member->id, 'role' => $staffing->role->value])
+            ->log(sprintf(
+                '%s added to the staff as %s by %s',
+                $member->name,
+                $staffing->role->label(),
+                $request->user()->name,
+            ));
+
         return PerformanceStaffMemberResource::make($member)
             ->response()
             ->setStatusCode(SymfonyResponse::HTTP_CREATED);
@@ -75,6 +89,18 @@ class PerformanceStaffController extends Controller
             'role' => $staffing->role->value,
             'user_id' => $request->user()->id,
         ]);
+
+        activity()
+            ->performedOn($performance)
+            ->causedBy($request->user())
+            ->event('staff_removed')
+            ->withProperties(['user_id' => $staffing->user_id, 'role' => $staffing->role->value])
+            ->log(sprintf(
+                '%s taken off the staff as %s by %s',
+                $staffing->user->name,
+                $staffing->role->label(),
+                $request->user()->name,
+            ));
 
         return response()->noContent();
     }

@@ -30,6 +30,7 @@ class UserRoleController extends Controller
     public function store(AssignRoleRequest $request, User $user): AdminUserResource
     {
         $role = $request->validated('role');
+        $alreadyHeld = $user->hasRole($role);
 
         $user->assignRole($role);
 
@@ -38,6 +39,17 @@ class UserRoleController extends Controller
             'role' => $role,
             'granted_by' => $request->user()->id,
         ]);
+
+        // A grant that changed nothing — the double-clicked toggle — is not
+        // news in the audit trail.
+        if (! $alreadyHeld) {
+            activity()
+                ->performedOn($user)
+                ->causedBy($request->user())
+                ->event('role_granted')
+                ->withProperties(['role' => $role])
+                ->log(sprintf('Role %s granted to %s by %s', $role, $user->name, $request->user()->name));
+        }
 
         return $this->reread($user);
     }
@@ -57,6 +69,8 @@ class UserRoleController extends Controller
     {
         Gate::authorize('updateRoles', $user);
 
+        $wasHeld = $user->hasRole($role);
+
         $user->removeRole($role);
 
         Log::notice('Role taken away from the account management screen', [
@@ -64,6 +78,15 @@ class UserRoleController extends Controller
             'role' => $role->name,
             'removed_by' => $request->user()->id,
         ]);
+
+        if ($wasHeld) {
+            activity()
+                ->performedOn($user)
+                ->causedBy($request->user())
+                ->event('role_revoked')
+                ->withProperties(['role' => $role->name])
+                ->log(sprintf('Role %s taken away from %s by %s', $role->name, $user->name, $request->user()->name));
+        }
 
         return $this->reread($user);
     }

@@ -129,6 +129,23 @@ class TechnicalPlanCommentController extends Controller
             'author_id' => $comment->user_id,
         ]);
 
+        // The remark itself is kept in the entry: once deleted, this is the
+        // only place left that says what was taken back.
+        activity()
+            ->performedOn($plan)
+            ->causedBy($user)
+            ->event('comment_deleted')
+            ->withProperties([
+                'comment_id' => $comment->id,
+                'author_id' => $comment->user_id,
+                'body' => $comment->body,
+            ])
+            ->log(sprintf(
+                'Technical plan comment by %s deleted by %s',
+                $comment->user->name ?? $comment->author_name ?? 'an unknown author',
+                $user->name,
+            ));
+
         return response()->json(status: 204);
     }
 

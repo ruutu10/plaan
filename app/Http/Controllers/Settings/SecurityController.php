@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Fortify\Events\PasswordUpdatedViaController;
 use Laravel\Fortify\Features;
 
 class SecurityController extends Controller
@@ -64,6 +65,10 @@ class SecurityController extends Controller
             'user_id' => $request->user()->id,
             'ip' => $request->ip(),
         ]);
+
+        // Fortify's own event for exactly this, though this screen stands in
+        // for Fortify's controller — see App\Listeners\LogAccountSecurityChange.
+        PasswordUpdatedViaController::dispatch($request->user());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
 

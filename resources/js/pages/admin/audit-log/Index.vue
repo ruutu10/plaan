@@ -34,6 +34,26 @@ const EVENT_LABELS: Record<
     submitted: { label: 'Esitatud', tone: 'navy' },
     status_changed: { label: 'Oleku muutus', tone: 'neutral' },
     mail_sent: { label: 'E-kiri saadetud', tone: 'muted' },
+    role_granted: { label: 'Roll antud', tone: 'navy' },
+    role_revoked: { label: 'Roll eemaldatud', tone: 'accent' },
+    staff_added: { label: 'Koosseisu lisatud', tone: 'neutral' },
+    staff_removed: { label: 'Koosseisust eemaldatud', tone: 'neutral' },
+    staff_synced: { label: 'Koosseis Plankast', tone: 'muted' },
+    commented: { label: 'Kommenteeritud', tone: 'muted' },
+    comment_deleted: { label: 'Kommentaar kustutatud', tone: 'neutral' },
+    planka_reimport_requested: { label: 'Planka import', tone: 'muted' },
+    copied: { label: 'Kopeeritud', tone: 'muted' },
+    password_changed: { label: 'Parool muudetud', tone: 'accent' },
+    password_reset: { label: 'Parool lähtestatud', tone: 'accent' },
+    two_factor_enabled: { label: '2FA sisse lülitatud', tone: 'neutral' },
+    two_factor_confirmed: { label: '2FA kinnitatud', tone: 'neutral' },
+    two_factor_disabled: { label: '2FA välja lülitatud', tone: 'accent' },
+    recovery_codes_regenerated: {
+        label: 'Taastekoodid uuendatud',
+        tone: 'neutral',
+    },
+    passkey_added: { label: 'Pääsuvõti lisatud', tone: 'neutral' },
+    passkey_removed: { label: 'Pääsuvõti eemaldatud', tone: 'accent' },
 };
 
 function eventLabel(event: string | null): string {

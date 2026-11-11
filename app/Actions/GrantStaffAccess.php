@@ -52,7 +52,19 @@ class GrantStaffAccess
                 $team->id => ['role' => TeamRole::Member->value],
             ]);
 
-            $user->assignRole(self::ROLE);
+            // Called again on every proof of the address, so only the first
+            // grant — the one that actually opened the house's plans — goes on
+            // the audit trail. The system made it, whoever was signed in.
+            if (! $user->hasRole(self::ROLE)) {
+                $user->assignRole(self::ROLE);
+
+                activity()
+                    ->performedOn($user)
+                    ->causedByAnonymous()
+                    ->event('role_granted')
+                    ->withProperties(['role' => self::ROLE, 'automatic' => true])
+                    ->log(sprintf('Role %s granted to %s by the system: a verified house address', self::ROLE, $user->name));
+            }
 
             // Accounts that never got a team of their own — the ones the magic
             // link provisions — would otherwise land nowhere.

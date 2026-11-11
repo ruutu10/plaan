@@ -277,6 +277,14 @@ class TechnicalPlanController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
+        // Filed on the plan copied from: the copy is only a starting point in
+        // the wizard until it is saved, and gets entries of its own from then.
+        activity()
+            ->performedOn($plan)
+            ->causedBy($request->user())
+            ->event('copied')
+            ->log(sprintf('Technical plan copied as the basis for a new one by %s', $request->user()->name));
+
         return TechnicalPlanResource::make($plan)->withStagedCopy($stageCopy->handle($plan));
     }
 

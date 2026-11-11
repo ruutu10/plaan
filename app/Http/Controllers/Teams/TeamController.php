@@ -154,9 +154,12 @@ class TeamController extends Controller
 
         $user = $request->user();
 
+        // Deleted as a model rather than in one statement, so leaving goes on
+        // the audit trail — see LogsModelActivity.
         $team->memberships()
             ->where('user_id', $user->id)
-            ->delete();
+            ->get()
+            ->each->delete();
 
         // Only once the membership is gone, so the team they are leaving is not
         // itself a candidate to be moved into.
