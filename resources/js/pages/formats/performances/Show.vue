@@ -434,6 +434,21 @@ async function regeneratePlotSummary(): Promise<void> {
                         {{ tag }}
                     </Badge>
                 </div>
+                <!--
+                    Read off speech-to-text by a model, so it says so: whoever
+                    reads it should know it can be wrong, and that the crew can
+                    put it right.
+                -->
+                <p
+                    v-if="performance.recording.plotSummary"
+                    class="mt-2 flex items-start gap-1.5 text-xs text-r10-grey-500"
+                    data-test="performance-plot-summary-disclaimer"
+                >
+                    <Sparkles class="mt-px h-3.5 w-3.5 shrink-0" />
+                    Kokkuvõte ja sildid on koostatud tehisaru abil
+                    salvestuse automaatsetest subtiitritest ning võivad
+                    sisaldada vigu.
+                </p>
                 <!-- The crew's alone; the server says who. -->
                 <R10Button
                     v-if="performance.canRegeneratePlotSummary"
