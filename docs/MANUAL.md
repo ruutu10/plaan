@@ -599,13 +599,16 @@ täispikk aadress (`.../web/#/details?id=...`) kui ka paljas video ID kõlbavad.
 - Kui link salvestada, uuendab süsteem **taustal** Jellyfinis selle video
   andmeid: etenduse nimi, kuupäev, esinev trupp, meeskond (esinejad,
   õhtujuht, helimees - igaüks oma rollis), formaadi kirjeldus, sildid
-  (trupp, formaat, koht, hooaeg, ja tehnikaplaanist elav muusika / suits /
+  (trupp, formaat, koht, hooaeg, ja tehnikaplaanist elav muusika /
   vaheaeg) ning lingid tagasi plaani ja Planka kaardi peale.
 - Andmed liiguvad **ainult ühes suunas**, plaanist Jellyfini. Kui keegi
   Jellyfinis kirjelduse käsitsi üle kirjutab, kaob see järgmise uuendusega.
 - Kui link **esimest korda** lisatakse, saavad selle etenduse **tehniku
-  kinnitatud** tehnikaplaani kirjutajad kirja, et salvestus on olemas. Hilisem
-  lingi parandamine teist kirja ei saada.
+  kinnitatud** tehnikaplaani kirjutajad kirja, et salvestus on olemas. Kiri
+  ootab ära **sisukokkuvõtte** (vt allpool) ja tuleb koos kokkuvõtte ja
+  siltidega. Seega võib see jõuda alles mitu päeva pärast lingi lisamist. Kui
+  kokkuvõte jääb kirjutamata, tuleb kiri ilma selleta. Hilisem lingi
+  parandamine või uus kokkuvõte teist kirja ei saada.
 - Sedasama kirja saavad **pimekoopiana** ka kõik, kes sel õhtul laval olid -
   esinejad ja õhtujuht, nii nagu Planka kaart nad nimetas. 
 - Kui tehniku kinnitatud plaani kirjutajat pole (nt formaadil, mille
@@ -643,8 +646,13 @@ salvestuse kohta.
 - Subtiitrites on kõnetuvastuse vigu; kokkuvõte püüab mõtte järgi aru saada,
   mida öeldi, aga võib eksida. Tehnik saab kokkuvõtet etenduse muutmise aknas
   parandada - parandus läheb ka Jellyfini.
-- Kui subtiitreid pole **30 päeva** jooksul pärast lingi lisamist tulnud, või
-  kui neist ei saa sisu välja lugeda, jääb kokkuvõte kirjutamata.
+- Kokkuvõte ja sildid on ka esinejatele saadetud salvestuse kirjas, koos
+  märkusega, et need on koostatud tehisaru abil. Kui tehnik kirjutab
+  kokkuvõtte käsitsi enne, kui süsteem jõuab, läheb kiri kohe teele, selle
+  kokkuvõttega ja ilma märkuseta.
+- Kui subtiitreid pole **14 päeva** jooksul pärast lingi lisamist tulnud, või
+  kui neist ei saa sisu välja lugeda, jääb kokkuvõte kirjutamata ja salvestuse
+  kiri läheb teele ilma selleta.
 - Tehnik saab etenduse lehel nupuga **Uus kokkuvõte** lasta selle uuesti
   kirjutada. Senine kokkuvõte jääb näha, kuni uus valmis saab.
 - Kui salvestuse link muutub (teine video), kustub vana kokkuvõte ja uue video

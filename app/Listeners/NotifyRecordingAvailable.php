@@ -2,11 +2,14 @@
 
 namespace App\Listeners;
 
+use App\Events\PerformancePlotSummaryAbandoned;
+use App\Events\PerformancePlotSummaryWritten;
 use App\Events\PerformanceRecordingLinked;
 use App\Models\Performance;
 use App\Models\PerformanceRecording;
 use App\Models\User;
 use App\Notifications\PerformanceRecordingAvailable;
+use App\Services\PerformancePlotSummariser;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -25,6 +28,13 @@ use Illuminate\Support\Facades\Log;
  * {@see User::isHouseStaff()}), so it cannot share a blind copy with the house's
  * and goes to each of them separately.
  *
+ * The letter carries the night's plot summary and tags, so it waits for them
+ * rather than going out the moment the link is pasted: it is sent when the
+ * first summary is written, by the model or by hand. A recording that will
+ * never have one is announced without it: one given up on (see
+ * {@see PerformancePlotSummaryAbandoned}), or one linked where no summaries can
+ * be written at all. The design is in docs/adr/0001.
+ *
  * Separate from {@see SyncPerformanceToJellyfin} on purpose — a media server
  * that is down should not hold back a letter about a video that is plainly up.
  * The audit entry is filed here for the same reason it is filed there: only
@@ -38,9 +48,19 @@ class NotifyRecordingAvailable implements ShouldQueue
      */
     public bool $deleteWhenMissingModels = true;
 
-    public function handle(PerformanceRecordingLinked $event): void
+    public function handle(PerformanceRecordingLinked|PerformancePlotSummaryWritten|PerformancePlotSummaryAbandoned $event): void
     {
         $recording = $event->recording;
+
+        if (! $this->isTimeToAnnounce($event)) {
+            Log::debug('A recording letter is waiting for its plot summary', [
+                'recording_id' => $recording->id,
+                'performance_id' => $recording->performance_id,
+                'event' => class_basename($event),
+            ]);
+
+            return;
+        }
 
         $claimed = PerformanceRecording::query()
             ->whereKey($recording->getKey())
@@ -112,7 +132,7 @@ class NotifyRecordingAvailable implements ShouldQueue
 
         activity()
             ->performedOn($recording)
-            ->causedBy($event->linkedBy)
+            ->causedBy($this->causer($event))
             ->event('recording_announced')
             ->withProperties([
                 'recipients' => $authors->count(),
@@ -125,6 +145,41 @@ class NotifyRecordingAvailable implements ShouldQueue
                 $authors->count() === 1 ? 'author' : 'authors',
                 count($blindCopies) + $writtenToAlone->count(),
             ));
+    }
+
+    /**
+     * Whether the letter can go out now, or should wait for the plot summary.
+     *
+     * A fresh link waits, unless a summary was written by hand in the same save,
+     * or nothing here could ever write one. A summary written means the letter
+     * can go, but only if there is text: a summary cleared by hand fires the same
+     * event and leaves nothing to show. Once the house has given up on a summary,
+     * the letter goes without one.
+     */
+    private function isTimeToAnnounce(PerformanceRecordingLinked|PerformancePlotSummaryWritten|PerformancePlotSummaryAbandoned $event): bool
+    {
+        $recording = $event->recording;
+
+        return match (true) {
+            $event instanceof PerformanceRecordingLinked => filled($recording->plot_summary)
+                || blank($recording->item_id)
+                || ! PerformancePlotSummariser::isConfigured(),
+            $event instanceof PerformancePlotSummaryWritten => filled($recording->plot_summary),
+            $event instanceof PerformancePlotSummaryAbandoned => true,
+        };
+    }
+
+    /**
+     * Who to put the announcement down to in the audit trail: whoever did what
+     * set it off, or nobody for the model and the daily run.
+     */
+    private function causer(PerformanceRecordingLinked|PerformancePlotSummaryWritten|PerformancePlotSummaryAbandoned $event): ?User
+    {
+        return match (true) {
+            $event instanceof PerformanceRecordingLinked => $event->linkedBy,
+            $event instanceof PerformancePlotSummaryWritten => $event->writtenBy,
+            $event instanceof PerformancePlotSummaryAbandoned => $event->requestedBy,
+        };
     }
 
     /**

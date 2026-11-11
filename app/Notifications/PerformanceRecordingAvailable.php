@@ -16,8 +16,8 @@ use Illuminate\Notifications\Notification;
 
 /**
  * The word to whoever wrote a night's technical plan that the video of it is
- * up — sent the first time somebody says where the recording is, and only
- * then. Who gets it, and that they only get it once, is
+ * up, with what the night was about: its plot summary and tags, when it has
+ * them. Who gets it, when, and that they only get it once, is
  * {@see NotifyRecordingAvailable}'s to settle.
  */
 class PerformanceRecordingAvailable extends Notification implements AboutRecord, ShouldQueue
@@ -84,6 +84,11 @@ class PerformanceRecordingAvailable extends Notification implements AboutRecord,
                 // Read when the letter is sent rather than when it was queued;
                 // a library that does not answer leaves it out.
                 'recordingFile' => $downloadUrl === null ? null : app(RecordingFileDetails::class)->for($this->recording),
+                'plotSummary' => filled($this->recording->plot_summary) ? $this->recording->plot_summary : null,
+                'plotTags' => $this->recording->plot_tags ?? [],
+                // A summary typed in by the crew before the model got to it was
+                // never the model's, and is not put down to it.
+                'plotSummaryIsGenerated' => $this->recording->plot_summary_generated_at !== null,
                 'techEmail' => (string) config('technical_plan.tech_email'),
             ]);
 

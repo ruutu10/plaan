@@ -1,7 +1,7 @@
 {{--
-    The word to a plan's author that the video of their night is up. Short by
-    design — it carries nothing about the recording itself, only that there is
-    one and where to watch it.
+    The word to a plan's author that the video of their night is up: that there
+    is one, where to watch it, and — once read off its subtitles — what the
+    night was about.
 --}}
 @php
     $link = 'color:#e85f30; text-decoration:underline;';
@@ -59,10 +59,28 @@
         </table>
     @endif
 
+    @if ($plotSummary)
+        <h2 style="margin:28px 0 8px 0; font-family:'Futura','Century Gothic','Roboto',Arial,sans-serif; font-size:16px; line-height:1.3; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; color:#0c0f16;">
+            Sisukokkuvõte
+        </h2>
+
+        <p style="margin:0 0 12px 0; font-size:16px; line-height:1.6; white-space:pre-line;">{{ $plotSummary }}</p>
+
+        @if ($plotTags !== [])
+            <p style="margin:0 0 12px 0; font-size:13px; line-height:2;">
+                @foreach ($plotTags as $tag)
+                    <span style="display:inline-block; margin:0 4px 0 0; padding:0 10px; border-radius:999px; background-color:#f2f4f7; color:#0c0f16; white-space:nowrap;">{{ $tag }}</span>
+                @endforeach
+            </p>
+        @endif
+
+        @if ($plotSummaryIsGenerated)
+            <p style="margin:0 0 4px 0; font-size:13px; line-height:1.5; color:#6b7386;">
+                Kokkuvõte ja sildid on koostatud tehisaru abil salvestuse automaatsetest subtiitritest ning võivad sisaldada vigu.
+            </p>
+        @endif
+    @endif
+
     <x-emails.performance-details :details="$details" />
 
-    <p style="margin:24px 0 0 0; font-size:13px; line-height:1.6; color:#6b7386;">
-        Küsimuste korral kirjuta aadressil
-        <a href="mailto:{{ $techEmail }}" style="{{ $link }}">{{ $techEmail }}</a>.
-    </p>
 @endsection

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Anthropic\Client;
 use App\Enums\PerformanceStaffRole;
+use App\Events\PerformancePlotSummaryAbandoned;
 use App\Events\PerformancePlotSummaryRequested;
 use App\Events\PerformancePlotSummaryWritten;
 use App\Models\Format;
@@ -81,26 +82,80 @@ class PerformancePlotSummaryTest extends TestCase
         );
     }
 
-    public function test_the_daily_run_gives_up_on_a_recording_left_untranscribed_for_thirty_days(): void
+    public function test_the_daily_run_gives_up_on_a_recording_left_untranscribed_for_fourteen_days(): void
     {
         Event::fake([PerformancePlotSummaryRequested::class]);
 
-        $this->travel(-31)->days();
+        $this->travel(-15)->days();
         $stale = $this->recording();
+        $this->travelBack();
+
+        $this->travel(-13)->days();
+        $waiting = $this->recording();
         $this->travelBack();
 
         $this->artisan('performances:summarise-recordings')->assertSuccessful();
 
-        Event::assertNotDispatched(PerformancePlotSummaryRequested::class);
+        Event::assertDispatchedTimes(PerformancePlotSummaryRequested::class, 1);
+        Event::assertDispatched(
+            PerformancePlotSummaryRequested::class,
+            fn (PerformancePlotSummaryRequested $event): bool => $event->recording->is($waiting),
+        );
         $this->assertNotNull($stale->fresh()->plot_summary_abandoned_at);
+        $this->assertNull($waiting->fresh()->plot_summary_abandoned_at);
         $this->assertTrue(Activity::query()->where('event', 'plot_summary_abandoned')->whereMorphedTo('subject', $stale)->exists());
+    }
+
+    public function test_the_run_can_be_limited_to_one_performance(): void
+    {
+        Event::fake([PerformancePlotSummaryRequested::class]);
+
+        $chosen = $this->recording();
+        $this->recording();
+
+        $this->artisan('performances:summarise-recordings', ['--performance' => $chosen->performance_id])
+            ->assertSuccessful();
+
+        Event::assertDispatchedTimes(PerformancePlotSummaryRequested::class, 1);
+        Event::assertDispatched(
+            PerformancePlotSummaryRequested::class,
+            fn (PerformancePlotSummaryRequested $event): bool => $event->recording->is($chosen),
+        );
+    }
+
+    /**
+     * Named, it is still the waiting list's to say: one already summarised is
+     * left alone, and the run says so.
+     */
+    public function test_a_limited_run_on_a_performance_not_waiting_asks_after_nothing(): void
+    {
+        Event::fake([PerformancePlotSummaryRequested::class]);
+
+        $summarised = PerformanceRecording::factory()->forItem(self::ITEM_ID)->withPlotSummary()->create();
+
+        $this->artisan('performances:summarise-recordings', ['--performance' => $summarised->performance_id])
+            ->expectsOutputToContain('has no recording waiting')
+            ->assertSuccessful();
+
+        Event::assertNotDispatched(PerformancePlotSummaryRequested::class);
+    }
+
+    public function test_a_limited_run_refuses_anything_but_an_id(): void
+    {
+        Event::fake([PerformancePlotSummaryRequested::class]);
+
+        $this->recording();
+
+        $this->artisan('performances:summarise-recordings', ['--performance' => 'abc'])->assertFailed();
+
+        Event::assertNotDispatched(PerformancePlotSummaryRequested::class);
     }
 
     public function test_a_dry_run_changes_nothing(): void
     {
         Event::fake([PerformancePlotSummaryRequested::class]);
 
-        $this->travel(-31)->days();
+        $this->travel(-15)->days();
         $stale = $this->recording();
         $this->travelBack();
         $this->recording();
@@ -184,6 +239,7 @@ class PerformancePlotSummaryTest extends TestCase
     {
         $this->fakeLibrary();
         $this->bindModelAnswering((string) json_encode(['usable' => false, 'summary' => null, 'reason' => 'Ainult muusika.']));
+        Event::fake([PerformancePlotSummaryAbandoned::class]);
 
         $recording = $this->recording();
 
@@ -193,6 +249,12 @@ class PerformancePlotSummaryTest extends TestCase
         $this->assertNull($recording->plot_summary);
         $this->assertNotNull($recording->plot_summary_abandoned_at);
         Http::assertNotSent(fn (Request $request): bool => $request->method() === 'POST');
+
+        // So the performers' letter goes without it.
+        Event::assertDispatched(
+            PerformancePlotSummaryAbandoned::class,
+            fn (PerformancePlotSummaryAbandoned $event): bool => $event->recording->is($recording),
+        );
     }
 
     public function test_a_library_that_is_down_is_retried_rather_than_given_up_on(): void

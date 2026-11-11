@@ -2,10 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Events\PerformancePlotSummaryAbandoned;
 use App\Events\PerformancePlotSummaryRequested;
 use App\Listeners\SummarisePerformancePlot;
 use App\Models\PerformanceRecording;
-use App\Services\JellyfinClient;
+use App\Services\PerformancePlotSummariser;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -21,17 +22,26 @@ use Illuminate\Support\Facades\Log;
  * library never transcribes stops being asked about.
  */
 #[Signature('performances:summarise-recordings
-    {--days=30 : Give up on a recording whose subtitles have not appeared this many days after it was linked}
-    {--dry-run : Name the recordings that would be asked after without queueing anything}')]
+    {--days=14 : Give up on a recording whose subtitles have not appeared this many days after it was linked}
+    {--dry-run : Name the recordings that would be asked after without queueing anything}
+    {--performance= : Only ask after the recording of the performance with this id}')]
 #[Description('Write plot summaries for recordings whose subtitles have arrived.')]
 class SummarisePerformanceRecordings extends Command
 {
     public function handle(): int
     {
-        if (! JellyfinClient::isConfigured() || blank(config('services.anthropic.key'))) {
+        if (! PerformancePlotSummariser::isConfigured()) {
             $this->warn('Jellyfin or Claude is not configured; nothing to do.');
 
             return self::SUCCESS;
+        }
+
+        $performanceId = $this->option('performance');
+
+        if ($performanceId !== null && ! ctype_digit((string) $performanceId)) {
+            $this->error('--performance takes a performance id.');
+
+            return self::FAILURE;
         }
 
         $days = max(1, (int) $this->option('days'));
@@ -43,6 +53,7 @@ class SummarisePerformanceRecordings extends Command
 
         PerformanceRecording::query()
             ->awaitingPlotSummary()
+            ->when($performanceId !== null, fn ($query) => $query->where('performance_id', (int) $performanceId))
             ->with('performance.format')
             ->lazyById()
             ->each(function (PerformanceRecording $recording) use ($dryRun, $cutoff, &$requested, &$abandoned): void {
@@ -60,6 +71,8 @@ class SummarisePerformanceRecordings extends Command
                             ->event('plot_summary_abandoned')
                             ->withProperties(['reason' => 'no_subtitles', 'linked_at' => $linkedAt->toIso8601String()])
                             ->log(sprintf('Stopped waiting for subtitles of %s', $name));
+
+                        PerformancePlotSummaryAbandoned::dispatch($recording);
                     }
 
                     $abandoned++;
@@ -76,6 +89,12 @@ class SummarisePerformanceRecordings extends Command
                 $requested++;
             });
 
+        // Already summarised, given up on, unlinked, or no such night: the
+        // waiting list has nothing for it either way.
+        if ($performanceId !== null && $requested + $abandoned === 0) {
+            $this->warn(sprintf('Performance #%d has no recording waiting on a plot summary.', $performanceId));
+        }
+
         $this->info(sprintf(
             '%s %d recording(s), %s %d.',
             $dryRun ? 'Would ask after' : 'Asked after',
@@ -89,6 +108,7 @@ class SummarisePerformanceRecordings extends Command
             'requested' => $requested,
             'abandoned' => $abandoned,
             'window_days' => $days,
+            'performance_id' => $performanceId === null ? null : (int) $performanceId,
         ]);
 
         return self::SUCCESS;
