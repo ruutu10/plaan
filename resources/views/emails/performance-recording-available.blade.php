@@ -76,7 +76,7 @@
 
         @if ($plotSummaryIsGenerated)
             <p style="margin:0 0 4px 0; font-size:13px; line-height:1.5; color:#6b7386;">
-                Kokkuvõte ja sildid on koostatud tehisaru abil salvestuse automaatsetest subtiitritest ning võivad sisaldada vigu.
+                Kokkuvõte ja sildid on koostatud tehisaru abil salvestuse automaatsetest subtiitritest ning võib sisaldada vigu.
             </p>
         @endif
     @endif
