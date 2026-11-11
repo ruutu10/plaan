@@ -27,6 +27,13 @@ export interface AuditLogEntry {
     subjectUrl: string | null;
     /** Null reads as the system itself — nobody was signed in to do this. */
     causerName: string | null;
+    /**
+     * Address and browser of the request behind the entry — kept even when a
+     * queued job wrote it. Null for anything with no request behind it, like
+     * a console import, and for entries from before these were kept.
+     */
+    ipAddress: string | null;
+    userAgent: string | null;
     /** ISO 8601. */
     createdAt: string | null;
 }

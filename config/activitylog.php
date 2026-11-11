@@ -1,7 +1,7 @@
 <?php
 
+use App\Actions\LogActivityWithRequestOrigin;
 use Spatie\Activitylog\Actions\CleanActivityLogAction;
-use Spatie\Activitylog\Actions\LogActivityAction;
 use Spatie\Activitylog\Models\Activity;
 
 return [
@@ -67,7 +67,7 @@ return [
      * are logged and cleaned. Your custom classes must extend the originals.
      */
     'actions' => [
-        'log_activity' => LogActivityAction::class,
+        'log_activity' => LogActivityWithRequestOrigin::class,
         'clean_log' => CleanActivityLogAction::class,
     ],
 ];

@@ -227,4 +227,41 @@ class AuditLogTest extends TestCase
                 ->where('entries.0.causerName', null)
             );
     }
+
+    public function test_an_entry_shows_the_ip_and_user_agent_it_was_filed_with(): void
+    {
+        $technician = $this->technician();
+
+        activity()
+            ->event('mail_sent')
+            ->withProperties(['ip' => '203.0.113.7', 'user_agent' => 'Mozilla/5.0 Firefox/140.0'])
+            ->log('E-mail sent');
+
+        $this->actingAs($technician)
+            ->get(route('admin.audit-log.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('entries.0.event', 'mail_sent')
+                ->where('entries.0.ipAddress', '203.0.113.7')
+                ->where('entries.0.userAgent', 'Mozilla/5.0 Firefox/140.0')
+            );
+    }
+
+    public function test_an_entry_with_no_request_behind_it_shows_no_origin(): void
+    {
+        $technician = $this->technician();
+
+        // No request at all, the way a console import runs; and a value that
+        // is not a string is not passed on as one.
+        activity()->event('mail_sent')->withProperties(['ip' => ['not', 'an', 'address']])->log('E-mail sent');
+
+        $this->actingAs($technician)
+            ->get(route('admin.audit-log.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('entries.0.event', 'mail_sent')
+                ->where('entries.0.ipAddress', null)
+                ->where('entries.0.userAgent', null)
+            );
+    }
 }

@@ -39,6 +39,8 @@ class AuditLogEntry extends JsonResource
      *     subjectLabel: string|null,
      *     subjectUrl: string|null,
      *     causerName: string|null,
+     *     ipAddress: string|null,
+     *     userAgent: string|null,
      *     createdAt: string|null,
      * }
      */
@@ -62,8 +64,24 @@ class AuditLogEntry extends JsonResource
             // causer this application ever writes is a User, but the relation
             // is typed generically, so this is where that is made narrow.
             'causerName' => $causer instanceof User ? $causer->name : null,
+            // Where the request behind the entry came from — see
+            // LogActivityWithRequestOrigin. Absent for anything with no
+            // request behind it, and for entries written before it was kept.
+            'ipAddress' => $this->stringProperty($activity, 'ip'),
+            'userAgent' => $this->stringProperty($activity, 'user_agent'),
             'createdAt' => $activity->created_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * A property the entry was filed with, when it is a non-empty string; the
+     * properties are free-form, so nothing else is passed on as one.
+     */
+    private function stringProperty(Activity $activity, string $name): ?string
+    {
+        $value = $activity->getProperty($name);
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 
     /**

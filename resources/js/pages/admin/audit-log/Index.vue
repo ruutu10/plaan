@@ -75,6 +75,7 @@ function subjectName(entry: AuditLogEntry): string {
                 { label: 'Kirjeldus' },
                 { label: 'Objekt' },
                 { label: 'Tegija' },
+                { label: 'Päritolu' },
             ]"
             :rows="entries"
             row-test-id="audit-log-row"
@@ -130,6 +131,25 @@ function subjectName(entry: AuditLogEntry): string {
                     >
                         Süsteem
                     </R10Pill>
+                </td>
+                <td class="px-5 py-4 align-top" data-test="audit-log-origin">
+                    <template v-if="entry.ipAddress || entry.userAgent">
+                        <span
+                            class="block font-mono whitespace-nowrap text-r10-ink"
+                        >
+                            {{ entry.ipAddress ?? '—' }}
+                        </span>
+                        <!-- A user-agent runs long; the row shows its start and
+                             the whole of it on hover. -->
+                        <span
+                            v-if="entry.userAgent"
+                            class="block max-w-56 truncate text-r10-grey-500"
+                            :title="entry.userAgent"
+                        >
+                            {{ entry.userAgent }}
+                        </span>
+                    </template>
+                    <span v-else class="text-r10-grey-500">—</span>
                 </td>
             </template>
         </R10Table>
