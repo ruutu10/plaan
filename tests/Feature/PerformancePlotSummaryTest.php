@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Http;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use RuntimeException;
 use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
@@ -146,7 +147,7 @@ class PerformancePlotSummaryTest extends TestCase
             ['Type' => 'Subtitle', 'Index' => 3, 'Language' => 'eng', 'IsTextSubtitleStream' => true],
             ['Type' => 'Subtitle', 'Index' => 4, 'Language' => 'est', 'IsTextSubtitleStream' => true],
         ]);
-        $this->bindModelAnswering($this->usable('Trupp lendas kosmoselaevaga Saaremaale.'));
+        $this->bindModelAnswering($this->usable('Trupp lendas kosmoselaevaga Saaremaale.', ['Kosmos', ' reis ', 'kosmos']));
 
         $recording = $this->recording();
         $recording->performance->staff()->attach(
@@ -162,6 +163,7 @@ class PerformancePlotSummaryTest extends TestCase
         $recording->refresh();
         $this->assertSame('Trupp lendas kosmoselaevaga Saaremaale.', $recording->plot_summary);
         $this->assertNotNull($recording->plot_summary_generated_at);
+        $this->assertSame(['kosmos', 'reis'], $recording->plot_tags);
         $this->assertTrue(Activity::query()->where('event', 'plot_summary_generated')->whereMorphedTo('subject', $recording)->exists());
 
         // The model was given the dialogue without timestamps or repeats, and
@@ -171,9 +173,11 @@ class PerformancePlotSummaryTest extends TestCase
         $this->assertStringNotContainsString('-->', $prompt);
         $this->assertStringContainsString('Mari Maasikas', $prompt);
 
-        // And the episode's description now carries it.
+        // And the episode's description and tags now carry it.
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
-            && str_contains((string) $request['Overview'], "Sisukokkuvõte:\nTrupp lendas kosmoselaevaga Saaremaale."));
+            && str_contains((string) $request['Overview'], "Sisukokkuvõte:\nTrupp lendas kosmoselaevaga Saaremaale.")
+            && in_array('kosmos', $request['Tags'], true)
+            && in_array('reis', $request['Tags'], true));
     }
 
     public function test_unreadable_subtitles_are_given_up_on(): void
@@ -206,6 +210,45 @@ class PerformancePlotSummaryTest extends TestCase
         }
 
         $this->assertTrue($recording->fresh()->awaitsPlotSummary());
+    }
+
+    /**
+     * A straight quote inside the summary ends the string as the answer's
+     * grammar reads it, and the rest of the summary is lost — the answer is
+     * still valid JSON, so only its ending gives it away.
+     */
+    public function test_a_summary_cut_off_mid_sentence_is_retried_not_kept(): void
+    {
+        $this->fakeLibrary();
+        $this->bindModelAnswering($this->usable('Laul kõneleb rahva visast edasikestmisest ja'));
+
+        $recording = $this->recording();
+
+        try {
+            PerformancePlotSummaryRequested::dispatch($recording);
+            $this->fail('A cut-off summary should have been thrown on for the queue to retry.');
+        } catch (RuntimeException $e) {
+            $this->assertStringContainsString('cut off', $e->getMessage());
+        }
+
+        $this->assertTrue($recording->fresh()->awaitsPlotSummary());
+
+        // And not cached: asking again goes to the model again, rather than
+        // being handed the same broken answer back.
+        try {
+            PerformancePlotSummaryRequested::dispatch($recording->fresh());
+        } catch (RuntimeException) {
+            //
+        }
+
+        $this->assertCount(2, $this->sentBodies);
+    }
+
+    public function test_a_whole_summary_may_end_on_a_quote(): void
+    {
+        $this->assertTrue(PerformancePlotSummariser::isWhole($this->usable('Lugu sünnib ettepanekust „kalapüük“')));
+        $this->assertTrue(PerformancePlotSummariser::isWhole((string) json_encode(['usable' => false, 'summary' => null, 'tags' => [], 'reason' => 'Ainult muusika.'])));
+        $this->assertFalse(PerformancePlotSummariser::isWhole('{"usable": true, "summary": "Pooleli'));
     }
 
     public function test_the_crew_may_ask_for_a_fresh_summary(): void
@@ -320,6 +363,7 @@ class PerformancePlotSummaryTest extends TestCase
         $recording->update(['url' => 'https://jellyfin.test/web/#/details?id='.self::ITEM_ID]);
 
         $this->assertTrue($recording->fresh()->awaitsPlotSummary());
+        $this->assertNull($recording->fresh()->plot_tags);
     }
 
     public function test_a_link_cleared_and_restored_keeps_its_summary(): void
@@ -337,12 +381,13 @@ class PerformancePlotSummaryTest extends TestCase
         $user = User::factory()->create();
         $format = Format::factory()->for($this->teamOf($user), 'team')->create();
         $performance = Performance::factory()->for($format)->create();
-        PerformanceRecording::factory()->for($performance)->withPlotSummary('Kõigile näha.')->create();
+        PerformanceRecording::factory()->for($performance)->withPlotSummary('Kõigile näha.', ['armastus', 'kalapüük'])->create();
 
         $this->actingAs($user)
             ->getJson(route('api.formats.performances.show', [$format, $performance]))
             ->assertOk()
             ->assertJsonPath('data.recording.plotSummary', 'Kõigile näha.')
+            ->assertJsonPath('data.recording.plotTags', ['armastus', 'kalapüük'])
             ->assertJsonPath('data.recording.plotSummaryState', 'written')
             ->assertJsonPath('data.canRegeneratePlotSummary', false);
     }
@@ -353,6 +398,16 @@ class PerformancePlotSummaryTest extends TestCase
             "Tere tulemast etendusele!\nMeie lugu algab kosmoselaeval.",
             PerformancePlotSummariser::transcriptFrom("\xEF\xBB\xBF".str_replace("\n", "\r\n", self::SRT)),
         );
+    }
+
+    public function test_tags_are_kept_short_lowercase_and_few(): void
+    {
+        $this->assertSame(
+            ['armastus', '18. sajand', 'laul'],
+            PerformancePlotSummariser::tagsFrom(['Armastus', "18.\u{00A0} sajand", 42, '', 'armastus', str_repeat('x', 41), 'laul']),
+        );
+        $this->assertCount(8, PerformancePlotSummariser::tagsFrom(array_map(fn (int $i): string => "silt {$i}", range(1, 12))));
+        $this->assertSame([], PerformancePlotSummariser::tagsFrom('armastus'));
     }
 
     public function test_the_summary_is_kept_as_plain_paragraphs(): void
@@ -436,9 +491,12 @@ class PerformancePlotSummaryTest extends TestCase
         ));
     }
 
-    private function usable(string $summary): string
+    /**
+     * @param  list<mixed>  $tags
+     */
+    private function usable(string $summary, array $tags = ['laul']): string
     {
-        return (string) json_encode(['usable' => true, 'summary' => $summary, 'reason' => null]);
+        return (string) json_encode(['usable' => true, 'summary' => $summary, 'tags' => $tags, 'reason' => null]);
     }
 
     private function regenerateUrl(Performance $performance): string

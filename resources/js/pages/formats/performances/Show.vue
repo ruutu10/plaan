@@ -28,6 +28,7 @@ import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10SectionHeader from '@/components/technical-plan/R10SectionHeader.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import TechnicalPlanTable from '@/components/technical-plan/TechnicalPlanTable.vue';
+import { Badge } from '@/components/ui/badge';
 import {
     Tooltip,
     TooltipContent,
@@ -420,6 +421,32 @@ async function regeneratePlotSummary(): Promise<void> {
                             : 'Kirjutatakse automaatselt, kui salvestuse subtiitrid on valmis.'
                     }}
                 </p>
+                <div
+                    v-if="performance.recording.plotTags.length > 0"
+                    class="mt-2 flex flex-wrap gap-1.5"
+                    data-test="performance-plot-tags"
+                >
+                    <Badge
+                        v-for="tag in performance.recording.plotTags"
+                        :key="tag"
+                        variant="secondary"
+                    >
+                        {{ tag }}
+                    </Badge>
+                </div>
+                <!-- The crew's alone; the server says who. -->
+                <R10Button
+                    v-if="performance.canRegeneratePlotSummary"
+                    variant="outline"
+                    size="sm"
+                    class="mt-3"
+                    :disabled="summaryRequest.processing"
+                    data-test="regenerate-plot-summary-button"
+                    @click="regeneratePlotSummary"
+                >
+                    <Sparkles class="h-3.5 w-3.5" />
+                    Uus kokkuvõte
+                </R10Button>
             </div>
 
             <RecordOriginFields
@@ -482,18 +509,6 @@ async function regeneratePlotSummary(): Promise<void> {
                         tooltip says why. The span takes the hover because a
                         disabled button takes no pointer events.
                     -->
-                    <R10Button
-                        v-if="performance.canRegeneratePlotSummary"
-                        variant="outline"
-                        size="sm"
-                        :disabled="summaryRequest.processing"
-                        data-test="regenerate-plot-summary-button"
-                        @click="regeneratePlotSummary"
-                    >
-                        <Sparkles class="h-3.5 w-3.5" />
-                        Uus kokkuvõte
-                    </R10Button>
-
                     <TooltipProvider
                         v-if="performance.canReimportFromPlanka"
                         :delay-duration="0"

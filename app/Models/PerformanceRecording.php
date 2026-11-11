@@ -50,6 +50,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $announced_at
  * @property CarbonImmutable|null $linked_at
  * @property string|null $plot_summary
+ * @property list<string>|null $plot_tags
  * @property CarbonImmutable|null $plot_summary_generated_at
  * @property CarbonImmutable|null $plot_summary_abandoned_at
  * @property Carbon|null $created_at
@@ -154,6 +155,7 @@ class PerformanceRecording extends Model
             'synced_at' => 'datetime',
             'announced_at' => 'datetime',
             'linked_at' => 'datetime',
+            'plot_tags' => 'array',
             'plot_summary_generated_at' => 'datetime',
             'plot_summary_abandoned_at' => 'datetime',
         ];
@@ -190,6 +192,7 @@ class PerformanceRecording extends Model
                 // plot — of its own: what was read off the last one is not
                 // this one's, and its wait starts over.
                 $recording->plot_summary = null;
+                $recording->plot_tags = null;
                 $recording->plot_summary_generated_at = null;
                 $recording->plot_summary_abandoned_at = null;
             }

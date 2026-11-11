@@ -78,11 +78,14 @@ class PerformanceRecordingFactory extends Factory
 
     /**
      * Indicate that a plot summary has been written for the video.
+     *
+     * @param  list<string>  $tags
      */
-    public function withPlotSummary(string $summary = 'Etenduse sisukokkuvõte.'): static
+    public function withPlotSummary(string $summary = 'Etenduse sisukokkuvõte.', array $tags = ['armastus', 'laul']): static
     {
         return $this->state(fn (array $attributes): array => [
             'plot_summary' => $summary,
+            'plot_tags' => $tags,
             'plot_summary_generated_at' => now(),
         ]);
     }

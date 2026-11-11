@@ -56,6 +56,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 ## Documentation Files
 
 - You must only create documentation files if explicitly requested by the user.
+- For larger feature builds, ask the user whether to write an ADR document into docs/adr/
 
 ## Replies
 

@@ -636,6 +636,10 @@ salvestuse kohta.
 
 - Kokkuvõte on näha etenduse lehel kõigile, kes lehe avada saavad, ja lisatakse
   Jellyfinis video kirjelduse lõppu (pealkirja **Sisukokkuvõte** alla).
+- Koos kokkuvõttega tekivad **temaatilised sildid** (nt *armastus*,
+  *kalapüük*, *laul*). Need on näha kokkuvõtte all ja lisatakse ka video
+  Jellyfini siltide hulka, et sarnaseid etendusi oleks lihtne leida. Silte
+  käsitsi ei muudeta - uued sildid tulevad koos uue kokkuvõttega.
 - Subtiitrites on kõnetuvastuse vigu; kokkuvõte püüab mõtte järgi aru saada,
   mida öeldi, aga võib eksida. Tehnik saab kokkuvõtet etenduse muutmise aknas
   parandada - parandus läheb ka Jellyfini.

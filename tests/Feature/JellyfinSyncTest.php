@@ -436,6 +436,28 @@ class JellyfinSyncTest extends TestCase
             && str_ends_with($request['Overview'], "Sisukokkuvõte:\nEsimene lõik.\n\nTeine lõik."));
     }
 
+    public function test_the_plot_tags_join_the_episode_tags(): void
+    {
+        $this->fakeLibrary();
+
+        $recording = $this->recordingFor($this->night());
+        $recording->forceFill(['plot_tags' => ['armastus', 'kalapüük', 'plaan']])->save();
+
+        $this->push($recording);
+
+        Http::assertSent(function (Request $request): bool {
+            if ($request->method() !== 'POST') {
+                return false;
+            }
+
+            $tags = $request['Tags'];
+
+            return in_array('armastus', $tags, true)
+                && in_array('kalapüük', $tags, true)
+                && count(array_keys($tags, 'plaan', true)) === 1;
+        });
+    }
+
     public function test_a_written_summary_is_pushed_with_nobody_behind_it(): void
     {
         $this->fakeLibrary();

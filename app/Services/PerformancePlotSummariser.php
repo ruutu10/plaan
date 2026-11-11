@@ -30,6 +30,18 @@ class PerformancePlotSummariser
      */
     private const MAX_TOKENS = 4000;
 
+    /**
+     * Enough tags to say what a night is about; more and they stop helping
+     * anybody find it in the library.
+     */
+    private const MAX_TAGS = 8;
+
+    /**
+     * A tag is a word or two. Anything longer is a sentence the model put in
+     * the wrong field.
+     */
+    private const MAX_TAG_LENGTH = 40;
+
     public function __construct(protected ?Client $client = null)
     {
         //
@@ -67,19 +79,34 @@ class PerformancePlotSummariser
             ],
             'system' => view('performance.ai-plot-summary-prompt')->render(),
             'thinking' => ['type' => 'disabled'],
-        ]);
+        ], keep: fn (string $answer): bool => self::isWhole($answer));
 
         $decoded = json_decode($answer, true);
 
         if (! is_array($decoded)) {
+            // Rare, and not reproducible on demand, so the answer itself is
+            // the only evidence of what went wrong. Not cached — see isWhole().
+            Log::warning('The plot summary model answered with something other than JSON', [
+                'performance_id' => $performance->getKey(),
+                'json_error' => json_last_error_msg(),
+                'answer_chars' => mb_strlen($answer),
+                'answer_start' => mb_substr($answer, 0, 500),
+            ]);
+
             throw new RuntimeException('The plot summary model answered with something other than JSON.');
+        }
+
+        // Thrown rather than kept, and left out of the cache, so the queue's
+        // retry asks the model afresh — see isWhole().
+        if (! self::isWhole($answer)) {
+            throw new RuntimeException('The plot summary model answered with a summary cut off mid-sentence.');
         }
 
         $summary = is_string($decoded['summary'] ?? null) ? self::tidy($decoded['summary']) : '';
         $usable = ($decoded['usable'] ?? false) === true && $summary !== '';
 
         $reading = $usable
-            ? new PlotSummary($summary)
+            ? new PlotSummary($summary, tags: self::tagsFrom($decoded['tags'] ?? []))
             : new PlotSummary(null, is_string($decoded['reason'] ?? null) ? $decoded['reason'] : null);
 
         Log::info('Summarised a performance from its subtitles', [
@@ -90,6 +117,30 @@ class PerformancePlotSummariser
         ]);
 
         return $reading;
+    }
+
+    /**
+     * Whether an answer is well-formed and, when it holds a summary, the
+     * summary ends where a sentence does.
+     *
+     * The answer is held to a JSON schema, and a straight quote the model
+     * writes inside the summary unescaped — `ettepanekust "kalapüük"` — reads
+     * to that grammar as the end of the string: the rest of the summary is
+     * dropped and the answer carries on, perfectly valid, with the tags. The
+     * prompt asks for Estonian quotes („…“) to keep this from happening; this
+     * is what catches it when it happens anyway.
+     */
+    public static function isWhole(string $answer): bool
+    {
+        $decoded = json_decode($answer, true);
+
+        if (! is_array($decoded)) {
+            return false;
+        }
+
+        $summary = is_string($decoded['summary'] ?? null) ? self::tidy($decoded['summary']) : '';
+
+        return $summary === '' || preg_match('/[.!?…"“”»)]$/u', $summary) === 1;
     }
 
     /**
@@ -146,6 +197,36 @@ class PerformancePlotSummariser
     }
 
     /**
+     * The model's tags as the library keeps them: lowercase, trimmed, each once,
+     * short enough to read as a tag, and no more than {@see MAX_TAGS} of them.
+     * Anything that is not a non-empty string is dropped.
+     *
+     * @return list<string>
+     */
+    public static function tagsFrom(mixed $tags): array
+    {
+        if (! is_array($tags)) {
+            return [];
+        }
+
+        $clean = [];
+
+        foreach ($tags as $tag) {
+            if (! is_string($tag)) {
+                continue;
+            }
+
+            $tag = mb_strtolower(trim(preg_replace('/\s+/u', ' ', $tag) ?? $tag));
+
+            if ($tag !== '' && mb_strlen($tag) <= self::MAX_TAG_LENGTH && ! in_array($tag, $clean, true)) {
+                $clean[] = $tag;
+            }
+        }
+
+        return array_slice($clean, 0, self::MAX_TAGS);
+    }
+
+    /**
      * The night and its transcript, in the sections the system prompt names.
      */
     protected function buildUserPrompt(Performance $performance, string $transcript): string
@@ -188,12 +269,17 @@ class PerformancePlotSummariser
                     'anyOf' => [['type' => 'string'], ['type' => 'null']],
                     'description' => 'The plot summary in Estonian, 2–4 plain paragraphs; null when not usable.',
                 ],
+                'tags' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'string'],
+                    'description' => 'Thematic tags for the performance in Estonian, lowercase, one or two words each (e.g. "armastus", "kalapüük", "laul"); empty when not usable.',
+                ],
                 'reason' => [
                     'anyOf' => [['type' => 'string'], ['type' => 'null']],
                     'description' => 'Why the subtitles were not usable, in Estonian; null when they were.',
                 ],
             ],
-            'required' => ['usable', 'summary', 'reason'],
+            'required' => ['usable', 'summary', 'tags', 'reason'],
             'additionalProperties' => false,
         ];
     }

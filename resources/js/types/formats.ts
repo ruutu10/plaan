@@ -201,6 +201,11 @@ export interface PerformanceRecording {
     /** When the model wrote the summary; ISO 8601 UTC instant. */
     plotSummaryGeneratedAt: string | null;
     /**
+     * Thematic tags written with the summary ("armastus", "kalapüük"), also
+     * pushed onto the episode's Jellyfin tags. Empty until one is written.
+     */
+    plotTags: string[];
+    /**
      * Whether there is a summary, one is still waited for (the subtitles
      * are not in yet), or the house gave up on one.
      */

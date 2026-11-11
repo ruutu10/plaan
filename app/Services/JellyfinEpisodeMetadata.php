@@ -186,6 +186,12 @@ class JellyfinEpisodeMetadata
             $tags[] = $tag;
         }
 
+        // What the night is about, read off its subtitles with the plot
+        // summary — see App\Listeners\SummarisePerformancePlot.
+        foreach ($performance->recording->plot_tags ?? [] as $tag) {
+            $tags[] = $tag;
+        }
+
         return array_values(array_unique(array_filter(
             $tags,
             fn (?string $tag): bool => filled($tag),

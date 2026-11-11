@@ -115,6 +115,7 @@ class SummarisePerformancePlot implements ShouldBeUnique, ShouldQueue
 
         $recording->forceFill([
             'plot_summary' => $reading->summary,
+            'plot_tags' => $reading->tags,
             'plot_summary_generated_at' => now(),
         ])->save();
 
@@ -122,7 +123,7 @@ class SummarisePerformancePlot implements ShouldBeUnique, ShouldQueue
             ->performedOn($recording)
             ->causedBy($event->requestedBy)
             ->event('plot_summary_generated')
-            ->withProperties(['subtitle_index' => $subtitle['index']])
+            ->withProperties(['subtitle_index' => $subtitle['index'], 'tags' => $reading->tags])
             ->log(sprintf('Plot summary written from the subtitles of %s', $performance->displayName()));
 
         PerformancePlotSummaryWritten::dispatch($recording);

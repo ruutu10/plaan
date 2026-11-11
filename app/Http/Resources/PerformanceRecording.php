@@ -29,6 +29,7 @@ class PerformanceRecording extends JsonResource
      *     syncError: string|null,
      *     plotSummary: string|null,
      *     plotSummaryGeneratedAt: string|null,
+     *     plotTags: list<string>,
      *     plotSummaryState: 'written'|'waiting'|'abandoned',
      * }
      */
@@ -75,6 +76,8 @@ class PerformanceRecording extends JsonResource
             // read off the video's subtitles, or corrected by the crew.
             'plotSummary' => $recording->plot_summary,
             'plotSummaryGeneratedAt' => $recording->plot_summary_generated_at?->toIso8601String(),
+            // What the night is about in a few words, written with the summary.
+            'plotTags' => $recording->plot_tags ?? [],
             // Why there is no summary yet, for the line shown in its place.
             'plotSummaryState' => match (true) {
                 filled($recording->plot_summary) => 'written',

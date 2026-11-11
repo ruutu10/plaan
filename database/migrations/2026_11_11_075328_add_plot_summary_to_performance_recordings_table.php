@@ -23,6 +23,10 @@ return new class extends Migration
         Schema::table('performance_recordings', function (Blueprint $table) {
             // The summary itself — the model's, or the crew's correction of it.
             $table->text('plot_summary')->nullable()->after('announced_at');
+            // What the night is about in a handful of words — "armastus",
+            // "kalapüük", "laul" — written with the summary and pushed onto the
+            // episode's tags. A JSON list of strings.
+            $table->json('plot_tags')->nullable()->after('plot_summary');
             // When the model wrote one. The "once" in "once per recording": a
             // summary cleared by hand afterwards is not written again unasked.
             $table->timestamp('plot_summary_generated_at')->nullable()->after('plot_summary');
@@ -45,7 +49,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('performance_recordings', function (Blueprint $table) {
-            $table->dropColumn(['plot_summary', 'plot_summary_generated_at', 'plot_summary_abandoned_at', 'linked_at']);
+            $table->dropColumn(['plot_summary', 'plot_tags', 'plot_summary_generated_at', 'plot_summary_abandoned_at', 'linked_at']);
         });
     }
 };
