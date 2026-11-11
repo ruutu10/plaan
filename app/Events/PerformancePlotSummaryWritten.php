@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Listeners\NotifyRecordingAvailable;
 use App\Listeners\SyncPerformanceToJellyfin;
 use App\Models\PerformanceRecording;
 use App\Models\User;
@@ -11,7 +12,8 @@ use Illuminate\Queue\SerializesModels;
 /**
  * A recording's plot summary changed — the model wrote one, or the crew
  * corrected it — and the episode's description wants pushing again. See
- * {@see SyncPerformanceToJellyfin}.
+ * {@see SyncPerformanceToJellyfin}. The first one is also what lets the
+ * performers' letter go — see {@see NotifyRecordingAvailable}.
  */
 class PerformancePlotSummaryWritten
 {

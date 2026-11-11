@@ -205,7 +205,6 @@ class JellyfinSyncTest extends TestCase
                 // The night is in October, so it opens the 2026/2027 season.
                 '2026/2027',
                 'elav muusika',
-                'suits',
                 'vaheaeg',
             ] as $tag) {
                 if (! in_array($tag, $request['Tags'], true)) {
@@ -213,7 +212,9 @@ class JellyfinSyncTest extends TestCase
                 }
             }
 
-            return true;
+            // Smoke is a matter for the desk on the night, not a way anybody
+            // looks for a recording afterwards.
+            return ! in_array('suits', $request['Tags'], true);
         });
     }
 

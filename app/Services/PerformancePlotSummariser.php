@@ -48,6 +48,15 @@ class PerformancePlotSummariser
     }
 
     /**
+     * Whether summaries can be written here at all: subtitles to read from the
+     * library, and a model to read them with.
+     */
+    public static function isConfigured(): bool
+    {
+        return JellyfinClient::isConfigured() && filled(config('services.anthropic.key'));
+    }
+
+    /**
      * Summarise the night from its subtitles, given as SRT.
      *
      * @throws RuntimeException when the model's answer is not the JSON asked for

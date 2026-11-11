@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Events\PerformancePlotSummaryAbandoned;
 use App\Events\PerformancePlotSummaryRequested;
 use App\Events\PerformancePlotSummaryWritten;
 use App\Services\JellyfinClient;
@@ -59,7 +60,7 @@ class SummarisePerformancePlot implements ShouldBeUnique, ShouldQueue
         $recording = $event->recording;
         $performance = $recording->performance;
 
-        if (! JellyfinClient::isConfigured() || blank(config('services.anthropic.key'))) {
+        if (! PerformancePlotSummariser::isConfigured()) {
             Log::info('No Jellyfin or Claude configured; a plot summary was not written', [
                 'recording_id' => $recording->id,
             ]);
@@ -109,6 +110,8 @@ class SummarisePerformancePlot implements ShouldBeUnique, ShouldQueue
                 ->event('plot_summary_abandoned')
                 ->withProperties(['reason' => $reading->reason])
                 ->log(sprintf('No plot summary could be read from the subtitles of %s', $performance->displayName()));
+
+            PerformancePlotSummaryAbandoned::dispatch($recording, $event->requestedBy);
 
             return;
         }

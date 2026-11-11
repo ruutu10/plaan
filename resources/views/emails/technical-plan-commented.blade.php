@@ -55,8 +55,4 @@
         </tr>
     </x-emails.performance-details>
 
-    <p style="margin:24px 0 0 0; font-size:13px; line-height:1.6; color:#6b7386;">
-        Küsimuste korral kirjuta aadressil
-        <a href="mailto:{{ $techEmail }}" style="{{ $link }}">{{ $techEmail }}</a>.
-    </p>
 @endsection

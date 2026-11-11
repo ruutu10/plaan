@@ -11,11 +11,12 @@ use Illuminate\Queue\SerializesModels;
  * Somebody said where a night's recording is — for the first time, or because
  * the address they gave before was wrong.
  *
- * Two things follow, and neither waits on the other: what this app knows about
- * the night is pushed onto the episode, and the people who wrote its technical
- * plan are told there is a video. They are separate listeners on purpose — a
- * media server that is down should not hold back a letter about a video that is
- * plainly up, and a letter that bounces should not re-push metadata.
+ * What this app knows about the night is pushed onto the episode. The letter to
+ * the people who wrote its technical plan usually waits for the plot summary
+ * rather than going now — see NotifyRecordingAvailable. They are separate
+ * listeners on purpose — a media server that is down should not hold back a
+ * letter about a video that is plainly up, and a letter that bounces should
+ * not re-push metadata.
  */
 class PerformanceRecordingLinked
 {

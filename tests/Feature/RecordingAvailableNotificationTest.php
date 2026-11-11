@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\PerformanceStaffRole;
+use App\Events\PerformancePlotSummaryAbandoned;
+use App\Events\PerformancePlotSummaryWritten;
 use App\Events\PerformanceRecordingLinked;
 use App\Listeners\NotifyRecordingAvailable;
 use App\Models\Performance;
@@ -20,7 +22,11 @@ use Tests\TestCase;
 
 /**
  * Telling whoever wrote a night's technical plan that there is now a video of
- * it.
+ * it, once its plot summary is in.
+ *
+ * Most of these run with the suite's blank model key, where no summary is ever
+ * coming and the letter goes on the link — which keeps them about who is
+ * written to rather than when.
  *
  * Once ever is the rule worth the tests: a crew member correcting a mistyped
  * address should not write to the performers a second time about the same
@@ -519,6 +525,219 @@ class RecordingAvailableNotificationTest extends TestCase
 
         $this->assertTrue($crew->is($activity->causer));
         $this->assertSame(1, $activity->getProperty('recipients'));
+    }
+
+    /**
+     * The letter carries the summary, so where one is coming, the link alone
+     * sends nothing.
+     */
+    public function test_a_link_waits_for_the_plot_summary_where_one_can_be_written(): void
+    {
+        $this->summariesCanBeWritten();
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for(User::factory()->ofTheHouse(), 'user')->create();
+
+        $recording = $this->recordingFor($performance);
+
+        $this->announce($recording);
+
+        Notification::assertNothingSent();
+        $this->assertNull($recording->fresh()->announced_at);
+    }
+
+    public function test_the_first_plot_summary_sends_the_letter(): void
+    {
+        $this->summariesCanBeWritten();
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        $author = User::factory()->ofTheHouse()->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($author, 'user')->create();
+
+        $recording = $this->recordingFor($performance);
+        $this->announce($recording);
+
+        $recording->forceFill([
+            'plot_summary' => 'Trupp lendas kosmoselaevaga Saaremaale.',
+            'plot_tags' => ['kosmos'],
+            'plot_summary_generated_at' => now(),
+        ])->save();
+
+        PerformancePlotSummaryWritten::dispatch($recording);
+
+        Notification::assertSentTo(
+            $author,
+            PerformanceRecordingAvailable::class,
+            fn (PerformanceRecordingAvailable $notification): bool => $notification->recording->is($recording),
+        );
+        $this->assertNotNull($recording->fresh()->announced_at);
+
+        $activity = Activity::query()->forSubject($recording)->forEvent('recording_announced')->sole();
+        $this->assertNull($activity->causer, 'The model wrote the summary; nobody is put down for the letter.');
+    }
+
+    /**
+     * A fresh summary asked for later, or the crew correcting it, is not news
+     * the performers need twice.
+     */
+    public function test_a_later_summary_sends_no_second_letter(): void
+    {
+        $this->summariesCanBeWritten();
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for(User::factory()->ofTheHouse(), 'user')->create();
+
+        $recording = PerformanceRecording::factory()->for($performance)->forItem(self::ITEM_ID)->withPlotSummary()->create();
+
+        PerformancePlotSummaryWritten::dispatch($recording);
+        PerformancePlotSummaryWritten::dispatch($recording->fresh(), $this->technician());
+
+        Notification::assertCount(1);
+    }
+
+    /**
+     * Clearing the summary by hand fires the same event, with nothing to show.
+     */
+    public function test_a_summary_cleared_by_hand_sends_nothing(): void
+    {
+        $this->summariesCanBeWritten();
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for(User::factory()->ofTheHouse(), 'user')->create();
+
+        $recording = $this->recordingFor($performance);
+
+        PerformancePlotSummaryWritten::dispatch($recording, $this->technician());
+
+        Notification::assertNothingSent();
+        $this->assertNull($recording->fresh()->announced_at);
+    }
+
+    /**
+     * A summary typed into the same save as the link is already there to send.
+     */
+    public function test_a_link_saved_with_a_hand_written_summary_is_announced_at_once(): void
+    {
+        $this->summariesCanBeWritten();
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        $author = User::factory()->ofTheHouse()->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($author, 'user')->create();
+
+        $recording = PerformanceRecording::factory()
+            ->for($performance)
+            ->forItem(self::ITEM_ID)
+            ->create(['plot_summary' => 'Tehniku kirjutatud.']);
+
+        $this->announce($recording);
+
+        Notification::assertSentTo($author, PerformanceRecordingAvailable::class);
+    }
+
+    /**
+     * Subtitles that never came still leave a video worth telling the
+     * performers about.
+     */
+    public function test_a_summary_given_up_on_sends_the_letter_without_one(): void
+    {
+        $this->summariesCanBeWritten();
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        $author = User::factory()->ofTheHouse()->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for($author, 'user')->create();
+
+        $recording = $this->recordingFor($performance);
+        $recording->forceFill(['linked_at' => now()->subDays(15)])->save();
+
+        $this->artisan('performances:summarise-recordings')->assertSuccessful();
+
+        Notification::assertSentTo(
+            $author,
+            PerformanceRecordingAvailable::class,
+            fn (PerformanceRecordingAvailable $notification): bool => $notification->recording->is($recording),
+        );
+        $this->assertNotNull($recording->fresh()->announced_at);
+    }
+
+    public function test_an_abandoned_summary_after_the_letter_sends_no_second_one(): void
+    {
+        Notification::fake();
+
+        $performance = Performance::factory()->create();
+        TechnicalPlan::factory()->approved()->for($performance)->for(User::factory()->ofTheHouse(), 'user')->create();
+
+        $recording = PerformanceRecording::factory()->for($performance)->forItem(self::ITEM_ID)->announced()->create();
+
+        PerformancePlotSummaryAbandoned::dispatch($recording);
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_the_letter_carries_the_generated_summary_tags_and_disclaimer(): void
+    {
+        $performance = Performance::factory()->create();
+        $author = User::factory()->ofTheHouse()->create();
+
+        $recording = PerformanceRecording::factory()
+            ->for($performance)
+            ->forItem(self::ITEM_ID)
+            ->withPlotSummary('Trupp lendas kosmoselaevaga Saaremaale.', ['kosmos', 'reis'])
+            ->create();
+
+        $html = (string) (new PerformanceRecordingAvailable($recording))->toMail($author)->render();
+
+        $this->assertStringContainsString('Sisukokkuvõte', $html);
+        $this->assertStringContainsString('Trupp lendas kosmoselaevaga Saaremaale.', $html);
+        $this->assertStringContainsString('kosmos', $html);
+        $this->assertStringContainsString('reis', $html);
+        $this->assertStringContainsString('koostatud tehisaru abil', $html);
+    }
+
+    /**
+     * The crew's own words are not put down to the model.
+     */
+    public function test_a_hand_written_summary_is_shown_without_the_disclaimer(): void
+    {
+        $performance = Performance::factory()->create();
+        $author = User::factory()->ofTheHouse()->create();
+
+        $recording = PerformanceRecording::factory()
+            ->for($performance)
+            ->forItem(self::ITEM_ID)
+            ->create(['plot_summary' => 'Tehniku kirjutatud.']);
+
+        $html = (string) (new PerformanceRecordingAvailable($recording))->toMail($author)->render();
+
+        $this->assertStringContainsString('Tehniku kirjutatud.', $html);
+        $this->assertStringNotContainsString('tehisaru', $html);
+    }
+
+    public function test_a_letter_without_a_summary_leaves_the_section_out(): void
+    {
+        $performance = Performance::factory()->create();
+        $author = User::factory()->ofTheHouse()->create();
+
+        $html = (string) (new PerformanceRecordingAvailable($this->recordingFor($performance)))
+            ->toMail($author)
+            ->render();
+
+        $this->assertStringNotContainsString('Sisukokkuvõte', $html);
+        $this->assertStringNotContainsString('tehisaru', $html);
+    }
+
+    /**
+     * What the suite leaves blank: with a model to read the subtitles, a
+     * summary is coming, and the letter waits for it.
+     */
+    private function summariesCanBeWritten(): void
+    {
+        config()->set('services.anthropic.key', 'test-key');
     }
 
     /**
