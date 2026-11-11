@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Http\Middleware\CaptureRequestOrigin;
+use App\Http\Middleware\TrustCloudflareConnectingIp;
 use App\Models\Format;
 use App\Models\Performance;
 use App\Models\User;
@@ -53,6 +54,34 @@ class ActivityRequestOriginTest extends TestCase
         $activity = $this->postFormatFrom('198.51.100.4', forwardedFor: '203.0.113.7');
 
         $this->assertSame('198.51.100.4', $activity->getProperty('ip'));
+    }
+
+    public function test_a_request_through_cloudflare_is_recorded_with_the_connecting_ip(): void
+    {
+        $activity = $this->postFormatFrom('10.42.0.142', forwardedFor: '172.70.1.1', cloudflareConnectingIp: '203.0.113.7');
+
+        $this->assertSame('203.0.113.7', $activity->getProperty('ip'));
+    }
+
+    public function test_an_ipv6_cloudflare_connecting_ip_is_recorded(): void
+    {
+        $activity = $this->postFormatFrom('10.42.0.142', forwardedFor: '172.70.1.1', cloudflareConnectingIp: '2001:db8::7');
+
+        $this->assertSame('2001:db8::7', $activity->getProperty('ip'));
+    }
+
+    public function test_a_cloudflare_connecting_ip_from_outside_the_cluster_is_not_believed(): void
+    {
+        $activity = $this->postFormatFrom('198.51.100.4', forwardedFor: '172.70.1.1', cloudflareConnectingIp: '203.0.113.7');
+
+        $this->assertSame('198.51.100.4', $activity->getProperty('ip'));
+    }
+
+    public function test_a_malformed_cloudflare_connecting_ip_falls_back_to_the_forwarded_ip(): void
+    {
+        $activity = $this->postFormatFrom('10.42.0.142', forwardedFor: '203.0.113.7', cloudflareConnectingIp: 'not-an-ip');
+
+        $this->assertSame('203.0.113.7', $activity->getProperty('ip'));
     }
 
     public function test_the_origin_is_added_alongside_the_entrys_own_properties(): void
@@ -113,15 +142,17 @@ class ActivityRequestOriginTest extends TestCase
 
     /**
      * Create a format over HTTP from the given peer address, claiming to be
-     * forwarded on behalf of another, and return the entry it was logged with.
+     * forwarded on behalf of another — and, optionally, that Cloudflare saw it
+     * connect from a third — and return the entry it was logged with.
      */
-    private function postFormatFrom(string $remoteAddress, string $forwardedFor): Activity
+    private function postFormatFrom(string $remoteAddress, string $forwardedFor, ?string $cloudflareConnectingIp = null): Activity
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)
             ->withServerVariables(['REMOTE_ADDR' => $remoteAddress])
             ->withHeader('X-Forwarded-For', $forwardedFor)
+            ->withHeaders(array_filter([TrustCloudflareConnectingIp::HEADER => $cloudflareConnectingIp]))
             ->postJson(route('api.formats.store'), [
                 'team_id' => $this->teamOf($user)->id,
                 'name' => 'Hooaja avaetendus',
