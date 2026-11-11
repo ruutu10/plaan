@@ -28,6 +28,7 @@ import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10SectionHeader from '@/components/technical-plan/R10SectionHeader.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import TechnicalPlanTable from '@/components/technical-plan/TechnicalPlanTable.vue';
+import { Badge } from '@/components/ui/badge';
 import {
     Tooltip,
     TooltipContent,
@@ -47,6 +48,7 @@ import {
     plankaImport as plankaImportApi,
     show as performanceApi,
 } from '@/routes/api/formats/performances';
+import { store as plotSummaryApi } from '@/routes/api/formats/performances/plot-summary';
 import { edit, index } from '@/routes/formats';
 import { show as performancePage } from '@/routes/formats/performances';
 import { index as planWizard } from '@/routes/technical-plan';
@@ -182,6 +184,27 @@ async function refreshFromPlanka(): Promise<void> {
         );
     } catch {
         toast.error('Planka impordi käivitamine ebaõnnestus. Proovi uuesti.');
+    }
+}
+
+/** Asking for a fresh plot summary has its own request, like the re-read. */
+const summaryRequest = useHttp();
+
+/**
+ * Ask for the plot to be read off the recording's subtitles again. Queued like
+ * the Planka re-read, so the page says it was ordered rather than waiting.
+ */
+async function regeneratePlotSummary(): Promise<void> {
+    try {
+        await summaryRequest.submit(
+            plotSummaryApi([props.formatId, props.performanceId]),
+        );
+
+        toast.success(
+            'Sisukokkuvõte tellitud. Uus kokkuvõte ilmub mõne minuti pärast, kui subtiitrid on olemas.',
+        );
+    } catch {
+        toast.error('Sisukokkuvõtte tellimine ebaõnnestus. Proovi uuesti.');
     }
 }
 </script>
@@ -372,6 +395,74 @@ async function refreshFromPlanka(): Promise<void> {
                     </dd>
                 </div>
             </dl>
+
+            <!--
+                Prose rather than another grid cell: read off the recording's
+                subtitles once they are in, so a night with a video and no
+                summary yet says it is waiting rather than showing a dash.
+            -->
+            <div
+                v-if="performance.recording"
+                data-test="performance-plot-summary"
+            >
+                <div class="text-xs font-bold text-r10-grey-500 uppercase">
+                    Sisukokkuvõte
+                </div>
+                <p
+                    v-if="performance.recording.plotSummary"
+                    class="mt-1 whitespace-pre-line text-r10-ink"
+                >
+                    {{ performance.recording.plotSummary }}
+                </p>
+                <p v-else class="mt-1 text-[13px] text-r10-grey-500">
+                    {{
+                        performance.recording.plotSummaryState === 'abandoned'
+                            ? 'Kokkuvõtet ei õnnestunud salvestuse subtiitritest koostada.'
+                            : 'Kirjutatakse automaatselt, kui salvestuse subtiitrid on valmis.'
+                    }}
+                </p>
+                <div
+                    v-if="performance.recording.plotTags.length > 0"
+                    class="mt-2 flex flex-wrap gap-1.5"
+                    data-test="performance-plot-tags"
+                >
+                    <Badge
+                        v-for="tag in performance.recording.plotTags"
+                        :key="tag"
+                        variant="secondary"
+                    >
+                        {{ tag }}
+                    </Badge>
+                </div>
+                <!--
+                    Read off speech-to-text by a model, so it says so: whoever
+                    reads it should know it can be wrong, and that the crew can
+                    put it right.
+                -->
+                <p
+                    v-if="performance.recording.plotSummary"
+                    class="mt-2 flex items-start gap-1.5 text-xs text-r10-grey-500"
+                    data-test="performance-plot-summary-disclaimer"
+                >
+                    <Sparkles class="mt-px h-3.5 w-3.5 shrink-0" />
+                    Kokkuvõte ja sildid on koostatud tehisaru abil
+                    salvestuse automaatsetest subtiitritest ning võivad
+                    sisaldada vigu.
+                </p>
+                <!-- The crew's alone; the server says who. -->
+                <R10Button
+                    v-if="performance.canRegeneratePlotSummary"
+                    variant="outline"
+                    size="sm"
+                    class="mt-3"
+                    :disabled="summaryRequest.processing"
+                    data-test="regenerate-plot-summary-button"
+                    @click="regeneratePlotSummary"
+                >
+                    <Sparkles class="h-3.5 w-3.5" />
+                    Uus kokkuvõte
+                </R10Button>
+            </div>
 
             <RecordOriginFields
                 :created-by="performance.createdBy"

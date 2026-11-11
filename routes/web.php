@@ -11,6 +11,7 @@ use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\PerformancePageController;
 use App\Http\Controllers\PerformancePlankaImportController;
+use App\Http\Controllers\PerformancePlotSummaryController;
 use App\Http\Controllers\PerformanceRecordingController;
 use App\Http\Controllers\PerformanceReminderController;
 use App\Http\Controllers\PerformanceStaffController;
@@ -214,6 +215,13 @@ Route::prefix('api/formats')
                 Route::post('{performance}/planka-import', [PerformancePlankaImportController::class, 'store'])
                     ->name('planka-import')
                     ->middleware('throttle:10,45,planka-import');
+
+                // Read the plot off the recording's subtitles again, now. The
+                // crew's — see PerformancePolicy::regeneratePlotSummary() — and
+                // each press is a fresh, paid reading by the model.
+                Route::post('{performance}/plot-summary', [PerformancePlotSummaryController::class, 'store'])
+                    ->name('plot-summary.store')
+                    ->middleware('throttle:10,60,plot-summary');
 
                 Route::get('{performance}/claude-logs', [ClaudeReasoningLogController::class, 'forPerformance'])
                     ->middleware('can:'.ClaudeReasoningLog::VIEW_PERMISSION)

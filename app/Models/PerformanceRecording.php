@@ -3,10 +3,14 @@
 namespace App\Models;
 
 use App\Concerns\LogsModelActivity;
+use App\Listeners\SummarisePerformancePlot;
 use App\Listeners\SyncPerformanceToJellyfin;
 use App\Services\JellyfinClient;
+use Carbon\CarbonImmutable;
 use Database\Factories\PerformanceRecordingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,6 +37,10 @@ use Illuminate\Support\Carbon;
  * only puts the row aside — a cleared and re-entered link finds the same row,
  * and the same answer to whether anybody has been written to.
  *
+ * The plot summary is read off this video's own subtitles, once — see
+ * {@see SummarisePerformancePlot} and docs/adr/0001. `linked_at` is when the
+ * current link was written, which the wait for subtitles is counted from.
+ *
  * @property int $id
  * @property int $performance_id
  * @property string $url
@@ -40,6 +48,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $synced_at
  * @property string|null $sync_error
  * @property Carbon|null $announced_at
+ * @property CarbonImmutable|null $linked_at
+ * @property string|null $plot_summary
+ * @property list<string>|null $plot_tags
+ * @property CarbonImmutable|null $plot_summary_generated_at
+ * @property CarbonImmutable|null $plot_summary_abandoned_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -92,6 +105,46 @@ class PerformanceRecording extends Model
     }
 
     /**
+     * Whether a plot summary is still to be written for this video: none has
+     * been, by the model or by hand, and nobody has given up waiting for one.
+     */
+    public function awaitsPlotSummary(): bool
+    {
+        return $this->plot_summary === null
+            && $this->plot_summary_generated_at === null
+            && $this->plot_summary_abandoned_at === null;
+    }
+
+    /**
+     * Start waiting for this video's subtitles again, from now — what a crew
+     * member asking for a fresh summary means. The summary already there is
+     * left standing until a new one replaces it.
+     */
+    public function restartPlotSummaryWait(): void
+    {
+        $this->forceFill([
+            'plot_summary_generated_at' => null,
+            'plot_summary_abandoned_at' => null,
+            'linked_at' => now(),
+        ])->save();
+    }
+
+    /**
+     * Recordings still waiting on a plot summary, on a night still kept.
+     *
+     * @param  Builder<PerformanceRecording>  $query
+     */
+    #[Scope]
+    protected function awaitingPlotSummary(Builder $query): void
+    {
+        $query->whereNotNull('item_id')
+            ->whereNull('plot_summary')
+            ->whereNull('plot_summary_generated_at')
+            ->whereNull('plot_summary_abandoned_at')
+            ->whereHas('performance');
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -101,6 +154,10 @@ class PerformanceRecording extends Model
         return [
             'synced_at' => 'datetime',
             'announced_at' => 'datetime',
+            'linked_at' => 'datetime',
+            'plot_tags' => 'array',
+            'plot_summary_generated_at' => 'datetime',
+            'plot_summary_abandoned_at' => 'datetime',
         ];
     }
 
@@ -119,6 +176,8 @@ class PerformanceRecording extends Model
             // URL happens to be set.
             $recording->item_id = JellyfinClient::itemIdFromUrl($recording->url);
 
+            $recording->linked_at = now();
+
             // A link *changed* is a push not yet made: the old timestamp would
             // say this video's metadata is level when nothing has been written
             // for it, and the old error would blame it for a failure that was
@@ -128,6 +187,14 @@ class PerformanceRecording extends Model
             if ($recording->exists) {
                 $recording->synced_at = null;
                 $recording->sync_error = null;
+
+                // Another link is another video, with subtitles — and so a
+                // plot — of its own: what was read off the last one is not
+                // this one's, and its wait starts over.
+                $recording->plot_summary = null;
+                $recording->plot_tags = null;
+                $recording->plot_summary_generated_at = null;
+                $recording->plot_summary_abandoned_at = null;
             }
 
             // `announced_at` is deliberately left alone — see the class

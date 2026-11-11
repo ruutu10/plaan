@@ -137,6 +137,16 @@ class JellyfinEpisodeMetadata
             $this->line('Planka', PlankaClient::cardUrl($performance->planka_card_id)),
         ];
 
+        // What happened on stage, read off the recording's own subtitles —
+        // see App\Listeners\SummarisePerformancePlot. Held here rather than
+        // appended in Jellyfin, because this whole text is rewritten on every
+        // push and an addition made there would not survive the next one.
+        $summary = $performance->recording?->plot_summary;
+
+        if (filled($summary)) {
+            array_push($lines, '', 'Sisukokkuvõte:', trim($summary));
+        }
+
         // A format with nothing written about it and a night off the board
         // still want a readable paragraph rather than a run of blank lines.
         $lines = array_values(array_filter($lines, fn (?string $line): bool => $line !== null));
@@ -173,6 +183,12 @@ class JellyfinEpisodeMetadata
         ];
 
         foreach ($this->technicalTags($performance) as $tag) {
+            $tags[] = $tag;
+        }
+
+        // What the night is about, read off its subtitles with the plot
+        // summary — see App\Listeners\SummarisePerformancePlot.
+        foreach ($performance->recording->plot_tags ?? [] as $tag) {
             $tags[] = $tag;
         }
 

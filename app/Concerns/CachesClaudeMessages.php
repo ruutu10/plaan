@@ -45,9 +45,14 @@ trait CachesClaudeMessages
      * been asked before, from the API otherwise. An empty answer is not kept:
      * nothing is gained by remembering silence for a week.
      *
+     * An answer the caller's `$keep` check turns down is handed back but not
+     * kept either: a malformed reading cached for weeks would come straight
+     * back on every retry.
+     *
      * @param  array<string, mixed>  $params  Named arguments for `messages->create()`.
+     * @param  (callable(string): bool)|null  $keep  Whether an answer is sound enough to keep.
      */
-    protected function askClaude(Client $client, array $params): string
+    protected function askClaude(Client $client, array $params, ?callable $keep = null): string
     {
         $key = 'claude:message:'.hash('sha256', serialize($params));
 
@@ -64,7 +69,7 @@ trait CachesClaudeMessages
         // @phpstan-ignore-next-line property.notFound
         $answer = trim((string) $message->content[0]->text);
 
-        if ($answer !== '') {
+        if ($answer !== '' && ($keep === null || $keep($answer))) {
             Cache::put($key, $answer, config('services.anthropic.cache_ttl'));
         }
 

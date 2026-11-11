@@ -67,6 +67,12 @@ class JellyfinClient
     private const EPISODE = 'Episode';
 
     /**
+     * How Jellyfin spells Estonian on a stream: the ISO 639-2 code a scan
+     * writes, or the two-letter one a file named `.et.srt` is read as.
+     */
+    private const ESTONIAN = ['est', 'et'];
+
+    /**
      * Determine whether enough is configured to reach the library at all.
      */
     public static function isConfigured(): bool
@@ -246,6 +252,61 @@ class JellyfinClient
             (int) $source['Size'],
             is_string($addedAt) ? CarbonImmutable::parse($addedAt) : null,
         );
+    }
+
+    /**
+     * The Estonian text subtitles on an item, or null while it has none.
+     *
+     * The library's speech-to-text writes them some while after a video is
+     * added, so "none yet" is the ordinary answer for a fresh recording, not a
+     * fault. Only text streams count: a picture-based track has no words in it
+     * to read a plot out of.
+     *
+     * A stream's index counts within its media source, so the source's id
+     * travels with it — {@see subtitleText()} needs both, from the same source.
+     *
+     * @return array{mediaSourceId: string, index: int}|null
+     */
+    public function estonianSubtitle(string $itemId): ?array
+    {
+        $item = $this->request()
+            ->get('/Items', ['ids' => $itemId, 'fields' => 'MediaSources'])
+            ->throw()
+            ->json('Items.0');
+
+        $source = is_array($item) ? ($item['MediaSources'][0] ?? null) : null;
+
+        if (! is_array($source) || blank($source['Id'] ?? null)) {
+            return null;
+        }
+
+        foreach ($source['MediaStreams'] ?? [] as $stream) {
+            if (! is_array($stream)
+                || ($stream['Type'] ?? null) !== 'Subtitle'
+                || ($stream['IsTextSubtitleStream'] ?? false) !== true
+                || ! in_array(strtolower((string) ($stream['Language'] ?? '')), self::ESTONIAN, true)
+                || ! is_int($stream['Index'] ?? null)) {
+                continue;
+            }
+
+            return ['mediaSourceId' => (string) $source['Id'], 'index' => $stream['Index']];
+        }
+
+        return null;
+    }
+
+    /**
+     * One subtitle stream of an item, as SRT text. The server converts
+     * whatever the track is stored as.
+     */
+    public function subtitleText(string $itemId, string $mediaSourceId, int $index): string
+    {
+        return $this->connection()
+            ->timeout(60)
+            ->retry(2, 500)
+            ->get("/Videos/{$itemId}/{$mediaSourceId}/Subtitles/{$index}/Stream.srt")
+            ->throw()
+            ->body();
     }
 
     /**

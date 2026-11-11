@@ -100,6 +100,20 @@ class PerformancePolicy
     }
 
     /**
+     * Determine whether the user can ask for this performance's plot summary to
+     * be read off its recording's subtitles again.
+     *
+     * The crew's, like the link it is read through, and only for a recording
+     * there is something to read: a linked item, and a model to read it with.
+     */
+    public function regeneratePlotSummary(User $user, Performance $performance): bool
+    {
+        return $this->linkRecording($user, $performance)
+            && filled(config('services.anthropic.key'))
+            && filled($performance->recording?->item_id);
+    }
+
+    /**
      * Determine whether the user can download this performance's recording.
      *
      * Wider than opening the night's page — which already lets in its whole

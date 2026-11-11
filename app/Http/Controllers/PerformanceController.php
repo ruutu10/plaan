@@ -7,6 +7,7 @@ use App\Console\Commands\ImportPlankaPerformances;
 use App\Data\RecordLinks;
 use App\Enums\PerformanceStaffRole;
 use App\Enums\TechnicalPlanStatus;
+use App\Events\PerformancePlotSummaryWritten;
 use App\Events\PerformanceRecordingLinked;
 use App\Http\Requests\Performances\SavePerformanceRequest;
 use App\Http\Resources\AdminPerformance as AdminPerformanceResource;
@@ -331,9 +332,19 @@ class PerformanceController extends Controller
         // What happens off the back of a night getting a video — the push to the
         // library, the word to whoever wrote its plan — is between the event and
         // its listeners. A link cleared, or one saved unchanged, says nothing.
-        if ($request->saysAnythingAboutRecording()
-            && $linkRecording->handle($performance, $request->recordingUrl())) {
+        $linked = $request->saysAnythingAboutRecording()
+            && $linkRecording->handle($performance, $request->recordingUrl());
+
+        // Written after the link, which clears a summary that was the previous
+        // video's — so a corrected link and its corrected summary can travel in
+        // one save — and before anything is pushed, so the push carries it.
+        $summaryChanged = $request->saysAnythingAboutPlotSummary()
+            && $this->correctPlotSummary($performance, $request->plotSummary(), $request->user());
+
+        if ($linked) {
             PerformanceRecordingLinked::dispatch($performance->recording, $request->user());
+        } elseif ($summaryChanged) {
+            PerformancePlotSummaryWritten::dispatch($performance->recording, $request->user());
         }
 
         return PerformanceResource::make(
@@ -341,6 +352,37 @@ class PerformanceController extends Controller
                 ->load(['team', 'recording'])
                 ->loadCount(['technicalPlans', 'staff']),
         );
+    }
+
+    /**
+     * Put the crew's own wording of the plot summary on the night's recording.
+     * Nothing to correct on a night with no recording.
+     *
+     * @return bool whether the summary changed
+     */
+    private function correctPlotSummary(Performance $performance, ?string $summary, User $user): bool
+    {
+        $recording = $performance->recording;
+
+        if ($recording === null) {
+            return false;
+        }
+
+        $recording->plot_summary = $summary;
+
+        if (! $recording->isDirty('plot_summary')) {
+            return false;
+        }
+
+        $recording->save();
+
+        activity()
+            ->performedOn($recording)
+            ->causedBy($user)
+            ->event('plot_summary_edited')
+            ->log(sprintf('Plot summary edited by %s', $user->name));
+
+        return true;
     }
 
     /**

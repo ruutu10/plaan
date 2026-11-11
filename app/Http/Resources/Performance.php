@@ -42,6 +42,7 @@ class Performance extends JsonResource
      *     canReimportFromPlanka: bool,
      *     recording: mixed,
      *     canLinkRecording: bool,
+     *     canRegeneratePlotSummary: bool,
      *     createdBy: string,
      *     createdAt: string|null,
      *     plankaImportedAt: string|null,
@@ -102,6 +103,12 @@ class Performance extends JsonResource
             // offers the field only where the API would honour it. False for
             // the whole house when no library is configured.
             'canLinkRecording' => Gate::allows('linkRecording', $performance),
+            // Whether this reader gets the button asking for the plot to be
+            // read off the recording's subtitles again. Editing the summary by
+            // hand goes with canLinkRecording, the same right. Asked only where
+            // the recording is loaded anyway, so a listing never queries for it.
+            'canRegeneratePlotSummary' => $performance->relationLoaded('recording')
+                && Gate::allows('regeneratePlotSummary', $performance),
             // Where the performance came from and when, both read-only: a date
             // nobody remembers choosing was read off a card, and the screens say
             // so rather than leaving it to be guessed.
