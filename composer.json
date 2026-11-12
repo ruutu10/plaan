@@ -10,7 +10,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
-        "anthropic-ai/sdk": "^0.37",
+        "anthropic-ai/sdk": "^1.6",
         "cesargb/laravel-magiclink": "^2.27",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/chisel": "^0.1.0",
@@ -36,7 +36,7 @@
         "laravel/sail": "^1.53",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.9.3",
-        "phpunit/phpunit": "^12.5.23"
+        "phpunit/phpunit": "^13.4.6"
     },
     "autoload": {
         "psr-4": {
