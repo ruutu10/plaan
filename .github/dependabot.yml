@@ -17,6 +17,10 @@ updates:
     cooldown:
       default-days: 5
     groups:
-      github-actions:
+      composer:
+        patterns:
+          - "*"
+      composer-security:
+        applies-to: security-updates
         patterns:
           - "*"
