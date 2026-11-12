@@ -9,6 +9,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\LazyCollection;
 use RuntimeException;
 use stdClass;
 
@@ -274,7 +275,19 @@ class JellyfinClient
             ->throw()
             ->json('Items.0');
 
-        $source = is_array($item) ? ($item['MediaSources'][0] ?? null) : null;
+        return is_array($item) ? self::estonianSubtitleOf($item) : null;
+    }
+
+    /**
+     * The Estonian text subtitles on an item already read with its
+     * `MediaSources`, or null when it has none — see {@see estonianSubtitle()}.
+     *
+     * @param  array<string, mixed>  $item
+     * @return array{mediaSourceId: string, index: int}|null
+     */
+    public static function estonianSubtitleOf(array $item): ?array
+    {
+        $source = $item['MediaSources'][0] ?? null;
 
         if (! is_array($source) || blank($source['Id'] ?? null)) {
             return null;
@@ -293,6 +306,66 @@ class JellyfinClient
         }
 
         return null;
+    }
+
+    /**
+     * Every series in the library, across all of its libraries, a page at a
+     * time.
+     *
+     * @return LazyCollection<int, array<string, mixed>>
+     */
+    public function allSeries(): LazyCollection
+    {
+        return $this->paged(['includeItemTypes' => 'Series', 'recursive' => 'true', 'sortBy' => 'SortName']);
+    }
+
+    /**
+     * Every episode of a series, with what a backfill needs to judge it: its
+     * overview, tags, people and media streams.
+     *
+     * @return LazyCollection<int, array<string, mixed>>
+     */
+    public function episodesOf(string $seriesId): LazyCollection
+    {
+        return $this->paged([
+            'parentId' => $seriesId,
+            'includeItemTypes' => self::EPISODE,
+            'recursive' => 'true',
+            'sortBy' => 'ParentIndexNumber,IndexNumber,SortName',
+            'fields' => 'Overview,Tags,People,MediaSources',
+        ]);
+    }
+
+    /**
+     * An item query read through to its end, one page at a time, so a large
+     * library is never held in memory whole.
+     *
+     * @param  array<string, string>  $query
+     * @return LazyCollection<int, array<string, mixed>>
+     */
+    private function paged(array $query, int $pageSize = 100): LazyCollection
+    {
+        return LazyCollection::make(function () use ($query, $pageSize) {
+            $start = 0;
+
+            do {
+                $page = $this->request()
+                    ->get('/Items', [...$query, 'startIndex' => $start, 'limit' => $pageSize])
+                    ->throw()
+                    ->json();
+
+                $items = is_array($page['Items'] ?? null) ? $page['Items'] : [];
+
+                foreach ($items as $item) {
+                    if (is_array($item)) {
+                        yield $item;
+                    }
+                }
+
+                $start += count($items);
+                $total = (int) ($page['TotalRecordCount'] ?? 0);
+            } while ($items !== [] && $start < $total);
+        });
     }
 
     /**
@@ -355,12 +428,43 @@ class JellyfinClient
     private function asJsonMaps(array $item): array
     {
         foreach (self::MAPS as $key) {
-            if (($item[$key] ?? null) === []) {
-                $item[$key] = new stdClass;
+            if (is_array($item[$key] ?? null)) {
+                $item[$key] = $this->asJsonMap($item[$key]);
             }
         }
 
+        // A person read off the library carries maps of its own — notably
+        // `ImageBlurHashes: {"Primary": {}}` — and has them refused the same way.
+        if (is_array($item['People'] ?? null)) {
+            $item['People'] = array_map(
+                fn (mixed $person): mixed => is_array($person) ? $this->asJsonMaps($person) : $person,
+                $item['People'],
+            );
+        }
+
         return $item;
+    }
+
+    /**
+     * One map, and any map nested in it (as `ImageBlurHashes` nests one per
+     * image kind), spelled as an object even when empty.
+     *
+     * @param  array<array-key, mixed>  $map
+     * @return array<array-key, mixed>|stdClass
+     */
+    private function asJsonMap(array $map): array|stdClass
+    {
+        if ($map === []) {
+            return new stdClass;
+        }
+
+        foreach ($map as $key => $value) {
+            if (is_array($value)) {
+                $map[$key] = $this->asJsonMap($value);
+            }
+        }
+
+        return $map;
     }
 
     /**

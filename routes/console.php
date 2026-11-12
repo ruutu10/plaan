@@ -58,3 +58,10 @@ Schedule::command('performances:summarise-recordings')
 Schedule::command('performances:archive')
     ->weekly()
     ->description('Archive performances whose night has been played');
+
+// Weekly: it walks the whole library and only ever finds the episodes nobody
+// has described yet, so most runs have little or nothing to do
+Schedule::command('performances:summarise-backfill')
+    ->weekly()
+    ->withoutOverlapping()
+    ->description('Write plot summaries into Jellyfin for undescribed episodes with subtitles');

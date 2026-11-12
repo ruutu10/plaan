@@ -28,7 +28,7 @@ class PerformancePlotSummariser
      * A summary is a few paragraphs; this is room for them with margin, far
      * under the house default sized for reading whole Planka cards.
      */
-    private const MAX_TOKENS = 4000;
+    private const MAX_TOKENS = 5000;
 
     /**
      * Enough tags to say what a night is about; more and they stop helping
@@ -63,6 +63,35 @@ class PerformancePlotSummariser
      */
     public function summarise(Performance $performance, string $srt): PlotSummary
     {
+        $performance->loadMissing(['format', 'onStage']);
+
+        $details = array_values(array_filter([
+            'Formaat: '.$performance->displayName(),
+            'Kuupäev: '.$performance->startDate(),
+            filled($performance->performerName()) ? 'Esineja: '.$performance->performerName() : null,
+            filled($performance->format->description) ? "Formaadi kirjeldus:\n".$performance->format->description : null,
+        ]));
+
+        return $this->summariseNight(
+            $details,
+            array_values($performance->onStage->map(fn (User $member): string => $member->name)->all()),
+            $srt,
+            ['performance_id' => $performance->getKey()],
+        );
+    }
+
+    /**
+     * Summarise a night described by plain lines rather than a model — for a
+     * library episode this app holds no record of.
+     *
+     * @param  list<string>  $details  "Label: value" lines about the night, in Estonian.
+     * @param  list<string>  $onStage  Names of the people on stage.
+     * @param  array<string, mixed>  $logContext
+     *
+     * @throws RuntimeException when the model's answer is not the JSON asked for
+     */
+    public function summariseNight(array $details, array $onStage, string $srt, array $logContext = []): PlotSummary
+    {
         $transcript = self::transcriptFrom($srt);
 
         if ($transcript === '') {
@@ -76,7 +105,7 @@ class PerformancePlotSummariser
             'messages' => [
                 [
                     'role' => 'user',
-                    'content' => $this->buildUserPrompt($performance, $transcript),
+                    'content' => $this->buildUserPrompt($details, $onStage, $transcript),
                 ],
             ],
             'model' => config('services.anthropic.model'),
@@ -96,7 +125,7 @@ class PerformancePlotSummariser
             // Rare, and not reproducible on demand, so the answer itself is
             // the only evidence of what went wrong. Not cached — see isWhole().
             Log::warning('The plot summary model answered with something other than JSON', [
-                'performance_id' => $performance->getKey(),
+                ...$logContext,
                 'json_error' => json_last_error_msg(),
                 'answer_chars' => mb_strlen($answer),
                 'answer_start' => mb_substr($answer, 0, 500),
@@ -119,10 +148,19 @@ class PerformancePlotSummariser
             : new PlotSummary(null, is_string($decoded['reason'] ?? null) ? $decoded['reason'] : null);
 
         Log::info('Summarised a performance from its subtitles', [
-            'performance_id' => $performance->getKey(),
+            ...$logContext,
             'usable' => $usable,
             'transcript_chars' => mb_strlen($transcript),
             'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+        ]);
+
+        // The text itself, kept out of the info line above so production logs
+        // stay short, but there to review when the level allows it.
+        Log::debug('Plot summary content', [
+            ...$logContext,
+            'summary' => $reading->summary,
+            'tags' => $reading->tags,
+            'reason' => $reading->reason,
         ]);
 
         return $reading;
@@ -237,21 +275,13 @@ class PerformancePlotSummariser
 
     /**
      * The night and its transcript, in the sections the system prompt names.
+     *
+     * @param  list<string>  $details
+     * @param  list<string>  $onStage
      */
-    protected function buildUserPrompt(Performance $performance, string $transcript): string
+    protected function buildUserPrompt(array $details, array $onStage, string $transcript): string
     {
-        $performance->loadMissing(['format', 'onStage']);
-
-        $details = array_filter([
-            'Formaat: '.$performance->displayName(),
-            'Kuupäev: '.$performance->startDate(),
-            filled($performance->performerName()) ? 'Esineja: '.$performance->performerName() : null,
-            filled($performance->format->description) ? "Formaadi kirjeldus:\n".$performance->format->description : null,
-        ]);
-
-        $onStage = $performance->onStage
-            ->map(fn (User $member): string => '- '.$member->name)
-            ->implode("\n");
+        $onStage = implode("\n", array_map(fn (string $name): string => '- '.$name, $onStage));
 
         return implode("\n\n", [
             "# Etendus\n".implode("\n", $details),
