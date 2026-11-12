@@ -54,6 +54,8 @@ class JellyfinClient
      * artwork is the ordinary case for a freshly scanned recording, so this is
      * not an edge: it is most of them. See {@see asJsonMaps()}.
      */
+    private const EPISODE_FIELDS = 'Overview,Tags,People,MediaSources';
+
     private const MAPS = ['ProviderIds', 'ImageTags', 'ImageBlurHashes'];
 
     /**
@@ -332,8 +334,32 @@ class JellyfinClient
             'includeItemTypes' => self::EPISODE,
             'recursive' => 'true',
             'sortBy' => 'ParentIndexNumber,IndexNumber,SortName',
-            'fields' => 'Overview,Tags,People,MediaSources',
+            'fields' => self::EPISODE_FIELDS,
         ]);
+    }
+
+    /**
+     * One episode, with the same fields {@see episodesOf()} reads, for a
+     * backfill aimed at a single item.
+     *
+     * @return array<string, mixed>
+     *
+     * @throws RuntimeException when the library holds no such episode
+     */
+    public function episode(string $itemId): array
+    {
+        $items = $this->request()
+            ->get('/Items', ['ids' => $itemId, 'fields' => self::EPISODE_FIELDS])
+            ->throw()
+            ->json('Items');
+
+        $item = is_array($items) ? ($items[0] ?? null) : null;
+
+        if (! is_array($item) || ($item['Type'] ?? null) !== self::EPISODE) {
+            throw new RuntimeException(sprintf('Jellyfin holds no episode %s.', $itemId));
+        }
+
+        return $item;
     }
 
     /**

@@ -144,7 +144,7 @@ class JellyfinEpisodeMetadata
         $summary = $performance->recording?->plot_summary;
 
         if (filled($summary)) {
-            array_push($lines, '', 'Sisukokkuvõte:', trim($summary));
+            array_push($lines, '', trim($summary));
         }
 
         // A format with nothing written about it and a night off the board

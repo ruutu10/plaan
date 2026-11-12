@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Data\PlotSummary;
 use App\Services\JellyfinClient;
-use App\Services\JellyfinEpisodeMetadata;
 use App\Services\PerformancePlotSummariser;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Attributes\Description;
@@ -21,23 +20,20 @@ use Throwable;
  * Jellyfin is the only source and the only destination: no database row is
  * read or written. Each episode is read, summarised and written back one at a
  * time, in the foreground, so a long run can be watched and stopped. The
- * summary goes into the Overview under the same heading
- * {@see JellyfinEpisodeMetadata} uses, and its tags join the
- * episode's own.
+ * summary becomes the Overview, and its tags join the episode's own.
  *
  * An episode with any Overview at all is left alone, which is also what makes
  * a second run pick up only where the first one did not get to.
+ *
+ * Given `--id`, only that one episode is summarised, and its description and
+ * tags are replaced even if it already has them — the way to redo one.
  */
 #[Signature('performances:summarise-backfill
+    {--id= : Summarise only the episode with this Jellyfin item ID, replacing its description and tags}
     {--dry-run : List the episodes that would be summarised without asking the model or writing anything}')]
 #[Description('Write plot summaries into Jellyfin for episodes with subtitles and an empty description.')]
 class BackfillEpisodePlotSummaries extends Command
 {
-    /**
-     * The heading the summary sits under, as the one-way sync writes it.
-     */
-    private const SUMMARY_HEADING = 'Sisukokkuvõte:';
-
     public function handle(JellyfinClient $jellyfin, PerformancePlotSummariser $summariser): int
     {
         if (! PerformancePlotSummariser::isConfigured()) {
@@ -47,6 +43,10 @@ class BackfillEpisodePlotSummaries extends Command
         }
 
         $dryRun = (bool) $this->option('dry-run');
+
+        if (filled($this->option('id'))) {
+            return $this->backfillOne($jellyfin, $summariser, (string) $this->option('id'), $dryRun);
+        }
 
         /** @var array{episodes: int, described: int, no_subtitles: int, summarised: int, unusable: int, failed: int} $counts */
         $counts = ['episodes' => 0, 'described' => 0, 'no_subtitles' => 0, 'summarised' => 0, 'unusable' => 0, 'failed' => 0];
@@ -84,20 +84,42 @@ class BackfillEpisodePlotSummaries extends Command
     }
 
     /**
+     * The one episode named by `--id`, written over whatever description and
+     * tags it already has.
+     */
+    private function backfillOne(JellyfinClient $jellyfin, PerformancePlotSummariser $summariser, string $itemId, bool $dryRun): int
+    {
+        try {
+            $episode = $jellyfin->episode($itemId);
+        } catch (Throwable $e) {
+            $this->error($e->getMessage());
+
+            return self::FAILURE;
+        }
+
+        $outcome = $this->backfill($jellyfin, $summariser, $episode, $dryRun, overwrite: true);
+
+        Log::info('Episode plot summary backfill finished', ['dry_run' => $dryRun, 'item_id' => $itemId, 'outcome' => $outcome]);
+
+        return $outcome === 'failed' || $outcome === 'no_subtitles' ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
      * One episode, start to finish. Answers with the tally it counts towards.
      *
      * A failure is reported and counted rather than thrown, so one broken
      * episode does not stop the rest of the library being filled in.
      *
      * @param  array<string, mixed>  $episode
+     * @param  bool  $overwrite  Summarise even a described episode, and replace its tags rather than add to them.
      * @return 'described'|'no_subtitles'|'summarised'|'unusable'|'failed'
      */
-    private function backfill(JellyfinClient $jellyfin, PerformancePlotSummariser $summariser, array $episode, bool $dryRun): string
+    private function backfill(JellyfinClient $jellyfin, PerformancePlotSummariser $summariser, array $episode, bool $dryRun, bool $overwrite = false): string
     {
         $itemId = (string) ($episode['Id'] ?? '');
         $name = (string) ($episode['Name'] ?? $itemId);
 
-        if (filled($episode['Overview'] ?? null)) {
+        if (! $overwrite && filled($episode['Overview'] ?? null)) {
             $this->line(sprintf('  · %s — has a description, skipped', $name), verbosity: 'v');
 
             return 'described';
@@ -106,7 +128,7 @@ class BackfillEpisodePlotSummaries extends Command
         $subtitle = JellyfinClient::estonianSubtitleOf($episode);
 
         if ($subtitle === null) {
-            $this->line(sprintf('  · %s — no Estonian subtitles, skipped', $name), verbosity: 'v');
+            $this->line(sprintf('  · %s — no Estonian subtitles, skipped', $name), verbosity: $overwrite ? 'normal' : 'v');
 
             return 'no_subtitles';
         }
@@ -135,7 +157,7 @@ class BackfillEpisodePlotSummaries extends Command
                 return 'unusable';
             }
 
-            $jellyfin->applyToItem($itemId, $this->patchFor($episode, $reading));
+            $jellyfin->applyToItem($itemId, $this->patchFor($episode, $reading, $overwrite));
         } catch (Throwable $e) {
             // The exception message cuts an HTTP answer short, and Jellyfin
             // names the field it refused at the end of it — so the body goes
@@ -207,17 +229,17 @@ class BackfillEpisodePlotSummaries extends Command
 
     /**
      * The summary as the Overview, and its tags added to whatever the episode
-     * is already tagged with.
+     * is already tagged with — or in place of them, when replacing.
      *
      * @param  array<string, mixed>  $episode
      * @return array{Overview: string, Tags: list<string>}
      */
-    private function patchFor(array $episode, PlotSummary $reading): array
+    private function patchFor(array $episode, PlotSummary $reading, bool $replaceTags = false): array
     {
-        $existing = is_array($episode['Tags'] ?? null) ? $episode['Tags'] : [];
+        $existing = ! $replaceTags && is_array($episode['Tags'] ?? null) ? $episode['Tags'] : [];
 
         return [
-            'Overview' => self::SUMMARY_HEADING."\n".trim((string) $reading->summary),
+            'Overview' => trim((string) $reading->summary),
             'Tags' => array_values(array_unique(array_filter(
                 [...$existing, ...$reading->tags],
                 fn (mixed $tag): bool => is_string($tag) && filled($tag),

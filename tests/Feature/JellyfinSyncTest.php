@@ -434,7 +434,7 @@ class JellyfinSyncTest extends TestCase
         $this->push($recording);
 
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
-            && str_ends_with($request['Overview'], "Sisukokkuvõte:\nEsimene lõik.\n\nTeine lõik."));
+            && str_ends_with($request['Overview'], "\n\nEsimene lõik.\n\nTeine lõik."));
     }
 
     public function test_the_plot_tags_join_the_episode_tags(): void

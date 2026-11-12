@@ -32,7 +32,7 @@ Changing the recording URL means a different video. It clears the summary, its t
 
 ### Writing to Jellyfin
 
-The summary reaches Jellyfin through plaan's own description. `JellyfinEpisodeMetadata::overview()` appends `Sisukokkuvõte:` and the summary after the existing lines. The existing `SyncPerformanceToJellyfin` listener pushes it.
+The summary reaches Jellyfin through plaan's own description. `JellyfinEpisodeMetadata::overview()` appends the summary after the existing lines, separated by a blank line. The existing `SyncPerformanceToJellyfin` listener pushes it.
 
 The tags go the same way: `JellyfinEpisodeMetadata::tags()` adds `plot_tags` to the tags plaan already writes (the `plaan` marker, format, performer, venue, season and technical-plan tags), with duplicates removed.
 

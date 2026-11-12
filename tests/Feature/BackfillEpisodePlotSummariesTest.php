@@ -72,7 +72,7 @@ class BackfillEpisodePlotSummariesTest extends TestCase
 
         [$write] = $writes->first();
         $this->assertSame('https://jellyfin.test/Items/'.self::BARE, $write->url());
-        $this->assertSame("Sisukokkuvõte:\nLaev lendab kosmosesse.", $write['Overview']);
+        $this->assertSame('Laev lendab kosmosesse.', $write['Overview']);
         $this->assertSame(['olemasolev', 'kosmos', 'laul'], $write['Tags']);
         // A person's empty nested map goes back as a map, or Jellyfin refuses the write.
         $this->assertStringContainsString('"ImageBlurHashes":{"Primary":{}}', $write->body());
@@ -85,6 +85,65 @@ class BackfillEpisodePlotSummariesTest extends TestCase
 
         // The rest of the item travels back untouched.
         $this->assertSame('Episood 1', $write['Name']);
+    }
+
+    public function test_one_episode_by_id_is_summarised_over_its_description_and_tags(): void
+    {
+        $this->fakeLibrary();
+        $this->bindModelAnswering($this->usable('Uus kokkuvõte.', ['kosmos']));
+
+        $this->artisan('performances:summarise-backfill', ['--id' => self::DESCRIBED])
+            ->expectsOutputToContain('Episood 2 — summarising')
+            ->assertSuccessful();
+
+        $this->assertCount(1, $this->sentBodies);
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'includeItemTypes=Series'));
+
+        $writes = Http::recorded(fn (Request $request): bool => $request->method() === 'POST');
+        $this->assertCount(1, $writes);
+
+        [$write] = $writes->first();
+        $this->assertSame('https://jellyfin.test/Items/'.self::DESCRIBED, $write->url());
+        $this->assertSame('Uus kokkuvõte.', $write['Overview']);
+        $this->assertSame(['kosmos'], $write['Tags']);
+    }
+
+    public function test_a_dry_run_by_id_writes_nothing(): void
+    {
+        $this->fakeLibrary();
+        $this->bindModelAnswering($this->usable('Ei tohiks juhtuda.'));
+
+        $this->artisan('performances:summarise-backfill', ['--id' => self::DESCRIBED, '--dry-run' => true])
+            ->expectsOutputToContain('Episood 2 — would summarise')
+            ->assertSuccessful();
+
+        $this->assertSame([], $this->sentBodies);
+        Http::assertNotSent(fn (Request $request): bool => $request->method() === 'POST');
+    }
+
+    public function test_an_episode_by_id_without_subtitles_fails(): void
+    {
+        $this->fakeLibrary();
+        $this->bindModelAnswering($this->usable('Ei tohiks juhtuda.'));
+
+        $this->artisan('performances:summarise-backfill', ['--id' => self::UNTRANSCRIBED])
+            ->expectsOutputToContain('no Estonian subtitles')
+            ->assertFailed();
+
+        $this->assertSame([], $this->sentBodies);
+    }
+
+    public function test_an_unknown_id_fails(): void
+    {
+        $this->fakeLibrary();
+        $this->bindModelAnswering($this->usable('Ei tohiks juhtuda.'));
+
+        $this->artisan('performances:summarise-backfill', ['--id' => 'ffffffffffffffffffffffffffffffff'])
+            ->expectsOutputToContain('Jellyfin holds no episode ffffffffffffffffffffffffffffffff.')
+            ->assertFailed();
+
+        $this->assertSame([], $this->sentBodies);
+        Http::assertNotSent(fn (Request $request): bool => $request->method() === 'POST');
     }
 
     public function test_a_dry_run_asks_nothing_and_writes_nothing(): void
@@ -188,7 +247,7 @@ class BackfillEpisodePlotSummariesTest extends TestCase
             [...$bare, 'Id' => self::UNTRANSCRIBED, 'Name' => 'Episood 3', 'MediaSources' => [['Id' => self::SOURCE_ID, 'MediaStreams' => []]]],
         ];
 
-        Http::fake(function (Request $request) use ($bare, $episodes, $subtitleStatus) {
+        Http::fake(function (Request $request) use ($episodes, $subtitleStatus) {
             $url = $request->url();
 
             if (str_contains($url, '/Videos/')) {
@@ -209,8 +268,10 @@ class BackfillEpisodePlotSummariesTest extends TestCase
                 return Http::response(['Items' => $episodes, 'TotalRecordCount' => count($episodes)]);
             }
 
-            if (($query['ids'] ?? null) === self::BARE) {
-                return Http::response(['Items' => [$bare], 'TotalRecordCount' => 1]);
+            $byId = array_values(array_filter($episodes, fn (array $episode): bool => $episode['Id'] === ($query['ids'] ?? null)));
+
+            if ($byId !== []) {
+                return Http::response(['Items' => $byId, 'TotalRecordCount' => 1]);
             }
 
             return Http::response(['Items' => [], 'TotalRecordCount' => 0]);

@@ -638,7 +638,7 @@ sisukokkuvõtte: mis laval juhtus. Kokkuvõte kirjutatakse **ühe korra** iga
 salvestuse kohta.
 
 - Kokkuvõte on näha etenduse lehel kõigile, kes lehe avada saavad, ja lisatakse
-  Jellyfinis video kirjelduse lõppu (pealkirja **Sisukokkuvõte** alla).
+  Jellyfinis video kirjelduse lõppu.
 - Koos kokkuvõttega tekivad **temaatilised sildid** (nt *armastus*,
   *kalapüük*, *laul*). Need on näha kokkuvõtte all ja lisatakse ka video
   Jellyfini siltide hulka, et sarnaseid etendusi oleks lihtne leida. Silte

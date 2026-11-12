@@ -98,6 +98,9 @@ class PerformancePlotSummariser
             return new PlotSummary(null, 'Subtiitrites pole teksti.');
         }
 
+        $userPrompt = $this->buildUserPrompt($details, $onStage, $transcript);
+        $systemPrompt = view('performance.ai-plot-summary-prompt')->render();
+
         $startedAt = microtime(true);
 
         $answer = $this->askClaude($this->client(), [
@@ -105,7 +108,7 @@ class PerformancePlotSummariser
             'messages' => [
                 [
                     'role' => 'user',
-                    'content' => $this->buildUserPrompt($details, $onStage, $transcript),
+                    'content' => $userPrompt,
                 ],
             ],
             'model' => config('services.anthropic.model'),
@@ -115,7 +118,7 @@ class PerformancePlotSummariser
                     'schema' => $this->responseSchema(),
                 ],
             ],
-            'system' => view('performance.ai-plot-summary-prompt')->render(),
+            'system' => $systemPrompt,
             'thinking' => ['type' => 'disabled'],
         ], keep: fn (string $answer): bool => self::isWhole($answer));
 
@@ -306,7 +309,7 @@ class PerformancePlotSummariser
                 ],
                 'summary' => [
                     'anyOf' => [['type' => 'string'], ['type' => 'null']],
-                    'description' => 'The plot summary in Estonian, 2–4 plain paragraphs; null when not usable.',
+                    'description' => 'A synopsis of the central story in Estonian, one paragraph of 4–6 short sentences, at most 70 words; null when not usable.',
                 ],
                 'tags' => [
                     'type' => 'array',

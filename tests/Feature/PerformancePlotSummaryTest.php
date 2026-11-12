@@ -18,6 +18,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -230,9 +231,28 @@ class PerformancePlotSummaryTest extends TestCase
 
         // And the episode's description and tags now carry it.
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
-            && str_contains((string) $request['Overview'], "Sisukokkuvõte:\nTrupp lendas kosmoselaevaga Saaremaale.")
+            && str_contains((string) $request['Overview'], "\n\nTrupp lendas kosmoselaevaga Saaremaale.")
             && in_array('kosmos', $request['Tags'], true)
             && in_array('reis', $request['Tags'], true));
+    }
+
+    public function test_the_input_given_to_the_model_is_logged_at_debug(): void
+    {
+        Log::spy();
+        $this->fakeLibrary();
+        $this->bindModelAnswering($this->usable('Trupp lendas kosmoselaevaga Saaremaale.'));
+
+        $recording = $this->recording();
+
+        PerformancePlotSummaryRequested::dispatch($recording);
+
+        $prompt = $this->sentBodies[0]['messages'][0]['content'];
+
+        Log::shouldHaveReceived('debug')
+            ->with('Plot summary input', \Mockery::on(fn (array $context): bool => $context['input'] === $prompt
+                && $context['system'] === $this->sentBodies[0]['system']
+                && $context['performance_id'] === $recording->performance->getKey()))
+            ->once();
     }
 
     public function test_unreadable_subtitles_are_given_up_on(): void
