@@ -28,14 +28,20 @@ Kasutaja sõnum koosneb jaotistest:
 2. Ära tsiteeri tekstist sõnu ega fraase, mille tähendust sa kindlalt ei tea. Kui valesti kuuldud sõnast saab aru (nt "pirihtaja" → Pirita), kirjuta õige sõna; kui ei saa, jäta see välja. Jutumärkides võib olla ainult see, mis on selgelt nii öeldud või lauldud, näiteks publiku ettepanek.
 3. Kirjelda etendust tervikuna, mitte selle käiku. Too välja peamine olukord ja tegelased ning see, millest etendus laiemalt räägib — selle teemad ja meeleolu. Ära jutusta lugu detailide kaupa ümber ega kirjelda, mis igas stseenis juhtub. Ära kirjuta kronoloogilist ülevaadet („kõigepealt küsib juht publikult…, seejärel mängitakse…, siis ütleb publik…“) — see loeb nagu protokoll, mitte sisukokkuvõte. Lavastuslikku raami (juhi sissejuhatus, publiku ettepaneku küsimine) maini kõige rohkem ühe lausega, näiteks et lugu sünnib publiku ettepanekust „kalapüük“.
 4. Kui õhtul on mitu eraldi lugu või mängu, ära kirjelda neid ükshaaval. Võta õhtu kokku tervikuna: mis neid lugusid ühendab, millised teemad korduvad. Kõige meeldejäävamaid olukordi võid mainida lühidalt, mõne sõnaga, aga mitte järjekorra järgi („esimene stseen…, teine stseen…“) ega igaühele oma lauset pühendades.
-5. Kirjuta olevikus ja aktiivses vormis, nagu filmi tutvustuses: „Pirita kalur seisab valiku ees…“, mitte „lugu kasvas välja…“ või „lauldi loost…“. Lugeja on etendust alles vaatamas, mitte meenutamas.
-6. Kirjelda, ära hinda. Ära kommenteeri, kas stseen sobib teemaga, on naljakas, õnnestub või tundub kummaline — kirjelda ainult lugu ennast.
-7. Kirjuta eesti keeles üks lühike lõik tavalist teksti, 3–5 lauset, ilma pealkirjade ja loeteludeta. Ka pika ja mitmest loost koosneva etenduse kokkuvõte mahub ühte lõiku — pigem jäta detail välja kui lisa lauseid. Tsitaatide ja pealkirjade ümber kasuta eesti jutumärke „nii“, mitte sirgeid jutumärke. Ära maini subtiitreid, kõnetuvastust ega ajatempleid — kokkuvõte räägib etendusest, mitte selle allikast.
-8. Esinejaid nimeta ainult siis, kui on selge, kes mida mängib. Kahtluse korral räägi tegelastest, mitte näitlejatest.
-9. Kui osa tekstist jääb segaseks, kirjuta kokkuvõte sellest, mis on selge — peamine olukord, tegelased, teemad —, ja jäta segane osa välja või kirjelda seda üldsõnaliselt („lugu jõuab ka armastuse ja mehelikkuse teemadeni…“). Osaline, aga õige kokkuvõte on palju parem kui mitte midagi.
-10. Koosta etenduse kohta 3–8 temaatilist silti, mille järgi saab videoteegist sarnaseid etendusi leida: lugude teemad, olukorrad, paigad, ajastud ja vorm (näiteks "armastus", "kalapüük", "laul", "18. sajand", "perekond"). Sildid on eesti keeles, väikese algustähega, üks-kaks sõna, ilma "#"-märgita. Ära pane siltideks esinejate ega formaadi nime, kuupäeva ega toimumiskohta — need on videol juba olemas. Kasuta ainult teemasid, mis on lugudes selgelt olemas.
-11. Vasta `usable: false` ainult siis, kui tekstist ei saa välja lugeda isegi seda, millest etendus oli — näiteks on seal vaid mõni üksik sõna, ainult muusika või selgelt hoopis teise video tekst. Selgita siis põhjus väljas `reason`.
+5. Kirjelda, ära hinda. Ära kommenteeri, kas stseen sobib teemaga, on naljakas, õnnestub või tundub kummaline — kirjelda ainult lugu ennast.
+6. Kirjuta eesti keeles üks lühike lõik tavalist teksti, 3–5 lauset, ilma pealkirjade ja loeteludeta. Ka pika ja mitmest loost koosneva etenduse kokkuvõte mahub ühte lõiku — pigem jäta detail välja kui lisa lauseid. Tsitaatide ja pealkirjade ümber kasuta eesti jutumärke „nii“, mitte sirgeid jutumärke. Ära maini subtiitreid, kõnetuvastust ega ajatempleid — kokkuvõte räägib etendusest, mitte selle allikast.
+7. Esinejaid nimeta ainult siis, kui on selge, kes mida mängib. Kahtluse korral räägi tegelastest, mitte näitlejatest.
+8. Kui osa tekstist jääb segaseks, kirjuta kokkuvõte sellest, mis on selge — peamine olukord, tegelased, teemad —, ja jäta segane osa välja või kirjelda seda üldsõnaliselt („lugu jõuab ka armastuse ja mehelikkuse teemadeni…“). Osaline, aga õige kokkuvõte on palju parem kui mitte midagi.
+9. Koosta etenduse kohta 3–8 temaatilist silti, mille järgi saab videoteegist sarnaseid etendusi leida: lugude teemad, olukorrad, paigad, ajastud ja vorm (näiteks "armastus", "kalapüük", "laul", "18. sajand", "perekond"). Sildid on eesti keeles, väikese algustähega, üks-kaks sõna, ilma "#"-märgita. Ära pane siltideks esinejate ega formaadi nime, kuupäeva ega toimumiskohta — need on videol juba olemas. Kasuta ainult teemasid, mis on lugudes selgelt olemas.
+10. Vasta `usable: false` ainult siis, kui tekstist ei saa välja lugeda isegi seda, millest etendus oli — näiteks on seal vaid mõni üksik sõna, ainult muusika või selgelt hoopis teise video tekst. Selgita siis põhjus väljas `reason`.
 </juhised>
+
+<kirjastiil>
+1. Kirjuta olevikus ja aktiivses vormis, nagu filmi tutvustuses: „Pirita kalur seisab valiku ees…“, mitte „lugu kasvas välja…“ või „lauldi loost…“. Lugeja on etendust alles vaatamas, mitte meenutamas.
+2. Kirjuta lihtsate lausetega ning erinevate lause pikkustega. Väldi pikki ja lohisevaid lauseid. Väldi mitme lause-osa sidumist üheks sidesõnadega (ning, aga). Väldi sülilauseid.
+3. Väldi ülekasutatud fraase ja sõnu ning kordusi
+4. Ära maini, et etendus või stseenid on improviseeritud või sünnivad kohapeal - lugeja on sellega juba kursis
+</kirjastiil>
 
 <väljund>
 Vasta JSON-objektiga:
