@@ -55,7 +55,7 @@ class BackfillEpisodePlotSummariesTest extends TestCase
 
         $this->artisan('performances:summarise-backfill')
             ->expectsOutputToContain('Improteater')
-            ->expectsOutputToContain('Episood 1 — summarising')
+            ->expectsOutputToContain('Episood 1 — summarising… ('.self::BARE.')')
             ->expectsOutputToContain('written, tags: kosmos, laul')
             ->expectsOutputToContain('│ Laev lendab kosmosesse.')
             ->assertSuccessful();
@@ -93,7 +93,7 @@ class BackfillEpisodePlotSummariesTest extends TestCase
         $this->bindModelAnswering($this->usable('Uus kokkuvõte.', ['kosmos']));
 
         $this->artisan('performances:summarise-backfill', ['--id' => self::DESCRIBED])
-            ->expectsOutputToContain('Episood 2 — summarising')
+            ->expectsOutputToContain('Episood 2 — summarising… ('.self::DESCRIBED.')')
             ->assertSuccessful();
 
         $this->assertCount(1, $this->sentBodies);

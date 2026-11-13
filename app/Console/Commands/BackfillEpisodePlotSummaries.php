@@ -139,7 +139,7 @@ class BackfillEpisodePlotSummaries extends Command
             return 'summarised';
         }
 
-        $this->line(sprintf('  → %s — summarising…', $name));
+        $this->line(sprintf('  → %s — summarising… <fg=gray>(%s)</>', $name, $itemId));
 
         try {
             $srt = $jellyfin->subtitleText($itemId, $subtitle['mediaSourceId'], $subtitle['index']);
