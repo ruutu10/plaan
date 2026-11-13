@@ -150,26 +150,37 @@ class ReviewSubmittedPlanWithAi implements ShouldQueue
     }
 
     /**
-     * The remark as it appears on the plan: a line saying why it is there, then
-     * the findings themselves as a list.
+     * Closes every remark: the performer is reading a machine that saw only the
+     * plan, not the conversations around it, and should weigh what it says
+     * rather than take it as the crew's instruction.
+     */
+    public const DISCLAIMER = '_See on automaatne kommentaar tehisarult. Tehisaru ei tea kogu etenduse konteksti ja võib eksida. Tagasiside on mõeldud enesekontrolliks, ja ei ole kohustus plaani sisu muuta._';
+
+    /**
+     * The remark as it appears on the plan: a line saying why it is there, the
+     * findings themselves as a list, then the {@see DISCLAIMER}.
      *
      * Written as markdown, which is what the thread renders. Cut to the length
      * a comment may run — a second pass that produces two thousand characters
      * of show-stoppers has misunderstood its job, and the plan needs a person
-     * rather than a longer comment.
+     * rather than a longer comment. It is the findings that are cut, never the
+     * disclaimer.
      *
      * @param  list<string>  $findings
      */
     private function composeBody(array $findings): string
     {
         $intro = 'Vaatasin plaani üle ja tekkisid küsimused. Palun täpsusta plaanis:';
+        $footer = "\n\n".self::DISCLAIMER;
 
         $body = $intro."\n\n".collect($findings)
             ->map(fn (string $finding): string => '- '.$finding)
             ->implode("\n");
 
-        if (mb_strlen($body) <= TechnicalPlanComment::MAX_LENGTH) {
-            return $body;
+        $budget = TechnicalPlanComment::MAX_LENGTH - mb_strlen($footer);
+
+        if (mb_strlen($body) <= $budget) {
+            return $body.$footer;
         }
 
         Log::warning('The technician AI\'s findings ran longer than a comment may be', [
@@ -177,8 +188,8 @@ class ReviewSubmittedPlanWithAi implements ShouldQueue
             'length' => mb_strlen($body),
         ]);
 
-        // One short of the limit, so the ellipsis that says it was cut fits
+        // One short of the budget, so the ellipsis that says it was cut fits
         // inside it rather than pushing past it.
-        return Str::limit($body, TechnicalPlanComment::MAX_LENGTH - 1, '…');
+        return Str::limit($body, $budget - 1, '…').$footer;
     }
 }

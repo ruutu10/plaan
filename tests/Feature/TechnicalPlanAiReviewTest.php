@@ -69,6 +69,7 @@ class TechnicalPlanAiReviewTest extends TestCase
         $this->assertTrue($comment->from_technical_team);
         $this->assertStringContainsString('- Stseenil „Finaal" on kirjeldatud lõpumuusika', $comment->body);
         $this->assertStringContainsString('- Vaheaja koht on plaanis kahes eri kohas', $comment->body);
+        $this->assertStringEndsWith(ReviewSubmittedPlanWithAi::DISCLAIMER, $comment->body);
     }
 
     public function test_the_performer_is_mailed_about_what_the_agent_found(): void
@@ -165,10 +166,10 @@ class TechnicalPlanAiReviewTest extends TestCase
 
         TechnicalPlanSubmitted::dispatch($this->plan, null);
 
-        $this->assertLessThanOrEqual(
-            TechnicalPlanComment::MAX_LENGTH,
-            mb_strlen(TechnicalPlanComment::query()->sole()->body),
-        );
+        $body = TechnicalPlanComment::query()->sole()->body;
+
+        $this->assertLessThanOrEqual(TechnicalPlanComment::MAX_LENGTH, mb_strlen($body));
+        $this->assertStringEndsWith('…'."\n\n".ReviewSubmittedPlanWithAi::DISCLAIMER, $body);
     }
 
     public function test_the_review_is_queued_rather_than_done_in_the_request(): void
