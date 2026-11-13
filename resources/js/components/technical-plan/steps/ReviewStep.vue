@@ -152,7 +152,7 @@ const savedAsDraft = computed(
         </div>
 
         <!-- Printable document -->
-        <PlanDocument :doc="doc">
+        <PlanDocument :doc="doc" :performance-url="plan.meta.performanceUrl">
             <template #scenes-action>
                 <R10Button
                     variant="outline"

@@ -14,7 +14,15 @@ import { printBlocks } from './printPlan';
  * markup differs because a mail has to be an inline-styled table, but no
  * decision about *how a value reads* is taken here or there.
  */
-const props = defineProps<{ doc: PlanDocument }>();
+const props = defineProps<{
+    doc: PlanDocument;
+    /**
+     * The performance's admin screen, for a reader who may open it. Kept off
+     * {@link PlanDocument} itself: the mail renders that same shape, and a link
+     * into the admin is for the reader on screen, not for the printout.
+     */
+    performanceUrl?: string | null;
+}>();
 
 /**
  * The same scenes laid out down the page for paper — see {@link printBlocks}.
@@ -67,7 +75,15 @@ const linkClass =
                 </div>
                 <div>
                     <span class="font-bold text-r10-navy">Etendus:</span>
-                    {{ doc.performanceDate }}
+                    {{ ' ' }}
+                    <a
+                        v-if="performanceUrl"
+                        :href="performanceUrl"
+                        :class="linkClass"
+                        data-test="plan-performance-link"
+                        >{{ doc.performanceDate }}</a
+                    >
+                    <template v-else>{{ doc.performanceDate }}</template>
                 </div>
                 <div>
                     <span class="font-bold text-r10-navy">Algus: </span>

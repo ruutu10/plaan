@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Actions\StagePlanCopy;
+use App\Data\RecordLinks;
 use App\Models\TechnicalPlan as TechnicalPlanModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -59,6 +60,10 @@ class TechnicalPlan extends JsonResource
             'authorEmail' => self::authorEmail($plan, $request),
             'meta' => [
                 'performanceId' => $plan->performance_id,
+                // The night's own screen, for a reader who may open it — so the
+                // crew can step from the plan to the evening it is written for.
+                'performanceUrl' => RecordLinks::for($request->user(), [$plan->performance])
+                    ->performanceUrl($plan->performance),
                 'performer' => $plan->performance?->performerName() ?? '',
                 'formatName' => $plan->performance?->format->name ?? '',
                 'performanceDate' => $plan->performance?->startDate() ?? '',

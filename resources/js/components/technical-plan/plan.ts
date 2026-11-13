@@ -191,6 +191,7 @@ export function blankPlan(): Plan {
         authorEmail: null,
         meta: {
             performanceId: null,
+            performanceUrl: null,
             performer: '',
             formatName: '',
             performanceDate: '',

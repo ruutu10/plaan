@@ -503,6 +503,42 @@ class TechnicalPlanTest extends TestCase
             ->where('initialPlan.meta.performer', $plan->performance->format->team->name));
     }
 
+    public function test_the_plan_links_its_performance_for_a_reader_who_may_open_it(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        $this->actingAs($this->technician())
+            ->get(route('technical-plan.public', $plan))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('initialPlan.meta.performanceUrl', route('formats.performances.show', [
+                    $plan->performance->format_id,
+                    $plan->performance_id,
+                ])));
+    }
+
+    public function test_the_plan_does_not_link_a_performance_the_reader_may_not_open(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        $this->get(route('technical-plan.public', $plan))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('initialPlan.meta.performanceUrl', null));
+
+        $this->getJson(route('technical-plan.show', $plan))
+            ->assertJsonPath('meta.performanceUrl', null);
+    }
+
+    public function test_a_guest_on_the_public_link_is_not_handed_the_performance_link(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        auth()->logout();
+
+        $this->get(route('technical-plan.public', $plan))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('initialPlan.meta.performanceUrl', null));
+    }
+
     public function test_the_author_of_a_draft_carries_on_writing_it_at_its_own_address(): void
     {
         // Where saving a draft leaves the wizard: the plan has an address of

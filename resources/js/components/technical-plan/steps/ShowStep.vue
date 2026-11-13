@@ -81,6 +81,9 @@ function selectPerformance(performance: UpcomingPerformance): void {
     }
 
     plan.meta.performanceId = performance.id;
+    // The link pointed at the night being left; the new one gets its own when
+    // the plan is next loaded.
+    plan.meta.performanceUrl = null;
     plan.meta.performer = performance.performer;
     plan.meta.formatName = performance.formatName;
     plan.meta.performanceDate = performance.performanceDate;

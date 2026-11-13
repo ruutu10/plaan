@@ -86,6 +86,12 @@ export interface PlanMeta {
      * every saved plan names one, the stand-in performance included.
      */
     performanceId: number | null;
+    /**
+     * The performance's own admin screen, or null when this reader may not
+     * open it. Set by the server only; a night picked in the wizard has none
+     * until the plan is loaded again.
+     */
+    performanceUrl: string | null;
     performer: string;
     formatName: string;
     performanceDate: string;

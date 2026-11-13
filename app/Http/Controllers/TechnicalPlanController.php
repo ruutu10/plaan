@@ -6,6 +6,7 @@ use App\Actions\SaveTechnicalPlan;
 use App\Actions\Sso\AttemptSilentAuthentikLogin;
 use App\Actions\StagePlanCopy;
 use App\Data\PlanContent;
+use App\Data\RecordLinks;
 use App\Enums\TechnicalPlanStatus;
 use App\Events\TechnicalPlanPerformanceChanged;
 use App\Events\TechnicalPlanStatusChanged;
@@ -612,6 +613,7 @@ class TechnicalPlanController extends Controller
 
         return [
             'performanceId' => $performance->id,
+            'performanceUrl' => RecordLinks::for($request->user(), [$performance])->performanceUrl($performance),
             'performer' => $performance->performerName() ?? '',
             'formatName' => $performance->format->name,
             'performanceDate' => $performance->startDate(),

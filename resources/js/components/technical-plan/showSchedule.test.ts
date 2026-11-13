@@ -5,6 +5,7 @@ import { showSchedule } from './showSchedule';
 function meta(overrides: Partial<PlanMeta> = {}): PlanMeta {
     return {
         performanceId: 1,
+        performanceUrl: null,
         performer: 'Improgrupp',
         formatName: 'Lühivormid',
         performanceDate: '2026-07-15',
