@@ -143,6 +143,20 @@ class PerformanceTechnicianReminderTest extends TestCase
         Notification::assertSentTimes(TechnicianMissing::class, 1);
     }
 
+    public function test_the_digest_links_each_performance_to_its_page_in_plaan(): void
+    {
+        $performance = $this->performanceIn('6 days');
+
+        $html = (string) (new TechnicianMissing(collect([$performance])))
+            ->toMail(new AnonymousNotifiable)
+            ->render();
+
+        $this->assertStringContainsString(
+            route('formats.performances.show', [$performance->format_id, $performance->getKey()]),
+            $html,
+        );
+    }
+
     public function test_it_keeps_chasing_the_same_gap_every_day_it_runs(): void
     {
         Notification::fake();

@@ -50,6 +50,7 @@ class TechnicianMissing extends Notification implements ShouldQueue
                             ? $performance->format->name
                             : $performance->format->name.' — '.$performance->title,
                         'startsAt' => $performance->startsAt(),
+                        'performanceUrl' => route('formats.performances.show', [$performance->format_id, $performance->getKey()]),
                         'cardUrl' => PlankaClient::cardUrl($performance->planka_card_id),
                     ])
                     ->all(),

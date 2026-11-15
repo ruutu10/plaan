@@ -37,7 +37,9 @@
         </tr>
         @foreach ($performances as $performance)
             <tr>
-                <td style="{{ $cell }}">{{ $performance['label'] }}</td>
+                <td style="{{ $cell }}">
+                    <a href="{{ $performance['performanceUrl'] }}" style="{{ $link }}">{{ $performance['label'] }}</a>
+                </td>
                 <td style="{{ $cell }}">{{ $performance['startsAt']->format('d.m.Y H:i') }}</td>
                 <td style="{{ $cell }}">
                     @if ($performance['cardUrl'])
