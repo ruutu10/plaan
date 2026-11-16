@@ -56,7 +56,12 @@ trait AnswersAsTheExtractionModel
                     'content' => [['type' => 'text', 'text' => $this->text]],
                     'stop_reason' => 'end_turn',
                     'stop_sequence' => null,
-                    'usage' => ['input_tokens' => 1, 'output_tokens' => 1],
+                    'usage' => [
+                        'input_tokens' => 120,
+                        'cache_creation_input_tokens' => 300,
+                        'cache_read_input_tokens' => 7000,
+                        'output_tokens' => 40,
+                    ],
                 ]));
             }
         };
@@ -64,5 +69,38 @@ trait AnswersAsTheExtractionModel
         return new PlankaPerformanceExtractor(
             new Client(apiKey: 'test-key', requestOptions: ['transporter' => $transporter]),
         );
+    }
+
+    /**
+     * The system prompt of a request the extractor sent, as one string,
+     * whichever blocks it was sent in.
+     */
+    protected function sentSystemPrompt(int $request = 0): string
+    {
+        return $this->joinedText($this->sentBodies[$request]['system']);
+    }
+
+    /**
+     * The user message of a request the extractor sent, as one string,
+     * whichever blocks it was sent in.
+     */
+    protected function sentUserPrompt(int $request = 0): string
+    {
+        return $this->joinedText($this->sentBodies[$request]['messages'][0]['content']);
+    }
+
+    /**
+     * Prompt content as the model reads it: a plain string as it is, a list of
+     * text blocks one after another.
+     *
+     * @param  string|list<array{type: string, text: string}>  $content
+     */
+    private function joinedText(string|array $content): string
+    {
+        if (is_string($content)) {
+            return $content;
+        }
+
+        return implode("\n\n", array_map(fn (array $block): string => $block['text'], $content));
     }
 }

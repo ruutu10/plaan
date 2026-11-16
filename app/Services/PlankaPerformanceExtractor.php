@@ -85,7 +85,7 @@ class PlankaPerformanceExtractor
      */
     public function extract(string $cardName, string $cardDescription, ?string $dueDate = null, array $labels = []): array
     {
-        $userPrompt = $this->buildUserPrompt($cardName, $cardDescription, $dueDate, $labels);
+        $cardPrompt = $this->buildCardPrompt($cardName, $cardDescription, $dueDate, $labels);
 
         // Whatever the last card was reasoned to, it is not this one's.
         $this->reasoningNotes = [];
@@ -95,10 +95,17 @@ class PlankaPerformanceExtractor
 
         $aiResponse = $this->askClaude($this->client(), [
             'maxTokens' => config('services.anthropic.max_tokens'),
+            // The house's lists first and the card after them, each its own
+            // block: every card of a run is read against the same lists, so
+            // the API's prompt cache carries the system prompt and the lists
+            // from one card to the next and only the card is paid for in full.
             'messages' => [
                 [
                     'role' => 'user',
-                    'content' => $userPrompt,
+                    'content' => [
+                        $this->cachedPromptBlock($this->buildHousePrompt()),
+                        ['type' => 'text', 'text' => $cardPrompt],
+                    ],
                 ],
             ],
             'model' => config('services.anthropic.model'),
@@ -108,7 +115,7 @@ class PlankaPerformanceExtractor
                     'schema' => $this->responseSchema(),
                 ],
             ],
-            'system' => $this->buildSystemPrompt(),
+            'system' => [$this->cachedPromptBlock($this->buildSystemPrompt())],
             'thinking' => ['type' => 'disabled'],
         ]);
 
@@ -637,30 +644,17 @@ class PlankaPerformanceExtractor
     }
 
     /**
-     * The card itself. The title carries the format's name when the description
-     * names no acts, and the due date supplies the year for the many dates
-     * written on the board as a bare day and month. The groups and the formats
-     * are listed here rather than in the system prompt because they are the
-     * app's own, and change as groups and formats come and go.
+     * The groups and the formats the house has, the same for every card of a
+     * run. They are listed here rather than in the system prompt because they
+     * are the app's own, and change as groups and formats come and go.
      *
      * The formats are listed so a card can be read onto one the house already
      * has: a producer titles a card with the evening's format and whoever is
      * playing it — "Kogukonna improõhtu HELGED VENNAD" — and without the list
      * that reads as a format the house has never had.
-     *
-     * The board's own labels come along too. They are how the producers say
-     * what a card is — an etendus, a workshop, a rented evening — in one word
-     * they have already agreed on, and a card whose description is thin is
-     * often only readable through them.
-     *
-     * @param  list<string>  $labels
      */
-    protected function buildUserPrompt(string $cardName, string $cardDescription, ?string $dueDate, array $labels = []): string
+    protected function buildHousePrompt(): string
     {
-        $due = $dueDate === null
-            ? 'puudub'
-            : Carbon::parse($dueDate)->toDateString();
-
         $teams = $this->teams() === []
             ? 'Tiime pole registreeritud — jäta `team_id` alati tühjaks.'
             : collect($this->teams())
@@ -674,12 +668,32 @@ class PlankaPerformanceExtractor
                 ->map(fn (string $name): string => "- {$name}")
                 ->implode("\n");
 
+        return "# Registreeritud tiimid\n\n{$teams}\n\n# Registreeritud formaadid\n\n{$formats}";
+    }
+
+    /**
+     * The card itself. The title carries the format's name when the description
+     * names no acts, and the due date supplies the year for the many dates
+     * written on the board as a bare day and month.
+     *
+     * The board's own labels come along too. They are how the producers say
+     * what a card is — an etendus, a workshop, a rented evening — in one word
+     * they have already agreed on, and a card whose description is thin is
+     * often only readable through them.
+     *
+     * @param  list<string>  $labels
+     */
+    protected function buildCardPrompt(string $cardName, string $cardDescription, ?string $dueDate, array $labels = []): string
+    {
+        $due = $dueDate === null
+            ? 'puudub'
+            : Carbon::parse($dueDate)->toDateString();
+
         $cardLabels = $labels === []
             ? 'Sildid puuduvad.'
             : collect($labels)->map(fn (string $label): string => "- {$label}")->implode("\n");
 
-        return "# Registreeritud tiimid\n\n{$teams}\n\n# Registreeritud formaadid\n\n{$formats}"
-            ."\n\n# Kaardi pealkiri\n\n{$cardName}"
+        return "# Kaardi pealkiri\n\n{$cardName}"
             ."\n\n# Planka tähtaeg\n\n{$due}\n\n# Kaardi sildid\n\n{$cardLabels}"
             ."\n\n# Kaardi kirjeldus\n\n{$cardDescription}";
     }

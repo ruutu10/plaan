@@ -13,11 +13,9 @@ class TechnicalPlanReviewer
 {
     use CachesClaudeMessages;
 
-    protected Client $client;
-
-    public function __construct()
+    public function __construct(protected ?Client $client = null)
     {
-        $this->client = $this->claudeClient();
+        //
     }
 
     /**
@@ -48,7 +46,7 @@ class TechnicalPlanReviewer
             'model' => config('services.anthropic.model'),
         ]);
 
-        $aiResponse = $this->askClaude($this->client, [
+        $aiResponse = $this->askClaude($this->client(), [
             'maxTokens' => config('services.anthropic.max_tokens'),
             'messages' => [
                 [
@@ -57,7 +55,10 @@ class TechnicalPlanReviewer
                 ],
             ],
             'model' => config('services.anthropic.model'),
-            'system' => $this->buildSystemPrompt(),
+            // The same for every plan, and a performer asking for a review
+            // again after an edit usually does so within minutes, so it is
+            // read back from the API's prompt cache rather than paid in full.
+            'system' => [$this->cachedPromptBlock($this->buildSystemPrompt())],
             'thinking' => ['type' => 'disabled'],
         ]);
 
@@ -99,5 +100,14 @@ class TechnicalPlanReviewer
             new TechnicalPlanReviewResource($plan),
             JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
         ) ?: '{}';
+    }
+
+    /**
+     * The API client, built on first use so an unconfigured key only bites the
+     * code paths that actually call out.
+     */
+    protected function client(): Client
+    {
+        return $this->client ??= $this->claudeClient();
     }
 }

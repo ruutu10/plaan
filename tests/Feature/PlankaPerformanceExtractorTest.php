@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\PerformanceStaffRole;
 use App\Models\Format;
 use App\Models\Team;
+use App\Services\PlankaPerformanceExtractor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Tests\Concerns\AnswersAsTheExtractionModel;
@@ -390,21 +391,69 @@ class PlankaPerformanceExtractorTest extends TestCase
         $this->assertSame(['formats', 'reasoningNotes'], $schema['required']);
         $this->assertSame('array', $schema['properties']['reasoningNotes']['type']);
         $this->assertSame('string', $schema['properties']['reasoningNotes']['items']['type']);
-        $this->assertStringContainsString('reasoningNotes', $body['system']);
+        $this->assertStringContainsString('reasoningNotes', $this->sentSystemPrompt());
 
         // The card must reach the model whole — title, description and the due
         // date that supplies the year for dates written without one.
-        $this->assertStringContainsString('13.09 õhtu', $body['messages'][0]['content']);
-        $this->assertStringContainsString('Toimumise kuupäev: 13.09.2025', $body['messages'][0]['content']);
-        $this->assertStringContainsString('2025-09-13', $body['messages'][0]['content']);
-        $this->assertStringContainsString('Ruutu10', $body['system']);
+        $this->assertStringContainsString('13.09 õhtu', $this->sentUserPrompt());
+        $this->assertStringContainsString('Toimumise kuupäev: 13.09.2025', $this->sentUserPrompt());
+        $this->assertStringContainsString('2025-09-13', $this->sentUserPrompt());
+        $this->assertStringContainsString('Ruutu10', $this->sentSystemPrompt());
+    }
+
+    /**
+     * Every card of a run starts the same — the system prompt, then the house's
+     * groups and formats — so both are marked for the API's prompt cache and
+     * only the card that follows them is paid for in full.
+     */
+    public function test_the_parts_every_card_shares_are_marked_for_the_prompt_cache(): void
+    {
+        Format::factory()->create(['name' => 'Duubel']);
+
+        $extractor = $this->extractorAnswering('{"formats": []}');
+        $extractor->extract('13.09 õhtu', 'Esimene kaart');
+        $extractor->extract('14.09 õhtu', 'Teine kaart');
+
+        [$first, $second] = $this->sentBodies;
+
+        $this->assertSame(['type' => 'ephemeral'], $first['system'][0]['cache_control']);
+
+        [$house, $card] = $first['messages'][0]['content'];
+
+        $this->assertSame(['type' => 'ephemeral'], $house['cache_control']);
+        $this->assertStringContainsString('- Duubel', $house['text']);
+        $this->assertArrayNotHasKey('cache_control', $card);
+        $this->assertStringContainsString('Esimene kaart', $card['text']);
+        $this->assertStringNotContainsString('Esimene kaart', $house['text']);
+
+        // The cached prefix only pays off if it is the same, byte for byte, on
+        // the next card.
+        $this->assertSame($first['system'], $second['system']);
+        $this->assertSame($house, $second['messages'][0]['content'][0]);
+        $this->assertStringContainsString('Teine kaart', $second['messages'][0]['content'][1]['text']);
+    }
+
+    public function test_what_the_prompt_cache_did_is_logged(): void
+    {
+        Log::spy();
+
+        $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Kaardi tekst');
+
+        Log::shouldHaveReceived('info')->with('Claude usage', [
+            'service' => PlankaPerformanceExtractor::class,
+            'model' => config('services.anthropic.model'),
+            'input_tokens' => 120,
+            'cache_creation_input_tokens' => 300,
+            'cache_read_input_tokens' => 7000,
+            'output_tokens' => 40,
+        ])->once();
     }
 
     public function test_a_card_without_a_due_date_still_reaches_the_model(): void
     {
         $this->extractorAnswering('{"formats": []}')->extract('Tühi', 'Kaardi tekst');
 
-        $this->assertStringContainsString('puudub', $this->sentBodies[0]['messages'][0]['content']);
+        $this->assertStringContainsString('puudub', $this->sentUserPrompt());
     }
 
     public function test_it_lists_the_groups_a_format_can_be_handed_to(): void
@@ -413,7 +462,7 @@ class PlankaPerformanceExtractorTest extends TestCase
 
         $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Kaardi tekst');
 
-        $prompt = $this->sentBodies[0]['messages'][0]['content'];
+        $prompt = $this->sentUserPrompt();
 
         $this->assertStringContainsString("- {$team->id} — Tsikid Reas", $prompt);
 
@@ -434,8 +483,7 @@ class PlankaPerformanceExtractorTest extends TestCase
 
         $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Kaardi tekst');
 
-        $body = $this->sentBodies[0];
-        $prompt = $body['messages'][0]['content'];
+        $prompt = $this->sentUserPrompt();
 
         $this->assertStringContainsString('# Registreeritud formaadid', $prompt);
         $this->assertStringContainsString('- Kogukonna improõhtu', $prompt);
@@ -443,7 +491,7 @@ class PlankaPerformanceExtractorTest extends TestCase
         $this->assertStringNotContainsString('Sügisgala', $prompt);
 
         // And the system prompt says what to do with the list.
-        $this->assertStringContainsString('Olemasoleva formaadi sobitamine', $body['system']);
+        $this->assertStringContainsString('Olemasoleva formaadi sobitamine', $this->sentSystemPrompt());
     }
 
     public function test_it_says_so_when_the_house_has_no_formats_yet(): void
@@ -452,7 +500,7 @@ class PlankaPerformanceExtractorTest extends TestCase
 
         $this->assertStringContainsString(
             'Ühtki formaati pole veel registreeritud',
-            $this->sentBodies[0]['messages'][0]['content'],
+            $this->sentUserPrompt(),
         );
     }
 
@@ -504,13 +552,13 @@ class PlankaPerformanceExtractorTest extends TestCase
             ['ETENDUS', 'FESTIVAL'],
         );
 
-        $prompt = $this->sentBodies[0]['messages'][0]['content'];
+        $prompt = $this->sentUserPrompt();
 
         $this->assertStringContainsString('# Kaardi sildid', $prompt);
         $this->assertStringContainsString('- ETENDUS', $prompt);
         $this->assertStringContainsString('- FESTIVAL', $prompt);
         // And the system prompt says what they are, or they are just words.
-        $this->assertStringContainsString('Sildid', $this->sentBodies[0]['system']);
+        $this->assertStringContainsString('Sildid', $this->sentSystemPrompt());
     }
 
     /**
@@ -523,7 +571,7 @@ class PlankaPerformanceExtractorTest extends TestCase
     {
         $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Kaardi tekst');
 
-        $system = $this->sentBodies[0]['system'];
+        $system = $this->sentSystemPrompt();
 
         // An evening's total is not an act's, however neatly it divides.
         $this->assertStringContainsString('Ära kunagi jaga õhtu kogukestust etteastete arvuga', $system);
@@ -559,14 +607,14 @@ class PlankaPerformanceExtractorTest extends TestCase
 
         // Said outright rather than left as an empty heading: an empty section
         // reads as a card whose labels went missing on the way here.
-        $this->assertStringContainsString('Sildid puuduvad.', $this->sentBodies[0]['messages'][0]['content']);
+        $this->assertStringContainsString('Sildid puuduvad.', $this->sentUserPrompt());
     }
 
     public function test_it_says_so_when_there_are_no_groups_to_hand_a_format_to(): void
     {
         $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Kaardi tekst');
 
-        $this->assertStringContainsString('Tiime pole registreeritud', $this->sentBodies[0]['messages'][0]['content']);
+        $this->assertStringContainsString('Tiime pole registreeritud', $this->sentUserPrompt());
     }
 
     public function test_it_keeps_a_group_the_ai_matched(): void
