@@ -118,7 +118,9 @@ class PerformancePlotSummariser
                     'schema' => $this->responseSchema(),
                 ],
             ],
-            'system' => $systemPrompt,
+            // The same for every night, so a backfill reading one episode after
+            // another reads it back from the API's prompt cache.
+            'system' => [$this->cachedPromptBlock($systemPrompt)],
             'thinking' => ['type' => 'disabled'],
         ], keep: fn (string $answer): bool => self::isWhole($answer));
 

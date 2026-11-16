@@ -18,6 +18,10 @@ use RuntimeException;
  * A caller that wants the model's own reading of a question it has already
  * answered — someone working on the prompt, most of all — asks for it with
  * {@see withoutClaudeCache()}.
+ *
+ * Separately, a question that only starts the same as the last one can mark
+ * that start with {@see cachedPromptBlock()}, so the API bills the repeated
+ * part as a cache read; what each call read and wrote is logged.
  */
 trait CachesClaudeMessages
 {
@@ -66,6 +70,18 @@ trait CachesClaudeMessages
 
         $message = $client->messages->create(...$params);
 
+        // What the API's own prompt cache did for this call: a run whose reads
+        // stay at zero is a prefix that changes between calls, or one too
+        // short to be cached at all — neither of which raises an error.
+        Log::info('Claude usage', [
+            'service' => static::class,
+            'model' => $params['model'] ?? null,
+            'input_tokens' => $message->usage->inputTokens,
+            'cache_creation_input_tokens' => $message->usage->cacheCreationInputTokens ?? 0,
+            'cache_read_input_tokens' => $message->usage->cacheReadInputTokens ?? 0,
+            'output_tokens' => $message->usage->outputTokens,
+        ]);
+
         // @phpstan-ignore-next-line property.notFound
         $answer = trim((string) $message->content[0]->text);
 
@@ -74,6 +90,30 @@ trait CachesClaudeMessages
         }
 
         return $answer;
+    }
+
+    /**
+     * A piece of prompt text the API is asked to keep a copy of, so the next
+     * call that begins with the same text reads it back at a tenth of the
+     * price instead of paying for it in full.
+     *
+     * This is the API's own prompt cache, not the answer cache above: it pays
+     * off when the start of a prompt repeats — the system prompt, the house's
+     * lists — while the rest of it differs. Everything up to and including the
+     * block is the cached prefix, so a block only belongs here when nothing
+     * before it changes from one call to the next. The copy lasts five minutes
+     * from its last use, which is what a run of calls made one after another
+     * keeps alive.
+     *
+     * @return array{type: 'text', text: string, cacheControl: array{type: 'ephemeral'}}
+     */
+    protected function cachedPromptBlock(string $text): array
+    {
+        return [
+            'type' => 'text',
+            'text' => $text,
+            'cacheControl' => ['type' => 'ephemeral'],
+        ];
     }
 
     /**

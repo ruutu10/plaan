@@ -18,7 +18,6 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -228,6 +227,14 @@ class PerformancePlotSummaryTest extends TestCase
         $this->assertStringContainsString("Tere tulemast etendusele!\nMeie lugu algab kosmoselaeval.", $prompt);
         $this->assertStringNotContainsString('-->', $prompt);
         $this->assertStringContainsString('Mari Maasikas', $prompt);
+
+        // The system prompt is the same for every night, so it is marked for
+        // the API's prompt cache; the night itself is not.
+        $system = $this->sentBodies[0]['system'];
+        $this->assertCount(1, $system);
+        $this->assertSame(['type' => 'ephemeral'], $system[0]['cache_control']);
+        $this->assertNotSame('', $system[0]['text']);
+        $this->assertIsString($this->sentBodies[0]['messages'][0]['content']);
 
         // And the episode's description and tags now carry it.
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
