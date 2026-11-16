@@ -116,7 +116,6 @@ class PlankaPerformanceExtractor
                 ],
             ],
             'system' => [$this->cachedPromptBlock($this->buildSystemPrompt())],
-            'thinking' => ['type' => 'disabled'],
         ]);
 
         Log::debug('AI extraction for Planka card', [

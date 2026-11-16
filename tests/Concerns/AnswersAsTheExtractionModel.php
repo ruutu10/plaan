@@ -25,19 +25,43 @@ trait AnswersAsTheExtractionModel
     protected array $sentBodies = [];
 
     /**
+     * The `anthropic-beta` header of each request the extractor sent, in the
+     * same order as {@see $sentBodies}: the betas a request opts into travel
+     * there, not in the body.
+     *
+     * @var list<string>
+     */
+    protected array $sentBetaHeaders = [];
+
+    /**
      * An extractor talking to a transport that always answers with the given
      * text, as if it were the model's single content block.
      */
     protected function extractorAnswering(string $text): PlankaPerformanceExtractor
     {
-        $sentBodies = &$this->sentBodies;
+        return $this->extractorRespondingWith(['content' => [['type' => 'text', 'text' => $text]]]);
+    }
 
-        $transporter = new class($text, $sentBodies) implements ClientInterface
+    /**
+     * An extractor talking to a transport that always answers with the given
+     * message fields — its content blocks, its stop reason — laid over an
+     * ordinary finished answer.
+     *
+     * @param  array<string, mixed>  $message
+     */
+    protected function extractorRespondingWith(array $message): PlankaPerformanceExtractor
+    {
+        $sentBodies = &$this->sentBodies;
+        $sentBetaHeaders = &$this->sentBetaHeaders;
+
+        $transporter = new class($message, $sentBodies, $sentBetaHeaders) implements ClientInterface
         {
             /**
+             * @param  array<string, mixed>  $message
              * @param  list<array<string, mixed>>  $sentBodies
+             * @param  list<string>  $sentBetaHeaders
              */
-            public function __construct(private string $text, private array &$sentBodies)
+            public function __construct(private array $message, private array &$sentBodies, private array &$sentBetaHeaders)
             {
                 //
             }
@@ -47,13 +71,14 @@ trait AnswersAsTheExtractionModel
                 /** @var array<string, mixed> $body */
                 $body = json_decode((string) $request->getBody(), true) ?: [];
                 $this->sentBodies[] = $body;
+                $this->sentBetaHeaders[] = $request->getHeaderLine('anthropic-beta');
 
                 return new Response(200, ['Content-Type' => 'application/json'], (string) json_encode([
                     'id' => 'msg_test',
                     'type' => 'message',
                     'role' => 'assistant',
-                    'model' => 'claude-sonnet-5',
-                    'content' => [['type' => 'text', 'text' => $this->text]],
+                    'model' => 'claude-sonnet-5-5',
+                    'content' => [],
                     'stop_reason' => 'end_turn',
                     'stop_sequence' => null,
                     'usage' => [
@@ -62,6 +87,7 @@ trait AnswersAsTheExtractionModel
                         'cache_read_input_tokens' => 7000,
                         'output_tokens' => 40,
                     ],
+                    ...$this->message,
                 ]));
             }
         };

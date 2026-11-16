@@ -135,7 +135,8 @@ watch([open, () => props.source], async ([isOpen, source]) => {
                         <template v-else>„{{ log.cardName }}“</template>
                         <template v-if="log.readAt">
                             · loetud
-                            {{ formatLocalDate(log.readAt) }} {{ formatLocalTime(log.readAt) }}
+                            {{ formatLocalDate(log.readAt) }}
+                            {{ formatLocalTime(log.readAt) }}
                         </template>
                     </p>
 
@@ -155,6 +156,21 @@ watch([open, () => props.source], async ([isOpen, source]) => {
                     <p v-else class="text-[15px] text-r10-grey-500">
                         Selle lugemise kohta pole põhjendusi.
                     </p>
+
+                    <details
+                        v-if="log.thinking"
+                        data-test="reasoning-log-thinking"
+                        class="text-[13px] text-r10-grey-500"
+                    >
+                        <summary class="cursor-pointer select-none">
+                            Claude mõttekäik
+                        </summary>
+                        <p
+                            class="mt-2 max-h-64 overflow-auto rounded-md bg-r10-grey-100 p-3 text-[13px] whitespace-pre-line text-r10-grey-700"
+                        >
+                            {{ log.thinking }}
+                        </p>
+                    </details>
 
                     <details
                         v-if="log.rawResponse"

@@ -740,6 +740,32 @@ class ImportPlankaPerformancesTest extends TestCase
             $log->performances->pluck('id')->sort()->values()->all(),
         );
         $this->assertSame([$log->id], $format->reasoningLogs->pluck('id')->all());
+        // The model answered without stopping to think.
+        $this->assertNull($log->thinking);
+    }
+
+    public function test_the_models_thinking_is_kept_with_the_reading(): void
+    {
+        $this->fakeBoard([$this->card('card-1', 'Õppelava 9.10')]);
+
+        $this->app->instance(PlankaPerformanceExtractor::class, $this->extractorRespondingWith([
+            'content' => [
+                ['type' => 'thinking', 'thinking' => 'Kaardil on kaks etteastet, üks õhtu.', 'signature' => 'sig'],
+                ['type' => 'text', 'text' => (string) json_encode([
+                    'formats' => [[
+                        'format_name' => 'Õppelava',
+                        'date' => '2025-10-09',
+                        'team_id' => null,
+                        'performances' => [['title' => 'Märtu10', 'start_time' => '20:00', 'duration_minutes' => 20]],
+                    ]],
+                    'reasoningNotes' => ['Kuupäev real "Toimumise kuupäev: 9.10.2025".'],
+                ])],
+            ],
+        ]));
+
+        $this->artisan('planka:import')->assertSuccessful();
+
+        $this->assertSame('Kaardil on kaks etteastet, üks õhtu.', ClaudeReasoningLog::sole()->thinking);
     }
 
     public function test_a_format_built_card_by_card_keeps_every_cards_reasoning(): void
@@ -766,6 +792,7 @@ class ImportPlankaPerformancesTest extends TestCase
                 ['formats' => [], 'reasoningNotes' => ['Kuupäev real "Toimumise kuupäev: 9.10.2025".']],
                 ['formats' => [], 'reasoningNotes' => ['Kuupäev real "Toimumise kuupäev: 15.11.2025".']],
             );
+            $mock->shouldReceive('lastClaudeThinking')->andReturnNull();
         });
 
         $this->artisan('planka:import')->assertSuccessful();
@@ -836,6 +863,7 @@ class ImportPlankaPerformancesTest extends TestCase
             $mock->shouldReceive('rawResponse')->andReturnUsing(function () use (&$reading): array {
                 return ['formats' => [], 'reasoningNotes' => ["Lugemine {$reading}."]];
             });
+            $mock->shouldReceive('lastClaudeThinking')->andReturnNull();
         });
 
         $this->artisan('planka:import')->assertSuccessful();
@@ -864,6 +892,7 @@ class ImportPlankaPerformancesTest extends TestCase
                 ['formats' => [], 'reasoningNotes' => ['Lugemine.']],
                 ['reasoningNotes' => ['Lugemine.'], 'formats' => []],
             );
+            $mock->shouldReceive('lastClaudeThinking')->andReturnNull();
         });
 
         $this->artisan('planka:import')->assertSuccessful();
@@ -890,6 +919,7 @@ class ImportPlankaPerformancesTest extends TestCase
             $mock->shouldReceive('rawResponse')->andReturnUsing(function () use (&$reading): array {
                 return ['reasoningNotes' => ["Lugemine {$reading}."]];
             });
+            $mock->shouldReceive('lastClaudeThinking')->andReturnNull();
         });
 
         $this->artisan('planka:import')->assertSuccessful();
@@ -2313,6 +2343,7 @@ class ImportPlankaPerformancesTest extends TestCase
                 $this->answerFor('Õppelava'),
                 $this->answerFor('Õppelava', '2025-11-15'),
             );
+            $mock->shouldReceive('lastClaudeThinking')->andReturnNull();
         });
 
         /** @var list<array<string, mixed>> $answers */
@@ -2333,6 +2364,7 @@ class ImportPlankaPerformancesTest extends TestCase
             $mock->shouldReceive('extract')->once()->andReturn([]);
             $mock->shouldReceive('reasoningNotes')->andReturn([]);
             $mock->shouldReceive('rawResponse')->andReturn($this->answerFor('Õppelava'));
+            $mock->shouldReceive('lastClaudeThinking')->andReturnNull();
         });
 
         $written = $this->jsonRun();

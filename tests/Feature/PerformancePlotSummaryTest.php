@@ -235,6 +235,8 @@ class PerformancePlotSummaryTest extends TestCase
         $this->assertSame(['type' => 'ephemeral'], $system[0]['cache_control']);
         $this->assertNotSame('', $system[0]['text']);
         $this->assertIsString($this->sentBodies[0]['messages'][0]['content']);
+        // Room for a few paragraphs, as the config sizes it.
+        $this->assertSame(config('services.anthropic.plot_summary_max_tokens'), $this->sentBodies[0]['max_tokens']);
 
         // And the episode's description and tags now carry it.
         Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
@@ -547,7 +549,7 @@ class PerformancePlotSummaryTest extends TestCase
                     'id' => 'msg_test',
                     'type' => 'message',
                     'role' => 'assistant',
-                    'model' => 'claude-sonnet-5',
+                    'model' => 'claude-sonnet-5-5',
                     'content' => [['type' => 'text', 'text' => $this->text]],
                     'stop_reason' => 'end_turn',
                     'stop_sequence' => null,

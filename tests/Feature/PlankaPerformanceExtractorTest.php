@@ -441,12 +441,121 @@ class PlankaPerformanceExtractorTest extends TestCase
 
         Log::shouldHaveReceived('info')->with('Claude usage', [
             'service' => PlankaPerformanceExtractor::class,
-            'model' => config('services.anthropic.model'),
+            'model' => 'claude-sonnet-5-5',
+            'stop_reason' => 'end_turn',
             'input_tokens' => 120,
             'cache_creation_input_tokens' => 300,
             'cache_read_input_tokens' => 7000,
             'output_tokens' => 40,
         ])->once();
+    }
+
+    /**
+     * Sonnet 5.5 refuses the old "thinking disabled", so the model is left to
+     * think as it sees fit, kept short with a low effort and asked to show a
+     * summary of it; and a card it declines to read is handed to its fallback
+     * rather than coming back empty.
+     */
+    public function test_it_asks_with_low_effort_and_a_fallback_for_a_declined_card(): void
+    {
+        $this->extractorAnswering('{"formats": []}')->extract('13.09 õhtu', 'Kaardi tekst');
+
+        $body = $this->sentBodies[0];
+
+        $this->assertSame('claude-sonnet-5-5', $body['model']);
+        $this->assertSame(['type' => 'adaptive', 'display' => 'summarized'], $body['thinking']);
+        $this->assertSame('low', $body['output_config']['effort']);
+        // Beside the schema, not instead of it.
+        $this->assertSame('json_schema', $body['output_config']['format']['type']);
+        $this->assertSame('default', $body['fallbacks']);
+        $this->assertStringContainsString('server-side-fallback-2026-07-01', $this->sentBetaHeaders[0]);
+    }
+
+    /**
+     * With thinking on, the answer can open with a thinking block — its text
+     * kept back by the API — before the text the schema shaped. The reading
+     * is the text, wherever it sits.
+     */
+    public function test_an_answer_that_opens_with_thinking_is_read_from_its_text(): void
+    {
+        $nights = $this->extractorRespondingWith([
+            'content' => [
+                ['type' => 'thinking', 'thinking' => '', 'signature' => 'sig'],
+                ['type' => 'text', 'text' => (string) json_encode([
+                    'formats' => [['format_name' => 'Duubel', 'date' => '2025-09-13', 'performances' => []]],
+                ])],
+            ],
+        ])->extract('13.09 õhtu', 'Kaardi tekst');
+
+        $this->assertCount(1, $nights);
+        $this->assertSame('Duubel', $nights[0]->formatName);
+    }
+
+    /**
+     * The summary of the model's thinking is kept beside its answer — in the
+     * answer cache too, so a reading handed out again still says how it was
+     * reached.
+     */
+    public function test_the_thinking_behind_a_reading_is_kept_with_it(): void
+    {
+        $extractor = $this->extractorRespondingWith([
+            'content' => [
+                ['type' => 'thinking', 'thinking' => 'Kuupäev on pealkirjas.', 'signature' => 'sig'],
+                ['type' => 'thinking', 'thinking' => '  ', 'signature' => 'sig'],
+                ['type' => 'thinking', 'thinking' => 'Aasta tuleb tähtajast.', 'signature' => 'sig'],
+                ['type' => 'text', 'text' => '{"formats": []}'],
+            ],
+        ]);
+
+        $extractor->extract('13.09 õhtu', 'Kaardi tekst');
+
+        $this->assertSame("Kuupäev on pealkirjas.\n\nAasta tuleb tähtajast.", $extractor->lastClaudeThinking());
+
+        $extractor->extract('13.09 õhtu', 'Kaardi tekst');
+
+        $this->assertCount(1, $this->sentBodies, 'The second reading should have come from the cache.');
+        $this->assertSame("Kuupäev on pealkirjas.\n\nAasta tuleb tähtajast.", $extractor->lastClaudeThinking());
+    }
+
+    public function test_a_reading_given_without_thinking_has_none(): void
+    {
+        $extractor = $this->extractorRespondingWith([
+            'content' => [
+                // What the API sends when the thinking is kept back.
+                ['type' => 'thinking', 'thinking' => '', 'signature' => 'sig'],
+                ['type' => 'text', 'text' => '{"formats": []}'],
+            ],
+        ]);
+
+        $extractor->extract('13.09 õhtu', 'Kaardi tekst');
+
+        $this->assertNull($extractor->lastClaudeThinking());
+    }
+
+    /**
+     * A decline arrives as a finished answer with nothing in it. It is logged
+     * as what it is, and not remembered, so the next run asks again.
+     */
+    public function test_a_declined_card_is_logged_and_not_cached(): void
+    {
+        Log::spy();
+
+        $extractor = $this->extractorRespondingWith([
+            'content' => [],
+            'stop_reason' => 'refusal',
+            'stop_details' => ['type' => 'refusal', 'category' => 'general_harms', 'explanation' => 'Ei saa.'],
+        ]);
+
+        $this->assertSame([], $extractor->extract('13.09 õhtu', 'Kaardi tekst'));
+        $this->assertSame([], $extractor->extract('13.09 õhtu', 'Kaardi tekst'));
+
+        $this->assertCount(2, $this->sentBodies, 'A declined card is worth asking about again.');
+        Log::shouldHaveReceived('warning')->with('Claude declined to answer', [
+            'service' => PlankaPerformanceExtractor::class,
+            'model' => 'claude-sonnet-5-5',
+            'category' => 'general_harms',
+            'explanation' => 'Ei saa.',
+        ])->twice();
     }
 
     public function test_a_card_without_a_due_date_still_reaches_the_model(): void

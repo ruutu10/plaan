@@ -70,7 +70,6 @@ class TechnicalPlanCriticalFindings
                 ],
             ],
             'system' => $this->buildSystemPrompt(),
-            'thinking' => ['type' => 'disabled'],
         ]);
 
         Log::debug('AI sifting of a plan review', ['aiOutput' => $aiResponse]);

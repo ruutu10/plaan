@@ -27,6 +27,7 @@ class ClaudeReasoningLogTest extends TestCase
             'card_name' => 'Õppelava 9.10',
             'notes' => ['Kuupäev real "Toimumise kuupäev: 9.10.2025".'],
             'raw_response' => ['formats' => [], 'reasoningNotes' => ['Kuupäev real "Toimumise kuupäev: 9.10.2025".']],
+            'thinking' => 'Aasta tuleb tähtajast.',
         ]);
         $log->link($format);
 
@@ -38,7 +39,8 @@ class ClaudeReasoningLogTest extends TestCase
             ->assertJsonPath('data.0.cardId', 'card-1')
             ->assertJsonPath('data.0.cardName', 'Õppelava 9.10')
             ->assertJsonPath('data.0.notes', ['Kuupäev real "Toimumise kuupäev: 9.10.2025".'])
-            ->assertJsonPath('data.0.rawResponse', ['formats' => [], 'reasoningNotes' => ['Kuupäev real "Toimumise kuupäev: 9.10.2025".']]);
+            ->assertJsonPath('data.0.rawResponse', ['formats' => [], 'reasoningNotes' => ['Kuupäev real "Toimumise kuupäev: 9.10.2025".']])
+            ->assertJsonPath('data.0.thinking', 'Aasta tuleb tähtajast.');
     }
 
     public function test_a_format_built_card_by_card_shows_every_reading_newest_first(): void

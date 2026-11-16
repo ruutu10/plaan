@@ -59,7 +59,6 @@ class TechnicalPlanReviewer
             // again after an edit usually does so within minutes, so it is
             // read back from the API's prompt cache rather than paid in full.
             'system' => [$this->cachedPromptBlock($this->buildSystemPrompt())],
-            'thinking' => ['type' => 'disabled'],
         ]);
 
         Log::debug('AI review for plan', [
