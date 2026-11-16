@@ -1,4 +1,25 @@
 <laravel-boost-guidelines>
+=== .ai/architecture rules ===
+
+## Preferred architecture
+
+- Use HTTP Response classes to compose API response data structures instead of building this inline into the controller
+- Use Event/Listener pattern to trigger on significant events, instead of invoking an Action class 
+- If a model or a resource needs a controller, do not create two separate controllers (ie ShowController and ShowAdminController) for public vs admin use - they are the same resource, so only one controller should be created, with permission gates to determine what information is returned
+
+=== .ai/documentation rules ===
+
+## Architecture decision records
+
+- For larger feature builds, ask the user whether to write an ADR document into docs/adr/
+
+=== .ai/system-design rules ===
+
+# System design
+
+If you need a high level overview of the intended usage of the system - how users expect the system to behave, user stories and workflows - read docs/MANUAL.md.
+This is not a technical document, but a user-facing overview of system behavior.
+
 === foundation rules ===
 
 # Laravel Boost Guidelines
@@ -56,17 +77,10 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 ## Documentation Files
 
 - You must only create documentation files if explicitly requested by the user.
-- For larger feature builds, ask the user whether to write an ADR document into docs/adr/
 
 ## Replies
 
 - Be concise in your explanations - focus on what's important rather than explaining obvious details.
-
-## Preferred architecture
-
-- Use HTTP Response classes to compose API response data structures instead of building this inline into the controller
-- Use Event/Listener pattern to trigger on significant events, instead of invoking an Action class 
-- If a model or a resource needs a controller, do not create two separate controllers (ie ShowController and ShowAdminController) for public vs admin use - they are the same resource, so only one controller should be created, with permission gates to determine what information is returned
 
 === boost rules ===
 
@@ -234,10 +248,5 @@ Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `
 
 Vue components must have a single root element.
 - IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
-
-# System design
-
-If you need a high level overview of the intended usage of the system - how users expect the system to behave, user stories and workflows - read docs/MANUAL.md.
-This is not a technical document, but a user-facing overview of system behavior.
 
 </laravel-boost-guidelines>

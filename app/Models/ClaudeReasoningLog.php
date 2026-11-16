@@ -28,6 +28,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $card_name
  * @property list<string> $notes
  * @property array<string, mixed>|null $raw_response
+ * @property string|null $thinking The model's thinking before it answered, as the API summarises it.
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Format> $formats
@@ -38,6 +39,7 @@ use Illuminate\Support\Carbon;
     'card_name',
     'notes',
     'raw_response',
+    'thinking',
 ])]
 class ClaudeReasoningLog extends Model
 {

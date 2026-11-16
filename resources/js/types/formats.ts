@@ -112,6 +112,8 @@ export interface ClaudeReasoningLog {
     notes: string[];
     /** The model's answer for the card, whole, or null for a reading kept before this was recorded. */
     rawResponse: Record<string, unknown> | null;
+    /** The model's thinking before it answered, as the API summarises it, or null when it answered straight away. */
+    thinking: string | null;
     /** When the card was read; ISO 8601. */
     readAt: string | null;
 }

@@ -25,12 +25,6 @@ class PerformancePlotSummariser
     use CachesClaudeMessages;
 
     /**
-     * A summary is a few paragraphs; this is room for them with margin, far
-     * under the house default sized for reading whole Planka cards.
-     */
-    private const MAX_TOKENS = 5000;
-
-    /**
      * Enough tags to say what a night is about; more and they stop helping
      * anybody find it in the library.
      */
@@ -104,7 +98,7 @@ class PerformancePlotSummariser
         $startedAt = microtime(true);
 
         $answer = $this->askClaude($this->client(), [
-            'maxTokens' => self::MAX_TOKENS,
+            'maxTokens' => config('services.anthropic.plot_summary_max_tokens'),
             'messages' => [
                 [
                     'role' => 'user',
@@ -121,7 +115,6 @@ class PerformancePlotSummariser
             // The same for every night, so a backfill reading one episode after
             // another reads it back from the API's prompt cache.
             'system' => [$this->cachedPromptBlock($systemPrompt)],
-            'thinking' => ['type' => 'disabled'],
         ], keep: fn (string $answer): bool => self::isWhole($answer));
 
         $decoded = json_decode($answer, true);

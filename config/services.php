@@ -39,8 +39,19 @@ return [
 
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
-        'model' => Model::CLAUDE_SONNET_5,
+        'model' => Model::CLAUDE_SONNET_5_5,
         'max_tokens' => 20000,
+
+        // A plot summary is a few paragraphs; this is room for them, and for
+        // the model's thinking, with margin — far under the default above,
+        // which is sized for reading whole Planka cards.
+        'plot_summary_max_tokens' => 5000,
+
+        // How hard the model thinks before it answers. Every call is a reading
+        // or a review rather than an open-ended task, and at "low" the model
+        // skips thinking on most of them while still free to think through a
+        // card that needs it.
+        'effort' => 'low',
 
         // How long an answer is reused for a request that is identical down to
         // the last character of its prompt, in seconds.

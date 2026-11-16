@@ -88,7 +88,7 @@ class TechnicalPlanReviewerTest extends TestCase
                     'id' => 'msg_test',
                     'type' => 'message',
                     'role' => 'assistant',
-                    'model' => 'claude-sonnet-5',
+                    'model' => 'claude-sonnet-5-5',
                     'content' => [['type' => 'text', 'text' => $this->text]],
                     'stop_reason' => 'end_turn',
                     'stop_sequence' => null,

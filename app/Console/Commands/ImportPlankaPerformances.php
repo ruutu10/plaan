@@ -423,6 +423,8 @@ class ImportPlankaPerformances extends Command
             'card_name' => $this->cardName,
             'notes' => $notes,
             'raw_response' => $this->extractor->rawResponse(),
+            // Only there when the model stopped to think before it answered.
+            'thinking' => $this->extractor->lastClaudeThinking(),
         ]);
     }
 
@@ -664,7 +666,8 @@ class ImportPlankaPerformances extends Command
             ->first();
 
         // Compared loosely: a JSON column need not hand the keys back in the
-        // order they were written.
+        // order they were written. The thinking is left out: the same reading
+        // reached by a different train of thought is still the same reading.
         if ($latest !== null
             && $latest->notes === $this->extractor->reasoningNotes()
             && $latest->raw_response == $this->extractor->rawResponse()) {
