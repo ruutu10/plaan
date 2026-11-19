@@ -84,7 +84,7 @@ async function send(): Promise<void> {
     <R10FormDialog
         v-model:open="open"
         title="Saada meeldetuletus"
-        description="Vali, kellele saata meeldetuletus puuduva tehnikaplaani kohta. Ette on märgitud selle etenduse esinejad. Igaüks saab oma kirja, milles olev link logib ta ise sisse."
+        description="Vali, kellele saata meeldetuletus puuduva tehnikaplaani kohta. Valitud inimesed saavad e-maili, mis tuletab meelde võimalust etenduse kohta tehnilised soovid Plaan süsteemi kirja panna. Ette on märgitud selle etenduse esinejad. Igaüks saab oma kirja, milles olev link logib ta ise sisse."
         submit-label="Saada"
         :processing="form.processing"
         test-id-prefix="send-reminder"
