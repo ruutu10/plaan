@@ -677,7 +677,7 @@ class TechnicalPlanController extends Controller
     {
         $performance = Performance::query()
             ->with(['team', 'format.team'])
-            ->findOrFail($data['meta']['performanceId']);
+            ->findOrFail((int) $data['meta']['performanceId']);
 
         $plan = new TechnicalPlan(PlanContent::fromValidated($data, $performance) + [
             'status' => TechnicalPlanStatus::Draft,
