@@ -65,7 +65,8 @@ trait CachesClaudeMessages
     /**
      * The model's answer to exactly these parameters, from the cache when it has
      * been asked before, from the API otherwise. An empty answer is not kept:
-     * nothing is gained by remembering silence for a week.
+     * nothing is gained by remembering silence for a week. A declined question
+     * answers empty, whatever the model wrote before it stopped.
      *
      * An answer the caller's `$keep` check turns down is handed back but not
      * kept either: a malformed reading cached for weeks would come straight
@@ -110,15 +111,21 @@ trait CachesClaudeMessages
         ]);
 
         if ($message->stopReason === 'refusal') {
-            // Comes back as an ordinary answer with nothing in it, so it is
-            // said here, once, rather than left to read as a model that had
-            // nothing to say. Not cached: the answer is empty.
+            // A decline can arrive after the model has already written part
+            // of its answer, and that part is cut off wherever the decline
+            // landed — half a JSON object, as often as not. None of it is
+            // handed on: the caller gets the empty answer it already knows to
+            // read as "no answer", and nothing is cached, so the next ask is
+            // a fresh one.
             Log::warning('Claude declined to answer', [
                 'service' => static::class,
                 'model' => $message->model,
                 'category' => $message->stopDetails?->category,
                 'explanation' => $message->stopDetails?->explanation,
+                'discarded_chars' => mb_strlen(self::answerText($message->content)),
             ]);
+
+            return '';
         }
 
         $answer = self::answerText($message->content);

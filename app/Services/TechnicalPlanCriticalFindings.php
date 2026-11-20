@@ -8,6 +8,7 @@ use App\Http\Resources\TechnicalPlan as TechnicalPlanReviewResource;
 use App\Listeners\ReviewSubmittedPlanWithAi;
 use App\Models\TechnicalPlan;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 /**
  * Sifts an AI review of a technical plan down to the things that would stop the
@@ -45,6 +46,8 @@ class TechnicalPlanCriticalFindings
      * @param  TechnicalPlan  $plan  The plan the review was written about.
      * @param  string  $reviewMarkdown  The first pass's feedback in its own words.
      * @return list<string>
+     *
+     * @throws RuntimeException When the model's answer cannot be read.
      */
     public function findIn(TechnicalPlan $plan, string $reviewMarkdown): array
     {
@@ -70,7 +73,7 @@ class TechnicalPlanCriticalFindings
                 ],
             ],
             'system' => $this->buildSystemPrompt(),
-        ]);
+        ], fn (string $answer): bool => self::findingsIn($answer) !== null);
 
         Log::debug('AI sifting of a plan review', ['aiOutput' => $aiResponse]);
 
@@ -92,21 +95,25 @@ class TechnicalPlanCriticalFindings
      * The findings the model returned, less anything that is not a line of text
      * somebody could act on.
      *
+     * An answer with no findings list in it, whether it was declined, cut off,
+     * or is just not JSON, is thrown rather than read as an empty list. An
+     * empty list means "nothing to report"; an unreadable answer is no answer,
+     * and the plan has still not been sifted.
+     *
      * @return list<string>
+     *
+     * @throws RuntimeException When the answer holds no readable findings list.
      */
     protected function parse(string $aiResponse): array
     {
-        $decoded = json_decode($aiResponse, true);
-        $findings = is_array($decoded) ? ($decoded['criticalFindings'] ?? null) : null;
+        $findings = self::findingsIn($aiResponse);
 
-        if (! is_array($findings)) {
-            // Told apart from "nothing to report", which is the same empty
-            // list: one is the answer, the other is no answer at all.
+        if ($findings === null) {
             Log::warning('The second pass over an AI review came back unreadable', [
                 'aiOutput' => $aiResponse,
             ]);
 
-            return [];
+            throw new RuntimeException('The second pass over an AI review came back unreadable.');
         }
 
         return array_values(array_filter(
@@ -116,6 +123,21 @@ class TechnicalPlanCriticalFindings
             ),
             fn (string $finding): bool => $finding !== '',
         ));
+    }
+
+    /**
+     * The raw findings list in an answer, or null when the answer has none to
+     * read. Also decides whether an answer is worth caching: one that is not
+     * readable here would come straight back from the cache on every retry.
+     *
+     * @return array<mixed>|null
+     */
+    protected static function findingsIn(string $aiResponse): ?array
+    {
+        $decoded = json_decode($aiResponse, true);
+        $findings = is_array($decoded) ? ($decoded['criticalFindings'] ?? null) : null;
+
+        return is_array($findings) ? $findings : null;
     }
 
     /**

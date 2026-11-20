@@ -13,6 +13,7 @@ use App\Services\TechnicalPlanCriticalFindings;
 use App\Services\TechnicalPlanReviewer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use RuntimeException;
 use Tests\TestCase;
@@ -146,17 +147,45 @@ class TechnicalPlanAiReviewTest extends TestCase
         $this->assertDatabaseCount('technical_plan_comments', 0);
     }
 
-    public function test_sifting_that_fails_leaves_the_submission_alone(): void
+    /**
+     * Thrown on for the queue to retry, never taken as "nothing found": what
+     * the sifting was about to say may be exactly the show-stopper.
+     */
+    public function test_sifting_that_fails_is_thrown_on_for_the_queue_to_retry(): void
     {
         $this->reviewerReturning('ülevaatus');
 
         $this->mock(TechnicalPlanCriticalFindings::class)
             ->shouldReceive('findIn')
-            ->andThrow(new RuntimeException('The API is down'));
+            ->andThrow(new RuntimeException('The second pass over an AI review came back unreadable.'));
 
-        TechnicalPlanSubmitted::dispatch($this->plan, null);
+        try {
+            TechnicalPlanSubmitted::dispatch($this->plan, null);
+            $this->fail('A failed sifting should have been thrown on to the queue.');
+        } catch (RuntimeException $e) {
+            $this->assertSame('The second pass over an AI review came back unreadable.', $e->getMessage());
+        }
 
         $this->assertDatabaseCount('technical_plan_comments', 0);
+        $this->assertSame(3, (new ReviewSubmittedPlanWithAi)->tries);
+    }
+
+    public function test_a_sifting_whose_retries_run_out_is_logged_as_an_error(): void
+    {
+        Log::spy();
+
+        (new ReviewSubmittedPlanWithAi)->failed(
+            new TechnicalPlanSubmitted($this->plan, null),
+            new RuntimeException('The second pass over an AI review came back unreadable.'),
+        );
+
+        Log::shouldHaveReceived('error')->with(
+            'Gave up sifting a submitted plan\'s review; the performer was told nothing',
+            [
+                'plan_id' => $this->plan->id,
+                'exception' => 'The second pass over an AI review came back unreadable.',
+            ],
+        )->once();
     }
 
     public function test_findings_longer_than_a_comment_may_run_are_cut_to_fit(): void

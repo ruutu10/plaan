@@ -37,7 +37,8 @@ use Throwable;
  *
  * Queued, and forgiving: two paid API calls have no business inside the request
  * that saves a plan, and a plan is submitted whether or not a review of it was
- * possible.
+ * possible. A sifting that fails is retried, and an error is logged once the
+ * retries run out; it is never taken as "nothing found".
  */
 class ReviewSubmittedPlanWithAi implements ShouldQueue
 {
@@ -46,6 +47,15 @@ class ReviewSubmittedPlanWithAi implements ShouldQueue
      * to say about it — that is not a failure worth keeping.
      */
     public bool $deleteWhenMissingModels = true;
+
+    /**
+     * A sifting that could not be read is asked again: a decline or a cut-off
+     * answer is not cached, so the next attempt is a fresh reading.
+     */
+    public int $tries = 3;
+
+    /** @var array<int, int> */
+    public array $backoff = [60, 300];
 
     public function handle(TechnicalPlanSubmitted $event): void
     {
@@ -95,11 +105,26 @@ class ReviewSubmittedPlanWithAi implements ShouldQueue
     }
 
     /**
-     * Review the plan and sift that review, or return nothing at all.
+     * Every attempt at sifting is spent and the plan was never read for
+     * show-stoppers. Said out loud, as an error, because the performer has
+     * heard nothing and that silence otherwise reads as a clean plan.
+     */
+    public function failed(TechnicalPlanSubmitted $event, Throwable $e): void
+    {
+        Log::error('Gave up sifting a submitted plan\'s review; the performer was told nothing', [
+            'plan_id' => $event->plan->id,
+            'exception' => $e->getMessage(),
+        ]);
+    }
+
+    /**
+     * Review the plan and sift that review.
      *
-     * Either call is a paid round trip to somebody else's API, and neither is
-     * worth failing a submission over: a plan nobody could review is still a
-     * plan the crew hold, and they read it themselves as they always have.
+     * Neither call is worth failing a submission over: this runs on the queue,
+     * after the plan is saved. A review that cannot be had at all leaves the
+     * crew to read the plan themselves, as they always have. A sifting that
+     * fails is thrown on to be tried again, since its silence would be read
+     * as "nothing wrong".
      *
      * @return list<string>
      */
@@ -126,18 +151,12 @@ class ReviewSubmittedPlanWithAi implements ShouldQueue
             return [];
         }
 
-        try {
-            $findings = app(TechnicalPlanCriticalFindings::class)->findIn($plan, $review);
-        } catch (Throwable $e) {
-            report($e);
-
-            Log::error('Sifting a submitted plan\'s review failed', [
-                'plan_id' => $plan->id,
-                'exception' => $e->getMessage(),
-            ]);
-
-            return [];
-        }
+        // Not caught. A sifting that fails, whether the API is down or the
+        // answer came back declined or cut off, has not said "nothing here"
+        // and must not be taken to: what it was about to say may be exactly
+        // the show-stopper. It is thrown on for the queue to ask again; the
+        // review it sifts is cached, so a retry pays only for the sifting.
+        $findings = app(TechnicalPlanCriticalFindings::class)->findIn($plan, $review);
 
         if ($findings === []) {
             // The expected outcome, and deliberately a silent one.

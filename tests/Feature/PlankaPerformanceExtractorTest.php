@@ -555,6 +555,7 @@ class PlankaPerformanceExtractorTest extends TestCase
             'model' => 'claude-sonnet-5-5',
             'category' => 'general_harms',
             'explanation' => 'Ei saa.',
+            'discarded_chars' => 0,
         ])->twice();
     }
 
