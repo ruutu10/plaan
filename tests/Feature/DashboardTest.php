@@ -292,7 +292,7 @@ class DashboardTest extends TestCase
         ]);
         $newer = TechnicalPlan::factory()->submitted()->create([
             'user_id' => $author->id,
-            'performance_id' => Performance::factory()->create(['format_id' => $format->id]),
+            'performance_id' => Performance::factory()->create(['format_id' => $format->id, 'title' => 'Märtu10']),
             'submitted_at' => now()->subDay(),
         ]);
 
@@ -306,6 +306,8 @@ class DashboardTest extends TestCase
                 ->has('latestPlans', 2)
                 ->where('latestPlans.0.token', $newer->token)
                 ->where('latestPlans.0.formatName', 'Festival 2026')
+                ->where('latestPlans.0.performanceTitle', 'Märtu10')
+                ->where('latestPlans.0.performanceUrl', route('formats.performances.show', [$format->id, $newer->performance_id]))
                 ->where('latestPlans.0.teamName', 'Märold')
                 ->where('latestPlans.0.submittedBy', 'Mart Naide')
                 ->where('latestPlans.0.url', route('technical-plan.public', $newer))

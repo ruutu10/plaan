@@ -293,6 +293,10 @@ export interface AdminPlanRow {
     performanceId: number | null;
     /** What is played that night, e.g. "Festival 2026 — Märtu10". */
     performanceName: string | null;
+    /** The act's own name for the night, apart from the format's. */
+    performanceTitle: string | null;
+    /** The performance's own screen, or null when the reader may not open it. */
+    performanceUrl: string | null;
     /** Null for a plan with no night of its own. */
     performanceLocation: string | null;
     /** ISO 8601 UTC instant the performance starts at, if the plan names one. */

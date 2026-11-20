@@ -46,6 +46,8 @@ class AdminTechnicalPlan extends JsonResource
      *     teamName: string|null,
      *     performanceId: int|null,
      *     performanceName: string|null,
+     *     performanceTitle: string|null,
+     *     performanceUrl: string|null,
      *     performanceLocation: string|null,
      *     performanceStartsAt: string|null,
      *     technicians: array<int, string>,
@@ -75,6 +77,10 @@ class AdminTechnicalPlan extends JsonResource
             // one to file it under.
             'performanceId' => $plan->performance?->getKey(),
             'performanceName' => $plan->performance?->displayName(),
+            // The act's own name for the night, apart from the format's, and
+            // the night's screen it opens when this reader may reach it.
+            'performanceTitle' => $plan->performance?->title,
+            'performanceUrl' => ($this->links ?? RecordLinks::none())->performanceUrl($plan->performance),
             'performanceLocation' => $plan->performance?->location,
             'performanceStartsAt' => $plan->performance?->date->toIso8601String(),
             // Who is at the desk that night, when the import has read it off

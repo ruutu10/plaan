@@ -484,6 +484,16 @@ defineOptions({
                             >
                                 {{ plan.formatName ?? 'Nimeta plaan' }}
                             </R10RecordLink>
+                            <!-- The act's own name is the performance's, so it
+                            opens the performance rather than the format. -->
+                            <R10RecordLink
+                                v-if="plan.performanceTitle"
+                                :href="plan.performanceUrl"
+                                class="block text-sm text-r10-grey-500"
+                                data-test="latest-plan-performance-title-link"
+                            >
+                                {{ plan.performanceTitle }}
+                            </R10RecordLink>
                             <span class="text-sm text-r10-grey-500">
                                 {{ plan.teamName ?? '—' }}
                                 <template v-if="plan.submittedBy">
