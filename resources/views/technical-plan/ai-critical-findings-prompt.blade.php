@@ -50,6 +50,5 @@ Näide sobivast leiust: `Stseenil „Finaal“ on kirjeldatud lõpumuusika, aga 
 Vastad JSON-objektiga, mille kuju on ette antud.
 
 - `criticalFindings` — läbipääsenud leiud, üks string leiu kohta, tähtsuse järjekorras.
-- `reasoningNotes` — lühikesed märkmed selle kohta, miks sa mingi leiu sisse võtsid või välja jätsid, sh kui plaan ülevaatuse väitele vastu rääkis. Neid ei näe keegi peale arendaja.
 
 **Tühi `criticalFindings` on kõige tavalisem ja täiesti korrektne vastus.** Enamik esitatud plaane on mängitavad. Kui ülevaatuses ei ole midagi, mis etenduse ära jätaks, tagasta tühi massiiv — ära otsi kramplikult midagi, mida sinna kirja panna.

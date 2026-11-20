@@ -7,6 +7,7 @@ use App\Models\TechnicalPlan;
 use App\Services\TechnicalPlanCriticalFindings;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Log;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
@@ -37,7 +38,7 @@ class TechnicalPlanCriticalFindingsTest extends TestCase
             ],
         ]);
 
-        $this->siftingAnswering('{"criticalFindings": [], "reasoningNotes": []}')
+        $this->siftingAnswering('{"criticalFindings": []}')
             ->findIn($plan, 'Stseenil „Suur finaal" pole helifaili.');
 
         $userMessage = $this->sentBodies[0]['messages'][0]['content'];
@@ -54,11 +55,43 @@ class TechnicalPlanCriticalFindingsTest extends TestCase
 
         $findings = $this->siftingAnswering((string) json_encode([
             'criticalFindings' => ['Lisa „Finaali" helifail.', '  ', 3],
-            'reasoningNotes' => [],
         ]))
             ->findIn($plan, 'ülevaatus');
 
         $this->assertSame(['Lisa „Finaali" helifail.', '3'], $findings);
+    }
+
+    /**
+     * Asking the model to write out why it kept or dropped each finding got an
+     * answer declined as reasoning extraction on 2026-11-20. The reasons are
+     * not asked for in the answer; the API's summary of the model's thinking
+     * is logged in their place.
+     */
+    public function test_the_model_is_not_asked_to_write_out_its_reasons_and_its_thinking_is_logged_instead(): void
+    {
+        Log::spy();
+
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        $this->siftingAnswering('', message: [
+            'content' => [
+                ['type' => 'thinking', 'thinking' => 'Suits on plaanis, aga keelatud.', 'signature' => 'sig'],
+                ['type' => 'text', 'text' => '{"criticalFindings": ["Eemalda suits."]}'],
+            ],
+        ])->findIn($plan, 'ülevaatus');
+
+        $schema = $this->sentBodies[0]['output_config']['format']['schema'];
+
+        $this->assertSame(['criticalFindings'], array_keys($schema['properties']));
+        $this->assertSame(['criticalFindings'], $schema['required']);
+        $this->assertStringNotContainsString('reasoningNotes', json_encode($this->sentBodies[0]['system']) ?: '');
+
+        Log::shouldHaveReceived('info')->withArgs(
+            fn (string $message, array $context = []): bool => $message === 'Sifted an AI review for show-stoppers'
+                && $context['findings'] === 1
+                && $context['thinking'] === 'Suits on plaanis, aga keelatud.'
+                && ! array_key_exists('reasoningNotes', $context),
+        )->once();
     }
 
     public function test_an_empty_review_is_not_sent_at_all(): void
@@ -98,7 +131,7 @@ class TechnicalPlanCriticalFindingsTest extends TestCase
     public function test_a_readable_answer_is_cached(): void
     {
         $plan = TechnicalPlan::factory()->submitted()->create();
-        $sifting = $this->siftingAnswering('{"criticalFindings": [], "reasoningNotes": []}', cached: true);
+        $sifting = $this->siftingAnswering('{"criticalFindings": []}', cached: true);
 
         $sifting->findIn($plan, 'ülevaatus');
         $sifting->findIn($plan, 'ülevaatus');
@@ -115,6 +148,7 @@ class TechnicalPlanCriticalFindingsTest extends TestCase
     public function test_a_declined_answer_fails_and_is_asked_again_even_with_findings_written_before_the_decline(): void
     {
         Log::spy();
+        Exceptions::fake();
 
         $plan = TechnicalPlan::factory()->submitted()->create();
         $partial = '{"criticalFindings":["Suitsumasin on valitud, aga suitsu kasutada ei saa."],"reasoningNotes":["Suits: smoke=yes on plaan';
@@ -145,6 +179,22 @@ class TechnicalPlanCriticalFindingsTest extends TestCase
 
         // The partial text never reaches the parser: it sees no answer at all.
         Log::shouldHaveReceived('warning')->with('The second pass over an AI review came back unreadable', ['aiOutput' => ''])->twice();
+
+        // Reported, so it reaches Sentry and can be alerted on.
+        Exceptions::assertReportedCount(2);
+        Exceptions::assertReported(fn (RuntimeException $e): bool => $e->getMessage()
+            === 'Claude declined to answer for TechnicalPlanCriticalFindings (reasoning_extraction)');
+    }
+
+    public function test_an_answered_question_reports_nothing(): void
+    {
+        Exceptions::fake();
+
+        $plan = TechnicalPlan::factory()->submitted()->create();
+
+        $this->siftingAnswering('{"criticalFindings": []}')->findIn($plan, 'ülevaatus');
+
+        Exceptions::assertNothingReported();
     }
 
     /**

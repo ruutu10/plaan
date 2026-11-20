@@ -81,10 +81,13 @@ class TechnicalPlanCriticalFindings
 
         // How often the second pass finds anything at all is the number worth
         // watching: a run that flags every plan is a prompt that has stopped
-        // sifting, not a season of bad plans.
+        // sifting, not a season of bad plans. Why it went the way it did is
+        // the API's own summary of the model's thinking. The model is not
+        // asked to write its reasons into the answer: on 2026-11-20 doing so
+        // got the answer declined as reasoning extraction part-way through.
         Log::info('Sifted an AI review for show-stoppers', [
             'findings' => count($findings),
-            'reasoningNotes' => $this->readReasoningNotes($aiResponse),
+            'thinking' => $this->lastClaudeThinking(),
             'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
         ]);
 
@@ -141,28 +144,6 @@ class TechnicalPlanCriticalFindings
     }
 
     /**
-     * Why the sifting went the way it did, in the model's own words. Logged for
-     * whoever has to work out later why a plan was — or was not — flagged;
-     * never shown to anyone using the app.
-     *
-     * @return list<string>
-     */
-    protected function readReasoningNotes(string $aiResponse): array
-    {
-        $decoded = json_decode($aiResponse, true);
-        $notes = is_array($decoded) ? ($decoded['reasoningNotes'] ?? null) : null;
-
-        if (! is_array($notes)) {
-            return [];
-        }
-
-        return array_values(array_filter(
-            array_map(fn (mixed $note): string => trim((string) (is_scalar($note) ? $note : '')), $notes),
-            fn (string $note): bool => $note !== '',
-        ));
-    }
-
-    /**
      * The shape the answer must take, enforced by the API rather than hoped for.
      *
      * @return array<string, mixed>
@@ -177,13 +158,8 @@ class TechnicalPlanCriticalFindings
                     'description' => 'Ainult need ülevaatuse leiud, mis takistavad etenduse mängimist: mängimatuks tegev vastuolu või stseeni heli, mida tehnikul pole kuskilt mängida. Iga leid ühe lühikese eestikeelse lausena, esinejale sina-vormis, öeldes mis on puudu ja mida teha. Tähtsuse järjekorras. Tühi massiiv on tavaline ja korrektne vastus.',
                     'items' => ['type' => 'string'],
                 ],
-                'reasoningNotes' => [
-                    'type' => 'array',
-                    'description' => 'Lühikesed märkmed selle kohta, miks iga leid sisse võeti või välja jäeti, arendajale. Ei näidata kellelegi rakenduses.',
-                    'items' => ['type' => 'string'],
-                ],
             ],
-            'required' => ['criticalFindings', 'reasoningNotes'],
+            'required' => ['criticalFindings'],
             'additionalProperties' => false,
         ];
     }

@@ -125,6 +125,19 @@ trait CachesClaudeMessages
                 'discarded_chars' => mb_strlen(self::answerText($message->content)),
             ]);
 
+            // Reported as well as logged, so it reaches Sentry and can be
+            // alerted on. A decline is not a bad answer from the model; it is
+            // the API deciding the question itself is out of bounds, which
+            // only a change to the prompt will fix. Reported, not thrown: the
+            // caller still gets its empty answer and decides what that means.
+            // Named by service and category, so each kind of decline is its
+            // own issue in Sentry rather than one heap of them.
+            report(new RuntimeException(sprintf(
+                'Claude declined to answer for %s (%s)',
+                class_basename(static::class),
+                $message->stopDetails->category ?? 'no category',
+            )));
+
             return '';
         }
 
