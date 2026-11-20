@@ -10,6 +10,7 @@ import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
+import type { ListingColumn } from '@/composables/useListingTable';
 import { useResource } from '@/composables/useResource';
 import {
     claudeLogs as reasoningLogsApi,
@@ -17,6 +18,29 @@ import {
 } from '@/routes/api/formats';
 import { edit, index } from '@/routes/formats';
 import type { Format, FormatTeamOption } from '@/types';
+
+const columns: ListingColumn<Format>[] = [
+    {
+        id: 'name',
+        label: 'Formaat',
+        sortBy: (format) => format.name,
+        searchBy: (format) => [format.name, format.description],
+    },
+    {
+        id: 'team',
+        label: 'Tiim',
+        sortBy: (format) => format.teamName,
+        searchBy: (format) => format.teamName,
+        filterBy: (format) => format.teamName,
+    },
+    {
+        id: 'performances',
+        label: 'Etendusi',
+        sortBy: (format) => format.performanceCount ?? 0,
+        sortDescFirst: true,
+    },
+    { label: 'Tegevused', align: 'right', srOnly: true },
+];
 
 const teams = ref<FormatTeamOption[]>([]);
 const createOpen = ref(false);
@@ -88,13 +112,10 @@ function openReasoningLog(format: Format): void {
         </div>
 
         <R10Table
-            :columns="[
-                { label: 'Formaat' },
-                { label: 'Tiim' },
-                { label: 'Etendusi' },
-                { label: 'Tegevused', align: 'right', srOnly: true },
-            ]"
+            :columns="columns"
             :rows="formats"
+            search-placeholder="Otsi formaati või tiimi…"
+            no-matches-text="Otsingule vastavaid formaate pole."
             :row-href="(format) => edit(format.id).url"
             :load-failed="loadFailed"
             row-test-id="format-row"

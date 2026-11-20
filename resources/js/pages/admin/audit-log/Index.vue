@@ -5,6 +5,8 @@ import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import TextLink from '@/components/TextLink.vue';
+import type { ListingColumn } from '@/composables/useListingTable';
+import { instantSortValue } from '@/composables/useListingTable';
 import { formatLocalTimestamp } from '@/lib/date';
 import { index } from '@/routes/admin/audit-log';
 import type { AuditLogEntry } from '@/types';
@@ -90,6 +92,55 @@ function subjectName(entry: AuditLogEntry): string {
         (entry.subjectId ? `#${entry.subjectId}` : (entry.subjectType ?? '—'))
     );
 }
+
+function causerLabel(entry: AuditLogEntry): string {
+    return entry.causerName ?? 'Süsteem';
+}
+
+/**
+ * The feed holds only the latest entries, so the search and filters narrow
+ * those and never reach further back.
+ */
+const columns: ListingColumn<AuditLogEntry>[] = [
+    {
+        id: 'createdAt',
+        label: 'Aeg',
+        sortBy: (entry) => instantSortValue(entry.createdAt),
+        sortDescFirst: true,
+    },
+    {
+        id: 'event',
+        label: 'Sündmus',
+        sortBy: (entry) => eventLabel(entry.event),
+        searchBy: (entry) => eventLabel(entry.event),
+        filterBy: (entry) => eventLabel(entry.event),
+    },
+    {
+        id: 'description',
+        label: 'Kirjeldus',
+        searchBy: (entry) => entry.description,
+    },
+    {
+        id: 'subject',
+        label: 'Objekt',
+        sortBy: (entry) => entry.subjectType,
+        searchBy: (entry) =>
+            entry.subjectType ? [subjectName(entry), entry.subjectType] : null,
+        filterBy: (entry) => entry.subjectType,
+    },
+    {
+        id: 'causer',
+        label: 'Tegija',
+        sortBy: causerLabel,
+        searchBy: causerLabel,
+        filterBy: causerLabel,
+    },
+    {
+        id: 'origin',
+        label: 'Päritolu',
+        searchBy: (entry) => entry.ipAddress,
+    },
+];
 </script>
 
 <template>
@@ -103,15 +154,10 @@ function subjectName(entry: AuditLogEntry): string {
         />
 
         <R10Table
-            :columns="[
-                { label: 'Aeg' },
-                { label: 'Sündmus' },
-                { label: 'Kirjeldus' },
-                { label: 'Objekt' },
-                { label: 'Tegija' },
-                { label: 'Päritolu' },
-            ]"
+            :columns="columns"
             :rows="entries"
+            search-placeholder="Otsi viimaste kirjete seast…"
+            no-matches-text="Viimaste kirjete seas pole otsingule vastavaid. Otsing hõlmab ainult viimaseid kirjeid."
             row-test-id="audit-log-row"
             empty-text="Tegevuslogis pole veel ühtegi kirjet."
             error-text="Tegevuslogi laadimine ebaõnnestus. Proovi lehte värskendada."

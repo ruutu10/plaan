@@ -11,30 +11,83 @@ import { statusTone } from '@/components/technical-plan/presentPlan';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
+import type { ListingColumn } from '@/composables/useListingTable';
+import { instantSortValue } from '@/composables/useListingTable';
 import { formatLocalDate, formatLocalTime } from '@/lib/date';
 import { show } from '@/routes/technical-plans';
 import type { AdminPlanRow } from '@/types/technicalPlan';
 
-defineProps<{ rows: AdminPlanRow[] | null; emptyText: string }>();
+withDefaults(
+    defineProps<{
+        rows: AdminPlanRow[] | null;
+        emptyText: string;
+        /**
+         * Whether the table offers its search box and filters. The overview
+         * does; a single performance's handful of plans needs only sorting.
+         */
+        narrowable?: boolean;
+    }>(),
+    { narrowable: false },
+);
+
+const columns: ListingColumn<AdminPlanRow>[] = [
+    {
+        id: 'format',
+        label: 'Etendus',
+        sortBy: (plan) => plan.formatName,
+        searchBy: (plan) => [plan.formatName, plan.performanceTitle],
+        filterBy: (plan) => plan.formatName,
+    },
+    {
+        id: 'team',
+        label: 'Tiim',
+        sortBy: (plan) => plan.teamName,
+        searchBy: (plan) => plan.teamName,
+        filterBy: (plan) => plan.teamName,
+    },
+    {
+        id: 'startsAt',
+        label: 'Kuupäev',
+        sortBy: (plan) => instantSortValue(plan.performanceStartsAt),
+    },
+    {
+        id: 'submittedBy',
+        label: 'Esitaja',
+        sortBy: (plan) => plan.submittedBy,
+        searchBy: (plan) => [plan.submittedBy, plan.submittedByEmail],
+    },
+    {
+        id: 'technicians',
+        label: 'Tehnik',
+        searchBy: (plan) => plan.technicians,
+        filterBy: (plan) => plan.technicians,
+    },
+    {
+        id: 'status',
+        label: 'Staatus',
+        sortBy: (plan) => plan.statusLabel,
+        filterBy: (plan) => plan.statusLabel,
+    },
+    { label: 'Tegevused', align: 'right', srOnly: true },
+];
 </script>
 
 <template>
     <R10Table
-        :columns="[
-            { label: 'Etendus' },
-            { label: 'Tiim' },
-            { label: 'Kuupäev' },
-            { label: 'Esitaja' },
-            { label: 'Tehnik' },
-            { label: 'Staatus' },
-            { label: 'Tegevused', align: 'right', srOnly: true },
-        ]"
+        :columns="columns"
         :rows="rows"
+        :narrowable="narrowable"
         :row-href="(plan) => show(plan.token).url"
         row-test-id="technical-plan-row"
         :empty-text="emptyText"
+        search-placeholder="Otsi etendust, tiimi, esitajat või tehnikut…"
+        no-matches-text="Otsingule vastavaid plaane pole."
         error-text="Plaanide laadimine ebaõnnestus. Proovi lehte värskendada."
     >
+        <template v-if="$slots.toolbar" #toolbar>
+            <slot name="toolbar" />
+        </template>
+
         <template #row="{ row: plan }">
             <td class="px-5 py-4 align-top">
                 <span

@@ -23,10 +23,15 @@ import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10SectionHeader from '@/components/technical-plan/R10SectionHeader.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
+import type { ListingColumn } from '@/composables/useListingTable';
+import { instantSortValue } from '@/composables/useListingTable';
 import { useResource } from '@/composables/useResource';
 import { useTrailingCrumb } from '@/composables/useTrailingCrumb';
 import { formatLocalDate, formatLocalTime } from '@/lib/date';
-import { performanceStatusLabel } from '@/lib/performanceStatus';
+import {
+    performanceStatusLabel,
+    performanceStatusRank,
+} from '@/lib/performanceStatus';
 import { show as formatApi, update } from '@/routes/api/formats';
 import {
     claudeLogs as reasoningLogsApi,
@@ -129,6 +134,57 @@ const {
 
     return response.data;
 });
+
+/** Who plays it: its own group, or the format's when it has none of its own. */
+function performanceTeamName(performance: Performance): string | null {
+    return performance.teamName ?? format.value?.teamName ?? null;
+}
+
+const performanceColumns: ListingColumn<Performance>[] = [
+    {
+        id: 'startsAt',
+        label: 'Algus',
+        sortBy: (performance) => instantSortValue(performance.startsAt),
+    },
+    {
+        id: 'act',
+        label: 'Etteaste',
+        sortBy: (performance) =>
+            performance.title ?? performanceTeamName(performance),
+        searchBy: (performance) => [
+            performance.title,
+            performanceTeamName(performance),
+            performance.location,
+        ],
+        filterBy: performanceTeamName,
+    },
+    {
+        id: 'duration',
+        label: 'Kestus',
+        class: 'hidden lg:table-cell',
+        sortBy: (performance) => performance.duration ?? undefined,
+    },
+    {
+        id: 'status',
+        label: 'Olek',
+        sortBy: (performance) => performanceStatusRank(performance.status),
+        filterBy: (performance) => performanceStatusLabel(performance.status),
+    },
+    {
+        id: 'staff',
+        label: 'Meeskonnas',
+        sortBy: (performance) => performance.staffCount ?? 0,
+        sortDescFirst: true,
+    },
+    {
+        id: 'plans',
+        label: 'Tehnikaplaane',
+        class: 'hidden lg:table-cell',
+        sortBy: (performance) => performance.technicalPlanCount ?? 0,
+        sortDescFirst: true,
+    },
+    { label: 'Tegevused', align: 'right', srOnly: true },
+];
 
 function openAddPerformance(): void {
     performanceModalOpen.value = true;
@@ -270,16 +326,10 @@ async function save(): Promise<void> {
             </R10SectionHeader>
 
             <R10Table
-                :columns="[
-                    { label: 'Algus' },
-                    { label: 'Etteaste' },
-                    { label: 'Kestus', class: 'hidden lg:table-cell' },
-                    { label: 'Olek' },
-                    { label: 'Meeskonnas' },
-                    { label: 'Tehnikaplaane', class: 'hidden lg:table-cell' },
-                    { label: 'Tegevused', align: 'right', srOnly: true },
-                ]"
+                :columns="performanceColumns"
                 :rows="performances"
+                search-placeholder="Otsi etteastet, tiimi või kohta…"
+                no-matches-text="Otsingule vastavaid etendusi pole."
                 :row-href="
                     (performance) =>
                         performancePage([formatId, performance.id]).url
@@ -313,9 +363,7 @@ async function save(): Promise<void> {
                             class="block text-r10-grey-500"
                             data-test="performance-team"
                         >
-                            {{
-                                performance.teamName ?? format?.teamName ?? '—'
-                            }}
+                            {{ performanceTeamName(performance) ?? '—' }}
                         </span>
                         <span
                             v-if="performance.location"
