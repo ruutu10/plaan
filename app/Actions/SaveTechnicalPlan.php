@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Data\PlanContent;
 use App\Enums\TechnicalPlanStatus;
 use App\Events\TechnicalPlanStatusChanged;
+use App\Models\Performance;
 use App\Models\TechnicalPlan;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +28,7 @@ class SaveTechnicalPlan
         $wasNew = ! $plan->exists;
         $previousStatus = $wasNew ? null : $plan->status;
 
-        $attributes = PlanContent::fromValidated($data) + [
+        $attributes = PlanContent::fromValidated($data, Performance::find($data['meta']['performanceId'])) + [
             'performance_id' => $data['meta']['performanceId'],
         ];
 

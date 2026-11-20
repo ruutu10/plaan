@@ -656,6 +656,7 @@ class TechnicalPlanController extends Controller
             'maxActMinutes' => StoreTechnicalPlanRequest::MAX_ACT_MINUTES,
             // The halls where smoke is off the table, so the wizard can leave
             // the question out rather than offering a choice the venue refuses.
+            // Judged server-side by Performance::locationAllowsSmoke().
             'smokeNotPossible' => array_values((array) config('technical_plan.smoke_not_possible', [])),
         ];
     }
@@ -674,13 +675,15 @@ class TechnicalPlanController extends Controller
      */
     private function planFromRequest(array $data, User $user): TechnicalPlan
     {
-        $plan = new TechnicalPlan(PlanContent::fromValidated($data) + [
+        $performance = Performance::query()
+            ->with(['team', 'format.team'])
+            ->findOrFail($data['meta']['performanceId']);
+
+        $plan = new TechnicalPlan(PlanContent::fromValidated($data, $performance) + [
             'status' => TechnicalPlanStatus::Draft,
         ]);
 
-        $plan->setRelation('performance', Performance::query()
-            ->with(['team', 'format.team'])
-            ->findOrFail($data['meta']['performanceId']));
+        $plan->setRelation('performance', $performance);
         $plan->setRelation('user', $user);
 
         return $plan;

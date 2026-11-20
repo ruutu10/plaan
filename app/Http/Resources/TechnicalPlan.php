@@ -272,7 +272,12 @@ class TechnicalPlan extends JsonResource
                 'name' => self::text($item['name'] ?? null),
                 'use' => self::text($item['use'] ?? null),
             ], $items, array_keys($items)),
-            'smoke' => self::text($equipment['smoke'] ?? null, 'yes'),
+            // The venue's rule wins over what was stored: a plan saved before
+            // the rule existed, or one whose night has since moved into a hall
+            // that cannot take smoke, must not tell the crew "jah".
+            'smoke' => $this->resource->performance?->allowsSmoke() === false
+                ? 'no'
+                : self::text($equipment['smoke'] ?? null, 'yes'),
             'suggestions' => self::text($equipment['suggestions'] ?? null, 'yes'),
             'suggestNote' => self::text($equipment['suggestNote'] ?? null),
         ];

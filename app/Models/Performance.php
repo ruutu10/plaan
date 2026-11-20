@@ -544,6 +544,46 @@ class Performance extends Model
     }
 
     /**
+     * Whether smoke may be used at this night's venue — see
+     * {@see locationAllowsSmoke()}.
+     */
+    public function allowsSmoke(): bool
+    {
+        return self::locationAllowsSmoke($this->location);
+    }
+
+    /**
+     * Whether smoke may be used at the given venue. The halls that cannot take
+     * it are named in `technical_plan.smoke_not_possible`, and as a location is
+     * free text, each name is looked for anywhere inside it, ignoring case:
+     * "improkeskus" catches "Tartu improkeskus" and "improkeskuse BB" too.
+     *
+     * A night with no location named is allowed it. An absent venue is an
+     * unknown one, not the house's own room.
+     *
+     * `isSmokeAllowedAt()` in `resources/js/components/technical-plan/plan.ts`
+     * mirrors this for the wizard, which works on a plan not yet saved.
+     */
+    public static function locationAllowsSmoke(?string $location): bool
+    {
+        $venue = mb_strtolower(trim((string) $location));
+
+        if ($venue === '') {
+            return true;
+        }
+
+        foreach ((array) config('technical_plan.smoke_not_possible', []) as $name) {
+            $name = mb_strtolower(trim((string) $name));
+
+            if ($name !== '' && str_contains($venue, $name)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * The wall clock the house runs on. Stored moments mean nothing to a
      * performer until they are read through this.
      */

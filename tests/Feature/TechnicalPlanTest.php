@@ -2268,6 +2268,74 @@ class TechnicalPlanTest extends TestCase
         $this->assertContains('improkeskus', $config['smokeNotPossible']);
     }
 
+    /**
+     * The venue rule is matched case-insensitively anywhere in the free-text
+     * location, and a night placed nowhere keeps the choice.
+     */
+    public function test_the_smoke_rule_is_read_off_the_venue_name(): void
+    {
+        config()->set('technical_plan.smoke_not_possible', ['improkeskus']);
+
+        $this->assertFalse(Performance::locationAllowsSmoke('improkeskus'));
+        $this->assertFalse(Performance::locationAllowsSmoke('Tartu Improkeskus'));
+        $this->assertFalse(Performance::locationAllowsSmoke('improkeskuse BB'));
+        $this->assertTrue(Performance::locationAllowsSmoke('Vanemuine'));
+        $this->assertTrue(Performance::locationAllowsSmoke(''));
+        $this->assertTrue(Performance::locationAllowsSmoke(null));
+    }
+
+    public function test_a_plan_for_a_hall_that_cannot_take_smoke_is_stored_as_no_smoke(): void
+    {
+        $performance = Performance::factory()->playedAt('improkeskuse BB')->create();
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'meta' => ['performanceId' => $performance->id],
+            'equipment' => ['smoke' => 'yes'],
+        ]))->assertOk();
+
+        $this->assertSame('no', TechnicalPlan::sole()->equipment['smoke']);
+    }
+
+    public function test_a_plan_for_a_hall_that_takes_smoke_keeps_its_answer(): void
+    {
+        $performance = Performance::factory()->playedAt('Vanemuine')->create();
+
+        $this->postJson(route('technical-plan.store'), $this->validPayload([
+            'meta' => ['performanceId' => $performance->id],
+            'equipment' => ['smoke' => 'yes'],
+        ]))->assertOk();
+
+        $this->assertSame('yes', TechnicalPlan::sole()->equipment['smoke']);
+    }
+
+    /**
+     * A plan stored with "yes" before the rule existed, or whose night has
+     * since moved into such a hall, still reads "no" to everything built from
+     * the resource: the AI reviewer, the mail and the wizard.
+     */
+    public function test_a_stored_yes_reads_as_no_smoke_at_a_hall_that_cannot_take_it(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()
+            ->for(Performance::factory()->playedAt('improkeskus'))
+            ->create();
+
+        $this->assertSame('yes', $plan->equipment['smoke']);
+
+        $resolved = TechnicalPlanResource::make($plan)->resolve();
+
+        $this->assertSame('no', $resolved['equipment']['smoke']);
+        $this->assertSame('Ei tohi', PlanDocument::make($resolved)->resolve()['smokeSummary']);
+    }
+
+    public function test_a_stored_yes_stays_yes_at_a_hall_that_takes_smoke(): void
+    {
+        $plan = TechnicalPlan::factory()->submitted()
+            ->for(Performance::factory()->playedAt('Vanemuine'))
+            ->create();
+
+        $this->assertSame('yes', TechnicalPlanResource::make($plan)->resolve()['equipment']['smoke']);
+    }
+
     public function test_a_scene_refuses_more_sounds_than_the_wizard_offers(): void
     {
         $sounds = [];
