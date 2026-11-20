@@ -1,5 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { acceptsNewPlan, isStillToCome } from '@/lib/performanceStatus';
+import {
+    acceptsNewPlan,
+    isStillToCome,
+    performanceStatusRank,
+} from '@/lib/performanceStatus';
+
+describe('performanceStatusRank', () => {
+    it('orders the standings the way a night lives through them', () => {
+        expect(performanceStatusRank('draft')).toBeLessThan(
+            performanceStatusRank('upcoming'),
+        );
+        expect(performanceStatusRank('upcoming')).toBeLessThan(
+            performanceStatusRank('archived'),
+        );
+    });
+});
 
 describe('isStillToCome', () => {
     const now = new Date('2026-07-15T12:00:00Z');

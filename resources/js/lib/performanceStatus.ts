@@ -20,6 +20,20 @@ export function performanceStatusLabel(status: PerformanceStatus): string {
     return LABELS[status];
 }
 
+const RANKS: Record<PerformanceStatus, number> = {
+    draft: 0,
+    upcoming: 1,
+    archived: 2,
+};
+
+/**
+ * Where the standing falls in a night's life — unreviewed, on the bill, played
+ * — so a listing sorted by it reads in that order rather than by its labels.
+ */
+export function performanceStatusRank(status: PerformanceStatus): number {
+    return RANKS[status];
+}
+
 /**
  * Whether the wizard will take this performance when a link names it: one the
  * house has vouched for and whose night is still to come. Mirrors the check in

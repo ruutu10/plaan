@@ -3,9 +3,9 @@ import { Head, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { isArchived, isDraft } from '@/components/technical-plan/planStatus';
 import R10Page from '@/components/technical-plan/R10Page.vue';
+import R10RevealToggle from '@/components/technical-plan/R10RevealToggle.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
 import TechnicalPlanTable from '@/components/technical-plan/TechnicalPlanTable.vue';
-import { Checkbox } from '@/components/ui/checkbox';
 import { index } from '@/routes/technical-plans';
 import type { AdminPlanRow } from '@/types/technicalPlan';
 
@@ -80,26 +80,21 @@ defineOptions({
     <R10Page>
         <StepHeader eyebrow="Tehnika" title="Tehnilised plaanid" :lead="lead" />
 
-        <div
-            v-if="draftCount > 0 || archivedCount > 0"
-            class="mb-4 flex flex-wrap justify-end gap-x-6 gap-y-2"
-        >
-            <label
-                v-if="draftCount > 0"
-                class="flex items-center gap-2 text-sm text-r10-grey-700"
-            >
-                <Checkbox v-model="showDrafts" data-test="toggle-drafts" />
-                <span>Näita mustandeid ({{ draftCount }})</span>
-            </label>
-            <label
-                v-if="archivedCount > 0"
-                class="flex items-center gap-2 text-sm text-r10-grey-700"
-            >
-                <Checkbox v-model="showArchived" data-test="toggle-archived" />
-                <span>Näita arhiveerituid ({{ archivedCount }})</span>
-            </label>
-        </div>
-
-        <TechnicalPlanTable :rows="rows" :empty-text="emptyText" />
+        <TechnicalPlanTable :rows="rows" :empty-text="emptyText" narrowable>
+            <template v-if="draftCount > 0 || archivedCount > 0" #toolbar>
+                <R10RevealToggle
+                    v-model="showDrafts"
+                    label="mustandeid"
+                    :count="draftCount"
+                    data-test="toggle-drafts"
+                />
+                <R10RevealToggle
+                    v-model="showArchived"
+                    label="arhiveerituid"
+                    :count="archivedCount"
+                    data-test="toggle-archived"
+                />
+            </template>
+        </TechnicalPlanTable>
     </R10Page>
 </template>

@@ -8,12 +8,35 @@ import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
+import type { ListingColumn } from '@/composables/useListingTable';
 import { useResource } from '@/composables/useResource';
 import { edit, index } from '@/routes/admin/teams';
 import { index as teamsApi } from '@/routes/api/teams';
 import type { ManagedTeam } from '@/types';
 
 const createOpen = ref(false);
+
+const columns: ListingColumn<ManagedTeam>[] = [
+    {
+        id: 'name',
+        label: 'Tiim',
+        sortBy: (team) => team.name,
+        searchBy: (team) => team.name,
+    },
+    {
+        id: 'members',
+        label: 'Liikmeid',
+        sortBy: (team) => team.memberCount ?? 0,
+        sortDescFirst: true,
+    },
+    {
+        id: 'formats',
+        label: 'Formaate',
+        sortBy: (team) => team.formatCount ?? 0,
+        sortDescFirst: true,
+    },
+    { label: 'Tegevused', align: 'right', srOnly: true },
+];
 const deleteOpen = ref(false);
 /** The team the delete dialog is asking about. */
 const teamToDelete = ref<ManagedTeam | null>(null);
@@ -70,13 +93,10 @@ function openDelete(team: ManagedTeam): void {
         </div>
 
         <R10Table
-            :columns="[
-                { label: 'Tiim' },
-                { label: 'Liikmeid' },
-                { label: 'Formaate' },
-                { label: 'Tegevused', align: 'right', srOnly: true },
-            ]"
+            :columns="columns"
             :rows="teams"
+            search-placeholder="Otsi tiimi…"
+            no-matches-text="Otsingule vastavaid tiime pole."
             :row-href="(team) => edit(team.id).url"
             :load-failed="loadFailed"
             row-test-id="team-row"

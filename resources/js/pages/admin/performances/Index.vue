@@ -6,11 +6,16 @@ import PerformanceModal from '@/components/PerformanceModal.vue';
 import R10Button from '@/components/technical-plan/R10Button.vue';
 import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
+import R10RevealToggle from '@/components/technical-plan/R10RevealToggle.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
-import { Checkbox } from '@/components/ui/checkbox';
+import type { ListingColumn } from '@/composables/useListingTable';
+import { instantSortValue } from '@/composables/useListingTable';
 import { formatLocalDate, formatLocalTime } from '@/lib/date';
-import { performanceStatusLabel } from '@/lib/performanceStatus';
+import {
+    performanceStatusLabel,
+    performanceStatusRank,
+} from '@/lib/performanceStatus';
 import { index } from '@/routes/admin/performances';
 import type {
     AdminPerformanceRow,
@@ -69,6 +74,54 @@ const rows = computed(() =>
           ),
 );
 
+function planLabel(performance: AdminPerformanceRow): string {
+    return performance.hasSentTechnicalPlan ? 'Saadetud' : 'Puudu';
+}
+
+const columns: ListingColumn<AdminPerformanceRow>[] = [
+    {
+        id: 'startsAt',
+        label: 'Algus',
+        sortBy: (performance) => instantSortValue(performance.startsAt),
+    },
+    {
+        id: 'format',
+        label: 'Formaat',
+        sortBy: (performance) => performance.formatName,
+        searchBy: (performance) => performance.formatName,
+        filterBy: (performance) => performance.formatName,
+    },
+    {
+        id: 'act',
+        label: 'Etteaste',
+        class: 'hidden lg:table-cell',
+        sortBy: (performance) => performance.title ?? performance.teamName,
+        searchBy: (performance) => [
+            performance.title,
+            performance.teamName,
+            performance.location,
+        ],
+    },
+    {
+        id: 'technicians',
+        label: 'Tehnik',
+        class: 'hidden lg:table-cell',
+        searchBy: (performance) => performance.technicians,
+    },
+    {
+        id: 'status',
+        label: 'Olek',
+        sortBy: (performance) => performanceStatusRank(performance.status),
+        filterBy: (performance) => performanceStatusLabel(performance.status),
+    },
+    {
+        id: 'plan',
+        label: 'Tehnikaplaan',
+        sortBy: (performance) => (performance.hasSentTechnicalPlan ? 1 : 0),
+        filterBy: planLabel,
+    },
+];
+
 const lead = computed(() =>
     canEditEveryPerformance.value
         ? 'Kõik etendused, olenemata formaadist ja tiimist. Arhiveeritud etendused on vaikimisi peidus. Muutmiseks ava etendus.'
@@ -113,31 +166,25 @@ defineOptions({
             </R10Button>
         </div>
 
-        <div v-if="archivedCount > 0" class="mb-4 flex justify-end">
-            <label class="flex items-center gap-2 text-sm text-r10-grey-700">
-                <Checkbox
-                    v-model="showArchived"
-                    data-test="toggle-archived-performances"
-                />
-                <span>Näita arhiveerituid ({{ archivedCount }})</span>
-            </label>
-        </div>
-
         <R10Table
-            :columns="[
-                { label: 'Algus' },
-                { label: 'Formaat' },
-                { label: 'Etteaste', class: 'hidden lg:table-cell' },
-                { label: 'Tehnik', class: 'hidden lg:table-cell' },
-                { label: 'Olek' },
-                { label: 'Tehnikaplaan' },
-            ]"
+            :columns="columns"
             :rows="rows"
             :row-href="performanceHref"
             row-test-id="admin-performance-row"
             :empty-text="emptyText"
+            search-placeholder="Otsi formaati, tiimi, kohta või tehnikut…"
+            no-matches-text="Otsingule vastavaid etendusi pole."
             error-text="Etenduste laadimine ebaõnnestus. Proovi lehte värskendada."
         >
+            <template v-if="archivedCount > 0" #toolbar>
+                <R10RevealToggle
+                    v-model="showArchived"
+                    label="arhiveerituid"
+                    :count="archivedCount"
+                    data-test="toggle-archived-performances"
+                />
+            </template>
+
             <template #row="{ row: performance }">
                 <td
                     class="px-5 py-4 align-top font-medium whitespace-nowrap text-r10-ink"
@@ -215,11 +262,7 @@ defineOptions({
                         "
                         data-test="admin-performance-plan-badge"
                     >
-                        {{
-                            performance.hasSentTechnicalPlan
-                                ? 'Saadetud'
-                                : 'Puudu'
-                        }}
+                        {{ planLabel(performance) }}
                     </R10Pill>
                 </td>
             </template>

@@ -28,7 +28,7 @@ class SaveTechnicalPlan
         $wasNew = ! $plan->exists;
         $previousStatus = $wasNew ? null : $plan->status;
 
-        $attributes = PlanContent::fromValidated($data, Performance::find($data['meta']['performanceId'])) + [
+        $attributes = PlanContent::fromValidated($data, Performance::find((int) $data['meta']['performanceId'])) + [
             'performance_id' => $data['meta']['performanceId'],
         ];
 

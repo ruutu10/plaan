@@ -8,6 +8,8 @@ import R10Page from '@/components/technical-plan/R10Page.vue';
 import R10Pill from '@/components/technical-plan/R10Pill.vue';
 import R10Table from '@/components/technical-plan/R10Table.vue';
 import StepHeader from '@/components/technical-plan/StepHeader.vue';
+import type { ListingColumn } from '@/composables/useListingTable';
+import { instantSortValue } from '@/composables/useListingTable';
 import { useResource } from '@/composables/useResource';
 import { formatLocalTimestamp } from '@/lib/date';
 import { edit, index } from '@/routes/admin/users';
@@ -15,6 +17,33 @@ import { index as usersApi } from '@/routes/api/users';
 import type { ManagedUser } from '@/types';
 
 const createOpen = ref(false);
+
+const columns: ListingColumn<ManagedUser>[] = [
+    {
+        id: 'name',
+        label: 'Kasutaja',
+        sortBy: (user) => user.name,
+        searchBy: (user) => [user.name, user.email],
+    },
+    {
+        id: 'roles',
+        label: 'Rollid',
+        searchBy: (user) => user.roles.map((role) => role.label),
+        filterBy: (user) => user.roles.map((role) => role.label),
+    },
+    {
+        id: 'teams',
+        label: 'Tiime',
+        sortBy: (user) => user.teamCount ?? 0,
+        sortDescFirst: true,
+    },
+    {
+        id: 'createdAt',
+        label: 'Liitunud',
+        sortBy: (user) => instantSortValue(user.createdAt),
+        sortDescFirst: true,
+    },
+];
 
 const http = useHttp();
 
@@ -63,13 +92,10 @@ defineOptions({
         </div>
 
         <R10Table
-            :columns="[
-                { label: 'Kasutaja' },
-                { label: 'Rollid' },
-                { label: 'Tiime' },
-                { label: 'Liitunud' },
-            ]"
+            :columns="columns"
             :rows="users"
+            search-placeholder="Otsi nime, e-posti või rolli…"
+            no-matches-text="Otsingule vastavaid kontosid pole."
             :row-href="(user) => edit(user.id).url"
             :load-failed="loadFailed"
             :skeleton-widths="['w-48', 'w-24', 'w-8', 'w-28']"
